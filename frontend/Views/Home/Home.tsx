@@ -12,7 +12,6 @@ import CTA from './CTA/CTA'
 const Home = () => {
   return (
      <>
-      <Navbar />
       <main className="flex-1 flex flex-col min-h-screen">
         <Hero />
         <Services />
@@ -22,7 +21,6 @@ const Home = () => {
         <Partners />
         <CTA />
       </main>
-      <Footer />
     </>
   )
 }
