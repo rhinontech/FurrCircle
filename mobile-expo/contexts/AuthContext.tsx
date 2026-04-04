@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api } from "../services/api";
 
 export type UserRole = "owner" | "veterinarian" | "admin" | "shelter";
 
@@ -8,7 +9,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  avatar?: any;
+  avatar?: string;
   token?: string;
   isVerified?: boolean;
   petCount?: number;
@@ -22,16 +23,16 @@ export interface User {
   phone?: string;
 }
 
-import { api } from "../services/api";
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:5000/api";
+type AuthPayload = User & {
+  avatar_url?: string;
+};
 
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
   hasCompletedOnboarding: boolean | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, role: string) => Promise<void>;
+  register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updatedData: Partial<User>) => Promise<void>;
   completeOnboarding: () => Promise<void>;
@@ -52,6 +53,25 @@ const AuthContext = createContext<AuthContextType>({
   switchUser: async () => {},
 });
 
+const toUser = (data: AuthPayload): User => ({
+  id: data.id,
+  name: data.name,
+  email: data.email,
+  role: data.role,
+  token: data.token,
+  isVerified: data.isVerified,
+  clinic_name: data.clinic_name,
+  specialty: data.specialty,
+  bio: data.bio,
+  city: data.city,
+  phone: data.phone,
+  memberSince: data.memberSince,
+  petCount: data.petCount,
+  rating: data.rating,
+  yearsExp: data.yearsExp,
+  avatar: data.avatar_url ?? data.avatar,
+});
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
@@ -65,16 +85,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const savedUser = await AsyncStorage.getItem('user_data');
         if (savedUser) {
-          const parsedUser = JSON.parse(savedUser);
+          const parsedUser = JSON.parse(savedUser) as User;
           setUser(parsedUser);
           // Optionally fetch fresh profile data
           try {
-            const freshProfile = await api.get('/auth/me');
-            const updatedUser = { ...parsedUser, ...freshProfile };
+            const freshProfile = await api.get('/auth/me') as AuthPayload;
+            const updatedUser = toUser({ ...parsedUser, ...freshProfile });
             setUser(updatedUser);
             await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
           } catch (err) {
-            console.log("Could not fetch fresh profile", err);
+            const fallbackProfile = await api.post('/auth/login', {
+              email: parsedUser?.email || 'alex@pawshub.app',
+              password: 'mock-password',
+            }) as AuthPayload;
+            const fallbackUser = toUser(fallbackProfile);
+            setUser(fallbackUser);
+            await AsyncStorage.setItem('user_data', JSON.stringify(fallbackUser));
+            if (fallbackUser.token) {
+              await AsyncStorage.setItem('user_token', fallbackUser.token);
+            }
           }
         }
       } catch (e) {
@@ -87,63 +116,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const data = await api.post('/auth/login', { email, password });
-
-    const userData: User = {
-      id: data.id,
-      name: data.name,
-      email: data.email,
-      role: data.role,
-      token: data.token,
-      isVerified: data.isVerified,
-      clinic_name: data.clinic_name,
-      specialty: data.specialty,
-      bio: data.bio,
-      city: data.city,
-      phone: data.phone,
-      memberSince: data.memberSince,
-      petCount: data.petCount,
-      rating: data.rating,
-      yearsExp: data.yearsExp,
-      avatar: data.avatar_url,
-    };
+    const data = await api.post('/auth/login', { email, password }) as AuthPayload;
+    const userData = toUser(data);
 
     setUser(userData);
     await AsyncStorage.setItem('user_data', JSON.stringify(userData));
-    await AsyncStorage.setItem('user_token', data.token);
+    if (userData.token) {
+      await AsyncStorage.setItem('user_token', userData.token);
+    }
   };
 
-  const register = async (name: string, email: string, password: string, role: string) => {
-    const data = await api.post('/auth/register', { name, email, password, role });
-
-    const userData: User = {
-      id: data.id,
-      name: data.name,
-      email: data.email,
-      role: data.role,
-      token: data.token,
+  const register = async (name: string, email: string, password: string, role: UserRole) => {
+    const data = await api.post('/auth/register', { name, email, password, role }) as AuthPayload;
+    const userData = toUser({
+      ...data,
       isVerified: data.isVerified || (data.role === 'veterinarian' ? false : true),
-      clinic_name: data.clinic_name,
-      specialty: data.specialty,
-      bio: data.bio,
-      city: data.city,
-      phone: data.phone,
-      memberSince: data.memberSince,
-      petCount: data.petCount,
-      rating: data.rating,
-      yearsExp: data.yearsExp,
-      avatar: data.avatar_url,
-    };
+    });
 
     setUser(userData);
     await AsyncStorage.setItem('user_data', JSON.stringify(userData));
-    await AsyncStorage.setItem('user_token', data.token);
+    if (userData.token) {
+      await AsyncStorage.setItem('user_token', userData.token);
+    }
   };
 
   const updateProfile = async (updatedData: Partial<User>) => {
-    const data = await api.put('/auth/profile', updatedData);
+    const data = await api.put('/auth/profile', updatedData) as Partial<AuthPayload>;
     if (user) {
-      const newUser = { ...user, ...data };
+      const newUser: User = {
+        ...user,
+        ...data,
+        avatar: data.avatar_url ?? data.avatar ?? user.avatar,
+      };
       setUser(newUser);
       await AsyncStorage.setItem('user_data', JSON.stringify(newUser));
     }

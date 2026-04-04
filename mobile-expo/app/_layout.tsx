@@ -83,6 +83,7 @@ function AppShell() {
         <Stack.Screen name="health/vaccines" />
         <Stack.Screen name="health/meds" />
         <Stack.Screen name="reminders/index" />
+        <Stack.Screen name="appointments/book" />
       </Stack>
       <StatusBar style={isDark ? 'light' : 'dark'} />
     </GestureHandlerRootView>
