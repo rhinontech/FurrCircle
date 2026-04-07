@@ -131,3 +131,35 @@ export const updateAppointmentStatus = async (req: any, res: Response): Promise<
     res.status(500).json({ message: error.message });
   }
 };
+// @desc    Get stats for the vet dashboard
+// @route   GET /api/appointments/vet/stats
+export const getVetStats = async (req: any, res: Response): Promise<void> => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const todayCount = await Appointment.count({
+      where: { vetId: req.user.id, date: today }
+    });
+
+    const pendingCount = await Appointment.count({
+      where: { vetId: req.user.id, status: 'pending' }
+    });
+
+    const totalPatients = await Appointment.count({
+      where: { vetId: req.user.id },
+      distinct: true,
+      col: 'petId'
+    });
+
+    const vet = await User.findByPk(req.user.id, { attributes: ['rating'] });
+
+    res.json({
+      todayAppointments: todayCount,
+      totalPatients,
+      avgRating: vet?.rating || 4.8,
+      pendingAppointments: pendingCount
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

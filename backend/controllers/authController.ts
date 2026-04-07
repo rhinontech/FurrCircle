@@ -136,6 +136,28 @@ export const updateUserProfile = async (req: any, res: Response): Promise<void> 
   }
 };
 
+// @desc    Get users by role (for discover screen)
+// @route   GET /api/auth/users/:role
+export const getUsersByRole = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { role } = req.params;
+    const whereClause: any = { role };
+    
+    if (role === 'veterinarian') {
+      whereClause.isVerified = true;
+    }
+
+    const users = await User.findAll({
+      where: whereClause,
+      attributes: ['id', 'name', 'avatar_url', 'role', 'clinic_name', 'bio', 'city', 'rating', 'yearsExp']
+    });
+
+    res.json(users);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Trigger password reset (placeholder)
 // @route   POST /api/auth/reset-password
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {

@@ -13,9 +13,11 @@ import {
 } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const { admin, logout } = useAdminAuth();
 
   const menuItems = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/" },
@@ -57,6 +59,11 @@ const Sidebar = () => {
       </nav>
 
       <div className="pt-6 border-t border-white/10 space-y-2 mt-auto">
+        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 mb-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">Signed In As</p>
+          <p className="mt-2 text-sm font-semibold text-white">{admin?.name || "Admin User"}</p>
+          <p className="text-xs text-white/50 mt-1">{admin?.title || "Super Admin"}</p>
+        </div>
         <Link 
           href="/settings"
           className={`flex items-center gap-3 w-full p-3 rounded-xl transition-colors ${
@@ -66,7 +73,7 @@ const Sidebar = () => {
           <Settings size={20} />
           <span className="font-medium">Settings</span>
         </Link>
-        <button className="flex items-center gap-3 w-full p-3 text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors">
+        <button onClick={logout} className="flex items-center gap-3 w-full p-3 text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors">
           <LogOut size={20} />
           <span className="font-medium">Sign Out</span>
         </button>

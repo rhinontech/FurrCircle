@@ -14,7 +14,7 @@ export default function ProfileScreen() {
   const router = useRouter();
 
   const menuItems = [
-    { icon: PawPrint, label: "My Pets", count: String(user?.petCount ?? 3), action: () => router.push('/profile/pets') },
+    { icon: PawPrint, label: "My Pets", count: String(user?.petCount ?? 3), action: () => router.push('/(tabs)/pets') },
     { icon: Bookmark, label: "Saved Vets", count: "5", action: () => router.push('/profile/vets') },
     { icon: FileText, label: "My Posts", count: "8", action: () => router.push('/profile/posts') },
     { icon: Bell, label: "Notifications", action: () => router.push('/reminders') },
@@ -41,7 +41,7 @@ export default function ProfileScreen() {
             </View>
             <View style={{ flexDirection: 'row', gap: 32, marginTop: 20 }}>
               {[
-                 { n: String(user?.petCount ?? 3), l: "Pets", action: () => router.push('/profile/pets') }, 
+                 { n: String(user?.petCount ?? 3), l: "Pets", action: () => router.push('/(tabs)/pets') }, 
                  { n: "5", l: "Vets", action: () => router.push('/profile/vets') }, 
                  { n: "8", l: "Posts", action: () => router.push('/profile/posts') }
               ].map((s) => (

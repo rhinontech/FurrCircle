@@ -151,3 +151,31 @@ export const deleteComment = async (req: any, res: Response): Promise<void> => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Get upcoming events
+// @route   GET /api/community/events
+export const getEvents = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { Event, User } = db as any;
+    let events = await Event.findAll({
+      order: [['date', 'ASC']]
+    });
+
+    if (events.length === 0) {
+      // Seed some initial demo events
+      const user = await User.findOne({ where: { role: 'veterinarian' } }) || (req as any).user;
+      
+      const seedEvents = [
+        { organizerId: user.id || "1", title: "Puppy Social Mixer", date: "2026-04-15", time: "2:00 PM", location: "Central Park", category: "Social" },
+        { organizerId: user.id || "1", title: "Vaccination Drive", date: "2026-04-20", time: "9:00 AM", location: "Downtown Center", category: "Health" }
+      ];
+      
+      await Event.bulkCreate(seedEvents);
+      events = await Event.findAll({ order: [['date', 'ASC']] });
+    }
+
+    res.json(events);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -2,9 +2,13 @@ import React from "react";
 import { Tabs } from "expo-router";
 import { LayoutDashboard, CalendarDays, PawPrint, Users, User } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function VetTabLayout() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  const bottomInset = Math.max(insets.bottom, 10);
   return (
     <Tabs
       screenOptions={{
@@ -15,8 +19,8 @@ export default function VetTabLayout() {
           backgroundColor: colors.tabBg,
           borderTopWidth: 1,
           borderTopColor: colors.tabBorder,
-          height: 80,
-          paddingBottom: 16,
+          height: 56 + bottomInset,
+          paddingBottom: bottomInset,
           paddingTop: 8,
         },
         tabBarLabelStyle: { fontSize: 10, fontWeight: "500" },

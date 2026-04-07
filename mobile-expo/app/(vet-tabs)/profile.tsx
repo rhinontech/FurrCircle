@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, ScrollView, Image, Pressable, Switch } from "react-native";
-import { ChevronRight, CalendarDays, Users, Star, Clock, LogOut, Moon, Sun, UserCheck } from "lucide-react-native";
+import { ChevronRight, CalendarDays, Users, Star, Clock, LogOut, Moon, Sun, UserCheck, Stethoscope } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -14,10 +14,7 @@ const vetMenuItems = [
 
 export default function VetProfileScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
-  const { user, logout, switchUser } = useAuth();
-
-  // No other vets in production yet
-  const otherVets: any[] = [];
+  const { user, logout } = useAuth();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -28,24 +25,30 @@ export default function VetProfileScreen() {
           {/* Vet Hero Card */}
           <View style={{ backgroundColor: colors.heroBg, borderRadius: 28, padding: 24, marginBottom: 24 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-              <Image source={user?.avatar ?? require("../../assets/pet-cat.jpg")} style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)' }} resizeMode="cover" />
+              {user?.avatar ? (
+                 <Image source={{ uri: user.avatar }} style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)' }} resizeMode="cover" />
+              ) : (
+                <View style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                    <Stethoscope size={28} color="#fff" />
+                </View>
+              )}
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 18, fontWeight: '700', color: '#fff' }}>{user?.name || "Dr. Anonymous"}</Text>
-                <Text style={{ fontSize: 14, color: colors.heroSub, marginTop: 2 }}>{user?.role === 'veterinarian' ? "Verified Professional" : "Veterinarian"}</Text>
-                <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>PawsHub Partner</Text>
+                <Text style={{ fontSize: 14, color: colors.heroSub, marginTop: 2 }}>{user?.clinic_name || "Pet Clinic"}</Text>
+                <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{user?.specialty || "Veterinarian"}</Text>
               </View>
             </View>
             <View style={{ flexDirection: 'row', gap: 32, marginTop: 20 }}>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>{user?.rating}</Text>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>{user?.rating || "4.8"}</Text>
                 <Text style={{ fontSize: 12, color: colors.heroSub, marginTop: 2 }}>Rating</Text>
               </View>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>{user?.yearsExp} yrs</Text>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>{user?.yearsExp || "5"}+ M</Text>
                 <Text style={{ fontSize: 12, color: colors.heroSub, marginTop: 2 }}>Experience</Text>
               </View>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>48</Text>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>24</Text>
                 <Text style={{ fontSize: 12, color: colors.heroSub, marginTop: 2 }}>Patients</Text>
               </View>
             </View>
@@ -78,23 +81,6 @@ export default function VetProfileScreen() {
               );
             })}
           </View>
-
-          {/* Dev: Switch Vet */}
-          {otherVets.length > 0 && (
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>⚡ Dev: Switch Vet Account</Text>
-              {otherVets.map((v) => (
-                <Pressable key={v.id} onPress={async () => await switchUser(v)} style={{ backgroundColor: colors.bgCard, borderRadius: 14, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, marginBottom: 8 }}>
-                  <Image source={v.avatar} style={{ width: 40, height: 40, borderRadius: 20 }} resizeMode="cover" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>{v.name}</Text>
-                    <Text style={{ fontSize: 12, color: colors.textMuted }}>{v.clinic}</Text>
-                  </View>
-                  <ChevronRight size={16} color={colors.textMuted} />
-                </Pressable>
-              ))}
-            </View>
-          )}
 
           {/* Sign Out */}
           <Pressable onPress={async () => await logout()} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 16, backgroundColor: '#fff1f2', borderWidth: 1, borderColor: '#fecdd3' }}>

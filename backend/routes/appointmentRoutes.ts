@@ -5,6 +5,7 @@ import {
   getOwnerAppointments,
   getVetAppointments,
   updateAppointmentStatus,
+  getVetStats,
 } from "../controllers/appointmentController.ts";
 import { protect, ownerOnly, vetOnly } from "../middleware/authMiddleware.ts";
 
@@ -14,6 +15,7 @@ const router = express.Router();
 router.get("/vets", protect, getVets);
 
 // Appointment CRUD
+router.get("/vet/stats", protect, vetOnly, getVetStats);
 router.post("/", protect, ownerOnly, createAppointment);
 router.get("/owner", protect, ownerOnly, getOwnerAppointments);
 router.get("/vet", protect, vetOnly, getVetAppointments);

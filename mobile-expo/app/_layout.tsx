@@ -9,10 +9,10 @@ import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import React, { useEffect } from 'react';
 import '@/global.css';
 
-import NotificationBanner from '../components/ui/NotificationBanner';
 
 function GlobalHeader() {
   const { colors } = useTheme();
+  const router = useRouter();
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.border }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 20 }}>
@@ -20,7 +20,10 @@ function GlobalHeader() {
           <Heart size={24} color={colors.brand} fill={colors.brand} />
           <Text style={{ fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginLeft: 8 }}>PawsHub</Text>
         </View>
-        <Pressable style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}>
+        <Pressable
+          onPress={() => router.push('/notifications')}
+          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
+        >
           <Bell size={20} color={colors.textPrimary} />
           <View style={{ position: 'absolute', top: 8, right: 10, width: 8, height: 8, backgroundColor: '#f43f5e', borderRadius: 4, borderWidth: 1, borderColor: colors.bgCard }} />
         </Pressable>
@@ -68,7 +71,6 @@ function AppShell() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
-      {isLoggedIn && <NotificationBanner />}
       {isLoggedIn && <GlobalHeader />}
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
         <Stack.Screen name="onboarding" />
@@ -82,7 +84,18 @@ function AppShell() {
         <Stack.Screen name="health/records" />
         <Stack.Screen name="health/vaccines" />
         <Stack.Screen name="health/meds" />
+        <Stack.Screen name="health/add-record" />
+        <Stack.Screen name="health/add-vital" />
+        <Stack.Screen name="health/add-vaccine" />
+        <Stack.Screen name="health/add-allergy" />
         <Stack.Screen name="reminders/index" />
+        <Stack.Screen name="appointments/book" />
+        <Stack.Screen name="notifications/index" />
+        <Stack.Screen name="community/events" />
+        <Stack.Screen name="community/events/[id]" />
+        <Stack.Screen name="community/posts/[id]" />
+        <Stack.Screen name="community/chat/[id]" />
+        <Stack.Screen name="vets/[id]" />
       </Stack>
       <StatusBar style={isDark ? 'light' : 'dark'} />
     </GestureHandlerRootView>

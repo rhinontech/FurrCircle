@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Animated, Pressable, StyleSheet, Dimensions } from "react-native";
+import { useRouter } from "expo-router";
 import { Bell, X } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 
@@ -7,6 +8,7 @@ const { width } = Dimensions.get("window");
 
 export default function NotificationBanner() {
   const { colors } = useTheme();
+  const router = useRouter();
   const [visible, setVisible] = useState(false);
   const translateY = useState(new Animated.Value(-100))[0];
 
@@ -55,7 +57,13 @@ export default function NotificationBanner() {
         }
       ]}
     >
-      <View style={styles.content}>
+      <Pressable
+        onPress={() => {
+          hideNotification();
+          router.push('/notifications');
+        }}
+        style={styles.content}
+      >
         <View style={[styles.iconContainer, { backgroundColor: colors.brand + '15' }]}>
           <Bell size={20} color={colors.brand} />
         </View>
@@ -66,7 +74,7 @@ export default function NotificationBanner() {
         <Pressable onPress={hideNotification} style={styles.closeButton}>
           <X size={18} color={colors.textMuted} />
         </Pressable>
-      </View>
+      </Pressable>
     </Animated.View>
   );
 }

@@ -6,10 +6,14 @@ import {
   toggleLike,
   addComment,
   deleteComment,
+  getEvents,
 } from "../controllers/communityController.ts";
 import { protect } from "../middleware/authMiddleware.ts";
 
 const router = express.Router();
+
+// Events
+router.get("/events", protect, getEvents);
 
 // Feed & posts
 router.get("/feed", protect, getCommunityFeed);

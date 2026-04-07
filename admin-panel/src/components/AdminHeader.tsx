@@ -1,9 +1,11 @@
 import React from 'react';
 import { Search, Bell, ChevronRight } from "lucide-react";
 import { usePathname } from 'next/navigation';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 
 const AdminHeader = () => {
   const pathname = usePathname();
+  const { admin } = useAdminAuth();
   
   // Dynamic breadcrumbs based on route
   const getBreadcrumb = () => {
@@ -41,11 +43,16 @@ const AdminHeader = () => {
           
           <div className="flex items-center gap-3 ml-2 pl-4 border-l border-slate-200 group cursor-pointer">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-semibold text-slate-950 leading-none">Admin User</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Super Admin</p>
+              <p className="text-sm font-semibold text-slate-950 leading-none">{admin?.name || "Admin User"}</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">{admin?.title || "Super Admin"}</p>
             </div>
             <div className="w-10 h-10 bg-primary-100 text-primary-900 rounded-full flex items-center justify-center font-bold text-sm ring-1 ring-primary-900/5 group-hover:ring-primary-900/20 transition-all duration-200 shadow-sm">
-              AD
+              {(admin?.name || "Admin User")
+                .split(" ")
+                .map((part) => part[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()}
             </div>
           </div>
         </div>
