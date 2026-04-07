@@ -44,6 +44,8 @@ export default function RootLayout({
         <Navbar />
         {children}
         <Footer />
+
+        <script src="/oneko.js"></script>
         </body>
     </html>
   );
