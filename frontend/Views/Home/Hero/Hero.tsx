@@ -4,6 +4,7 @@ import Image from "next/image";
 import { FadeInUp } from "@/components/AnimationProvider";
 import { motion, useAnimation } from "framer-motion";
 import { useEffect } from "react";
+import Button from "@/components/Common/Button";
 
 export const PawPrint = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 40 40" className={className} xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink">
@@ -149,9 +150,7 @@ export function Hero() {
         </FadeInUp>
 
         <FadeInUp delay={0.3}>
-          <button className="h-14 px-10 rounded-full text-lg font-medium bg-primary hover:bg-[#8A7160] text-white transition-colors">
-            Book Now
-          </button>
+          <Button text="Book now" />
         </FadeInUp>
       </div>
 

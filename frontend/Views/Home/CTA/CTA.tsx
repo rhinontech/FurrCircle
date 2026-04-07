@@ -2,6 +2,7 @@ import { FadeInUp } from '@/components/AnimationProvider'
 import Image from 'next/image'
 import React from 'react'
 import { BouncingElement, PawPrint } from '../Hero/Hero'
+import Button from '@/components/Common/Button'
 
 const CTA = () => {
     return (
@@ -14,9 +15,7 @@ const CTA = () => {
                     <h2 className="text-4xl md:text-6xl max-w-2xl max-md:text-center font-heading text-foreground mb-20 max-md:mb-10">Ready to Give Your Pet the Best Care? Contact Us Today!</h2>
                 
 
-                <button className="h-14 px-10 w-fit rounded-full text-lg font-medium bg-primary hover:bg-[#8A7160] text-white transition-colors">
-                    Claim Us Now
-                </button>
+                <Button text=' Claim Us Now' />
             </div>
             </FadeInUp>
 

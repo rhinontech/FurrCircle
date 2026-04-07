@@ -8,6 +8,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-section-bg: var(--section-bg);
+  --color-muted-primary: var(--muted-primary);
   --font-sans: var(--font-inter);
   --font-heading: var(--font-dm-serif);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -52,11 +53,12 @@
   --background: #F9F8F6;
   --foreground: #1A1A1A;
   --card: #FFFFFF;
-  --section-bg:#e8e1da;
+  --section-bg: #e8e1da;
   --card-foreground: #1A1A1A;
   --popover: #FFFFFF;
   --popover-foreground: #1A1A1A;
   --primary: #987D6B;
+  --muted-primary: #bda697;
   --primary-foreground: #FFFFFF;
   --secondary: #EDECED;
   --secondary-foreground: #1A1A1A;
@@ -122,9 +124,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans;
   }

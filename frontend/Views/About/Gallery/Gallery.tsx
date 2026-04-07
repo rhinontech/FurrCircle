@@ -53,7 +53,7 @@ export function Gallery() {
               className="relative w-[200px] h-[280px] md:w-[300px] md:h-[350px] rounded-[1rem] overflow-hidden shrink-0 shadow-lg"
             >
               <motion.div
-                className="w-full h-full cursor-pointer"
+                className="relative w-full h-full cursor-pointer"
                 whileHover={{ scale: 1.08 }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
               >
