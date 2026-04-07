@@ -5,14 +5,14 @@ import { BouncingElement, PawPrint } from '@/Views/Home/Hero/Hero'
 
 const Info = () => {
     return (
-        <div className='flex  max-md:flex-col gap-20 relative px-28 pt-50 max-md:px-5 max-md:py-10'>
+        <div className='flex max-md:flex-col-reverse max-md:items-center gap-20 relative px-28 pt-50 max-md:px-5 max-md:py-10'>
 
             {/* left side */}
             <BouncingElement
                 axis="rotate"
                 startVal={10}
                 endVal={40}
-                className="absolute z-10 top-[28%] max-md:top-[38%] max-md:left-[10%] left-[2%] w-48 h-48 text-primary/30"
+                className="absolute z-10 top-[28%] max-md:top-[50%] max-md:left-[5%] left-[2%] w-48 h-auto max-md:w-20 text-primary/30"
             >
                 <PawPrint className="w-full h-full" />
             </BouncingElement>
@@ -20,7 +20,7 @@ const Info = () => {
                 axis="rotate"
                 startVal={-10}
                 endVal={-40}
-                className="absolute top-[15%] right-[7%] w-20 h-20 text-primary/70"
+                className="absolute top-[15%] right-[7%] w-20 h-20 max-md:top-[75%] max-md:right-[5%] text-primary/70"
             >
                 <PawPrint className="w-full h-full" />
             </BouncingElement>
@@ -28,12 +28,12 @@ const Info = () => {
                 axis="rotate"
                 startVal={40}
                 endVal={70}
-                className="absolute z-10 bottom-10 max-md:left-[10%] left-[45%] w-18 h-18 text-primary/30"
+                className="absolute z-10 bottom-10 max-md:left-[10%] left-[45%] max-md:hidden w-18 h-18 text-primary/30"
             >
                 <PawPrint className="w-full h-full" />
             </BouncingElement>
 
-            <div className='max-xl:hidden w-1/2 h-[450px] flex items-center justify-center'>
+            <div className=' w-1/2 h-[450px] max-md:hidden max-sm:block max-md:h-[300px] max-md:w-auto flex items-center justify-center'>
                 <FadeInUp>
                     <Image
                         src="/about-us/aboutInfo.png"
@@ -45,7 +45,7 @@ const Info = () => {
                 </FadeInUp>
             </div>
 
-            <div className="hidden max-xl:block  text-center">
+            {/* <div className="hidden max-xl:block  text-center">
                 <Image
                     src="/CTADog.png"
                     alt="Pet Care"
@@ -57,7 +57,7 @@ const Info = () => {
       max-sm:w-[400px]
     "
                 />
-            </div>
+            </div> */}
 
             {/* right side */}
             <FadeInUp delay={0.5}>

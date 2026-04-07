@@ -25,18 +25,18 @@ const teamMembers = [
 
 export function Teams() {
     return (
-        <div className="py-32 max-md:py-10 relative">
+        <div className="py-32 max-md:py-20 relative">
 
             <div className="w-full h-[60%] bottom-0 absolute bg-[url('/reverseSection.svg')] bg-cover bg-bottom bg-no-repeat" />
 
             <div className="max-w-7xl flex flex-col mx-auto gap-10">
-                <div className="flex justify-between items-end px-6 lg:px-0">
+                <div className="flex justify-between max-md:flex-col max-md:text-center gap-10 items-end px-5 lg:px-0">
                     <div className="flex flex-col gap-4">
                         <h2 className="text-5xl md:text-7xl font-heading text-foreground">
                             Our PetPals Team
                         </h2>
                     </div>
-                    <p className="text-muted-foreground max-w-sm text-sm md:text-base font-normal">
+                    <p className="text-muted-foreground max-w-sm text-md md:text-base font-normal">
                         Meet the Passionate Specialists Who Make PetPals a Home for Your Beloved Pets
                     </p>
                 </div>

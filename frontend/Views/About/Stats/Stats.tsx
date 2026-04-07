@@ -43,17 +43,17 @@ const Stats = () => {
 
 
     return (
-        <div className='py-32 relative max-md:py-10 bg-section-bg'>
-            <div className='max-w-7xl mx-auto flex justify-between'>
+        <div className='py-32 relative max-md:py-10 bg-section-bg px-5'>
+            <div className='max-w-7xl mx-auto flex max-md:flex-col gap-10 justify-between'>
 
                 {/* Left side */}
-                <div className='flex items-center'>
-                    <Image src={'/about-us/aboutStats.png'} alt='aboutStats' width={400} height={400} />
+                <div className='flex items-center max-md:justify-center'>
+                    <Image src={'/about-us/aboutStats.png'} alt='aboutStats' width={400} height={400} className='max-md:w-[300px] h-auto' />
                 </div>
 
                 {/* Right side */}
 
-                <div className='flex flex-col gap-10'>
+                <div className='flex flex-col max-md:items-center gap-10'>
                     {stats.map((stat) => (
                         <FadeInUp key={stat.value}>
                             <div key={stat.value} className='flex max-w-lg items-center gap-5'>
