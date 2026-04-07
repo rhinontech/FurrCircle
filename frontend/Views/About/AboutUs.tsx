@@ -11,7 +11,7 @@ import { AboutCTA } from './AboutCTA/AboutCTA'
 const AboutUs = () => {
   return (
     <>
-    <main className="flex-1 flex flex-col min-h-screen">
+    <main className="flex-1 flex flex-col min-h-screen max-md:overflow-x-hidden max-md:overflow-y-clip ">
         <Hero />
         <Info />
         <Values />

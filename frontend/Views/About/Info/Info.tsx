@@ -5,7 +5,7 @@ import { BouncingElement, PawPrint } from '@/Views/Home/Hero/Hero'
 
 const Info = () => {
     return (
-        <div className='flex  max-md:flex-col-reverse max-md:items-center gap-20 relative px-28 pt-50 max-md:px-5 max-md:py-10'>
+        <div className='flex max-md:flex-col-reverse max-md:items-center gap-20 relative px-28 pt-50 max-md:px-5 max-md:py-10'>
 
             {/* left side */}
             <BouncingElement

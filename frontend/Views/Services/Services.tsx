@@ -6,7 +6,7 @@ import ServiceCTA from './ServiceCTA/ServiceCTA'
 const Services = () => {
   return (
     <>
-    <main className="flex-1 flex flex-col min-h-screen">
+    <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
         <Hero />
         <ServiceSection />
         <ServiceCTA />
