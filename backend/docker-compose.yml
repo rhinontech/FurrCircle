@@ -1,6 +1,17 @@
 name: pawshub
 services:
-
+  db:
+    image: postgres:16-alpine
+    container_name: pawshub-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-pawshub_dev}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
 
   backend:
     build:
@@ -8,11 +19,15 @@ services:
       dockerfile: Dockerfile
     container_name: pawshub-backend
     restart: always
+    depends_on:
+      - db
     ports:
       - "5001:5001"
-      - "5000:5000"
     env_file:
       - .env
     volumes:
       - .:/app
       - /app/node_modules
+
+volumes:
+  postgres-data:
