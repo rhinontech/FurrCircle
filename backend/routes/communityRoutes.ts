@@ -7,6 +7,7 @@ import {
   addComment,
   deleteComment,
   getEvents,
+  getChats,
 } from "../controllers/communityController.ts";
 import { protect } from "../middleware/authMiddleware.ts";
 
@@ -14,6 +15,9 @@ const router = express.Router();
 
 // Events
 router.get("/events", protect, getEvents);
+
+// Chats (stub — returns empty list until chat feature is built)
+router.get("/chats", protect, getChats);
 
 // Feed & posts
 router.get("/feed", protect, getCommunityFeed);

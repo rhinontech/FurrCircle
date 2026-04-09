@@ -20,3 +20,19 @@ docker-compose up -d --build
 - **View logs**: `docker-compose logs -f backend`
 - **Stop services**: `docker-compose down`
 - **Restart services**: `docker-compose restart`
+
+## Admin Bootstrap
+
+Public registration no longer allows creating `admin` users. Bootstrap or rotate an admin account with:
+
+```bash
+docker exec pawshub-backend npm run bootstrap-admin -- --email alex@rhinonlabs.com --name Alex
+```
+
+Optional flags:
+
+- `--password <value>` to set an explicit password
+- `--email <value>` to target a different admin account
+- `--name <value>` to set the display name
+
+If `--password` is omitted, the script generates a temporary password and prints it once.

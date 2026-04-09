@@ -2,14 +2,13 @@ import type { Request, Response } from "express";
 import db from "../models/index.ts";
 import { Op } from "sequelize";
 
-const { Appointment, User, Pet } = db as any;
-
-// @desc    List all available veterinarians
+// @desc    List all verified veterinarians
 // @route   GET /api/vets
 export const getVets = async (req: any, res: Response): Promise<void> => {
   try {
-    const vets = await User.findAll({
-      where: { role: 'veterinarian', isVerified: true },
+    const { vets: Vet } = db as any;
+    const vets = await Vet.findAll({
+      where: { isVerified: true },
       attributes: { exclude: ['password'] }
     });
     res.json(vets);
@@ -22,6 +21,7 @@ export const getVets = async (req: any, res: Response): Promise<void> => {
 // @route   POST /api/appointments
 export const createAppointment = async (req: any, res: Response): Promise<void> => {
   try {
+    const { appointments: Appointment, pets: Pet, vets: Vet } = db as any;
     const { vetId, petId, date, time, reason } = req.body;
 
     // Verify the pet belongs to this owner
@@ -32,7 +32,7 @@ export const createAppointment = async (req: any, res: Response): Promise<void> 
     }
 
     // Verify vet exists and is verified
-    const vet = await User.findOne({ where: { id: vetId, role: 'veterinarian' } });
+    const vet = await Vet.findOne({ where: { id: vetId, isVerified: true } });
     if (!vet) {
       res.status(404).json({ message: "Veterinarian not found" });
       return;
@@ -58,10 +58,11 @@ export const createAppointment = async (req: any, res: Response): Promise<void> 
 // @route   GET /api/appointments/owner
 export const getOwnerAppointments = async (req: any, res: Response): Promise<void> => {
   try {
+    const { appointments: Appointment, pets: Pet, vets: Vet } = db as any;
     const appointments = await Appointment.findAll({
       where: { ownerId: req.user.id },
       include: [
-        { model: User, as: 'veterinarian', attributes: ['id', 'name', 'email', 'clinic_name', 'avatar_url'] },
+        { model: Vet, as: 'veterinarian', attributes: ['id', 'name', 'email', 'hospital_name', 'avatar_url'] },
         { model: Pet, as: 'pet', attributes: ['id', 'name', 'species', 'breed', 'avatar_url'] },
       ],
       order: [['date', 'DESC'], ['time', 'DESC']],
@@ -76,6 +77,7 @@ export const getOwnerAppointments = async (req: any, res: Response): Promise<voi
 // @route   GET /api/appointments/vet
 export const getVetAppointments = async (req: any, res: Response): Promise<void> => {
   try {
+    const { appointments: Appointment, users: User, pets: Pet } = db as any;
     const appointments = await Appointment.findAll({
       where: { vetId: req.user.id },
       include: [
@@ -94,6 +96,7 @@ export const getVetAppointments = async (req: any, res: Response): Promise<void>
 // @route   PATCH /api/appointments/:id/status
 export const updateAppointmentStatus = async (req: any, res: Response): Promise<void> => {
   try {
+    const { appointments: Appointment } = db as any;
     const { status, notes } = req.body;
     const allowedStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
 
@@ -108,7 +111,6 @@ export const updateAppointmentStatus = async (req: any, res: Response): Promise<
       return;
     }
 
-    // Owners can only cancel. Vets can confirm, cancel, or complete.
     const isOwner = appointment.ownerId === req.user.id;
     const isVet = appointment.vetId === req.user.id;
 
@@ -131,33 +133,26 @@ export const updateAppointmentStatus = async (req: any, res: Response): Promise<
     res.status(500).json({ message: error.message });
   }
 };
+
 // @desc    Get stats for the vet dashboard
 // @route   GET /api/appointments/vet/stats
 export const getVetStats = async (req: any, res: Response): Promise<void> => {
   try {
+    const { appointments: Appointment, vets: Vet } = db as any;
     const today = new Date().toISOString().split('T')[0];
-    
-    const todayCount = await Appointment.count({
-      where: { vetId: req.user.id, date: today }
-    });
 
-    const pendingCount = await Appointment.count({
-      where: { vetId: req.user.id, status: 'pending' }
-    });
-
-    const totalPatients = await Appointment.count({
-      where: { vetId: req.user.id },
-      distinct: true,
-      col: 'petId'
-    });
-
-    const vet = await User.findByPk(req.user.id, { attributes: ['rating'] });
+    const [todayCount, pendingCount, totalPatients, vet] = await Promise.all([
+      Appointment.count({ where: { vetId: req.user.id, date: today } }),
+      Appointment.count({ where: { vetId: req.user.id, status: 'pending' } }),
+      Appointment.count({ where: { vetId: req.user.id }, distinct: true, col: 'petId' }),
+      Vet.findByPk(req.user.id, { attributes: ['rating'] }),
+    ]);
 
     res.json({
       todayAppointments: todayCount,
       totalPatients,
-      avgRating: vet?.rating || 4.8,
-      pendingAppointments: pendingCount
+      avgRating: vet?.rating || 0,
+      pendingAppointments: pendingCount,
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });

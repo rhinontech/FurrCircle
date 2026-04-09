@@ -11,17 +11,21 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.UUID,
                 defaultValue: DataTypes.UUIDV4
             },
-            owner_id: {
+            // Maps to existing 'owner_id' column in DB
+            ownerId: {
                 type: DataTypes.UUID,
                 allowNull: false,
+                field: 'owner_id',
             },
             name: {
                 type: DataTypes.STRING,
                 allowNull: false,
             },
-            profile_photo: {
+            // Maps to existing 'profile_photo' column in DB
+            avatar_url: {
                 type: DataTypes.STRING,
                 allowNull: true,
+                field: 'profile_photo',
             },
             species: {
                 type: DataTypes.STRING,
@@ -51,19 +55,37 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
-            height: {
+            // Maps to existing 'is_adoption_open' column in DB
+            isAdoptionOpen: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+                field: 'is_adoption_open',
+            },
+            // Maps to existing 'is_foster_open' column in DB
+            isFosterOpen: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+                field: 'is_foster_open',
+            },
+            // New fields — alter:true will ADD these columns
+            age: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+            city: {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
-            is_adoption_open: {
-                type: DataTypes.BOOLEAN,
-                allowNull: false,
-                defaultValue: false,
+            microchip_id: {
+                type: DataTypes.STRING,
+                allowNull: true,
             },
-            is_foster_open: {
-                type: DataTypes.BOOLEAN,
-                allowNull: false,
-                defaultValue: false,
+            healthStatus: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                defaultValue: 'Healthy',
             },
         },
         {
@@ -73,8 +95,10 @@ export default (sequelize: Sequelize) => {
     );
 
     (Pet as any).associate = (models: any) => {
-        if (models.User) Pet.belongsTo(models.User, { foreignKey: 'owner_id', as: 'owner' });
-        if (models.Appointment) Pet.hasMany(models.Appointment, { foreignKey: 'pet_id', as: 'appointments' });
+        if (models.users) Pet.belongsTo(models.users, { foreignKey: 'ownerId', as: 'owner' });
+        if (models.appointments) Pet.hasMany(models.appointments, { foreignKey: 'petId', as: 'Appointments' });
+        if (models.vaccines) Pet.hasMany(models.vaccines, { foreignKey: 'petId', as: 'Vaccines' });
+        if (models.medications) Pet.hasMany(models.medications, { foreignKey: 'petId', as: 'Medications' });
     };
 
     return Pet;

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
@@ -1244,22 +1245,69 @@ const handleReminders = async (db: MockDb, endpoint: string, method: HttpMethod)
   return null;
 };
 
+// ─── Real HTTP Client ─────────────────────────────────────────────────────────
+// Replaces the mock dispatcher above. The mock handlers are kept as a fallback
+// for offline/demo mode — set EXPO_PUBLIC_USE_MOCK=true to re-enable them.
+
+const getBaseUrl = () => {
+  // In Expo, use Constants.expoConfig?.extra?.apiUrl for production builds
+  // For development, you can set EXPO_PUBLIC_API_URL in app.json extra field
+  const expoExtra = Constants.expoConfig?.extra;
+  return (expoExtra?.apiUrl as string | undefined) || 'http://localhost:5001';
+};
+
+const BASE_URL = getBaseUrl() + '/api';
+const USE_MOCK = Constants.expoConfig?.extra?.useMock === true;
+
+// ── In-memory token cache ─────────────────────────────────────────────────────
+// Avoids AsyncStorage round-trip on every request and eliminates the race
+// condition where navigation fires before AsyncStorage.setItem completes.
+let _authToken: string | null = null;
+
+export const setAuthToken = (token: string | null) => { _authToken = token; };
+export const clearAuthToken = () => { _authToken = null; };
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const apiCall = async (endpoint: string, options: RequestOptions = {}) => {
-  const { method = 'GET', body } = options;
+  const { method = 'GET', body, headers: extraHeaders = {} } = options;
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const db = await ensureDb();
 
-  await delay();
-
-  const handlers = [handleAuth, handlePets, handleHealth, handleAppointments, handleCommunity, handleReminders];
-  for (const handler of handlers) {
-    const result = await handler(db, normalizedEndpoint, method, body);
-    if (result !== null) {
-      return clone(result);
+  // ── Mock fallback ──────────────────────────────────────────────────────────
+  if (USE_MOCK) {
+    const db = await ensureDb();
+    await delay();
+    const handlers = [handleAuth, handlePets, handleHealth, handleAppointments, handleCommunity, handleReminders];
+    for (const handler of handlers) {
+      const result = await handler(db, normalizedEndpoint, method, body);
+      if (result !== null) return clone(result);
     }
+    throw new Error(`Mock API route not implemented: ${method} ${normalizedEndpoint}`);
   }
 
-  throw new Error(`Mock API route not implemented: ${method} ${normalizedEndpoint}`);
+  // ── Real HTTP ──────────────────────────────────────────────────────────────
+  // Use in-memory cache first; fall back to AsyncStorage (e.g. on cold start
+  // before AuthContext has run setAuthToken).
+  const token = _authToken ?? await AsyncStorage.getItem('user_token');
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...extraHeaders,
+  };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const response = await fetch(`${BASE_URL}${normalizedEndpoint}`, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error((data as { message?: string }).message || `Request failed: ${response.status}`);
+  }
+
+  return data;
 };
 
 export const api = {

@@ -24,21 +24,41 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
-            verified: {
+            // New fields — alter:true will ADD these columns to the existing table
+            role: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: 'owner', // owner | shelter | admin
+            },
+            // Maps to existing 'verified' column in DB
+            isVerified: {
                 type: DataTypes.BOOLEAN,
                 allowNull: false,
-                defaultValue: false,
+                defaultValue: true,
+                field: 'verified',
             },
-            profile_photo: {
+            // Maps to existing 'profile_photo' column in DB
+            avatar_url: {
                 type: DataTypes.STRING,
                 allowNull: true,
+                field: 'profile_photo',
             },
-            phone_number: {
+            // Maps to existing 'phone_number' column in DB
+            phone: {
                 type: DataTypes.STRING,
                 allowNull: true,
-                unique: true,
+                field: 'phone_number',
             },
             address: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            // New fields
+            bio: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            city: {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
@@ -50,9 +70,9 @@ export default (sequelize: Sequelize) => {
     );
 
     (User as any).associate = (models: any) => {
-        if (models.Pet) User.hasMany(models.Pet, { foreignKey: 'owner_id', as: 'pets' });
-        if (models.VetReview) User.hasMany(models.VetReview, { foreignKey: 'user_id', as: 'vetReviews' });
-        if (models.Appointment) User.hasMany(models.Appointment, { foreignKey: 'user_id', as: 'appointments' });
+        if (models.pets) User.hasMany(models.pets, { foreignKey: 'ownerId', as: 'pets' });
+        if (models.vet_reviews) User.hasMany(models.vet_reviews, { foreignKey: 'userId', as: 'vetReviews' });
+        if (models.appointments) User.hasMany(models.appointments, { foreignKey: 'ownerId', as: 'ownerAppointments' });
     };
 
     return User;

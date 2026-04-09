@@ -1,12 +1,11 @@
 import type { Request, Response } from "express";
 import db from "../models/index.ts";
 
-const { Post, User, Comment, Like } = db as any;
-
 // @desc    Submit a new post for moderation
 // @route   POST /api/community/posts
 export const createCommunityPost = async (req: any, res: Response): Promise<void> => {
   try {
+    const { posts: Post } = db as any;
     const { content, category, imageUrl } = req.body;
 
     const post = await Post.create({
@@ -27,6 +26,7 @@ export const createCommunityPost = async (req: any, res: Response): Promise<void
 // @route   GET /api/community/feed
 export const getCommunityFeed = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { posts: Post, users: User, comments: Comment, likes: Like } = db as any;
     const posts = await Post.findAll({
       where: { status: 'approved' },
       include: [
@@ -51,6 +51,7 @@ export const getCommunityFeed = async (req: Request, res: Response): Promise<voi
 // @route   GET /api/community/posts/:id
 export const getPostById = async (req: any, res: Response): Promise<void> => {
   try {
+    const { posts: Post, users: User, comments: Comment, likes: Like } = db as any;
     const post = await Post.findOne({
       where: { id: req.params.id, status: 'approved' },
       include: [
@@ -79,6 +80,7 @@ export const getPostById = async (req: any, res: Response): Promise<void> => {
 // @route   POST /api/community/posts/:id/like
 export const toggleLike = async (req: any, res: Response): Promise<void> => {
   try {
+    const { posts: Post, likes: Like } = db as any;
     const post = await Post.findOne({ where: { id: req.params.id, status: 'approved' } });
     if (!post) {
       res.status(404).json({ message: "Post not found" });
@@ -105,6 +107,7 @@ export const toggleLike = async (req: any, res: Response): Promise<void> => {
 // @route   POST /api/community/posts/:id/comment
 export const addComment = async (req: any, res: Response): Promise<void> => {
   try {
+    const { posts: Post, users: User, comments: Comment } = db as any;
     const { text } = req.body;
 
     if (!text || !text.trim()) {
@@ -139,6 +142,7 @@ export const addComment = async (req: any, res: Response): Promise<void> => {
 // @route   DELETE /api/community/comments/:id
 export const deleteComment = async (req: any, res: Response): Promise<void> => {
   try {
+    const { comments: Comment } = db as any;
     const comment = await Comment.findOne({ where: { id: req.params.id, userId: req.user.id } });
     if (!comment) {
       res.status(404).json({ message: "Comment not found or not yours" });
@@ -152,22 +156,32 @@ export const deleteComment = async (req: any, res: Response): Promise<void> => {
   }
 };
 
+// @desc    Get community chats (placeholder — returns empty list until chat feature is built)
+// @route   GET /api/community/chats
+export const getChats = async (_req: Request, res: Response): Promise<void> => {
+  res.json([]);
+};
+
 // @desc    Get upcoming events
 // @route   GET /api/community/events
 export const getEvents = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { Event, User } = db as any;
+    const { events: Event, users: User, vets: Vet } = db as any;
     let events = await Event.findAll({
       order: [['date', 'ASC']]
     });
 
     if (events.length === 0) {
       // Seed some initial demo events
-      const user = await User.findOne({ where: { role: 'veterinarian' } }) || (req as any).user;
+      const organizer =
+        await User.findOne({ where: { role: 'admin' } }) ||
+        await User.findOne({ where: { role: 'owner' } }) ||
+        await Vet.findOne() ||
+        (req as any).user;
       
       const seedEvents = [
-        { organizerId: user.id || "1", title: "Puppy Social Mixer", date: "2026-04-15", time: "2:00 PM", location: "Central Park", category: "Social" },
-        { organizerId: user.id || "1", title: "Vaccination Drive", date: "2026-04-20", time: "9:00 AM", location: "Downtown Center", category: "Health" }
+        { organizerId: organizer?.id || null, title: "Puppy Social Mixer", date: "2026-04-15", time: "2:00 PM", location: "Central Park", category: "Social" },
+        { organizerId: organizer?.id || null, title: "Vaccination Drive", date: "2026-04-20", time: "9:00 AM", location: "Downtown Center", category: "Health" }
       ];
       
       await Event.bulkCreate(seedEvents);

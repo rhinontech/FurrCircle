@@ -1,5 +1,5 @@
 import express from "express";
-import { getPendingPosts, moderatePost, getUnverifiedVets, verifyVet, getAllPets, getAllUsers, getAdminStats } from "../controllers/adminController.ts";
+import { getPendingPosts, moderatePost, getUnverifiedVets, verifyVet, getAllPets, getAllUsers, getAllVets, getAdminStats } from "../controllers/adminController.ts";
 import { protect, adminOnly } from "../middleware/authMiddleware.ts";
 
 const router = express.Router();
@@ -11,7 +11,8 @@ router.get("/stats", protect, adminOnly, getAdminStats);
 router.get("/users", protect, adminOnly, getAllUsers);
 router.get("/pets", protect, adminOnly, getAllPets);
 
-// Vet verification (roadmap naming)
+// Vet management
+router.get("/vets", protect, adminOnly, getAllVets);
 router.get("/vets/pending", protect, adminOnly, getUnverifiedVets);
 router.patch("/vets/:vetId/verify", protect, adminOnly, verifyVet);
 

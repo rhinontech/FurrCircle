@@ -1,9 +1,8 @@
 import type { Request, Response } from "express";
 import db from "../models/index.ts";
 
-const { Pet, Vital, Vaccine, Medication, MedicalRecord } = db as any;
-
 const verifyPetOwnership = async (petId: string, userId: string): Promise<boolean> => {
+  const { pets: Pet } = db as any;
   const pet = await Pet.findOne({ where: { id: petId, ownerId: userId } });
   return !!pet;
 };
@@ -11,6 +10,7 @@ const verifyPetOwnership = async (petId: string, userId: string): Promise<boolea
 // --- Vitals ---
 export const getVitals = async (req: any, res: Response): Promise<void> => {
   try {
+    const { vitals: Vital } = db as any;
     if (!(await verifyPetOwnership(req.params.petId, req.user.id))) {
       res.status(403).json({ message: "Not authorized for this pet" });
       return;
@@ -24,6 +24,7 @@ export const getVitals = async (req: any, res: Response): Promise<void> => {
 
 export const addVital = async (req: any, res: Response): Promise<void> => {
   try {
+    const { vitals: Vital } = db as any;
     if (!(await verifyPetOwnership(req.params.petId, req.user.id))) {
       res.status(403).json({ message: "Not authorized for this pet" });
       return;
@@ -38,6 +39,7 @@ export const addVital = async (req: any, res: Response): Promise<void> => {
 // --- Vaccines ---
 export const getVaccines = async (req: any, res: Response): Promise<void> => {
   try {
+    const { vaccines: Vaccine } = db as any;
     if (!(await verifyPetOwnership(req.params.petId, req.user.id))) {
       res.status(403).json({ message: "Not authorized for this pet" });
       return;
@@ -51,6 +53,7 @@ export const getVaccines = async (req: any, res: Response): Promise<void> => {
 
 export const addVaccine = async (req: any, res: Response): Promise<void> => {
   try {
+    const { vaccines: Vaccine } = db as any;
     if (!(await verifyPetOwnership(req.params.petId, req.user.id))) {
       res.status(403).json({ message: "Not authorized for this pet" });
       return;
@@ -65,6 +68,7 @@ export const addVaccine = async (req: any, res: Response): Promise<void> => {
 // --- Medications ---
 export const getMedications = async (req: any, res: Response): Promise<void> => {
   try {
+    const { medications: Medication } = db as any;
     if (!(await verifyPetOwnership(req.params.petId, req.user.id))) {
       res.status(403).json({ message: "Not authorized for this pet" });
       return;
@@ -78,6 +82,7 @@ export const getMedications = async (req: any, res: Response): Promise<void> => 
 
 export const addMedication = async (req: any, res: Response): Promise<void> => {
   try {
+    const { medications: Medication } = db as any;
     if (!(await verifyPetOwnership(req.params.petId, req.user.id))) {
       res.status(403).json({ message: "Not authorized for this pet" });
       return;
@@ -92,6 +97,7 @@ export const addMedication = async (req: any, res: Response): Promise<void> => {
 // --- Medical Records ---
 export const getMedicalRecords = async (req: any, res: Response): Promise<void> => {
   try {
+    const { medical_records: MedicalRecord } = db as any;
     if (!(await verifyPetOwnership(req.params.petId, req.user.id))) {
       res.status(403).json({ message: "Not authorized for this pet" });
       return;
@@ -105,6 +111,7 @@ export const getMedicalRecords = async (req: any, res: Response): Promise<void> 
 
 export const addMedicalRecord = async (req: any, res: Response): Promise<void> => {
   try {
+    const { medical_records: MedicalRecord } = db as any;
     if (!(await verifyPetOwnership(req.params.petId, req.user.id))) {
       res.status(403).json({ message: "Not authorized for this pet" });
       return;

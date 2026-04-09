@@ -2,13 +2,12 @@ import type { Request, Response } from "express";
 import db from "../models/index.ts";
 import { Op } from "sequelize";
 
-const { Pet } = db as any;
 
 // @desc    Get logged in user's pets
 // @route   GET /api/pets
 export const getMyPets = async (req: any, res: Response): Promise<void> => {
   try {
-    const { Appointment } = db as any;
+    const { pets: Pet, appointments: Appointment } = db as any;
     const pets = await Pet.findAll({
       where: { ownerId: req.user.id }
     });
@@ -40,6 +39,7 @@ export const getMyPets = async (req: any, res: Response): Promise<void> => {
 // @route   POST /api/pets
 export const createPet = async (req: any, res: Response): Promise<void> => {
   try {
+    const { pets: Pet } = db as any;
     const { name, species, breed, age, weight, city, birth_date, gender, microchip_id, avatar_url, healthStatus } = req.body;
 
     const pet = await Pet.create({
@@ -67,6 +67,7 @@ export const createPet = async (req: any, res: Response): Promise<void> => {
 // @route   PATCH /api/pets/:id/listing
 export const updateListingStatus = async (req: any, res: Response): Promise<void> => {
   try {
+    const { pets: Pet } = db as any;
     const { isAdoptionOpen, isFosterOpen } = req.body;
     
     const pet = await Pet.findOne({ where: { id: req.params.id, ownerId: req.user.id } });
@@ -90,7 +91,12 @@ export const updateListingStatus = async (req: any, res: Response): Promise<void
 // @route   GET /api/pets/:id
 export const getPetById = async (req: any, res: Response): Promise<void> => {
   try {
-    const { Pet, Vaccine, Medication, Appointment } = db as any;
+    const {
+      pets: Pet,
+      vaccines: Vaccine,
+      medications: Medication,
+      appointments: Appointment,
+    } = db as any;
     
     // Only owner or vet can view detailed records, but for now we enforce owner
     const pet = await Pet.findOne({ 
@@ -116,8 +122,9 @@ export const getPetById = async (req: any, res: Response): Promise<void> => {
 // @route   PUT /api/pets/:id
 export const updatePet = async (req: any, res: Response): Promise<void> => {
   try {
+    const { pets: Pet } = db as any;
     const pet = await Pet.findOne({ where: { id: req.params.id, ownerId: req.user.id } });
-    
+
     if (!pet) {
       res.status(404).json({ message: 'Pet not found' });
       return;
@@ -142,6 +149,7 @@ export const updatePet = async (req: any, res: Response): Promise<void> => {
 // @route   DELETE /api/pets/:id
 export const deletePet = async (req: any, res: Response): Promise<void> => {
   try {
+    const { pets: Pet } = db as any;
     const pet = await Pet.findOne({ where: { id: req.params.id, ownerId: req.user.id } });
     
     if (!pet) {
@@ -159,7 +167,7 @@ export const deletePet = async (req: any, res: Response): Promise<void> => {
 // @route   GET /api/pets/discover
 export const discoverPets = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { Pet, User } = db as any;
+    const { pets: Pet, users: User } = db as any;
     const pets = await Pet.findAll({
       where: {
         [Op.or]: [

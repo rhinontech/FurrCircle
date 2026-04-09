@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "node --experimental-strip-types --watch app.ts",
-    "start": "node --experimental-strip-types app.ts"
+    "start": "node --experimental-strip-types app.ts",
+    "bootstrap-admin": "node --experimental-strip-types scripts/bootstrapAdmin.ts",
+    "seed-demo": "node --experimental-strip-types scripts/seedDemoAccounts.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
