@@ -41,15 +41,39 @@ for (const file of filesInDir) {
   db[model.name] = model;
 }
 
-// 3. Setup associations
-Object.keys(db).forEach((modelName) => {
-  if (db[modelName].associate) {
-    db[modelName].associate(db);
-  }
-});
+// User <-> Pet (Owner)
+db.pets.belongsTo(db.users, { foreignKey: 'owner_id', as: 'owner' });
+db.users.hasMany(db.pets, { foreignKey: 'owner_id', as: 'pets' });
+
+// Vet <-> VetReview
+db.vet_reviews.belongsTo(db.vets, { foreignKey: 'vet_id', as: 'vet' });
+db.vets.hasMany(db.vet_reviews, { foreignKey: 'vet_id', as: 'reviews' });
+
+// User <-> VetReview
+db.vet_reviews.belongsTo(db.users, { foreignKey: 'user_id', as: 'user' });
+db.users.hasMany(db.vet_reviews, { foreignKey: 'user_id', as: 'vetReviews' });
+
+// Vet <-> Appointment
+db.appointments.belongsTo(db.vets, { foreignKey: 'vet_id', as: 'vet' });
+db.vets.hasMany(db.appointments, { foreignKey: 'vet_id', as: 'appointments' });
+
+// User <-> Appointment
+db.appointments.belongsTo(db.users, { foreignKey: 'user_id', as: 'user' });
+db.users.hasMany(db.appointments, { foreignKey: 'user_id', as: 'appointments' });
+
+// Pet <-> Appointment
+db.appointments.belongsTo(db.pets, { foreignKey: 'pet_id', as: 'pet' });
+db.pets.hasMany(db.appointments, { foreignKey: 'pet_id', as: 'appointments' });
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
+
+// Export individual models for destructuring imports
+export const users = db.users;
+export const vets = db.vets;
+export const pets = db.pets;
+export const vet_reviews = db.vet_reviews;
+export const appointments = db.appointments;
 
 export { sequelize, Sequelize };
 export default db;

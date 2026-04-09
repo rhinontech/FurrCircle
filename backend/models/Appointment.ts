@@ -1,62 +1,56 @@
-import { Model } from "sequelize";
+import { DataTypes } from "sequelize";
+import type { Sequelize } from "sequelize";
 
-export default (sequelize: any, DataTypes: any) => {
-  class Appointment extends Model {
-    static associate(models: any) {
-      if (models.User) {
-        Appointment.belongsTo(models.User, { foreignKey: 'ownerId', as: 'owner' });
-        Appointment.belongsTo(models.User, { foreignKey: 'vetId', as: 'veterinarian' });
-      }
-      if (models.Pet) {
-        Appointment.belongsTo(models.Pet, { foreignKey: 'petId', as: 'pet' });
-      }
-    }
-  }
+export default (sequelize: Sequelize) => {
+    const Appointment = sequelize.define(
+        "appointments",
+        {
+            id: {
+                allowNull: false,
+                primaryKey: true,
+                type: DataTypes.UUID,
+                defaultValue: DataTypes.UUIDV4
+            },
+            vet_id: {
+                type: DataTypes.UUID,
+                allowNull: false,
+            },
+            user_id: {
+                type: DataTypes.UUID,
+                allowNull: false,
+            },
+            pet_id: {
+                type: DataTypes.UUID,
+                allowNull: false,
+            },
+            date: {
+                type: DataTypes.DATEONLY,
+                allowNull: true,
+            },
+            time: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            description: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            status: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+        },
+        {
+            tableName: "appointments",
+            timestamps: true,
+        }
+    );
 
-  Appointment.init(
-    {
-      id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true,
-      },
-      ownerId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-      },
-      vetId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-      },
-      petId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-      },
-      date: {
-        type: DataTypes.DATEONLY,
-        allowNull: false,
-      },
-      time: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      reason: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-      notes: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-      status: {
-        type: DataTypes.STRING, // pending | confirmed | cancelled | completed
-        defaultValue: 'pending',
-      },
-    },
-    {
-      sequelize,
-      modelName: "Appointment",
-    }
-  );
-  return Appointment;
+    (Appointment as any).associate = (models: any) => {
+        if (models.Vet) Appointment.belongsTo(models.Vet, { foreignKey: 'vet_id', as: 'vet' });
+        if (models.User) Appointment.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
+        if (models.Pet) Appointment.belongsTo(models.Pet, { foreignKey: 'pet_id', as: 'pet' });
+    };
+
+    return Appointment;
 };

@@ -2,8 +2,8 @@ import { DataTypes } from "sequelize";
 import type { Sequelize } from "sequelize";
 
 export default (sequelize: Sequelize) => {
-    const User = sequelize.define(
-        "users",
+    const Vet = sequelize.define(
+        "vets",
         {
             id: {
                 allowNull: false,
@@ -29,6 +29,22 @@ export default (sequelize: Sequelize) => {
                 allowNull: false,
                 defaultValue: false,
             },
+            hospital_name: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            profession: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            experience: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            working_hours: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
             profile_photo: {
                 type: DataTypes.STRING,
                 allowNull: true,
@@ -36,7 +52,6 @@ export default (sequelize: Sequelize) => {
             phone_number: {
                 type: DataTypes.STRING,
                 allowNull: true,
-                unique: true,
             },
             address: {
                 type: DataTypes.STRING,
@@ -44,16 +59,15 @@ export default (sequelize: Sequelize) => {
             },
         },
         {
-            tableName: "users",
+            tableName: "vets",
             timestamps: true,
         }
     );
 
-    (User as any).associate = (models: any) => {
-        if (models.Pet) User.hasMany(models.Pet, { foreignKey: 'owner_id', as: 'pets' });
-        if (models.VetReview) User.hasMany(models.VetReview, { foreignKey: 'user_id', as: 'vetReviews' });
-        if (models.Appointment) User.hasMany(models.Appointment, { foreignKey: 'user_id', as: 'appointments' });
+    (Vet as any).associate = (models: any) => {
+        if (models.VetReview) Vet.hasMany(models.VetReview, { foreignKey: 'vet_id', as: 'reviews' });
+        if (models.Appointment) Vet.hasMany(models.Appointment, { foreignKey: 'vet_id', as: 'appointments' });
     };
 
-    return User;
+    return Vet;
 };
