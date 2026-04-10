@@ -10,13 +10,13 @@ const CTA = () => {
 
             {/* left side */}
             <FadeInUp delay={0.5}>
-            <div className='flex flex-col max-md:items-center '>
-                
-                    <h2 className="text-4xl md:text-6xl max-w-2xl max-md:text-center font-heading text-foreground mb-20 max-md:mb-10">Ready to Give Your Pet the Best Care? Contact Us Today!</h2>
-                
+                <div className='flex flex-col max-md:items-center '>
 
-                <Button text=' Claim Us Now' />
-            </div>
+                    <h2 className="text-4xl md:text-6xl max-w-2xl max-md:text-center font-heading text-foreground mb-20 max-md:mb-10">Ready to Give Your Pet the Best Care? Contact Us Today!</h2>
+
+
+                    <Button text=' Claim Us Now' />
+                </div>
             </FadeInUp>
 
             {/* right side */}
@@ -39,13 +39,13 @@ const CTA = () => {
 
             <div className='absolute max-xl:hidden right-30 top-16'>
                 <FadeInUp>
-                    <Image src="/CTADog.png" alt="Pet Care" width={700} height={700} />
+                    <Image src="/CTADog1.png" alt="Pet Care" width={700} height={700} />
                 </FadeInUp>
             </div>
 
             <div className="hidden max-xl:block  text-center">
                 <Image
-                    src="/CTADog.png"
+                    src="/CTADog1.png"
                     alt="Pet Care"
                     width={700}
                     height={700}

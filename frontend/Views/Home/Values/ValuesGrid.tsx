@@ -4,7 +4,7 @@ import { FadeInUp } from "@/components/AnimationProvider";
 
 export function ValuesGrid() {
   return (
-    <section className="py-32 max-md:py-10 px-5 bg-section-bg">
+    <section className="py-32 max-md:py-10 px-5 bg-blue-200">
       <div className="container mx-auto max-w-7xl">
         <div className="flex flex-col items-center text-center mb-16">
           <FadeInUp>

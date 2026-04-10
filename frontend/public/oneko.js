@@ -5,7 +5,7 @@
     window.matchMedia(`(prefers-reduced-motion: reduce)`) === true ||
     window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
 
-  if (isReducedMotion) return;
+  if (isReducedMotion || window.innerWidth < 1024) return;
 
   const nekoEl = document.createElement("div");
   let persistPosition = true;
@@ -86,7 +86,7 @@
   };
 
   function init() {
-    let nekoFile = "./oneko_recolored.png"
+    let nekoFile = "./oneko.gif"
     const curScript = document.currentScript
     if (curScript && curScript.dataset.cat) {
       nekoFile = curScript.dataset.cat

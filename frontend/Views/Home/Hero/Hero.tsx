@@ -5,6 +5,7 @@ import { FadeInUp } from "@/components/AnimationProvider";
 import { motion, useAnimation } from "framer-motion";
 import { useEffect } from "react";
 import Button from "@/components/Common/Button";
+import Link from "next/link";
 
 export const PawPrint = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 40 40" className={className} xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink">
@@ -150,7 +151,14 @@ export function Hero() {
         </FadeInUp>
 
         <FadeInUp delay={0.3}>
-          <Button text="Book now" />
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link href="#" className="transition-transform hover:scale-105 active:scale-95">
+              <Image src="/appleButton.svg" alt="Download on the App Store" width={180} height={54} className="h-14 w-auto" />
+            </Link>
+            <Link href="#" className="transition-transform hover:scale-105 active:scale-95">
+              <Image src="/googleButton.svg" alt="Get it on Google Play" width={180} height={54} className="h-14 w-auto" />
+            </Link>
+          </div>
         </FadeInUp>
       </div>
 
@@ -159,14 +167,14 @@ export function Hero() {
       <motion.div
         className="absolute bottom-0 left-0 max-xl:-left-10 max-md:-left-20 w-[600px] h-[600px] max-xl:w-[450px] max-xl:h-[450px] max-lg:w-[350px] max-lg:h-[350px] max-md:w-64 max-md:h-64  z-10 pointer-events-none"
       >
-        <Image src="/heroCat.png" alt="Cat" fill className="object-contain object-left drop-shadow-2xl" sizes="(max-width: 768px) 100vw, 33vw" />
+        <Image src="/heroCat (3).png" loading="eager" alt="Cat" fill className="object-contain object-left drop-shadow-2xl" sizes="(max-width: 768px) 100vw, 33vw" />
       </motion.div>
 
       {/* Dog on Right */}
       <motion.div
         className="absolute top-1/2 -translate-y-1/2 max-md:top-[60%] -right-[23%] max-sm:-right-[53%] w-[700px] h-[700px] max-xl:w-[450px] max-xl:h-[450px] max-lg:w-[350px] max-lg:h-[350px] max-md:w-64 max-md:h-64 z-10 pointer-events-none"
       >
-        <Image src="/heroDog.png" alt="Dog" fill className="object-contain object-right drop-shadow-2xl" sizes="(max-width: 768px) 100vw, 33vw" />
+        <Image src="/heroDog (2).png" alt="Dog" fill className="object-contain object-right drop-shadow-2xl" sizes="(max-width: 768px) 100vw, 33vw" />
       </motion.div>
     </section>
   );
