@@ -4,7 +4,7 @@ import { Bell, Syringe, Stethoscope, Calendar, Heart, ChevronRight, PawPrint, Ma
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
-import { api } from "../../services/api";
+import { userHomeApi } from "@/services/users/homeApi";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -38,14 +38,10 @@ export default function HomeScreen() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [petsRes, remindersRes, vetsRes] = await Promise.all([
-        api.get('/pets'),
-        api.get('/reminders'),
-        api.get('/appointments/vets')
-      ]);
-      setPets(petsRes || []);
-      setReminders(remindersRes || []);
-      setVets(vetsRes || []);
+      const data = await userHomeApi.getHomeData();
+      setPets(data.pets);
+      setReminders(data.reminders);
+      setVets(data.vets);
     } catch (error) {
       console.error("Error fetching home data:", error);
     } finally {

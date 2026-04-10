@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, KeyboardAvo
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Save } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userHealthApi } from "@/services/users/healthApi";
 
 const vitalPresets = [
   { type: "Weight", value: "28", unit: "kg" },
@@ -29,7 +29,7 @@ export default function AddVitalScreen() {
 
     setLoading(true);
     try {
-      await api.post(`/health/vitals/${petId}`, { type, value, unit });
+      await userHealthApi.addVital(String(petId), { type, value, unit });
       router.back();
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to add vital.");

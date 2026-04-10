@@ -21,7 +21,7 @@ export const getVets = async (req: any, res: Response): Promise<void> => {
 // @route   POST /api/appointments
 export const createAppointment = async (req: any, res: Response): Promise<void> => {
   try {
-    const { appointments: Appointment, pets: Pet, vets: Vet } = db as any;
+    const { appointments: Appointment, pets: Pet, vets: Vet, reminders: Reminder } = db as any;
     const { vetId, petId, date, time, reason } = req.body;
 
     // Verify the pet belongs to this owner
@@ -46,6 +46,18 @@ export const createAppointment = async (req: any, res: Response): Promise<void> 
       time,
       reason,
       status: 'pending',
+    });
+
+    await Reminder.create({
+      userId: req.user.id,
+      petId,
+      title: `Appointment request with ${vet.hospital_name || vet.name}`,
+      notes: reason || '',
+      time: time || '09:00',
+      date: date || null,
+      recurrence: 'none',
+      type: 'appointment',
+      isDone: false,
     });
 
     res.status(201).json(appointment);

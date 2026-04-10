@@ -71,7 +71,7 @@ export default (sequelize: Sequelize) => {
             },
             // New fields — alter:true will ADD these columns
             age: {
-                type: DataTypes.INTEGER,
+                type: DataTypes.STRING,
                 allowNull: true,
             },
             city: {

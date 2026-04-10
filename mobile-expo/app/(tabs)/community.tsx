@@ -5,8 +5,8 @@ import { useRouter } from "expo-router";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
 import EventCard from "../../components/ui/EventCard";
-import { api } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
+import { userCommunityApi } from "@/services/users/communityApi";
 
 const postCategories = ["General", "Health", "Adoption", "Training", "Nutrition", "Lost & Found"];
 const feedCategories = ["All", "Events", "Health", "Adoption", "Training", "Nutrition"];
@@ -68,14 +68,10 @@ export default function CommunityScreen() {
 
   const fetchCommunity = async () => {
     try {
-      const [feedData, eventsData, chatsData] = await Promise.all([
-        api.get("/community/feed"),
-        api.get("/community/events"),
-        api.get("/community/chats")
-      ]);
-      setPosts(feedData || []);
-      setEvents(formatEvents(eventsData || []));
-      setChats(chatsData || []);
+      const data = await userCommunityApi.getCommunityData();
+      setPosts(data.feed);
+      setEvents(formatEvents(data.events));
+      setChats(data.chats);
     } catch (error) {
       console.error("Error fetching community data", error);
     } finally {
@@ -97,7 +93,7 @@ export default function CommunityScreen() {
     if (!newPostText.trim()) return;
     setSubmitting(true);
     try {
-      await api.post("/community/posts", {
+      await userCommunityApi.createPost({
         content: newPostText.trim(),
         category: selectedCategory,
         imageUrl: selectedImage || undefined
@@ -116,7 +112,7 @@ export default function CommunityScreen() {
 
   const handleLike = async (postId: string) => {
     try {
-      const res = await api.post(`/community/posts/${postId}/like`);
+      const res = await userCommunityApi.togglePostLike(postId);
       setPosts((prev) =>
         prev.map((post) => {
           if (post.id !== postId) return post;
@@ -135,7 +131,7 @@ export default function CommunityScreen() {
 
   const handleSave = async (postId: string) => {
     try {
-      const res = await api.post(`/community/posts/${postId}/save`);
+      const res = await userCommunityApi.togglePostSave(postId);
       setPosts((prev) =>
         prev.map((post) => {
           if (post.id !== postId) return post;
@@ -154,7 +150,7 @@ export default function CommunityScreen() {
 
   const handleShare = async (post: any) => {
     try {
-      const res = await api.post(`/community/posts/${post.id}/share`);
+      const res = await userCommunityApi.sharePost(post.id);
       await Share.share({
         message: `${post.author?.name || "PawsHub member"} posted in ${post.category}: ${post.content}`
       });
@@ -174,7 +170,7 @@ export default function CommunityScreen() {
     if (!selectedPost || !commentText.trim()) return;
     setCommentSubmitting(true);
     try {
-      const res = await api.post(`/community/posts/${selectedPost.id}/comment`, { text: commentText.trim() });
+      const res = await userCommunityApi.addPostComment(selectedPost.id, commentText.trim());
       setPosts((prev) => prev.map((post) => (post.id === selectedPost.id ? { ...post, comments: [...(post.comments || []), res.comment] } : post)));
       setSelectedPost((prev: any) => (prev ? { ...prev, comments: [...(prev.comments || []), res.comment] } : prev));
       setCommentText("");
@@ -533,4 +529,3 @@ export default function CommunityScreen() {
     </View>
   );
 }
-

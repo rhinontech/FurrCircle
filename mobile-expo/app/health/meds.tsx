@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, A
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Pill, Clock, Plus } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userHealthApi } from "@/services/users/healthApi";
 
 export default function MedsScreen() {
   const router = useRouter();
@@ -17,7 +17,7 @@ export default function MedsScreen() {
   const fetchMeds = async () => {
     try {
       if (!petId) return;
-      const data = await api.get(`/health/meds/${petId}`);
+      const data = await userHealthApi.listMedications(String(petId));
       setMeds(data);
     } catch (error) {
       console.error("Error fetching medications", error);

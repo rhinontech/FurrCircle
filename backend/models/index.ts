@@ -75,6 +75,9 @@ db.pets.hasMany(db.medications, { foreignKey: 'petId', as: 'Medications' });
 db.medical_records.belongsTo(db.pets, { foreignKey: 'petId', as: 'pet' });
 db.pets.hasMany(db.medical_records, { foreignKey: 'petId', as: 'medicalRecords' });
 
+db.allergies.belongsTo(db.pets, { foreignKey: 'petId', as: 'pet' });
+db.pets.hasMany(db.allergies, { foreignKey: 'petId', as: 'Allergies' });
+
 // Community: Post <-> User / Comments / Likes
 db.posts.belongsTo(db.users, { foreignKey: 'userId', as: 'author' });
 db.users.hasMany(db.posts, { foreignKey: 'userId', as: 'posts' });
@@ -90,9 +93,20 @@ db.posts.hasMany(db.likes, { foreignKey: 'postId', as: 'likes' });
 
 db.likes.belongsTo(db.users, { foreignKey: 'userId' });
 
+db.saved_posts.belongsTo(db.posts, { foreignKey: 'postId' });
+db.posts.hasMany(db.saved_posts, { foreignKey: 'postId', as: 'savedPosts' });
+
 // Events
 db.events.belongsTo(db.users, { foreignKey: 'organizerId', as: 'organizer' });
 db.users.hasMany(db.events, { foreignKey: 'organizerId', as: 'events' });
+
+db.event_bookings.belongsTo(db.events, { foreignKey: 'eventId', as: 'event' });
+db.events.hasMany(db.event_bookings, { foreignKey: 'eventId', as: 'bookings' });
+
+db.messages.belongsTo(db.conversations, { foreignKey: 'conversationId' });
+db.conversations.hasMany(db.messages, { foreignKey: 'conversationId', as: 'messages' });
+
+db.conversations.belongsTo(db.pets, { foreignKey: 'petId', as: 'pet' });
 
 // Reminders
 db.reminders.belongsTo(db.users, { foreignKey: 'userId', as: 'user' });
@@ -116,10 +130,15 @@ export const vitals = db.vitals;
 export const vaccines = db.vaccines;
 export const medications = db.medications;
 export const medical_records = db.medical_records;
+export const allergies = db.allergies;
 export const posts = db.posts;
 export const comments = db.comments;
 export const likes = db.likes;
+export const saved_posts = db.saved_posts;
 export const events = db.events;
+export const event_bookings = db.event_bookings;
+export const conversations = db.conversations;
+export const messages = db.messages;
 export const reminders = db.reminders;
 
 export { sequelize, Sequelize };

@@ -27,6 +27,11 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
+            shareCount: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+            },
             status: {
                 type: DataTypes.STRING,
                 allowNull: false,
@@ -43,6 +48,7 @@ export default (sequelize: Sequelize) => {
         if (models.users) Post.belongsTo(models.users, { foreignKey: 'userId', as: 'author' });
         if (models.comments) Post.hasMany(models.comments, { foreignKey: 'postId', as: 'comments' });
         if (models.likes) Post.hasMany(models.likes, { foreignKey: 'postId', as: 'likes' });
+        if (models.saved_posts) Post.hasMany(models.saved_posts, { foreignKey: 'postId', as: 'savedPosts' });
     };
 
     return Post;

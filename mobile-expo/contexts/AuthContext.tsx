@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api, setAuthToken, clearAuthToken } from "../services/api";
+import { clearAuthToken, setAuthToken } from "@/services/api";
+import { authApi } from "@/services/auth/authApi";
 
 export type UserRole = "owner" | "veterinarian" | "admin" | "shelter";
 
@@ -90,21 +91,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const completed = await AsyncStorage.getItem('onboarding_completed');
         setHasCompletedOnboarding(completed === 'true');
 
+        const storedToken = await AsyncStorage.getItem('user_token');
+        if (storedToken?.startsWith('mock-token:')) {
+          clearAuthToken();
+          await AsyncStorage.removeItem('user_data');
+          await AsyncStorage.removeItem('user_token');
+          setUser(null);
+          return;
+        }
+
         const savedUser = await AsyncStorage.getItem('user_data');
         if (savedUser) {
           const parsedUser = JSON.parse(savedUser) as User;
           // Seed in-memory token cache BEFORE setting user (avoids race with API calls)
-          const storedToken = await AsyncStorage.getItem('user_token');
           if (storedToken) setAuthToken(storedToken);
           setUser(parsedUser);
           // Refresh profile from server on startup
           try {
-            const freshProfile = await api.get('/auth/me') as AuthPayload;
+            const freshProfile = await authApi.getMe() as AuthPayload;
             const updatedUser = toUser({ ...parsedUser, ...freshProfile });
             setUser(updatedUser);
             await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
-          } catch {
-            // Server unreachable — keep cached session as-is
+          } catch (error: any) {
+            const message = String(error?.message || '').toLowerCase();
+            if (message.includes('not authorized') || message.includes('token failed') || message.includes('jwt')) {
+              clearAuthToken();
+              await AsyncStorage.removeItem('user_data');
+              await AsyncStorage.removeItem('user_token');
+              setUser(null);
+            }
           }
         }
       } catch (e) {
@@ -117,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const data = await api.post('/auth/login', { email, password }) as AuthPayload;
+    const data = await authApi.login(email, password) as AuthPayload;
     const userData = toUser(data);
 
     // Set in-memory token FIRST — navigation may fire before AsyncStorage awaits complete
@@ -128,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (name: string, email: string, password: string, role: UserRole) => {
-    const data = await api.post('/auth/register', { name, email, password, role }) as AuthPayload;
+    const data = await authApi.register(name, email, password, role) as AuthPayload;
     const userData = toUser({
       ...data,
       isVerified: data.isVerified || (data.role === 'veterinarian' ? false : true),
@@ -141,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateProfile = async (updatedData: Partial<User>) => {
-    const data = await api.put('/auth/profile', updatedData) as Partial<AuthPayload>;
+    const data = await authApi.updateProfile(updatedData) as Partial<AuthPayload>;
     if (user) {
       const newUser: User = {
         ...user,

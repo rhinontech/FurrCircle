@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { Plus, PawPrint } from "lucide-react-native";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userPetsApi } from "@/services/users/petsApi";
 
 const statusVariant = (s: string) => {
   const status = s?.toLowerCase() || '';
@@ -22,7 +22,7 @@ export default function PetsScreen() {
 
   const fetchPets = async () => {
     try {
-      const data = await api.get('/pets');
+      const data = await userPetsApi.listPets();
       setPets(data);
     } catch (error) {
       console.error("Error fetching pets", error);

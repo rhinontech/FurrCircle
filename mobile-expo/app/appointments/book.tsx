@@ -3,7 +3,8 @@ import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert 
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Calendar as CalendarIcon, Clock, ChevronRight } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userAppointmentsApi } from "@/services/users/appointmentsApi";
+import { userPetsApi } from "@/services/users/petsApi";
 
 export default function BookAppointmentScreen() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function BookAppointmentScreen() {
   useEffect(() => {
     const fetchPets = async () => {
       try {
-        const data = await api.get("/pets");
+        const data = await userPetsApi.listPets();
         setPets(data);
         if (data.length > 0) setSelectedPet(data[0].id);
       } catch (error) {
@@ -41,7 +42,7 @@ export default function BookAppointmentScreen() {
 
     setSubmitting(true);
     try {
-      await api.post("/appointments", {
+      await userAppointmentsApi.bookAppointment({
         vetId,
         petId: selectedPet,
         date,

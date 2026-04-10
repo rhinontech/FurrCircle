@@ -5,7 +5,7 @@ import { ChevronLeft, Bell, Calendar, Clock, AlertCircle, Syringe, ClipboardList
 import { useTheme } from "../../contexts/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import StatusChip from "../../components/ui/StatusChip";
-import { api } from "../../services/api";
+import { userRemindersApi } from "@/services/users/remindersApi";
 
 export default function RemindersScreen() {
   const router = useRouter();
@@ -17,7 +17,7 @@ export default function RemindersScreen() {
 
   const fetchReminders = useCallback(async () => {
     try {
-      const data = await api.get('/reminders');
+      const data = await userRemindersApi.listReminders();
       setReminders(data || []);
     } catch (error) {
       console.error("Error fetching reminders", error);
@@ -40,7 +40,7 @@ export default function RemindersScreen() {
     try {
       // Optimistic update
       setReminders(prev => prev.map(r => r.id === id ? { ...r, isDone: !r.isDone } : r));
-      await api.patch(`/reminders/${id}/toggle`);
+      await userRemindersApi.toggleReminder(id);
     } catch (error) {
       console.error("Error toggling reminder", error);
       // Revert if failed

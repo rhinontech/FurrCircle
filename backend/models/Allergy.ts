@@ -2,8 +2,8 @@ import { DataTypes } from "sequelize";
 import type { Sequelize } from "sequelize";
 
 export default (sequelize: Sequelize) => {
-    const Vaccine = sequelize.define(
-        "vaccines",
+    const Allergy = sequelize.define(
+        "allergies",
         {
             id: {
                 allowNull: false,
@@ -15,24 +15,16 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.UUID,
                 allowNull: false,
             },
-            name: {
+            allergen: {
                 type: DataTypes.STRING,
                 allowNull: false,
             },
-            dateAdministered: {
-                type: DataTypes.DATEONLY,
-                allowNull: true,
-            },
-            nextDueDate: {
-                type: DataTypes.DATEONLY,
-                allowNull: true,
-            },
-            status: {
+            severity: {
                 type: DataTypes.STRING,
-                allowNull: true,
-                defaultValue: "done",
+                allowNull: false,
+                defaultValue: "moderate",
             },
-            veterinarian: {
+            reaction: {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
@@ -40,16 +32,20 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
+            diagnosedAt: {
+                type: DataTypes.DATEONLY,
+                allowNull: true,
+            },
         },
         {
-            tableName: "vaccines",
+            tableName: "allergies",
             timestamps: true,
         }
     );
 
-    (Vaccine as any).associate = (models: any) => {
-        if (models.pets) Vaccine.belongsTo(models.pets, { foreignKey: 'petId', as: 'pet' });
+    (Allergy as any).associate = (models: any) => {
+        if (models.pets) Allergy.belongsTo(models.pets, { foreignKey: "petId", as: "pet" });
     };
 
-    return Vaccine;
+    return Allergy;
 };

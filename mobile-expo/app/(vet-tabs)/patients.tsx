@@ -4,7 +4,7 @@ import { Search, PawPrint } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import StatusChip from "../../components/ui/StatusChip";
-import { api } from "../../services/api";
+import { vetAppointmentsApi } from "@/services/vets/appointmentsApi";
 
 const statusVariant = (s: string): "success" | "warning" | "info" | "danger" => {
   const status = (s || "").toLowerCase();
@@ -24,33 +24,8 @@ export default function PatientsScreen() {
 
   const fetchPatients = useCallback(async () => {
     try {
-      const appointments = await api.get('/appointments/vet') as any[];
-      // Derive unique patients from appointment history
-      const petsMap = new Map<string, any>();
-      for (const appt of (appointments || [])) {
-        if (!appt.pet) continue;
-        const existing = petsMap.get(appt.pet.id);
-        if (existing) {
-          existing.visits += 1;
-          // Track most recent past visit
-          if (appt.status === 'completed' && (!existing.lastVisit || appt.date > existing.lastVisit)) {
-            existing.lastVisit = appt.date;
-          }
-          // Track next upcoming visit
-          if ((appt.status === 'confirmed' || appt.status === 'pending') && (!existing.nextVisit || appt.date < existing.nextVisit)) {
-            existing.nextVisit = appt.date;
-          }
-        } else {
-          petsMap.set(appt.pet.id, {
-            ...appt.pet,
-            owner: appt.owner,
-            visits: 1,
-            lastVisit: appt.status === 'completed' ? appt.date : null,
-            nextVisit: (appt.status === 'confirmed' || appt.status === 'pending') ? appt.date : null,
-          });
-        }
-      }
-      setPatients(Array.from(petsMap.values()));
+      const patientsData = await vetAppointmentsApi.listPatients();
+      setPatients(patientsData);
     } catch (error) {
       console.error("Error fetching patients:", error);
     } finally {

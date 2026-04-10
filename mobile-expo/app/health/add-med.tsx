@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, KeyboardAvo
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Save } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userHealthApi } from "@/services/users/healthApi";
 
 export default function AddMedicationScreen() {
   const router = useRouter();
@@ -23,7 +23,7 @@ export default function AddMedicationScreen() {
 
     setLoading(true);
     try {
-      await api.post(`/health/meds/${petId}`, { 
+      await userHealthApi.addMedication(String(petId), { 
         name, 
         dosage, 
         frequency, 

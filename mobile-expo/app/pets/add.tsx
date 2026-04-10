@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Pla
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, Camera, Check, Trash2 } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userPetsApi } from "@/services/users/petsApi";
 
 const speciesOptions = ["Dog", "Cat", "Rabbit", "Bird", "Fish", "Other"];
 const genderOptions = ["Male", "Female", "Unknown"];
@@ -34,7 +34,7 @@ export default function AddPetScreen() {
 
   const fetchPetData = async () => {
     try {
-      const data = await api.get(`/pets/${id}`);
+      const data = await userPetsApi.getPetById(String(id));
       setName(data.name || "");
       setSpecies(data.species || "");
       setBreed(data.breed || "");
@@ -71,10 +71,10 @@ export default function AddPetScreen() {
       };
 
       if (isEditing) {
-        await api.put(`/pets/${id}`, payload);
+        await userPetsApi.updatePet(String(id), payload);
         Alert.alert("Success", `${name}'s info has been updated! ✨`);
       } else {
-        await api.post('/pets', payload);
+        await userPetsApi.createPet(payload);
         Alert.alert("Success", `${name} has been added! 🎉`);
       }
       router.back();
@@ -97,7 +97,7 @@ export default function AddPetScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              await api.delete(`/pets/${id}`);
+              await userPetsApi.deletePet(String(id));
               router.replace("/(tabs)/pets");
             } catch (error: any) {
               Alert.alert("Error", error.message || "Failed to delete pet.");

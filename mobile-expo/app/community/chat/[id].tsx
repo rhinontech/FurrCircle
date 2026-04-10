@@ -13,8 +13,8 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, PawPrint, Send } from "lucide-react-native";
 import { useTheme } from "../../../contexts/ThemeContext";
-import { api } from "../../../services/api";
 import { useAuth } from "../../../contexts/AuthContext";
+import { userCommunityApi } from "@/services/users/communityApi";
 
 function formatMessageTime(date: string) {
   return new Date(date).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -34,7 +34,7 @@ export default function CommunityChatScreen() {
   const fetchConversation = async () => {
     if (!id) return;
     try {
-      const data = await api.get(`/community/chats/${id}`);
+      const data = await userCommunityApi.getChatById(String(id));
       setConversation(data);
     } catch (error) {
       console.error("Error fetching conversation", error);
@@ -51,7 +51,7 @@ export default function CommunityChatScreen() {
     if (!conversation || !message.trim()) return;
     setSending(true);
     try {
-      const res = await api.post(`/community/chats/${conversation.id}/messages`, {
+      const res = await userCommunityApi.sendMessage(conversation.id, {
         text: message.trim(),
         petId: conversation.pet?.id,
       });

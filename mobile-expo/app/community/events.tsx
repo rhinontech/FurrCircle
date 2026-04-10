@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import EventCard from "../../components/ui/EventCard";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userCommunityApi } from "@/services/users/communityApi";
 
 const formatEvents = (eventsData: any[]) =>
   (eventsData || []).map((event: any) => {
@@ -26,7 +26,7 @@ export default function CommunityEventsScreen() {
 
   const fetchEvents = async () => {
     try {
-      const data = await api.get("/community/events");
+      const data = await userCommunityApi.listEvents();
       setEvents(formatEvents(data || []));
     } finally {
       setLoading(false);
