@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, ScrollView, Image, Pressable, TextInput, Modal, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, RefreshControl, Share } from "react-native";
 import { Heart, MessageCircle, Share2, Bookmark, Calendar, Plus, X, ArrowRight, ShieldCheck, PawPrint, ImagePlus, Send } from "lucide-react-native";
 import { useRouter } from "expo-router";
@@ -7,15 +7,13 @@ import { useTheme } from "../../contexts/ThemeContext";
 import EventCard from "../../components/ui/EventCard";
 import { useAuth } from "../../contexts/AuthContext";
 import { userCommunityApi } from "@/services/users/communityApi";
+import { useFocusEffect } from "@react-navigation/native";
+import { useNotifications } from "../../contexts/NotificationContext";
+import { pickAndUploadImage } from "@/services/uploadApi";
 
 const postCategories = ["General", "Health", "Adoption", "Training", "Nutrition", "Lost & Found"];
 const feedCategories = ["All", "Events", "Health", "Adoption", "Training", "Nutrition"];
 const communitySections = ["Feed", "Chats"];
-const demoPostImages = [
-  "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1519052537078-e6302a4968d4?auto=format&fit=crop&w=900&q=80",
-  "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80"
-];
 
 function timeAgo(date: string) {
   const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
@@ -47,6 +45,9 @@ export default function CommunityScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { markAllRead } = useNotifications();
+
+  useFocusEffect(useCallback(() => { markAllRead(); }, [markAllRead]));
 
   const [activeSection, setActiveSection] = useState("Feed");
   const [activeCategory, setActiveCategory] = useState("All");
@@ -62,6 +63,7 @@ export default function CommunityScreen() {
   const [commentText, setCommentText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("General");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [hasPendingPost, setHasPendingPost] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
@@ -87,6 +89,18 @@ export default function CommunityScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     fetchCommunity();
+  };
+
+  const handlePickPostImage = async () => {
+    try {
+      setUploadingImage(true);
+      const url = await pickAndUploadImage('posts', { aspect: [4, 3], allowsEditing: true });
+      if (url) setSelectedImage(url);
+    } catch (error: any) {
+      Alert.alert("Upload failed", error.message || "Could not upload image. Please try again.");
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handlePost = async () => {
@@ -430,27 +444,42 @@ export default function CommunityScreen() {
               </ScrollView>
 
               <Text style={{ fontSize: 12, fontWeight: "600", color: colors.textMuted, marginBottom: 12, textTransform: "uppercase" }}>Add Image</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18, marginHorizontal: -24 }} contentContainerStyle={{ paddingHorizontal: 24, gap: 10 }}>
+              <View style={{ flexDirection: "row", gap: 12, marginBottom: 18, alignItems: "center" }}>
                 <Pressable
-                  onPress={() => setSelectedImage(null)}
-                  style={{ width: 88, height: 88, borderRadius: 16, borderWidth: 1, borderColor: !selectedImage ? colors.brand : colors.border, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center" }}
+                  onPress={selectedImage ? () => setSelectedImage(null) : handlePickPostImage}
+                  disabled={uploadingImage}
+                  style={{ width: 88, height: 88, borderRadius: 16, borderWidth: 1, borderColor: !selectedImage ? colors.brand : colors.border, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center", overflow: "hidden" }}
                 >
-                  <ImagePlus size={20} color={colors.textMuted} />
-                  <Text style={{ fontSize: 11, fontWeight: "600", color: colors.textMuted, marginTop: 6 }}>No image</Text>
+                  {uploadingImage ? (
+                    <ActivityIndicator size="small" color={colors.brand} />
+                  ) : (
+                    <>
+                      <ImagePlus size={20} color={colors.textMuted} />
+                      <Text style={{ fontSize: 11, fontWeight: "600", color: colors.textMuted, marginTop: 6 }}>No image</Text>
+                    </>
+                  )}
                 </Pressable>
-                {demoPostImages.map((imageUrl) => {
-                  const selected = selectedImage === imageUrl;
-                  return (
-                    <Pressable
-                      key={imageUrl}
-                      onPress={() => setSelectedImage(imageUrl)}
-                      style={{ width: 88, height: 88, borderRadius: 16, overflow: "hidden", borderWidth: 2, borderColor: selected ? colors.brand : "transparent" }}
-                    >
-                      <Image source={{ uri: imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
+                {selectedImage ? (
+                  <View style={{ width: 88, height: 88, borderRadius: 16, overflow: "hidden", borderWidth: 2, borderColor: colors.brand }}>
+                    <Image source={{ uri: selectedImage }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                  </View>
+                ) : (
+                  <Pressable
+                    onPress={handlePickPostImage}
+                    disabled={uploadingImage}
+                    style={{ flex: 1, height: 88, borderRadius: 16, borderWidth: 1, borderStyle: "dashed", borderColor: colors.border, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 }}
+                  >
+                    {uploadingImage ? (
+                      <ActivityIndicator size="small" color={colors.brand} />
+                    ) : (
+                      <>
+                        <ImagePlus size={18} color={colors.brand} />
+                        <Text style={{ fontSize: 13, fontWeight: "600", color: colors.brand }}>{uploadingImage ? "Uploading..." : "Pick from Library"}</Text>
+                      </>
+                    )}
+                  </Pressable>
+                )}
+              </View>
 
               <TextInput
                 placeholder="What's on your mind? Share tips, ask questions, or post updates..."

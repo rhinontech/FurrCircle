@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { View, Text, ScrollView, Image, Pressable, Switch } from "react-native";
 import { ChevronRight, CalendarDays, Users, Star, Clock, LogOut, Moon, Sun, UserCheck, Stethoscope, MapPin, Phone, Pencil } from "lucide-react-native";
 import { useRouter } from "expo-router";
@@ -15,8 +16,10 @@ const vetMenuItems = [
 
 export default function VetProfileScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const router = useRouter();
+
+  useFocusEffect(useCallback(() => { refreshUser(); }, []));
   const ratingLabel = user?.rating != null && user?.rating !== "" ? String(user.rating) : "New";
   const experienceLabel = user?.yearsExp ? String(user.yearsExp) : "Add";
   const profilePills = [
@@ -29,19 +32,19 @@ export default function VetProfileScreen() {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingTop: 16 }}>
         <View style={{ paddingHorizontal: 20, paddingBottom: 24 }}>
-          <Text style={{ fontSize: 24, fontWeight: '700', color: colors.textPrimary, marginBottom: 24 }}>Profile</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+            <Text style={{ fontSize: 24, fontWeight: '700', color: colors.textPrimary }}>Profile</Text>
+            <Pressable
+              onPress={() => router.push('/profile/edit')}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 12, backgroundColor: colors.bgSubtle, borderWidth: 1, borderColor: colors.border }}
+            >
+              <Pencil size={15} color={colors.textSecondary} />
+              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>Edit</Text>
+            </Pressable>
+          </View>
 
           {/* Vet Hero Card */}
           <View style={{ backgroundColor: colors.heroBg, borderRadius: 28, padding: 24, marginBottom: 24 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 16 }}>
-              <Pressable
-                onPress={() => router.push('/profile/edit')}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 38, paddingHorizontal: 14, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' }}
-              >
-                <Pencil size={16} color="#fff" />
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Edit</Text>
-              </Pressable>
-            </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
               {user?.avatar ? (
                  <Image source={{ uri: user.avatar }} style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)' }} resizeMode="cover" />

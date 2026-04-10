@@ -5,7 +5,7 @@
     "scheme": "pawshub",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/PawsHub_logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -26,17 +26,31 @@
       "package": "com.anonymous.pawshub"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/PawsHub_logo.png"
     },
     "plugins": [
       "expo-font",
       "expo-router",
       "expo-web-browser",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/PawsHub_logo.png",
+          "color": "#6d28d9",
+          "sounds": []
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Allow PawsHub to access your photos so you can upload a profile picture.",
           "cameraPermission": "Allow PawsHub to access your camera so you can take a profile picture."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow PawsHub to access your location to auto-fill your city."
         }
       ]
     ]
