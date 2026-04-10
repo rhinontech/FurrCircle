@@ -22,6 +22,8 @@ export interface User {
   bio?: string;
   city?: string;
   phone?: string;
+  address?: string;
+  working_hours?: string;
 }
 
 type AuthPayload = User & {
@@ -30,6 +32,7 @@ type AuthPayload = User & {
   hospital_name?: string;
   profession?: string;
   experience?: string | number;
+  working_hours?: string;
 };
 
 interface AuthContextType {
@@ -58,6 +61,31 @@ const AuthContext = createContext<AuthContextType>({
   switchUser: async () => {},
 });
 
+const toAuthPayload = (data: Partial<User>): AuthPayload => ({
+  id: data.id || '',
+  name: data.name || '',
+  email: data.email || '',
+  role: data.role || 'owner',
+  token: data.token,
+  isVerified: data.isVerified,
+  clinic_name: data.clinic_name,
+  specialty: data.specialty,
+  bio: data.bio,
+  city: data.city,
+  phone: data.phone,
+  address: data.address,
+  working_hours: data.working_hours,
+  memberSince: data.memberSince,
+  petCount: data.petCount,
+  rating: data.rating,
+  yearsExp: data.yearsExp,
+  avatar: data.avatar,
+  avatar_url: data.avatar,
+  hospital_name: data.clinic_name,
+  profession: data.specialty,
+  experience: data.yearsExp,
+});
+
 const toUser = (data: AuthPayload): User => ({
   id: data.id,
   name: data.name,
@@ -74,6 +102,8 @@ const toUser = (data: AuthPayload): User => ({
   bio: data.bio,
   city: data.city,
   phone: data.phone,
+  address: data.address,
+  working_hours: data.working_hours,
   memberSince: data.memberSince,
   petCount: data.petCount,
   rating: data.rating,
@@ -156,13 +186,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateProfile = async (updatedData: Partial<User>) => {
-    const data = await authApi.updateProfile(updatedData) as Partial<AuthPayload>;
+    const payload = {
+      ...updatedData,
+      avatar_url: updatedData.avatar,
+      hospital_name: updatedData.clinic_name,
+      profession: updatedData.specialty,
+      experience: updatedData.yearsExp,
+    };
+
+    delete (payload as Partial<User>).avatar;
+    delete (payload as Partial<User>).clinic_name;
+    delete (payload as Partial<User>).specialty;
+    delete (payload as Partial<User>).yearsExp;
+
+    const data = await authApi.updateProfile(payload) as AuthPayload;
     if (user) {
-      const newUser: User = {
-        ...user,
+      const newUser = toUser({
+        ...toAuthPayload(user),
         ...data,
-        avatar: data.avatar_url ?? data.avatar ?? user.avatar,
-      };
+      });
+      if (newUser.token) {
+        setAuthToken(newUser.token);
+        await AsyncStorage.setItem('user_token', newUser.token);
+      }
       setUser(newUser);
       await AsyncStorage.setItem('user_data', JSON.stringify(newUser));
     }

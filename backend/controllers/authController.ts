@@ -4,12 +4,55 @@ import jwt from "jsonwebtoken";
 import db from "../models/index.ts";
 
 const SELF_SERVICE_USER_ROLES = new Set(["owner", "shelter"]);
+const PROFILE_IMAGE_FIELDS = ["avatar_url", "phone", "bio", "city", "address"] as const;
 
 // userType is embedded in the JWT so middleware knows which table to query
 const generateToken = (id: string, userType: 'user' | 'vet') => {
   return jwt.sign({ id, userType }, process.env.JWT_SECRET || 'fallback_secret', {
     expiresIn: "30d",
   });
+};
+
+const toMemberSince = (value?: Date | string | null) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : String(parsed.getFullYear());
+};
+
+const buildAuthPayload = async (subject: any, userType: 'user' | 'vet', token?: string) => {
+  const isVet = userType === 'vet';
+  const payload: Record<string, any> = {
+    id: subject.id,
+    name: subject.name,
+    email: subject.email,
+    role: isVet ? 'veterinarian' : subject.role,
+    isVerified: subject.isVerified,
+    avatar_url: subject.avatar_url,
+    phone: subject.phone,
+    bio: subject.bio,
+    city: subject.city,
+    address: subject.address,
+    memberSince: toMemberSince(subject.createdAt),
+  };
+
+  if (isVet) {
+    payload.hospital_name = subject.hospital_name;
+    payload.profession = subject.profession;
+    payload.experience = subject.experience;
+    payload.working_hours = subject.working_hours;
+    payload.rating = subject.rating;
+  } else {
+    payload.petCount = await db.pets.count({ where: { ownerId: subject.id } });
+  }
+
+  if (token) {
+    payload.token = token;
+  }
+
+  return payload;
 };
 
 // @desc    Register a new user (owner/shelter/admin) OR veterinarian
@@ -37,14 +80,8 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
         isVerified: false, // requires admin approval
       });
 
-      res.status(201).json({
-        id: vet.id,
-        name: vet.name,
-        email: vet.email,
-        role: 'veterinarian',
-        isVerified: vet.isVerified,
-        token: generateToken(vet.id, 'vet'),
-      });
+      const token = generateToken(vet.id, 'vet');
+      res.status(201).json(await buildAuthPayload(vet, 'vet', token));
       return;
     }
 
@@ -72,14 +109,8 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       isVerified: true,
     });
 
-    res.status(201).json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      isVerified: user.isVerified,
-      token: generateToken(user.id, 'user'),
-    });
+    const token = generateToken(user.id, 'user');
+    res.status(201).json(await buildAuthPayload(user, 'user', token));
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -95,39 +126,16 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     // Try User table first
     const user = await User.findOne({ where: { email } });
     if (user && (await bcrypt.compare(password, user.password))) {
-      res.json({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isVerified: user.isVerified,
-        avatar_url: user.avatar_url,
-        token: generateToken(user.id, 'user'),
-      });
+      const token = generateToken(user.id, 'user');
+      res.json(await buildAuthPayload(user, 'user', token));
       return;
     }
 
     // Try Vet table
     const vet = await Vet.findOne({ where: { email } });
     if (vet && (await bcrypt.compare(password, vet.password))) {
-      res.json({
-        id: vet.id,
-        name: vet.name,
-        email: vet.email,
-        role: 'veterinarian',
-        isVerified: vet.isVerified,
-        avatar_url: vet.avatar_url,
-        hospital_name: vet.hospital_name,
-        profession: vet.profession,
-        experience: vet.experience,
-        working_hours: vet.working_hours,
-        address: vet.address,
-        city: vet.city,
-        bio: vet.bio,
-        phone: vet.phone,
-        rating: vet.rating,
-        token: generateToken(vet.id, 'vet'),
-      });
+      const token = generateToken(vet.id, 'vet');
+      res.json(await buildAuthPayload(vet, 'vet', token));
       return;
     }
 
@@ -141,7 +149,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 // @route   GET /api/auth/me  or  GET /api/auth/profile
 export const getUserProfile = async (req: any, res: Response): Promise<void> => {
   try {
-    res.json(req.user);
+    res.json(await buildAuthPayload(req.user, req.userType || 'user'));
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -161,7 +169,7 @@ export const updateUserProfile = async (req: any, res: Response): Promise<void> 
         return;
       }
 
-      const vetFields = ['name', 'email', 'avatar_url', 'phone', 'bio', 'city', 'hospital_name', 'profession', 'experience', 'working_hours', 'address'];
+      const vetFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email', 'hospital_name', 'profession', 'experience', 'working_hours'];
       vetFields.forEach(field => {
         if (req.body[field] !== undefined) vet[field] = req.body[field];
       });
@@ -172,24 +180,8 @@ export const updateUserProfile = async (req: any, res: Response): Promise<void> 
       }
 
       await vet.save();
-      res.json({
-        id: vet.id,
-        name: vet.name,
-        email: vet.email,
-        role: 'veterinarian',
-        isVerified: vet.isVerified,
-        avatar_url: vet.avatar_url,
-        hospital_name: vet.hospital_name,
-        profession: vet.profession,
-        experience: vet.experience,
-        working_hours: vet.working_hours,
-        address: vet.address,
-        city: vet.city,
-        bio: vet.bio,
-        phone: vet.phone,
-        rating: vet.rating,
-        token: generateToken(vet.id, 'vet'),
-      });
+      const token = generateToken(vet.id, 'vet');
+      res.json(await buildAuthPayload(vet, 'vet', token));
       return;
     }
 
@@ -199,7 +191,7 @@ export const updateUserProfile = async (req: any, res: Response): Promise<void> 
       return;
     }
 
-    const userFields = ['name', 'email', 'avatar_url', 'phone', 'bio', 'city', 'address'];
+    const userFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email'];
     userFields.forEach(field => {
       if (req.body[field] !== undefined) user[field] = req.body[field];
     });
@@ -210,15 +202,8 @@ export const updateUserProfile = async (req: any, res: Response): Promise<void> 
     }
 
     await user.save();
-    res.json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      isVerified: user.isVerified,
-      avatar_url: user.avatar_url,
-      token: generateToken(user.id, 'user'),
-    });
+    const token = generateToken(user.id, 'user');
+    res.json(await buildAuthPayload(user, 'user', token));
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

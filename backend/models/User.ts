@@ -39,7 +39,7 @@ export default (sequelize: Sequelize) => {
             },
             // Maps to existing 'profile_photo' column in DB
             avatar_url: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: true,
                 field: 'profile_photo',
             },

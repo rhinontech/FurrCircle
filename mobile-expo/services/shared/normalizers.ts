@@ -87,6 +87,8 @@ export const normalizeProfile = (profile: any) => {
     clinic_name: profile.clinic_name ?? profile.hospital_name ?? profile.name,
     specialty: profile.specialty ?? profile.profession,
     yearsExp: profile.yearsExp ?? profile.experience,
+    working_hours: profile.working_hours,
+    address: profile.address,
   };
 };
 

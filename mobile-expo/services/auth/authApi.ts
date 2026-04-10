@@ -15,6 +15,8 @@ export type AuthApiPayload = {
   bio?: string;
   city?: string;
   phone?: string;
+  address?: string;
+  working_hours?: string;
   memberSince?: string;
   petCount?: number;
   rating?: number | string;
@@ -32,7 +34,7 @@ export const authApi = {
   register: (name: string, email: string, password: string, role: AuthApiRole) =>
     api.post<AuthApiPayload>('/auth/register', { name, email, password, role }),
   updateProfile: (updatedData: Record<string, unknown>) =>
-    api.put<Partial<AuthApiPayload>>('/auth/profile', updatedData),
+    api.put<AuthApiPayload>('/auth/profile', updatedData),
   listShelters: async () => {
     const shelters = await api.get<any[]>('/auth/users/shelter');
     return (shelters || []).map(normalizeProfile).filter(Boolean);

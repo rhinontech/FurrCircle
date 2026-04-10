@@ -10,6 +10,7 @@ export default function MyPostsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { user } = useAuth();
+  const avatar = user?.avatar ? { uri: user.avatar } : require("../../assets/pet-dog.jpg");
   
   const myPosts = [
     { id: 1, petTag: "Luna", category: "Health", time: "2h ago", text: "Just got Luna's vaccines updated! The vet was amazing and she barely noticed. Highly recommend PawCare Clinic! 🐱💉", image: require("../../assets/pet-cat.jpg"), likes: 24, comments: 5, status: "Approved" },
@@ -31,7 +32,7 @@ export default function MyPostsScreen() {
           <View key={post.id} style={{ backgroundColor: colors.bgCard, borderRadius: 24, borderWidth: 1, borderColor: colors.border, padding: 16, marginBottom: 16 }}>
              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <Image source={user?.avatar ?? require("../../assets/pet-dog.jpg")} style={{ width: 40, height: 40, borderRadius: 20 }} resizeMode="cover" />
+                  <Image source={avatar} style={{ width: 40, height: 40, borderRadius: 20 }} resizeMode="cover" />
                   <View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary }}>{user?.name}</Text>

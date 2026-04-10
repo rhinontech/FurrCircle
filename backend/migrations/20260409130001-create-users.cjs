@@ -28,7 +28,7 @@ module.exports = {
         defaultValue: false
       },
       profile_photo: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: true
       },
       phone_number: {

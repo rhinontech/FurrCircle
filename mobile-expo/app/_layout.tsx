@@ -95,6 +95,7 @@ function AppShell() {
         <Stack.Screen name="community/events/[id]" />
         <Stack.Screen name="community/posts/[id]" />
         <Stack.Screen name="community/chat/[id]" />
+        <Stack.Screen name="profile/edit" />
         <Stack.Screen name="vets/[id]" />
       </Stack>
       <StatusBar style={isDark ? 'light' : 'dark'} />
