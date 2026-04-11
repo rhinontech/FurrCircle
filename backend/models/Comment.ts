@@ -19,6 +19,11 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.UUID,
                 allowNull: false,
             },
+            userType: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: 'user', // user | vet
+            },
             text: {
                 type: DataTypes.TEXT,
                 allowNull: false,

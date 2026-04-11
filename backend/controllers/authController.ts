@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { Op } from "sequelize";
 import db from "../models/index.ts";
 
@@ -9,7 +10,11 @@ const PROFILE_IMAGE_FIELDS = ["avatar_url", "phone", "bio", "city", "address"] a
 
 // userType is embedded in the JWT so middleware knows which table to query
 const generateToken = (id: string, userType: 'user' | 'vet') => {
-  return jwt.sign({ id, userType }, process.env.JWT_SECRET || 'fallback_secret', {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET is not configured. Set it in your environment.");
+  }
+  return jwt.sign({ id, userType }, secret, {
     expiresIn: "30d",
   });
 };
@@ -74,12 +79,18 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
 
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
+      const { hospital_name, profession, phone, city, address } = req.body;
 
       const vet = await Vet.create({
         name,
         email,
         password: hashedPassword,
         isVerified: false, // requires admin approval
+        ...(hospital_name && { hospital_name }),
+        ...(profession && { profession }),
+        ...(phone && { phone }),
+        ...(city && { city }),
+        ...(address && { address }),
       });
 
       const token = generateToken(vet.id, 'vet');
@@ -107,12 +118,16 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    const { phone_number, city, address } = req.body;
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
       role: requestedRole,
       isVerified: true,
+      ...(phone_number && { phone_number }),
+      ...(city && { city }),
+      ...(address && { address }),
     });
 
     const token = generateToken(user.id, 'user');
@@ -227,14 +242,14 @@ export const getUsersByRole = async (req: Request, res: Response): Promise<void>
     if (role === 'veterinarian') {
       const vets = await Vet.findAll({
         where: { isVerified: true },
-        attributes: { exclude: ['password'] },
+        attributes: ['id', 'name', 'email', 'hospital_name', 'profession', 'city', 'avatar_url', 'rating', 'bio', 'phone', 'working_hours', 'isVerified'],
       });
       return res.json(vets) as any;
     }
 
     const users = await User.findAll({
       where: { role },
-      attributes: { exclude: ['password'] },
+      attributes: ['id', 'name', 'email', 'role', 'avatar_url', 'city', 'bio', 'isVerified'],
     });
 
     res.json(users);
@@ -243,19 +258,77 @@ export const getUsersByRole = async (req: Request, res: Response): Promise<void>
   }
 };
 
-// @desc    Trigger password reset (placeholder)
-// @route   POST /api/auth/reset-password
-export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+// @desc    Request a password reset token (no email provider — token logged to console)
+// @route   POST /api/auth/forgot-password
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { users: User, vets: Vet } = db as any;
     const email = req.body.email?.trim().toLowerCase();
 
-    const user = await User.findOne({ where: { email: { [Op.iLike]: email } } }) || await Vet.findOne({ where: { email: { [Op.iLike]: email } } });
-    if (user) {
-      res.json({ message: "Password reset link sent to your email" });
-    } else {
-      res.status(404).json({ message: "User not found" });
+    if (!email) {
+      res.status(400).json({ message: "Email is required" });
+      return;
     }
+
+    // Always return 200 to avoid user enumeration
+    const account =
+      await User.findOne({ where: { email: { [Op.iLike]: email } } }) ||
+      await Vet.findOne({ where: { email: { [Op.iLike]: email } } });
+
+    if (account) {
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+      const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      account.resetToken = hashedToken;
+      account.resetTokenExpiry = expiry;
+      await account.save();
+
+      // No email provider — log token to console for development
+      console.log(`[PASSWORD RESET] Token for ${email}: ${rawToken}`);
+    }
+
+    res.json({ message: "If an account with that email exists, a reset code has been sent." });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Reset password using a valid token
+// @route   POST /api/auth/reset-password
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { users: User, vets: Vet } = db as any;
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      res.status(400).json({ message: "Token and new password are required" });
+      return;
+    }
+
+    if (String(newPassword).length < 6) {
+      res.status(400).json({ message: "Password must be at least 6 characters" });
+      return;
+    }
+
+    const hashedToken = crypto.createHash("sha256").update(String(token)).digest("hex");
+    const now = new Date();
+
+    const account =
+      await User.findOne({ where: { resetToken: hashedToken, resetTokenExpiry: { [Op.gt]: now } } }) ||
+      await Vet.findOne({ where: { resetToken: hashedToken, resetTokenExpiry: { [Op.gt]: now } } });
+
+    if (!account) {
+      res.status(400).json({ message: "Reset token is invalid or has expired" });
+      return;
+    }
+
+    account.password = await bcrypt.hash(String(newPassword), 10);
+    account.resetToken = null;
+    account.resetTokenExpiry = null;
+    await account.save();
+
+    res.json({ message: "Password has been reset successfully" });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

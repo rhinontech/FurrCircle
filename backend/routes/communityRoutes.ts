@@ -2,6 +2,7 @@ import express from "express";
 import {
   createCommunityPost,
   getCommunityFeed,
+  getMyPosts,
   getPostById,
   toggleLike,
   toggleSave,
@@ -31,6 +32,7 @@ router.post("/chats/:id/messages", protect, sendMessage);
 
 router.get("/feed", protect, getCommunityFeed);
 router.post("/posts", protect, createCommunityPost);
+router.get("/posts/me", protect, getMyPosts);
 router.get("/posts/:id", protect, getPostById);
 router.post("/posts/:id/like", protect, toggleLike);
 router.post("/posts/:id/save", protect, toggleSave);

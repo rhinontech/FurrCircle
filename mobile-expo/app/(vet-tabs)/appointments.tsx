@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, Image, Pressable, ActivityIndicator, RefreshControl, Alert } from "react-native";
 import { Clock, CheckCircle, XCircle, AlertCircle, PawPrint, CalendarDays } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useRouter } from "expo-router";
 import StatusChip from "../../components/ui/StatusChip";
 import { vetAppointmentsApi } from "@/services/vets/appointmentsApi";
 
@@ -23,6 +24,7 @@ const statusVariant = (s: string): "success" | "warning" | "info" | "danger" => 
 
 export default function AppointmentsScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const [active, setActive] = useState("Upcoming");
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +107,7 @@ export default function AppointmentsScreen() {
               <Text style={{ color: colors.textMuted, marginTop: 12, fontSize: 14 }}>No {active.toLowerCase()} appointments</Text>
             </View>
           ) : list.map((appt) => (
-            <Pressable key={appt.id} style={{ backgroundColor: colors.bgCard, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 16, opacity: updating === appt.id ? 0.7 : 1 }}>
+            <Pressable key={appt.id} onPress={() => router.push(`/appointments/${appt.id}` as any)} style={{ backgroundColor: colors.bgCard, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 16, opacity: updating === appt.id ? 0.7 : 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                 {appt.pet?.avatar_url ? (
                   <Image source={{ uri: appt.pet.avatar_url }} style={{ width: 52, height: 52, borderRadius: 14 }} resizeMode="cover" />

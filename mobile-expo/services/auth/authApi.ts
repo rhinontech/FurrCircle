@@ -31,10 +31,14 @@ export type AuthApiPayload = {
 export const authApi = {
   getMe: () => api.get<AuthApiPayload>('/auth/me'),
   login: (email: string, password: string) => api.post<AuthApiPayload>('/auth/login', { email, password }),
-  register: (name: string, email: string, password: string, role: AuthApiRole) =>
-    api.post<AuthApiPayload>('/auth/register', { name, email, password, role }),
+  register: (name: string, email: string, password: string, role: AuthApiRole, extra?: Record<string, string>) =>
+    api.post<AuthApiPayload>('/auth/register', { name, email, password, role, ...extra }),
   updateProfile: (updatedData: Record<string, unknown>) =>
     api.put<AuthApiPayload>('/auth/profile', updatedData),
+  forgotPassword: (email: string) =>
+    api.post<{ message: string }>('/auth/forgot-password', { email }),
+  resetPassword: (token: string, newPassword: string) =>
+    api.post<{ message: string }>('/auth/reset-password', { token, newPassword }),
   listShelters: async () => {
     const shelters = await api.get<any[]>('/auth/users/shelter');
     return (shelters || []).map(normalizeProfile).filter(Boolean);

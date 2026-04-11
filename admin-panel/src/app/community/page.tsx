@@ -131,8 +131,8 @@ export default function CommunityPage() {
                           <p className="text-xs text-slate-500 mt-1 italic leading-relaxed line-clamp-2">
                             "{post.content}"
                           </p>
-                          {post.image_url && (
-                            <img src={post.image_url} alt="post" className="mt-2 h-16 w-24 object-cover rounded-lg" />
+                          {post.imageUrl && (
+                            <img src={post.imageUrl} alt="post" className="mt-2 h-16 w-24 object-cover rounded-lg" />
                           )}
                         </div>
                       </div>

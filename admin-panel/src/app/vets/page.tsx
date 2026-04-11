@@ -46,7 +46,7 @@ export default function VetsPage() {
   const filtered = useMemo(() => {
     return vets.filter(v => {
       const matchTab = tab === "all" || (tab === "pending" ? !v.isVerified : v.isVerified);
-      const matchSearch = !search || v.name?.toLowerCase().includes(search.toLowerCase()) || v.email?.toLowerCase().includes(search.toLowerCase()) || v.clinic_name?.toLowerCase().includes(search.toLowerCase());
+      const matchSearch = !search || v.name?.toLowerCase().includes(search.toLowerCase()) || v.email?.toLowerCase().includes(search.toLowerCase()) || v.hospital_name?.toLowerCase().includes(search.toLowerCase());
       return matchTab && matchSearch;
     });
   }, [vets, tab, search]);
@@ -132,8 +132,8 @@ export default function VetsPage() {
                   <tr key={vet.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        {vet.avatar ? (
-                          <img src={vet.avatar} alt={vet.name} className="w-10 h-10 rounded-xl object-cover" />
+                        {vet.avatar_url ? (
+                          <img src={vet.avatar_url} alt={vet.name} className="w-10 h-10 rounded-xl object-cover" />
                         ) : (
                           <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
                             <Stethoscope size={18} className="text-primary-900" />
@@ -141,11 +141,11 @@ export default function VetsPage() {
                         )}
                         <div>
                           <p className="font-semibold text-slate-950 text-sm">{vet.name}</p>
-                          <p className="text-xs text-slate-400">{vet.clinic_name || vet.email}</p>
+                          <p className="text-xs text-slate-400">{vet.hospital_name || vet.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-xs text-slate-600 font-medium">{vet.specialty || "—"}</td>
+                    <td className="px-6 py-4 text-xs text-slate-600 font-medium">{vet.profession || "—"}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${vet.isVerified ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>
                         {vet.isVerified ? "Verified" : "Pending"}

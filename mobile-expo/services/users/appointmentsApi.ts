@@ -14,4 +14,8 @@ export const userAppointmentsApi = {
     const appointment = await api.post<any>('/appointments', payload);
     return normalizeAppointment(appointment);
   },
+  cancelAppointment: async (appointmentId: string) => {
+    const appointment = await api.patch<any>(`/appointments/${appointmentId}/status`, { status: 'cancelled' });
+    return normalizeAppointment(appointment);
+  },
 };

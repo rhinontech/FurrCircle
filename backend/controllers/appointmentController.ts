@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import db from "../models/index.ts";
 import { Op } from "sequelize";
+import { createNotification } from "../services/notificationService.ts";
 
 // @desc    List all verified veterinarians
 // @route   GET /api/vets
@@ -59,6 +60,17 @@ export const createAppointment = async (req: any, res: Response): Promise<void> 
       type: 'appointment',
       isDone: false,
     });
+
+    // Notify the vet about the new appointment request
+    await createNotification(
+      vetId,
+      "vet",
+      "appointment",
+      "New Appointment Request",
+      `${req.user.name || "A pet owner"} has requested an appointment on ${date} at ${time}.`,
+      appointment.id,
+      "appointment"
+    );
 
     res.status(201).json(appointment);
   } catch (error: any) {
@@ -139,6 +151,38 @@ export const updateAppointmentStatus = async (req: any, res: Response): Promise<
     appointment.status = status;
     if (notes) appointment.notes = notes;
     await appointment.save();
+
+    // Notify the other party about the status change
+    const statusLabels: Record<string, string> = {
+      confirmed: "confirmed",
+      cancelled: "cancelled",
+      completed: "completed",
+    };
+    const label = statusLabels[status] || status;
+
+    if (isVet) {
+      // Vet changed status → notify owner
+      await createNotification(
+        appointment.ownerId,
+        "user",
+        "appointment",
+        `Appointment ${label.charAt(0).toUpperCase() + label.slice(1)}`,
+        `Your appointment has been ${label} by the veterinarian.`,
+        appointment.id,
+        "appointment"
+      );
+    } else if (isOwner) {
+      // Owner cancelled → notify vet
+      await createNotification(
+        appointment.vetId,
+        "vet",
+        "appointment",
+        "Appointment Cancelled",
+        "An owner has cancelled their appointment.",
+        appointment.id,
+        "appointment"
+      );
+    }
 
     res.json(appointment);
   } catch (error: any) {

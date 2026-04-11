@@ -16,7 +16,12 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
   try {
     const token = req.headers.authorization.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret') as any;
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      res.status(500).json({ message: "Server configuration error: JWT_SECRET not set" });
+      return;
+    }
+    const decoded = jwt.verify(token, secret) as any;
 
     // Access models lazily inside the function — avoids ESM module-load ordering issues
     const { users: User, vets: Vet } = db as any;
@@ -72,6 +77,24 @@ export const vetOnly = (req: AuthRequest, res: Response, next: NextFunction): vo
     next();
   } else {
     res.status(403).json({ message: "Not authorized as a veterinarian" });
+  }
+};
+
+export const verifiedVetOnly = (req: AuthRequest, res: Response, next: NextFunction): void => {
+  if (req.userType === 'vet' && req.user?.isVerified) {
+    next();
+  } else if (req.userType === 'vet' && !req.user?.isVerified) {
+    res.status(403).json({ message: "Your veterinarian account is pending verification. Please wait for admin approval." });
+  } else {
+    res.status(403).json({ message: "Not authorized as a verified veterinarian" });
+  }
+};
+
+export const userAccountOnly = (req: AuthRequest, res: Response, next: NextFunction): void => {
+  if (req.userType === 'user' && req.user) {
+    next();
+  } else {
+    res.status(403).json({ message: "Not authorized as a pet owner" });
   }
 };
 

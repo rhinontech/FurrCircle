@@ -217,8 +217,8 @@ export const getAdminEvents = async (_req: Request, res: Response): Promise<void
 export const createAdminEvent = async (req: Request, res: Response): Promise<void> => {
   try {
     const { events: Event } = db as any;
-    const { title, description, date, time, location, category, image_url } = req.body;
-    const event = await Event.create({ title, description, date, time, location, category, image_url, createdBy: (req as any).user?.id });
+    const { title, description, date, time, location, category, imageUrl } = req.body;
+    const event = await Event.create({ title, description, date, time, location, category, imageUrl, organizerId: (req as any).user?.id });
     res.status(201).json(event);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -232,14 +232,14 @@ export const updateAdminEvent = async (req: Request, res: Response): Promise<voi
     const { events: Event } = db as any;
     const event = await Event.findByPk(req.params.eventId);
     if (!event) { res.status(404).json({ message: "Event not found" }); return; }
-    const { title, description, date, time, location, category, image_url, status } = req.body;
+    const { title, description, date, time, location, category, imageUrl, status } = req.body;
     if (title !== undefined) event.title = title;
     if (description !== undefined) event.description = description;
     if (date !== undefined) event.date = date;
     if (time !== undefined) event.time = time;
     if (location !== undefined) event.location = location;
     if (category !== undefined) event.category = category;
-    if (image_url !== undefined) event.image_url = image_url;
+    if (imageUrl !== undefined) event.imageUrl = imageUrl;
     if (status !== undefined) event.status = status;
     await event.save();
     res.json(event);

@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TextInput, Pressable, Image, Modal, ActivityIndicator, RefreshControl, Alert } from "react-native";
-import { Search, Stethoscope, MapPin, Star, ShieldCheck, Phone, Clock, Users, X, Heart, PawPrint } from "lucide-react-native";
+import { View, Text, ScrollView, TextInput, Pressable, Image, Modal, ActivityIndicator, RefreshControl, Alert, Linking } from "react-native";
+import { Search, Stethoscope, MapPin, Star, ShieldCheck, Phone, Clock, Users, X, Heart, PawPrint, Globe } from "lucide-react-native";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";
@@ -66,6 +66,44 @@ export default function DiscoverScreen() {
       router.push(`/community/chat/${conversation.id}` as any);
     } catch (error: any) {
       Alert.alert("Chat unavailable", error.message || "Could not start the conversation right now.");
+    }
+  };
+
+  const handleContactVet = async (vet: any) => {
+    const phone = vet?.phone;
+    if (!phone) {
+      Alert.alert("Phone unavailable", "This clinic does not have a phone number listed.");
+      return;
+    }
+    const url = `tel:${phone.replace(/[^\d+]/g, "")}`;
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        Alert.alert("Unable to call", "Calling is not supported on this device.");
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Unable to call", "Please try again in a moment.");
+    }
+  };
+
+  const handleVisitWebsite = async (item: any) => {
+    const url = item?.website || item?.websiteUrl;
+    if (!url) {
+      Alert.alert("Website unavailable", "This shelter has not provided a website yet.");
+      return;
+    }
+    const normalized = url.startsWith("http") ? url : `https://${url}`;
+    try {
+      const supported = await Linking.canOpenURL(normalized);
+      if (!supported) {
+        Alert.alert("Cannot open URL", "Could not open the website link.");
+        return;
+      }
+      await Linking.openURL(normalized);
+    } catch {
+      Alert.alert("Cannot open URL", "Please try again in a moment.");
     }
   };
 
@@ -272,8 +310,12 @@ export default function DiscoverScreen() {
                     >
                       <Text style={{ color: '#fff', fontWeight: '700' }}>Book Now</Text>
                     </Pressable>
-                    <Pressable style={{ flex: 1, backgroundColor: colors.bgSubtle, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}>
-                      <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>Contact</Text>
+                    <Pressable
+                      onPress={() => handleContactVet(selectedItem)}
+                      style={{ flex: 1, backgroundColor: colors.bgSubtle, borderRadius: 12, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+                    >
+                      <Phone size={15} color={colors.textPrimary} />
+                      <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>Call Clinic</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -319,20 +361,61 @@ export default function DiscoverScreen() {
                     <Text style={{ fontSize: 13, color: colors.textSecondary }}>{selectedItem.owner?.name || 'Pet owner'}</Text>
                     <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>{selectedItem.city || 'Location not set'}</Text>
                   </View>
-                  <Pressable onPress={() => handlePetInterest(selectedItem)} style={{ backgroundColor: colors.brand, borderRadius: 12, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
-                    <Heart size={18} color="#fff" />
-                    <Text style={{ color: '#fff', fontWeight: '700' }}>
-                      {selectedItem.isFosterOpen && !selectedItem.isAdoptionOpen ? `Request Foster for ${selectedItem.name}` : `Request Adoption for ${selectedItem.name}`}
-                    </Text>
-                  </Pressable>
+                  <View style={{ gap: 10 }}>
+                    <Pressable
+                      onPress={() => {
+                        closeModal();
+                        router.push(`/adoptions/apply?petId=${selectedItem.id}&petName=${encodeURIComponent(selectedItem.name || "")}&applicationType=${selectedItem.isFosterOpen && !selectedItem.isAdoptionOpen ? "foster" : "adoption"}` as any);
+                      }}
+                      style={{ backgroundColor: colors.brand, borderRadius: 12, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                    >
+                      <Heart size={18} color="#fff" />
+                      <Text style={{ color: '#fff', fontWeight: '700' }}>
+                        {selectedItem.isFosterOpen && !selectedItem.isAdoptionOpen ? `Apply to Foster ${selectedItem.name}` : `Apply to Adopt ${selectedItem.name}`}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handlePetInterest(selectedItem)}
+                      style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, paddingVertical: 12, alignItems: 'center' }}
+                    >
+                      <Text style={{ color: colors.textPrimary, fontWeight: '600', fontSize: 13 }}>Message Owner Instead</Text>
+                    </Pressable>
+                  </View>
                 </View>
               )}
               {modalType === "shelter" && selectedItem && (
                 <View>
                   <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 16 }}>{selectedItem.bio || 'Helping pets find their forever families.'}</Text>
-                  <Pressable style={{ backgroundColor: colors.brand, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}>
-                    <Text style={{ color: '#fff', fontWeight: '700' }}>Visit Website</Text>
-                  </Pressable>
+                  {selectedItem.city && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                      <MapPin size={15} color={colors.textMuted} />
+                      <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 8 }}>{selectedItem.city}</Text>
+                    </View>
+                  )}
+                  {selectedItem.phone && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                      <Phone size={15} color={colors.textMuted} />
+                      <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 8 }}>{selectedItem.phone}</Text>
+                    </View>
+                  )}
+                  <View style={{ gap: 10 }}>
+                    <Pressable
+                      onPress={() => handleVisitWebsite(selectedItem)}
+                      style={{ backgroundColor: colors.brand, borderRadius: 12, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                    >
+                      <Globe size={16} color="#fff" />
+                      <Text style={{ color: '#fff', fontWeight: '700' }}>Visit Website</Text>
+                    </Pressable>
+                    {selectedItem.phone && (
+                      <Pressable
+                        onPress={() => handleContactVet(selectedItem)}
+                        style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                      >
+                        <Phone size={15} color={colors.textPrimary} />
+                        <Text style={{ color: colors.textPrimary, fontWeight: '600', fontSize: 13 }}>Call Shelter</Text>
+                      </Pressable>
+                    )}
+                  </View>
                 </View>
               )}
             </ScrollView>

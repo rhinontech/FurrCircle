@@ -53,7 +53,7 @@ const normalizePetPayload = (pet: any) => {
   };
 };
 
-const canViewPet = async (petId: string, req: any) => {
+const canViewPrivatePet = async (petId: string, req: any) => {
   const { pets: Pet, appointments: Appointment } = db as any;
 
   if (req.userType === "vet") {
@@ -63,6 +63,38 @@ const canViewPet = async (petId: string, req: any) => {
 
   const pet = await Pet.findOne({ where: { id: petId, ownerId: req.user.id } });
   return !!pet;
+};
+
+const toPublicPetPayload = (pet: any, viewerId?: string) => {
+  const payload = normalizePetPayload(pet);
+  const viewerOwnsPet = viewerId && payload.ownerId === viewerId;
+
+  return {
+    id: payload.id,
+    ownerId: payload.ownerId,
+    name: payload.name,
+    avatar_url: payload.avatar_url,
+    species: payload.species,
+    breed: payload.breed,
+    gender: payload.gender,
+    age: payload.age,
+    city: payload.city,
+    description: payload.description,
+    history: payload.history,
+    healthStatus: payload.healthStatus,
+    isAdoptionOpen: payload.isAdoptionOpen,
+    isFosterOpen: payload.isFosterOpen,
+    owner: payload.owner,
+    isViewerOwner: !!viewerOwnsPet,
+    canManage: !!viewerOwnsPet,
+    healthScore: calculateHealthScore(payload),
+    reminderCount: 0,
+    nextVisit: "--",
+    Vaccines: [],
+    Medications: [],
+    Allergies: [],
+    Appointments: [],
+  };
 };
 
 // @desc    Get logged in user's pets
@@ -173,12 +205,6 @@ export const getPetById = async (req: any, res: Response): Promise<void> => {
       reminders: Reminder,
     } = db as any;
 
-    const allowed = await canViewPet(req.params.id, req);
-    if (!allowed) {
-      res.status(403).json({ message: "Not authorized to view this pet" });
-      return;
-    }
-
     const pet = await Pet.findByPk(req.params.id, {
       include: [
         { model: User, as: "owner", attributes: ["id", "name", "avatar_url", "role", "isVerified", "city", "phone"] },
@@ -202,11 +228,26 @@ export const getPetById = async (req: any, res: Response): Promise<void> => {
     }
 
     const payload = normalizePetPayload(pet);
+    const isPublicListing = !!payload.isAdoptionOpen || !!payload.isFosterOpen;
+    const isOwner = req.userType === "user" && payload.ownerId === req.user.id;
+    const hasPrivateAccess = isOwner || await canViewPrivatePet(req.params.id, req);
+
+    if (!hasPrivateAccess) {
+      if (isPublicListing) {
+        res.json(toPublicPetPayload(pet, req.user?.id));
+      } else {
+        res.status(403).json({ message: "Not authorized to view this pet" });
+      }
+      return;
+    }
+
     const reminderCount = await Reminder.count({ where: { petId: payload.id, isDone: false } });
     const nextVisit = payload.Appointments.find((appointment: any) => ["pending", "confirmed"].includes(String(appointment.status || "").toLowerCase()) && appointment.date >= today());
 
     res.json({
       ...payload,
+      isViewerOwner: isOwner,
+      canManage: isOwner,
       reminderCount,
       nextVisit: nextVisit ? nextVisit.date : payload.nextVisit || "--",
       healthScore: calculateHealthScore(payload),

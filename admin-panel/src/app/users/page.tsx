@@ -51,13 +51,13 @@ export default function UsersPage() {
   const stats = [
     { label: "Total Users", value: users.length, icon: Users, color: "bg-primary-50 text-primary-900" },
     { label: "Pet Owners", value: users.filter(u => u.role === 'owner').length, icon: UserCheck, color: "bg-emerald-50 text-emerald-700" },
-    { label: "Veterinarians", value: users.filter(u => u.role === 'veterinarian').length, icon: Stethoscope, color: "bg-blue-50 text-blue-700" },
+    { label: "Shelters", value: users.filter(u => u.role === 'shelter').length, icon: Stethoscope, color: "bg-blue-50 text-blue-700" },
     { label: "Admins", value: users.filter(u => u.role === 'admin').length, icon: Users, color: "bg-amber-50 text-amber-700" },
   ];
 
   const roleColors: Record<string, string> = {
     owner: "bg-emerald-50 text-emerald-600",
-    veterinarian: "bg-blue-50 text-blue-600",
+    shelter: "bg-blue-50 text-blue-600",
     admin: "bg-amber-50 text-amber-600",
   };
 
@@ -102,7 +102,7 @@ export default function UsersPage() {
               )}
             </div>
             <div className="flex gap-1">
-              {["all", "owner", "veterinarian", "admin"].map(role => (
+              {["all", "owner", "shelter", "admin"].map(role => (
                 <button
                   key={role}
                   onClick={() => setRoleFilter(role)}
@@ -138,8 +138,8 @@ export default function UsersPage() {
                   <tr key={user.id} className="hover:bg-slate-50/60 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        {user.avatar ? (
-                          <img src={user.avatar} alt={user.name} className="w-9 h-9 rounded-full object-cover" />
+                        {user.avatar_url ? (
+                          <img src={user.avatar_url} alt={user.name} className="w-9 h-9 rounded-full object-cover" />
                         ) : (
                           <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">
                             {user.name?.charAt(0)?.toUpperCase() || "?"}
