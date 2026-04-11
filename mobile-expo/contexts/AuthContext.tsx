@@ -43,6 +43,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updatedData: Partial<User>) => Promise<void>;
+  refreshUser: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   isLoading: boolean;
   switchUser: (user: User) => Promise<void>;
@@ -56,6 +57,7 @@ const AuthContext = createContext<AuthContextType>({
   register: async () => {},
   logout: async () => {},
   updateProfile: async () => {},
+  refreshUser: async () => {},
   completeOnboarding: async () => {},
   isLoading: true,
   switchUser: async () => {},
@@ -214,6 +216,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const freshProfile = await authApi.getMe() as AuthPayload;
+      const updatedUser = toUser({ ...toAuthPayload(user!), ...freshProfile });
+      setUser(updatedUser);
+      await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+    } catch (error) {
+      // Silently fail — stale data is acceptable if the network is unavailable
+    }
+  };
+
   const logout = async () => {
     clearAuthToken();
     setUser(null);
@@ -234,14 +247,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isLoggedIn: !!user, 
-      hasCompletedOnboarding, 
-      login, 
+    <AuthContext.Provider value={{
+      user,
+      isLoggedIn: !!user,
+      hasCompletedOnboarding,
+      login,
       register,
       logout,
       updateProfile,
+      refreshUser,
       completeOnboarding,
       isLoading,
       switchUser

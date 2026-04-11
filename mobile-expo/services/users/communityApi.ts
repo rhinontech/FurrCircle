@@ -52,4 +52,8 @@ export const userCommunityApi = {
     };
   },
   startChat: async (payload: Record<string, unknown>) => normalizeConversation(await api.post<any>('/community/chats/start', payload)),
+  getChats: async () => {
+    const chats = await api.get<any[]>('/community/chats');
+    return (chats || []).map(normalizeConversation).filter(Boolean);
+  },
 };

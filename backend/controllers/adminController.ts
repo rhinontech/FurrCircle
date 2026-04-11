@@ -126,6 +126,158 @@ export const getAllVets = async (_req: Request, res: Response): Promise<void> =>
   }
 };
 
+// @desc    Delete (ban) a user
+// @route   DELETE /api/admin/users/:userId
+export const deleteUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { users: User } = db as any;
+    const user = await User.findByPk(req.params.userId);
+    if (!user) { res.status(404).json({ message: "User not found" }); return; }
+    await user.destroy();
+    res.json({ message: "User removed successfully" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Reject / remove a vet
+// @route   DELETE /api/admin/vets/:vetId
+export const deleteVet = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { vets: Vet } = db as any;
+    const vet = await Vet.findByPk(req.params.vetId);
+    if (!vet) { res.status(404).json({ message: "Vet not found" }); return; }
+    await vet.destroy();
+    res.json({ message: "Vet removed successfully" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get ALL community posts (approved + pending)
+// @route   GET /api/admin/posts
+export const getAllPosts = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { posts: Post, users: User } = db as any;
+    const posts = await Post.findAll({
+      include: [{ model: User, as: 'author', attributes: ['name', 'role', 'avatar_url'] }],
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(posts);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get all events with booking counts and booker details
+// @route   GET /api/admin/events
+export const getAdminEvents = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { events: Event, event_bookings: EventBooking, users: User, vets: Vet } = db as any;
+    if (!Event) { res.json([]); return; }
+
+    const events = await Event.findAll({ order: [['date', 'ASC']] });
+
+    const enriched = await Promise.all(events.map(async (event: any) => {
+      const bookings = await EventBooking.findAll({ where: { eventId: event.id } });
+
+      // Fetch booker profile for each booking
+      const bookers = await Promise.all(bookings.map(async (b: any) => {
+        const table = b.userType === 'vet' ? Vet : User;
+        const profile = await table.findByPk(b.userId, {
+          attributes: ['id', 'name', 'email', 'phone'],
+        });
+        return profile ? {
+          id: b.id,
+          userId: b.userId,
+          userType: b.userType,
+          name: profile.name,
+          email: profile.email,
+          phone: profile.phone || null,
+          note: b.note || null,
+          bookedAt: b.createdAt,
+        } : null;
+      }));
+
+      return {
+        ...event.toJSON(),
+        attendeeCount: bookings.length,
+        bookers: bookers.filter(Boolean),
+      };
+    }));
+
+    res.json(enriched);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Create an event
+// @route   POST /api/admin/events
+export const createAdminEvent = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { events: Event } = db as any;
+    const { title, description, date, time, location, category, image_url } = req.body;
+    const event = await Event.create({ title, description, date, time, location, category, image_url, createdBy: (req as any).user?.id });
+    res.status(201).json(event);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update an event
+// @route   PATCH /api/admin/events/:eventId
+export const updateAdminEvent = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { events: Event } = db as any;
+    const event = await Event.findByPk(req.params.eventId);
+    if (!event) { res.status(404).json({ message: "Event not found" }); return; }
+    const { title, description, date, time, location, category, image_url, status } = req.body;
+    if (title !== undefined) event.title = title;
+    if (description !== undefined) event.description = description;
+    if (date !== undefined) event.date = date;
+    if (time !== undefined) event.time = time;
+    if (location !== undefined) event.location = location;
+    if (category !== undefined) event.category = category;
+    if (image_url !== undefined) event.image_url = image_url;
+    if (status !== undefined) event.status = status;
+    await event.save();
+    res.json(event);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete an event
+// @route   DELETE /api/admin/events/:eventId
+export const deleteAdminEvent = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { events: Event } = db as any;
+    const event = await Event.findByPk(req.params.eventId);
+    if (!event) { res.status(404).json({ message: "Event not found" }); return; }
+    await event.destroy();
+    res.json({ message: "Event deleted" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get pets open for adoption
+// @route   GET /api/admin/adoptions
+export const getAdoptionPets = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { pets: Pet, users: User } = db as any;
+    const pets = await Pet.findAll({
+      where: { isAdoptionOpen: true },
+      include: [{ model: User, as: 'owner', attributes: ['name', 'email'] }],
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(pets);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Get platform stats overview
 // @route   GET /api/admin/stats
 export const getAdminStats = async (_req: Request, res: Response): Promise<void> => {

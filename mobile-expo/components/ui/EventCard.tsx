@@ -36,9 +36,14 @@ export default function EventCard({
         borderRadius: 24,
         overflow: "hidden",
         backgroundColor: colors.bgCard,
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: colors.border,
         opacity: pressed ? 0.94 : 1,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
       })}
     >
       <View style={{ position: "relative" }}>
@@ -49,7 +54,7 @@ export default function EventCard({
         )}
         <View style={{ position: "absolute", top: 14, left: 14, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, minWidth: 58, alignItems: "center" }}>
           <Text style={{ fontSize: 10, fontWeight: "800", color: colors.brand, textTransform: "uppercase" }}>{month}</Text>
-          <Text style={{ fontSize: 20, fontWeight: "800", color: colors.textPrimary }}>{day}</Text>
+          <Text style={{ fontSize: 20, fontWeight: "800", color: "#1e293b" }}>{day}</Text>
         </View>
         <View style={{ position: "absolute", right: 14, top: 14, backgroundColor: "rgba(15,23,42,0.72)", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 }}>
           <Text style={{ fontSize: 10, fontWeight: "700", color: "#fff", textTransform: "uppercase" }}>{category}</Text>

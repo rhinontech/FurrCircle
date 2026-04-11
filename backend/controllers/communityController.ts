@@ -236,12 +236,12 @@ export const createCommunityPost = async (req: any, res: Response): Promise<void
       content: String(content).trim(),
       category,
       imageUrl,
-      status: "pending",
+      status: "approved",
     });
 
     const resolveProfile = createProfileResolver();
     res.status(201).json({
-      message: "Post submitted for verification",
+      message: "Post published",
       post: await serializePost(post, resolveProfile),
     });
   } catch (error: any) {

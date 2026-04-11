@@ -34,6 +34,7 @@ import adminRoutes from './routes/adminRoutes.ts';
 import healthRoutes from './routes/healthRoutes.ts';
 import appointmentRoutes from './routes/appointmentRoutes.ts';
 import reminderRoutes from './routes/reminderRoutes.ts';
+import uploadRoutes from './routes/uploadRoutes.ts';
 
 // Routes
 app.get('/', (req: Request, res: Response) => {
@@ -48,6 +49,7 @@ app.use('/api/vets', appointmentRoutes); // getVets lives here
 app.use('/api/community', communityRoutes);
 app.use('/api/reminders', reminderRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Test DB Connection and Start Server
 const startServer = async () => {

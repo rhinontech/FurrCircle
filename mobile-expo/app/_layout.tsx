@@ -2,10 +2,11 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Image } from 'react-native';
 import { Heart, Bell } from 'lucide-react-native';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { NotificationProvider } from '../contexts/NotificationContext';
 import React, { useEffect } from 'react';
 import '@/global.css';
 
@@ -16,10 +17,7 @@ function GlobalHeader() {
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.border }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 20 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Heart size={24} color={colors.brand} fill={colors.brand} />
-          <Text style={{ fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginLeft: 8 }}>PawsHub</Text>
-        </View>
+        <Image source={require("../assets/PawsHub_logo_full.png")} style={{ width: 120, height: 36 }} resizeMode="contain" />
         <Pressable
           onPress={() => router.push('/notifications')}
           style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
@@ -107,7 +105,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppShell />
+        <NotificationProvider>
+          <AppShell />
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   );
