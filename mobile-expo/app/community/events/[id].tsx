@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, Alert } fr
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, CalendarDays, Clock3, MapPin, Users, Mail, ShieldCheck } from "lucide-react-native";
 import { useTheme } from "../../../contexts/ThemeContext";
-import { api } from "../../../services/api";
+import { userCommunityApi } from "@/services/users/communityApi";
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString([], {
@@ -30,7 +30,7 @@ export default function EventDetailScreen() {
   const fetchEvent = async () => {
     if (!id) return;
     try {
-      const data = await api.get(`/community/events/${id}`);
+      const data = await userCommunityApi.getEventById(String(id));
       setEvent(data);
     } catch (error: any) {
       Alert.alert("Error", error.message || "Could not load event details.");
@@ -47,9 +47,7 @@ export default function EventDetailScreen() {
     if (!event) return;
     setBooking(true);
     try {
-      const res = await api.post(`/community/events/${event.id}/book`, {
-        note: `Booking request for ${event.title}`,
-      });
+      const res = await userCommunityApi.bookEvent(event.id, `Booking request for ${event.title}`);
       setEvent(res.event);
       Alert.alert(
         "Booking confirmed",

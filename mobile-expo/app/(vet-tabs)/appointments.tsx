@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Image, Pressable, ActivityIndicator, RefreshCon
 import { Clock, CheckCircle, XCircle, AlertCircle, PawPrint, CalendarDays } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import StatusChip from "../../components/ui/StatusChip";
-import { api } from "../../services/api";
+import { vetAppointmentsApi } from "@/services/vets/appointmentsApi";
 
 const tabs = ["Upcoming", "Past"];
 
@@ -31,7 +31,7 @@ export default function AppointmentsScreen() {
 
   const fetchAppointments = useCallback(async () => {
     try {
-      const data = await api.get('/appointments/vet');
+      const data = await vetAppointmentsApi.listAppointments();
       setAppointments(data || []);
     } catch (error) {
       console.error("Error fetching appointments:", error);
@@ -53,7 +53,7 @@ export default function AppointmentsScreen() {
   const handleUpdateStatus = async (id: string, status: string) => {
     setUpdating(id);
     try {
-      await api.patch(`/appointments/${id}/status`, { status });
+      await vetAppointmentsApi.updateStatus(id, status);
       // Update local state
       setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
     } catch (error: any) {

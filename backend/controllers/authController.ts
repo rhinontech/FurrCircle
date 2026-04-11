@@ -3,19 +3,94 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import db from "../models/index.ts";
 
-const { User } = db as any;
+const SELF_SERVICE_USER_ROLES = new Set(["owner", "shelter"]);
+const PROFILE_IMAGE_FIELDS = ["avatar_url", "phone", "bio", "city", "address"] as const;
 
-const generateToken = (id: string, role: string) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET || 'fallback_secret', {
+// userType is embedded in the JWT so middleware knows which table to query
+const generateToken = (id: string, userType: 'user' | 'vet') => {
+  return jwt.sign({ id, userType }, process.env.JWT_SECRET || 'fallback_secret', {
     expiresIn: "30d",
   });
 };
 
-// @desc    Register a new user
+const toMemberSince = (value?: Date | string | null) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : String(parsed.getFullYear());
+};
+
+const buildAuthPayload = async (subject: any, userType: 'user' | 'vet', token?: string) => {
+  const isVet = userType === 'vet';
+  const payload: Record<string, any> = {
+    id: subject.id,
+    name: subject.name,
+    email: subject.email,
+    role: isVet ? 'veterinarian' : subject.role,
+    isVerified: subject.isVerified,
+    avatar_url: subject.avatar_url,
+    phone: subject.phone,
+    bio: subject.bio,
+    city: subject.city,
+    address: subject.address,
+    memberSince: toMemberSince(subject.createdAt),
+  };
+
+  if (isVet) {
+    payload.hospital_name = subject.hospital_name;
+    payload.profession = subject.profession;
+    payload.experience = subject.experience;
+    payload.working_hours = subject.working_hours;
+    payload.rating = subject.rating;
+  } else {
+    payload.petCount = await db.pets.count({ where: { ownerId: subject.id } });
+  }
+
+  if (token) {
+    payload.token = token;
+  }
+
+  return payload;
+};
+
+// @desc    Register a new user (owner/shelter/admin) OR veterinarian
 // @route   POST /api/auth/register
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { users: User, vets: Vet } = db as any;
     const { name, email, password, role } = req.body;
+
+    // Vets register into the Vet table
+    if (role === 'veterinarian') {
+      const vetExists = await Vet.findOne({ where: { email } });
+      if (vetExists) {
+        res.status(400).json({ message: "Veterinarian already exists" });
+        return;
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      const vet = await Vet.create({
+        name,
+        email,
+        password: hashedPassword,
+        isVerified: false, // requires admin approval
+      });
+
+      const token = generateToken(vet.id, 'vet');
+      res.status(201).json(await buildAuthPayload(vet, 'vet', token));
+      return;
+    }
+
+    // Owners, shelters, admins register into the User table
+    const requestedRole = role || 'owner';
+    if (!SELF_SERVICE_USER_ROLES.has(requestedRole)) {
+      res.status(403).json({ message: "This role cannot be created through public registration" });
+      return;
+    }
 
     const userExists = await User.findOne({ where: { email } });
     if (userExists) {
@@ -30,126 +105,129 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       name,
       email,
       password: hashedPassword,
-      role: role || 'owner',
-      isVerified: role === 'veterinarian' ? false : true, 
+      role: requestedRole,
+      isVerified: true,
     });
 
-    if (user) {
-      res.status(201).json({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        token: generateToken(user.id, user.role),
-      });
-    } else {
-      res.status(400).json({ message: "Invalid user data" });
-    }
+    const token = generateToken(user.id, 'user');
+    res.status(201).json(await buildAuthPayload(user, 'user', token));
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Auth user & get token
+// @desc    Login — checks User table first, then Vet table
 // @route   POST /api/auth/login
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { users: User, vets: Vet } = db as any;
     const { email, password } = req.body;
 
+    // Try User table first
     const user = await User.findOne({ where: { email } });
-
     if (user && (await bcrypt.compare(password, user.password))) {
-      res.json({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isVerified: user.isVerified,
-        token: generateToken(user.id, user.role),
-      });
-    } else {
-      res.status(401).json({ message: "Invalid email or password" });
+      const token = generateToken(user.id, 'user');
+      res.json(await buildAuthPayload(user, 'user', token));
+      return;
     }
+
+    // Try Vet table
+    const vet = await Vet.findOne({ where: { email } });
+    if (vet && (await bcrypt.compare(password, vet.password))) {
+      const token = generateToken(vet.id, 'vet');
+      res.json(await buildAuthPayload(vet, 'vet', token));
+      return;
+    }
+
+    res.status(401).json({ message: "Invalid email or password" });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get user profile
-// @route   GET /api/auth/me
+// @desc    Get current user/vet profile
+// @route   GET /api/auth/me  or  GET /api/auth/profile
 export const getUserProfile = async (req: any, res: Response): Promise<void> => {
   try {
-    const user = await User.findByPk(req.user.id, {
-      attributes: { exclude: ['password'] }
-    });
-
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
+    res.json(await buildAuthPayload(req.user, req.userType || 'user'));
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Update user profile
+// @desc    Update profile (user or vet)
 // @route   PUT /api/auth/profile
 export const updateUserProfile = async (req: any, res: Response): Promise<void> => {
   try {
-    const user = await User.findByPk(req.user.id);
+    const { users: User, vets: Vet } = db as any;
+    const isVet = req.userType === 'vet';
 
-    if (user) {
-      user.name = req.body.name || user.name;
-      user.email = req.body.email || user.email;
-      user.avatar_url = req.body.avatar_url || user.avatar_url;
-      user.phone = req.body.phone || user.phone;
-      user.bio = req.body.bio || user.bio;
-      user.clinic_name = req.body.clinic_name || user.clinic_name;
-      user.license_number = req.body.license_number || user.license_number;
+    if (isVet) {
+      const vet = await Vet.findByPk(req.user.id);
+      if (!vet) {
+        res.status(404).json({ message: "Veterinarian not found" });
+        return;
+      }
+
+      const vetFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email', 'hospital_name', 'profession', 'experience', 'working_hours'];
+      vetFields.forEach(field => {
+        if (req.body[field] !== undefined) vet[field] = req.body[field];
+      });
 
       if (req.body.password) {
         const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(req.body.password, salt);
+        vet.password = await bcrypt.hash(req.body.password, salt);
       }
 
-      await user.save();
-
-      res.json({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isVerified: user.isVerified,
-        avatar_url: user.avatar_url,
-        phone: user.phone,
-        bio: user.bio,
-        clinic_name: user.clinic_name,
-        license_number: user.license_number,
-        token: generateToken(user.id, user.role),
-      });
-    } else {
-      res.status(404).json({ message: "User not found" });
+      await vet.save();
+      const token = generateToken(vet.id, 'vet');
+      res.json(await buildAuthPayload(vet, 'vet', token));
+      return;
     }
+
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const userFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email'];
+    userFields.forEach(field => {
+      if (req.body[field] !== undefined) user[field] = req.body[field];
+    });
+
+    if (req.body.password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(req.body.password, salt);
+    }
+
+    await user.save();
+    const token = generateToken(user.id, 'user');
+    res.json(await buildAuthPayload(user, 'user', token));
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get users by role (for discover screen)
+// @desc    Get users by role (for discover screen — vets, shelters)
 // @route   GET /api/auth/users/:role
 export const getUsersByRole = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { users: User, vets: Vet } = db as any;
     const { role } = req.params;
-    const whereClause: any = { role };
-    
+
+    // Vets come from the Vet table
     if (role === 'veterinarian') {
-      whereClause.isVerified = true;
+      const vets = await Vet.findAll({
+        where: { isVerified: true },
+        attributes: { exclude: ['password'] },
+      });
+      return res.json(vets) as any;
     }
 
     const users = await User.findAll({
-      where: whereClause,
-      attributes: ['id', 'name', 'avatar_url', 'role', 'clinic_name', 'bio', 'city', 'rating', 'yearsExp']
+      where: { role },
+      attributes: { exclude: ['password'] },
     });
 
     res.json(users);
@@ -162,12 +240,11 @@ export const getUsersByRole = async (req: Request, res: Response): Promise<void>
 // @route   POST /api/auth/reset-password
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { users: User, vets: Vet } = db as any;
     const { email } = req.body;
-    const user = await User.findOne({ where: { email } });
 
+    const user = await User.findOne({ where: { email } }) || await Vet.findOne({ where: { email } });
     if (user) {
-      // Logic to generate reset token and send email would go here.
-      // For now, we simulate success.
       res.json({ message: "Password reset link sent to your email" });
     } else {
       res.status(404).json({ message: "User not found" });

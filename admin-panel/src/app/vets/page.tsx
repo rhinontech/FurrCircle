@@ -1,10 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { 
-  Stethoscope, 
-  MapPin, 
-  Star, 
-  Search, 
+import {
+  Stethoscope,
   MoreVertical,
   ShieldCheck,
   ClipboardList,
@@ -12,20 +9,16 @@ import {
   FileCheck,
   AlertTriangle
 } from "lucide-react";
+import { adminApi } from "@/lib/adminApiClient";
 
 export default function VetsPage() {
   const [vets, setVets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api") + "/admin";
-
   const fetchVets = async () => {
     try {
-      // In a real app, you'd include the admin JWT token here
-      const response = await fetch(`${API_BASE_URL}/unverified-vets`);
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to fetch");
+      const data = await adminApi.get<any[]>('/admin/vets/pending');
       setVets(data);
     } catch (err: any) {
       setError(err.message);
@@ -40,13 +33,9 @@ export default function VetsPage() {
 
   const handleVerify = async (id: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/vets/${id}/verify`, {
-        method: "PATCH"
-      });
-      if (response.ok) {
-        setVets(vets.filter(v => v.id !== id));
-      }
-    } catch (err) {
+      await adminApi.patch(`/admin/vets/${id}/verify`);
+      setVets(vets.filter(v => v.id !== id));
+    } catch {
       alert("Verification failed");
     }
   };

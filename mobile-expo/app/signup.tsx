@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from "react-native";
 import { Heart, Mail, Lock, User, ChevronRight, PawPrint, Stethoscope } from "lucide-react-native";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth, type UserRole } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,7 +14,7 @@ export default function SignupScreen() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("owner"); // "owner" | "veterinarian"
+  const [role, setRole] = useState<UserRole>("owner");
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {

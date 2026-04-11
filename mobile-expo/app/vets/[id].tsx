@@ -3,7 +3,7 @@ import { View, Text, Pressable, Image, ScrollView, ActivityIndicator, Alert, Lin
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, Clock3, MapPin, Phone, Star, Stethoscope } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userDiscoverApi } from "@/services/users/discoverApi";
 
 type Vet = {
   id: string;
@@ -48,8 +48,7 @@ export default function VetDetailsScreen() {
 
   const fetchVet = useCallback(async () => {
     try {
-      const vets = await api.get("/appointments/vets");
-      const match = Array.isArray(vets) ? vets.find((item) => String(item.id) === String(id)) : null;
+      const match = await userDiscoverApi.getVetById(String(id));
       setVet(match || null);
     } catch (error) {
       console.error("Error fetching vet details", error);

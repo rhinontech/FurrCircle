@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Syringe, Pill, Calendar, FileText, ChevronRight, Edit3, Heart, Home, PawPrint, ShieldAlert } from "lucide-react-native";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userPetsApi } from "@/services/users/petsApi";
 
 const statusVariant = (s: string) => {
   const status = s?.toLowerCase() || '';
@@ -26,7 +26,7 @@ export default function PetDetailScreen() {
 
   const fetchPet = async () => {
     try {
-      const data = await api.get(`/pets/${id}`);
+      const data = await userPetsApi.getPetById(String(id));
       setPet(data);
       setIsAdoptionOpen(data.isAdoptionOpen || false);
       setIsFosterOpen(data.isFosterOpen || false);
@@ -51,7 +51,7 @@ export default function PetDetailScreen() {
   const handleToggleListing = async (type: "adoption" | "foster", value: boolean) => {
     try {
       const payload = type === "adoption" ? { isAdoptionOpen: value } : { isFosterOpen: value };
-      const updatedPet = await api.patch(`/pets/${id}/listing`, payload);
+      const updatedPet = await userPetsApi.updateListing(String(id), payload);
       if (type === "adoption") setIsAdoptionOpen(updatedPet.isAdoptionOpen);
       else setIsFosterOpen(updatedPet.isFosterOpen);
     } catch (error: any) {

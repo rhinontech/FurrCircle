@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, A
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, FileText, Calendar, ShieldAlert } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userHealthApi } from "@/services/users/healthApi";
 
 export default function RecordsScreen() {
   const router = useRouter();
@@ -18,12 +18,9 @@ export default function RecordsScreen() {
   const fetchRecords = async () => {
     try {
       if (!petId) return;
-      const [recordsData, allergiesData] = await Promise.all([
-        api.get(`/health/records/${petId}`),
-        api.get(`/health/allergies/${petId}`),
-      ]);
-      setRecords(recordsData || []);
-      setAllergies(allergiesData || []);
+      const data = await userHealthApi.getRecordsData(String(petId));
+      setRecords(data.records);
+      setAllergies(data.allergies);
     } catch (error) {
       console.error("Error fetching medical records", error);
       Alert.alert("Error", "Could not load medical records.");

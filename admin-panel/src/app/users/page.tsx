@@ -1,27 +1,22 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { 
-  Users, 
-  Search, 
-  Filter, 
+import {
+  Users,
   MoreVertical,
   ShieldCheck,
-  UserPlus,
   AlertCircle,
   UserCheck
 } from "lucide-react";
+import { adminApi } from "@/lib/adminApiClient";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api") + "/admin";
-
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/users`);
-      const data = await response.json();
-      if (response.ok) setUsers(data);
+      const data = await adminApi.get<any[]>('/admin/users');
+      setUsers(data);
     } catch (err) {
       console.error(err);
     } finally {

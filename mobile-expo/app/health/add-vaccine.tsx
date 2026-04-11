@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, KeyboardAvo
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Save } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userHealthApi } from "@/services/users/healthApi";
 
 const vaccinePresets = [
   { name: "Rabies", status: "done", nextDueDate: "2027-04-01" },
@@ -30,7 +30,7 @@ export default function AddVaccineScreen() {
 
     setLoading(true);
     try {
-      await api.post(`/health/vaccines/${petId}`, { 
+      await userHealthApi.addVaccine(String(petId), { 
         name, 
         dateAdministered: dateAdministered || new Date().toISOString(),
         nextDueDate: nextDueDate || undefined,

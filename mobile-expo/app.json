@@ -31,7 +31,14 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow PawsHub to access your photos so you can upload a profile picture.",
+          "cameraPermission": "Allow PawsHub to access your camera so you can take a profile picture."
+        }
+      ]
     ]
   }
 }

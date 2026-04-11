@@ -3,8 +3,8 @@ import { View, Text, ScrollView, TextInput, Pressable, Image, Modal, ActivityInd
 import { Search, Stethoscope, MapPin, Star, ShieldCheck, Phone, Clock, Users, X, Heart, PawPrint } from "lucide-react-native";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
 import { useRouter } from "expo-router";
+import { userDiscoverApi } from "@/services/users/discoverApi";
 
 const categories = ["All", "Vets", "Adoption", "Foster", "Shelters"];
 
@@ -24,14 +24,10 @@ export default function DiscoverScreen() {
 
   const fetchData = async () => {
     try {
-      const [vetsRes, sheltersRes, petsRes] = await Promise.all([
-        api.get('/appointments/vets'),
-        api.get('/auth/users/shelter'),
-        api.get('/pets/discover')
-      ]);
-      setVets(vetsRes || []);
-      setShelters(sheltersRes || []);
-      setPets(petsRes || []);
+      const data = await userDiscoverApi.getDiscoverData();
+      setVets(data.vets);
+      setShelters(data.shelters);
+      setPets(data.pets);
     } catch (error) {
       console.error("Error fetching discover data", error);
     } finally {
@@ -61,7 +57,7 @@ export default function DiscoverScreen() {
     }
 
     try {
-      const conversation = await api.post("/community/chats/start", {
+      const conversation = await userDiscoverApi.startPetInterestChat({
         recipientId: owner.id,
         petId: pet.id,
         message: `Hi ${owner.name || ""}, I would love to ask about ${pet?.name || "this pet"} and whether ${actionLabel} is still available.`,
@@ -346,4 +342,3 @@ export default function DiscoverScreen() {
     </View>
   );
 }
-

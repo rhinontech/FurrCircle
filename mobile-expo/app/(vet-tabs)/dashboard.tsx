@@ -4,7 +4,7 @@ import { CalendarDays, PawPrint, Star, Clock, ChevronRight, CheckCircle, AlertCi
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import StatusChip from "../../components/ui/StatusChip";
-import { api } from "../../services/api";
+import { vetHomeApi } from "@/services/vets/homeApi";
 
 export default function VetDashboard() {
   const { colors } = useTheme();
@@ -17,10 +17,7 @@ export default function VetDashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsData, apptsData] = await Promise.all([
-        api.get("/appointments/vet/stats"),
-        api.get("/appointments/vet")
-      ]);
+      const { stats: statsData, appointments: apptsData } = await vetHomeApi.getHomeData();
       
       const mappedStats = [
         { label: "Today's Appts", value: String(statsData.todayAppointments || 0), icon: CalendarDays, color: "#0ea5e9" },

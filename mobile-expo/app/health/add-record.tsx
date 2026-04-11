@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, KeyboardAvo
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Save } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userHealthApi } from "@/services/users/healthApi";
 
 export default function AddRecordScreen() {
   const router = useRouter();
@@ -24,7 +24,7 @@ export default function AddRecordScreen() {
 
     setLoading(true);
     try {
-      await api.post(`/health/records/${petId}`, { 
+      await userHealthApi.addRecord(String(petId), { 
         title, 
         clinic_name: clinicName, 
         veterinarian_name: veterinarianName,

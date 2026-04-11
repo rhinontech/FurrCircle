@@ -1,28 +1,23 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { 
-  PawPrint, 
-  Search, 
-  Filter, 
-  ChevronRight, 
+import {
+  PawPrint,
+  ChevronRight,
   MoreVertical,
   Activity,
   Heart,
   Droplets,
-  Calendar
 } from "lucide-react";
+import { adminApi } from "@/lib/adminApiClient";
 
 export default function PetsPage() {
   const [pets, setPets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api") + "/admin";
-
   const fetchPets = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/pets`);
-      const data = await response.json();
-      if (response.ok) setPets(data);
+      const data = await adminApi.get<any[]>('/admin/pets');
+      setPets(data);
     } catch (err) {
       console.error(err);
     } finally {

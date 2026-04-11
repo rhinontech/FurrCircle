@@ -25,7 +25,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: "8mb" }));
 
 import authRoutes from './routes/authRoutes.ts';
 import petRoutes from './routes/petRoutes.ts';

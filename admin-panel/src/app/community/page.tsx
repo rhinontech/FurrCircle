@@ -1,31 +1,24 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { 
-  MessageSquare, 
-  Search, 
-  Filter, 
-  MoreVertical,
-  Flag,
+import {
+  MessageSquare,
   CheckCircle2,
   AlertTriangle,
   Star,
   Users,
-  Eye,
   Trash2,
   UserCheck
 } from "lucide-react";
+import { adminApi } from "@/lib/adminApiClient";
 
 export default function CommunityPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api") + "/admin";
-
   const fetchPendingPosts = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/pending-posts`);
-      const data = await response.json();
-      if (response.ok) setPosts(data);
+      const data = await adminApi.get<any[]>('/admin/pending-posts');
+      setPosts(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -39,15 +32,9 @@ export default function CommunityPage() {
 
   const handleModerate = async (id: string, status: "approved" | "rejected") => {
     try {
-      const response = await fetch(`${API_BASE_URL}/posts/${id}/moderate`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status })
-      });
-      if (response.ok) {
-        setPosts(posts.filter(p => p.id !== id));
-      }
-    } catch (err) {
+      await adminApi.patch(`/admin/post-moderation/${id}`, { status });
+      setPosts(posts.filter(p => p.id !== id));
+    } catch {
       alert("Moderation failed");
     }
   };

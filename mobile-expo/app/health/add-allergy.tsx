@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, KeyboardAvo
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Save } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userHealthApi } from "@/services/users/healthApi";
 
 const severityOptions = ["mild", "moderate", "severe"];
 
@@ -26,7 +26,7 @@ export default function AddAllergyScreen() {
 
     setLoading(true);
     try {
-      await api.post(`/health/allergies/${petId}`, {
+      await userHealthApi.addAllergy(String(petId), {
         allergen: allergen.trim(),
         severity,
         reaction: reaction.trim(),

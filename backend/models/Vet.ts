@@ -24,10 +24,12 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
-            verified: {
+            // Maps to existing 'verified' column in DB
+            isVerified: {
                 type: DataTypes.BOOLEAN,
                 allowNull: false,
                 defaultValue: false,
+                field: 'verified',
             },
             hospital_name: {
                 type: DataTypes.STRING,
@@ -45,17 +47,35 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
-            profile_photo: {
-                type: DataTypes.STRING,
+            // Maps to existing 'profile_photo' column in DB
+            avatar_url: {
+                type: DataTypes.TEXT,
                 allowNull: true,
+                field: 'profile_photo',
             },
-            phone_number: {
+            // Maps to existing 'phone_number' column in DB
+            phone: {
                 type: DataTypes.STRING,
                 allowNull: true,
+                field: 'phone_number',
             },
             address: {
                 type: DataTypes.STRING,
                 allowNull: true,
+            },
+            // New fields — alter:true will ADD these columns
+            city: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            bio: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            rating: {
+                type: DataTypes.FLOAT,
+                allowNull: true,
+                defaultValue: 0,
             },
         },
         {
@@ -65,8 +85,8 @@ export default (sequelize: Sequelize) => {
     );
 
     (Vet as any).associate = (models: any) => {
-        if (models.VetReview) Vet.hasMany(models.VetReview, { foreignKey: 'vet_id', as: 'reviews' });
-        if (models.Appointment) Vet.hasMany(models.Appointment, { foreignKey: 'vet_id', as: 'appointments' });
+        if (models.vet_reviews) Vet.hasMany(models.vet_reviews, { foreignKey: 'vetId', as: 'reviews' });
+        if (models.appointments) Vet.hasMany(models.appointments, { foreignKey: 'vetId', as: 'appointments' });
     };
 
     return Vet;

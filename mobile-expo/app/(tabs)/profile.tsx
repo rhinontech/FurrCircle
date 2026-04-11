@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, ScrollView, Image, Pressable, Switch } from "react-native";
-import { Settings, ChevronRight, PawPrint, Bookmark, FileText, Bell, Shield, LogOut, Moon, Sun, Stethoscope } from "lucide-react-native";
+import { Settings, ChevronRight, PawPrint, Bookmark, FileText, Bell, Shield, LogOut, Moon, Sun, MapPin, Mail, Phone, Pencil } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -10,11 +10,11 @@ import { useRouter } from "expo-router";
 
 export default function ProfileScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
-  const { user, logout, login } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
 
   const menuItems = [
-    { icon: PawPrint, label: "My Pets", count: String(user?.petCount ?? 3), action: () => router.push('/(tabs)/pets') },
+    { icon: PawPrint, label: "My Pets", count: String(user?.petCount ?? 0), action: () => router.push('/(tabs)/pets') },
     { icon: Bookmark, label: "Saved Vets", count: "5", action: () => router.push('/profile/vets') },
     { icon: FileText, label: "My Posts", count: "8", action: () => router.push('/profile/posts') },
     { icon: Bell, label: "Notifications", action: () => router.push('/reminders') },
@@ -22,7 +22,12 @@ export default function ProfileScreen() {
     { icon: Settings, label: "App Settings", action: () => router.push('/profile/settings') },
   ];
 
-  const avatar = user?.avatar ?? require("../../assets/pet-dog.jpg");
+  const avatar = user?.avatar ? { uri: user.avatar } : require("../../assets/pet-dog.jpg");
+  const profilePills = [
+    { icon: MapPin, label: user?.city || "Add city" },
+    { icon: Phone, label: user?.phone || "Add phone" },
+    { icon: Mail, label: user?.email || "Add email" },
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -32,20 +37,47 @@ export default function ProfileScreen() {
 
           {/* Hero */}
           <View style={{ backgroundColor: colors.heroBg, borderRadius: 28, padding: 24, marginBottom: 24 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 16 }}>
+              <Pressable
+                onPress={() => router.push('/profile/edit')}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 38, paddingHorizontal: 14, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' }}
+              >
+                <Pencil size={16} color="#fff" />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Edit</Text>
+              </Pressable>
+            </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
               <Image source={avatar} style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)' }} resizeMode="cover" />
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 18, fontWeight: '700', color: '#fff' }}>{user?.name ?? "Sarah Johnson"}</Text>
-                <Text style={{ fontSize: 14, color: colors.heroSub, marginTop: 2 }}>Pet parent since {user?.memberSince ?? "2022"}</Text>
+                <Text style={{ fontSize: 14, color: colors.heroSub, marginTop: 2 }}>
+                  {user?.memberSince ? `Pet parent since ${user.memberSince}` : "Build a profile that feels like you"}
+                </Text>
+                <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', marginTop: 8, lineHeight: 18 }}>
+                  {user?.bio || "Add a short bio, your city, and a profile photo so vets and shelters can understand you faster."}
+                </Text>
               </View>
             </View>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
+              {profilePills.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <Icon size={14} color="#fff" />
+                    <Text style={{ fontSize: 12, color: '#fff', maxWidth: 180 }} numberOfLines={1}>{item.label}</Text>
+                  </View>
+                );
+              })}
+            </View>
+
             <View style={{ flexDirection: 'row', gap: 32, marginTop: 20 }}>
               {[
-                 { n: String(user?.petCount ?? 3), l: "Pets", action: () => router.push('/(tabs)/pets') }, 
-                 { n: "5", l: "Vets", action: () => router.push('/profile/vets') }, 
-                 { n: "8", l: "Posts", action: () => router.push('/profile/posts') }
+                 { n: String(user?.petCount ?? 0), l: "Pets", action: () => router.push('/(tabs)/pets') }, 
+                 { n: user?.role === 'shelter' ? "Shelter" : "Owner", l: "Account" }, 
+                 { n: user?.isVerified ? "Verified" : "Active", l: "Status" }
               ].map((s) => (
-                <Pressable key={s.l} onPress={s.action} style={{ alignItems: 'center' }}>
+                <Pressable key={s.l} onPress={s.action} disabled={!s.action} style={{ alignItems: 'center' }}>
                   <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>{s.n}</Text>
                   <Text style={{ fontSize: 12, color: colors.heroSub, marginTop: 2 }}>{s.l}</Text>
                 </Pressable>

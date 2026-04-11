@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, ShieldCheck, Download, Plus } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import StatusChip from "../../components/ui/StatusChip";
-import { api } from "../../services/api";
+import { userHealthApi } from "@/services/users/healthApi";
 
 export default function VaccinesScreen() {
   const router = useRouter();
@@ -18,7 +18,7 @@ export default function VaccinesScreen() {
   const fetchVaccines = async () => {
     try {
       if (!petId) return;
-      const data = await api.get(`/health/vaccines/${petId}`);
+      const data = await userHealthApi.listVaccines(String(petId));
       setVaccines(data);
     } catch (error) {
       console.error("Error fetching vaccines", error);

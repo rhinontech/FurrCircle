@@ -4,8 +4,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Heart, MessageCircle, Share2, Bookmark, PawPrint } from "lucide-react-native";
 import StatusChip from "../../../components/ui/StatusChip";
 import { useTheme } from "../../../contexts/ThemeContext";
-import { api } from "../../../services/api";
 import { useAuth } from "../../../contexts/AuthContext";
+import { userCommunityApi } from "@/services/users/communityApi";
 
 function timeAgo(date: string) {
   const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
@@ -36,7 +36,7 @@ export default function CommunityPostDetailScreen() {
   const fetchPost = async () => {
     if (!id) return;
     try {
-      const data = await api.get(`/community/posts/${id}`);
+      const data = await userCommunityApi.getPostById(String(id));
       setPost(data);
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to load post.");
@@ -55,7 +55,7 @@ export default function CommunityPostDetailScreen() {
   const handleLike = async () => {
     if (!post) return;
     try {
-      const res = await api.post(`/community/posts/${post.id}/like`);
+      const res = await userCommunityApi.togglePostLike(post.id);
       setPost((prev: any) => {
         if (!prev) return prev;
         const likes = res.liked
@@ -71,7 +71,7 @@ export default function CommunityPostDetailScreen() {
   const handleSave = async () => {
     if (!post) return;
     try {
-      const res = await api.post(`/community/posts/${post.id}/save`);
+      const res = await userCommunityApi.togglePostSave(post.id);
       setPost((prev: any) => {
         if (!prev) return prev;
         const savedBy = res.saved
@@ -87,7 +87,7 @@ export default function CommunityPostDetailScreen() {
   const handleShare = async () => {
     if (!post) return;
     try {
-      const res = await api.post(`/community/posts/${post.id}/share`);
+      const res = await userCommunityApi.sharePost(post.id);
       await Share.share({
         message: `${post.author?.name || "PawsHub member"} posted in ${post.category}: ${post.content}`,
       });
@@ -101,7 +101,7 @@ export default function CommunityPostDetailScreen() {
     if (!post || !commentText.trim()) return;
     setCommentSubmitting(true);
     try {
-      const res = await api.post(`/community/posts/${post.id}/comment`, { text: commentText.trim() });
+      const res = await userCommunityApi.addPostComment(post.id, commentText.trim());
       setPost((prev: any) => (prev ? { ...prev, comments: [...(prev.comments || []), res.comment] } : prev));
       setCommentText("");
     } catch (error: any) {
