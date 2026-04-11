@@ -64,7 +64,6 @@ export default function CommunityScreen() {
   const [selectedCategory, setSelectedCategory] = useState("General");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [hasPendingPost, setHasPendingPost] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
 
@@ -113,7 +112,6 @@ export default function CommunityScreen() {
         imageUrl: selectedImage || undefined
       });
       setIsCreateModalVisible(false);
-      setHasPendingPost(true);
       setNewPostText("");
       setSelectedImage(null);
       await fetchCommunity();
@@ -237,20 +235,6 @@ export default function CommunityScreen() {
             })}
           </View>
 
-          {activeSection === "Feed" && hasPendingPost && (
-            <View style={{ backgroundColor: colors.infoBg + "40", borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: colors.brand + "20", flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.brand + "10", alignItems: "center", justifyContent: "center" }}>
-                <ShieldCheck size={20} color={colors.brand} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.textPrimary }}>Post Under Review</Text>
-                <Text style={{ fontSize: 11, color: colors.textMuted }}>Your {selectedCategory} post is being verified by admins.</Text>
-              </View>
-              <Pressable onPress={() => setHasPendingPost(false)}>
-                <X size={16} color={colors.textMuted} />
-              </Pressable>
-            </View>
-          )}
 
           {activeSection === "Feed" ? (
             <>
@@ -499,12 +483,11 @@ export default function CommunityScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <>
-                    <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>Submit for Verification</Text>
+                    <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>Post to Community</Text>
                     <ArrowRight size={18} color="#fff" />
                   </>
                 )}
               </Pressable>
-              <Text style={{ textAlign: "center", marginTop: 12, fontSize: 11, color: colors.textMuted }}>Your post will be reviewed by our moderation team before appearing in the feed.</Text>
             </ScrollView>
           </View>
         </KeyboardAvoidingView>

@@ -36,9 +36,14 @@ export default function EventCard({
         borderRadius: 24,
         overflow: "hidden",
         backgroundColor: colors.bgCard,
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: colors.border,
         opacity: pressed ? 0.94 : 1,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
       })}
     >
       <View style={{ position: "relative" }}>

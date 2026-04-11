@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { Op } from "sequelize";
 import db from "../models/index.ts";
 
 const SELF_SERVICE_USER_ROLES = new Set(["owner", "shelter"]);
@@ -60,11 +61,12 @@ const buildAuthPayload = async (subject: any, userType: 'user' | 'vet', token?: 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { users: User, vets: Vet } = db as any;
-    const { name, email, password, role } = req.body;
+    const { name, password, role } = req.body;
+    const email = req.body.email?.trim().toLowerCase();
 
     // Vets register into the Vet table
     if (role === 'veterinarian') {
-      const vetExists = await Vet.findOne({ where: { email } });
+      const vetExists = await Vet.findOne({ where: { email: { [Op.iLike]: email } } });
       if (vetExists) {
         res.status(400).json({ message: "Veterinarian already exists" });
         return;
@@ -92,9 +94,13 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const userExists = await User.findOne({ where: { email } });
-    if (userExists) {
-      res.status(400).json({ message: "User already exists" });
+    // Also check vets table so same email can't exist in both tables
+    const [userExists, vetExists2] = await Promise.all([
+      User.findOne({ where: { email: { [Op.iLike]: email } } }),
+      Vet.findOne({ where: { email: { [Op.iLike]: email } } }),
+    ]);
+    if (userExists || vetExists2) {
+      res.status(400).json({ message: "An account with this email already exists" });
       return;
     }
 
@@ -121,10 +127,11 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { users: User, vets: Vet } = db as any;
-    const { email, password } = req.body;
+    const email = req.body.email?.trim().toLowerCase();
+    const { password } = req.body;
 
     // Try User table first
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { email: { [Op.iLike]: email } } });
     if (user && (await bcrypt.compare(password, user.password))) {
       const token = generateToken(user.id, 'user');
       res.json(await buildAuthPayload(user, 'user', token));
@@ -132,7 +139,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Try Vet table
-    const vet = await Vet.findOne({ where: { email } });
+    const vet = await Vet.findOne({ where: { email: { [Op.iLike]: email } } });
     if (vet && (await bcrypt.compare(password, vet.password))) {
       const token = generateToken(vet.id, 'vet');
       res.json(await buildAuthPayload(vet, 'vet', token));
@@ -241,9 +248,9 @@ export const getUsersByRole = async (req: Request, res: Response): Promise<void>
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { users: User, vets: Vet } = db as any;
-    const { email } = req.body;
+    const email = req.body.email?.trim().toLowerCase();
 
-    const user = await User.findOne({ where: { email } }) || await Vet.findOne({ where: { email } });
+    const user = await User.findOne({ where: { email: { [Op.iLike]: email } } }) || await Vet.findOne({ where: { email: { [Op.iLike]: email } } });
     if (user) {
       res.json({ message: "Password reset link sent to your email" });
     } else {

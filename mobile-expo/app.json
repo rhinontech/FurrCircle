@@ -33,14 +33,6 @@
       "expo-router",
       "expo-web-browser",
       [
-        "expo-notifications",
-        {
-          "icon": "./assets/PawsHub_logo.png",
-          "color": "#6d28d9",
-          "sounds": []
-        }
-      ],
-      [
         "expo-image-picker",
         {
           "photosPermission": "Allow PawsHub to access your photos so you can upload a profile picture.",
