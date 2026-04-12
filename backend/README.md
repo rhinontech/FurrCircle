@@ -1,4 +1,4 @@
-# pawshub Backend
+# FurrCircle Backend
 
 ## Running with Docker Compose
 

@@ -144,7 +144,7 @@ export default function HomeScreen() {
           {pets.length === 0 ? (
             <View style={{ padding: 20, marginHorizontal: 20, backgroundColor: colors.bgCard, borderRadius: 16, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
                <PawPrint size={32} color={colors.textMuted} style={{ marginBottom: 8 }} />
-               <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>Welcome to PawsHub!</Text>
+               <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>Welcome to FurrCircle!</Text>
                <Text style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center', marginTop: 4, marginBottom: 12 }}>Add your first pet to get started.</Text>
                <Pressable onPress={() => router.push("/pets/add")} style={{ backgroundColor: colors.brand, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 }}>
                  <Text style={{ color: '#fff', fontWeight: '600' }}>Add Pet</Text>

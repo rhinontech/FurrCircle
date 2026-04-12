@@ -124,6 +124,7 @@ export const normalizeMedication = (medication: any) => {
   return {
     ...medication,
     isActive: medication.isActive ?? !medication.endDate,
+    imageUrl: medication.imageUrl,
   };
 };
 
@@ -148,6 +149,7 @@ export const normalizeMedicalRecord = (record: any) => {
     title: record.title ?? record.type ?? 'Medical Visit',
     clinic_name: record.clinic_name ?? record.description ?? '',
     veterinarian_name: record.veterinarian_name ?? record.veterinarian ?? '',
+    imageUrl: record.imageUrl,
   };
 };
 

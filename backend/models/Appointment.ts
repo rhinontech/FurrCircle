@@ -53,6 +53,54 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
+            proposedDate: {
+                type: DataTypes.DATEONLY,
+                allowNull: true,
+            },
+            proposedTime: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            rescheduleRequestedBy: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            rescheduleReason: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            ownerFeedbackRating: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+            ownerFeedbackTags: {
+                type: DataTypes.JSONB,
+                allowNull: true,
+            },
+            ownerFeedbackComment: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            ownerFeedbackSubmittedAt: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
+            vetFeedbackRating: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+            vetFeedbackTags: {
+                type: DataTypes.JSONB,
+                allowNull: true,
+            },
+            vetFeedbackComment: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            vetFeedbackSubmittedAt: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
         },
         {
             tableName: "appointments",

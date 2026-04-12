@@ -18,4 +18,8 @@ export const userAppointmentsApi = {
     const appointment = await api.patch<any>(`/appointments/${appointmentId}/status`, { status: 'cancelled' });
     return normalizeAppointment(appointment);
   },
+  respondReschedule: async (appointmentId: string, payload: { action: "accept" | "counter" | "cancel"; date?: string; time?: string; reason?: string }) => {
+    const appointment = await api.patch<any>(`/appointments/${appointmentId}/reschedule/respond`, payload);
+    return normalizeAppointment(appointment);
+  },
 };

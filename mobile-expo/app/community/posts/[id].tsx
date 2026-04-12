@@ -89,7 +89,7 @@ export default function CommunityPostDetailScreen() {
     try {
       const res = await userCommunityApi.sharePost(post.id);
       await Share.share({
-        message: `${post.author?.name || "PawsHub member"} posted in ${post.category}: ${post.content}`,
+        message: `${post.author?.name || "FurrCircle member"} posted in ${post.category}: ${post.content}`,
       });
       setPost((prev: any) => (prev ? { ...prev, shareCount: res.shareCount } : prev));
     } catch (error) {

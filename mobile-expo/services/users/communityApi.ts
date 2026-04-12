@@ -3,17 +3,19 @@ import { normalizeConversation, normalizeEvent, normalizePost, normalizeProfile 
 
 export const userCommunityApi = {
   getCommunityData: async () => {
-    const [feed, events, chats] = await Promise.all([
+    const [feed, events] = await Promise.all([
       api.get<any[]>('/community/feed'),
       api.get<any[]>('/community/events'),
-      api.get<any[]>('/community/chats'),
     ]);
 
     return {
       feed: (feed || []).map(normalizePost).filter(Boolean),
       events: (events || []).map(normalizeEvent).filter(Boolean),
-      chats: (chats || []).map(normalizeConversation).filter(Boolean),
     };
+  },
+  listFeed: async () => {
+    const feed = await api.get<any[]>('/community/feed');
+    return (feed || []).map(normalizePost).filter(Boolean);
   },
   listEvents: async () => {
     const events = await api.get<any[]>('/community/events');

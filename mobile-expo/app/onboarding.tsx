@@ -11,7 +11,7 @@ const { width } = Dimensions.get("window");
 const slides = [
   {
     id: "1",
-    title: "Welcome to PawsHub",
+    title: "Welcome to FurrCircle",
     description: "Your all-in-one companion for your pet's health and happiness. Professional care at your fingertips.",
     image: require("../assets/pet-dog.jpg"),
     icon: Heart,

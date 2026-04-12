@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert, Image } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { ChevronLeft, FileText, Calendar, ShieldAlert } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -127,6 +127,13 @@ export default function RecordsScreen() {
                     <Text style={{ fontSize: 12, color: colors.textMuted }}>{new Date(r.date).toLocaleDateString()}</Text>
                   </View>
                   <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>{r.clinic_name || 'Generic Clinic'}</Text>
+                  {r.imageUrl && (
+                    <Image
+                      source={{ uri: r.imageUrl }}
+                      style={{ width: "100%", height: 180, borderRadius: 14, marginTop: 12, backgroundColor: colors.bgSubtle }}
+                      resizeMode="cover"
+                    />
+                  )}
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 }}>
                     <Calendar size={14} color={colors.textMuted} />
                     <Text style={{ fontSize: 12, color: colors.textMuted }}>Vet: {r.veterinarian_name || 'N/A'}</Text>
