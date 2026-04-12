@@ -50,6 +50,10 @@ export default (sequelize: Sequelize) => {
                 allowNull: false,
                 defaultValue: false,
             },
+            appointmentId: {
+                type: DataTypes.UUID,
+                allowNull: true,
+            },
         },
         {
             tableName: "reminders",

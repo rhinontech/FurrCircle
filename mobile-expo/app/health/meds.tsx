@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { ChevronLeft, Pill, Clock, Plus } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userHealthApi } from "@/services/users/healthApi";
@@ -28,9 +28,11 @@ export default function MedsScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchMeds();
-  }, [petId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchMeds();
+    }, [petId])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -61,7 +63,7 @@ export default function MedsScreen() {
         {meds.length === 0 ? (
           <View style={{ paddingVertical: 60, alignItems: 'center', opacity: 0.5 }}>
             <Pill size={48} color={colors.textMuted} strokeWidth={1} />
-            <Text style={{ marginTop: 12, color: colors.textMuted, fontSize: 14 }}>No weight medication found</Text>
+            <Text style={{ marginTop: 12, color: colors.textMuted, fontSize: 14 }}>No medications found</Text>
           </View>
         ) : (
           meds.map((m) => (
@@ -87,19 +89,16 @@ export default function MedsScreen() {
                 </View>
               </View>
 
-              <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.borderSubtle, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.borderSubtle }}>
                 <Text style={{ fontSize: 12, color: colors.textMuted }}>Duration: <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{m.endDate ? 'Until ' + new Date(m.endDate).toLocaleDateString() : 'Ongoing'}</Text></Text>
-                <Pressable style={{ backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Log Dose</Text>
-                </Pressable>
               </View>
             </View>
           ))
         )}
       </ScrollView>
 
-      <Pressable 
-        onPress={() => {/* TODO: Add medication form */}}
+      <Pressable
+        onPress={() => petId && router.push(`/health/add-med?petId=${petId}` as any)}
         style={{ position: 'absolute', bottom: 40, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center', elevation: 8 }}
       >
         <Plus size={24} color="#fff" />

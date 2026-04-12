@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { ChevronLeft, FileText, Calendar, ShieldAlert } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userHealthApi } from "@/services/users/healthApi";
@@ -30,9 +30,11 @@ export default function RecordsScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchRecords();
-  }, [petId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchRecords();
+    }, [petId])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Image, Pressable, Dimensions, FlatList, ActivityIndicator, RefreshControl, Modal, Alert } from "react-native";
-import { Bell, Syringe, Stethoscope, Calendar, Heart, ChevronRight, PawPrint, MapPin, Star } from "lucide-react-native";
+import { Syringe, Stethoscope, Calendar, Heart, PawPrint, MapPin, Star } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
-import { useNotifications } from "../../contexts/NotificationContext";
+import { useFocusEffect } from "expo-router";
 import { userHomeApi } from "@/services/users/homeApi";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -13,7 +13,6 @@ export default function HomeScreen() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
   const { user } = useAuth();
-  const { notifUnreadCount } = useNotifications();
 
   const [pets, setPets] = useState<any[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
@@ -34,7 +33,7 @@ export default function HomeScreen() {
       case 'vaccine': return Syringe;
       case 'appointment': return Calendar;
       case 'medication': return Syringe; // or a pill icon if available
-      default: return Bell;
+      default: return Syringe;
     }
   };
 
@@ -52,9 +51,11 @@ export default function HomeScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -133,22 +134,9 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
       >
         {/* Greeting */}
-        <View style={{ paddingTop: 20, paddingHorizontal: 20, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View>
-            <Text style={{ fontSize: 13, color: colors.textMuted }}>{(() => { const h = new Date().getHours(); return h < 12 ? 'Good morning 👋' : h < 18 ? 'Good afternoon 👋' : 'Good evening 👋'; })()}</Text>
-            <Text style={{ fontSize: 24, fontWeight: '700', color: colors.textPrimary }}>Hello, {user?.name?.split(' ')[0] || 'Guest'}</Text>
-          </View>
-          <Pressable
-            onPress={() => router.push('/notifications')}
-            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Bell size={20} color={colors.textPrimary} />
-            {notifUnreadCount > 0 && (
-              <View style={{ position: 'absolute', top: 6, right: 6, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 }}>
-                <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{notifUnreadCount > 99 ? '99+' : notifUnreadCount}</Text>
-              </View>
-            )}
-          </Pressable>
+        <View style={{ paddingTop: 20, paddingHorizontal: 20, paddingBottom: 10 }}>
+          <Text style={{ fontSize: 13, color: colors.textMuted }}>{(() => { const h = new Date().getHours(); return h < 12 ? 'Good morning 👋' : h < 18 ? 'Good afternoon 👋' : 'Good evening 👋'; })()}</Text>
+          <Text style={{ fontSize: 24, fontWeight: '700', color: colors.textPrimary }}>Hello, {user?.name?.split(' ')[0] || 'Guest'}</Text>
         </View>
 
         {/* Pet Cards Slider */}

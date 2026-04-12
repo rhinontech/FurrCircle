@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -30,21 +30,26 @@ export default function CommunityChatScreen() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchConversation = async () => {
+  const fetchConversation = async (silent = false) => {
     if (!id) return;
     try {
       const data = await userCommunityApi.getChatById(String(id));
       setConversation(data);
     } catch (error) {
-      console.error("Error fetching conversation", error);
+      if (!silent) console.error("Error fetching conversation", error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchConversation();
+    pollRef.current = setInterval(() => fetchConversation(true), 3000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [id]);
 
   const handleSend = async () => {

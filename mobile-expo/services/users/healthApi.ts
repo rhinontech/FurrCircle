@@ -12,6 +12,8 @@ export const userHealthApi = {
     return (vaccines || []).map(normalizeVaccine).filter(Boolean);
   },
   addVaccine: async (petId: string, payload: Record<string, unknown>) => normalizeVaccine(await api.post<any>(`/health/vaccines/${petId}`, payload)),
+  generateVaccineCertificate: async (petId: string, vaccineId: string): Promise<{ certificateUrl: string }> =>
+    api.post<any>(`/health/vaccines/${petId}/${vaccineId}/certificate`, {}),
   listMedications: async (petId: string) => {
     const medications = await api.get<any[]>(`/health/meds/${petId}`);
     return (medications || []).map(normalizeMedication).filter(Boolean);

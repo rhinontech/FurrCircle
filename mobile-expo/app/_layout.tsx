@@ -102,6 +102,7 @@ function AppShell() {
         <Stack.Screen name="health/add-record" />
         <Stack.Screen name="health/add-vital" />
         <Stack.Screen name="health/add-vaccine" />
+        <Stack.Screen name="health/add-med" />
         <Stack.Screen name="health/add-allergy" />
         <Stack.Screen name="reminders/index" />
         <Stack.Screen name="appointments/book" />

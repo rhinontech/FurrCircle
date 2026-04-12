@@ -40,6 +40,23 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
+            hasCertificate: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            certificateUrl: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            addedByRole: {
+                type: DataTypes.STRING,
+                allowNull: true, // 'vet' | 'owner'
+            },
+            addedByVetId: {
+                type: DataTypes.UUID,
+                allowNull: true,
+            },
         },
         {
             tableName: "vaccines",

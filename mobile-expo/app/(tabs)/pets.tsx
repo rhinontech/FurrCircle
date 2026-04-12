@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Image, Pressable, RefreshControl, ActivityIndicator } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Plus, PawPrint } from "lucide-react-native";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -32,9 +32,11 @@ export default function PetsScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchPets();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchPets();
+    }, [])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
