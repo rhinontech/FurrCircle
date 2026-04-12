@@ -6,14 +6,6 @@ import { useRouter } from "expo-router";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 
-const vetMenuItems = [
-  { icon: CalendarDays, label: "Appointment History" },
-  { icon: Users, label: "All Patients" },
-  { icon: Star, label: "My Reviews" },
-  { icon: Clock, label: "Working Hours" },
-  { icon: UserCheck, label: "Verification Status" },
-];
-
 export default function VetProfileScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
   const { user, logout, refreshUser } = useAuth();
@@ -26,6 +18,13 @@ export default function VetProfileScreen() {
     { icon: MapPin, label: user?.city || "Add clinic city" },
     { icon: Phone, label: user?.phone || "Add clinic phone" },
     { icon: Clock, label: user?.working_hours || "Add working hours" },
+  ];
+  const vetMenuItems = [
+    { icon: CalendarDays, label: "Appointment History", action: () => router.push("/vet-profile/appointment-history") },
+    { icon: Users, label: "All Patients", action: () => router.push("/vet-profile/patients") },
+    { icon: Star, label: "My Reviews", action: () => router.push("/vet-profile/reviews") },
+    { icon: Clock, label: "Working Hours", action: () => router.push("/vet-profile/working-hours") },
+    { icon: UserCheck, label: "Verification Status", action: () => router.push("/vet-profile/verification") },
   ];
 
   return (
@@ -110,7 +109,11 @@ export default function VetProfileScreen() {
             {vetMenuItems.map((item, i) => {
               const Icon = item.icon;
               return (
-                <Pressable key={item.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: i < vetMenuItems.length - 1 ? 1 : 0, borderBottomColor: colors.border }}>
+                <Pressable
+                  key={item.label}
+                  onPress={item.action}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: i < vetMenuItems.length - 1 ? 1 : 0, borderBottomColor: colors.border }}
+                >
                   <Icon size={20} color={colors.textMuted} />
                   <Text style={{ flex: 1, fontSize: 14, fontWeight: '500', color: colors.textPrimary }}>{item.label}</Text>
                   <ChevronRight size={16} color={colors.textMuted} />

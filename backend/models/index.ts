@@ -79,19 +79,19 @@ db.allergies.belongsTo(db.pets, { foreignKey: 'petId', as: 'pet' });
 db.pets.hasMany(db.allergies, { foreignKey: 'petId', as: 'Allergies' });
 
 // Community: Post <-> User / Comments / Likes
-db.posts.belongsTo(db.users, { foreignKey: 'userId', as: 'author' });
-db.users.hasMany(db.posts, { foreignKey: 'userId', as: 'posts' });
+db.posts.belongsTo(db.users, { foreignKey: 'userId', as: 'author', constraints: false });
+db.users.hasMany(db.posts, { foreignKey: 'userId', as: 'posts', constraints: false });
 
 db.comments.belongsTo(db.posts, { foreignKey: 'postId' });
 db.posts.hasMany(db.comments, { foreignKey: 'postId', as: 'comments' });
 
-db.comments.belongsTo(db.users, { foreignKey: 'userId', as: 'author' });
-db.users.hasMany(db.comments, { foreignKey: 'userId', as: 'comments' });
+db.comments.belongsTo(db.users, { foreignKey: 'userId', as: 'author', constraints: false });
+db.users.hasMany(db.comments, { foreignKey: 'userId', as: 'comments', constraints: false });
 
 db.likes.belongsTo(db.posts, { foreignKey: 'postId' });
 db.posts.hasMany(db.likes, { foreignKey: 'postId', as: 'likes' });
 
-db.likes.belongsTo(db.users, { foreignKey: 'userId' });
+db.likes.belongsTo(db.users, { foreignKey: 'userId', constraints: false });
 
 db.saved_posts.belongsTo(db.posts, { foreignKey: 'postId' });
 db.posts.hasMany(db.saved_posts, { foreignKey: 'postId', as: 'savedPosts' });

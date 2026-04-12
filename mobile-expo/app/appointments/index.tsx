@@ -16,6 +16,22 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 
 const statusStyle = (status: string) => STATUS_COLORS[status?.toLowerCase()] ?? { bg: "#F3F4F6", text: "#6B7280" };
 
+const isUpcomingAppointment = (appointment: any) => {
+  const status = String(appointment.status || "").toLowerCase();
+  if (!["pending", "confirmed"].includes(status)) return false;
+
+  const dateValue = appointment.appointment_date ?? appointment.date;
+  if (!dateValue) return true;
+
+  const appointmentDate = new Date(dateValue);
+  if (Number.isNaN(appointmentDate.getTime())) return true;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  appointmentDate.setHours(0, 0, 0, 0);
+  return appointmentDate >= today;
+};
+
 export default function OwnerAppointmentsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
@@ -23,6 +39,7 @@ export default function OwnerAppointmentsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"Upcoming" | "Past">("Upcoming");
 
   const fetchAppointments = async () => {
     try {
@@ -72,8 +89,9 @@ export default function OwnerAppointmentsScreen() {
 
   const canCancel = (status: string) => ["pending", "confirmed"].includes(status?.toLowerCase());
 
-  const upcoming = appointments.filter(a => canCancel(a.status));
-  const past = appointments.filter(a => !canCancel(a.status));
+  const upcoming = appointments.filter(isUpcomingAppointment);
+  const past = appointments.filter(a => !isUpcomingAppointment(a));
+  const visibleAppointments = activeTab === "Upcoming" ? upcoming : past;
 
   const renderAppointment = (appointment: any) => {
     const sty = statusStyle(appointment.status);
@@ -155,7 +173,7 @@ export default function OwnerAppointmentsScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}>
         <Pressable onPress={() => router.back()} style={{ padding: 4 }}>
@@ -192,25 +210,39 @@ export default function OwnerAppointmentsScreen() {
           contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
         >
-          {upcoming.length > 0 && (
-            <>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
-                Upcoming
-              </Text>
-              {upcoming.map(renderAppointment)}
-            </>
-          )}
+          <View style={{ flexDirection: "row", backgroundColor: colors.bgSubtle, borderRadius: 14, padding: 4, marginBottom: 16 }}>
+            {(["Upcoming", "Past"] as const).map((tab) => {
+              const selected = activeTab === tab;
+              const count = tab === "Upcoming" ? upcoming.length : past.length;
+              return (
+                <Pressable
+                  key={tab}
+                  onPress={() => setActiveTab(tab)}
+                  style={{ flex: 1, paddingVertical: 11, borderRadius: 10, backgroundColor: selected ? colors.bgCard : "transparent", alignItems: "center" }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: selected ? colors.textPrimary : colors.textMuted }}>
+                    {tab} ({count})
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
 
-          {past.length > 0 && (
-            <>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: upcoming.length > 0 ? 8 : 0, marginBottom: 10 }}>
-                Past & Cancelled
+          {visibleAppointments.length === 0 ? (
+            <View style={{ alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, paddingVertical: 56, gap: 12 }}>
+              <Calendar size={44} color={colors.textMuted} />
+              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>
+                {activeTab === "Upcoming" ? "No upcoming appointments" : "No past appointments"}
               </Text>
-              {past.map(renderAppointment)}
-            </>
+              <Text style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>
+                {activeTab === "Upcoming" ? "Pending and confirmed visits will appear here." : "Completed and cancelled visits will appear here."}
+              </Text>
+            </View>
+          ) : (
+            visibleAppointments.map(renderAppointment)
           )}
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }

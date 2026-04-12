@@ -100,9 +100,9 @@ const toUser = (data: AuthPayload): User => ({
   // Vet profile: backend sends hospital_name / profession / experience;
   // User profile: backend sends clinic_name / specialty / yearsExp.
   // Map both so the UI always reads from the same User fields.
-  clinic_name: data.clinic_name ?? data.hospital_name,
-  specialty: data.specialty ?? data.profession,
-  yearsExp: data.yearsExp ?? data.experience,
+  clinic_name: data.hospital_name ?? data.clinic_name,
+  specialty: data.profession ?? data.specialty,
+  yearsExp: data.experience ?? data.yearsExp,
   bio: data.bio,
   city: data.city,
   phone: data.phone,

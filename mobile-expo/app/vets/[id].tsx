@@ -12,7 +12,7 @@ import {
   Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, Clock3, MapPin, Phone, Star, Stethoscope, Bookmark, MessageSquarePlus } from "lucide-react-native";
+import { ChevronLeft, Clock3, MapPin, Phone, Star, Stethoscope, Bookmark, MessageCircle, MessageSquarePlus } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { userDiscoverApi } from "@/services/users/discoverApi";
@@ -72,6 +72,7 @@ export default function VetDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [savingToggle, setSavingToggle] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
 
   const [reviews, setReviews] = useState<VetReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
@@ -86,18 +87,52 @@ export default function VetDetailsScreen() {
       Alert.alert("Phone unavailable", "This clinic does not have a phone number yet.");
       return;
     }
-    const phoneUrl = `tel:${vet.phone.replace(/[^\d+]/g, "")}`;
+    const phoneNumber = vet.phone.replace(/[^\d+]/g, "");
+    const phoneUrls = [`telprompt:${phoneNumber}`, `tel:${phoneNumber}`];
     try {
-      const supported = await Linking.canOpenURL(phoneUrl);
-      if (!supported) {
-        Alert.alert("Unable to place call", "Calling is not available on this device.");
-        return;
+      for (const phoneUrl of phoneUrls) {
+        const supported = await Linking.canOpenURL(phoneUrl);
+        if (supported) {
+          await Linking.openURL(phoneUrl);
+          return;
+        }
       }
-      await Linking.openURL(phoneUrl);
+
+      Alert.alert("Call Clinic", `Call ${vet.clinic_name || vet.name || "this clinic"} at ${vet.phone}.`);
     } catch {
-      Alert.alert("Unable to place call", "Please try again in a moment.");
+      Alert.alert("Call Clinic", `Call ${vet.clinic_name || vet.name || "this clinic"} at ${vet.phone}.`);
     }
-  }, [vet?.phone]);
+  }, [vet?.clinic_name, vet?.name, vet?.phone]);
+
+  const handleBookVisit = () => {
+    if (!vet) return;
+
+    router.push({
+      pathname: "/appointments/book",
+      params: {
+        vetId: vet.id,
+        vetName: vet.clinic_name || vet.name || "Vet Clinic",
+      },
+    } as any);
+  };
+
+  const handleMessageVet = async () => {
+    if (!vet || startingChat) return;
+
+    setStartingChat(true);
+    try {
+      const conversation = await userDiscoverApi.startPetInterestChat({
+        recipientId: vet.id,
+        recipientType: "vet",
+        title: vet.clinic_name || vet.name || "Vet Clinic",
+      });
+      router.push(`/community/chat/${conversation.id}` as any);
+    } catch (e: any) {
+      Alert.alert("Unable to start chat", e.message || "Please try again in a moment.");
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   const fetchVet = useCallback(async () => {
     try {
@@ -274,19 +309,30 @@ export default function VetDetailsScreen() {
           </View>
 
           {isOwner && (
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 24 }}>
+            <View style={{ gap: 12, marginTop: 24 }}>
               <Pressable
-                onPress={() => router.push(`/appointments/book?vetId=${vet.id}&vetName=${encodeURIComponent(vet.clinic_name || vet.name || "Vet Clinic")}`)}
+                onPress={handleBookVisit}
                 style={{ flex: 1, backgroundColor: colors.brand, borderRadius: 14, paddingVertical: 14, alignItems: "center" }}
               >
                 <Text style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}>Book Visit</Text>
               </Pressable>
-              <Pressable
-                onPress={handleCall}
-                style={{ flex: 1, backgroundColor: colors.bgSubtle, borderRadius: 14, paddingVertical: 14, alignItems: "center" }}
-              >
-                <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "700" }}>Call Clinic</Text>
-              </Pressable>
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <Pressable
+                  onPress={handleMessageVet}
+                  disabled={startingChat}
+                  style={{ flex: 1, backgroundColor: colors.bgSubtle, borderRadius: 14, paddingVertical: 14, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, opacity: startingChat ? 0.65 : 1 }}
+                >
+                  {startingChat ? <ActivityIndicator size="small" color={colors.brand} /> : <MessageCircle size={16} color={colors.textPrimary} />}
+                  <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "700" }}>Message</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleCall}
+                  style={{ flex: 1, backgroundColor: colors.bgSubtle, borderRadius: 14, paddingVertical: 14, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8 }}
+                >
+                  <Phone size={16} color={colors.textPrimary} />
+                  <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "700" }}>Call</Text>
+                </Pressable>
+              </View>
             </View>
           )}
         </View>

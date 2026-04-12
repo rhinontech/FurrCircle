@@ -37,9 +37,6 @@ export const userAdoptionsApi = {
   submit: (payload: SubmitApplicationPayload) =>
     api.post<AdoptionApplication>("/adoptions/apply", payload),
 
-  listMyApplications: () =>
-    api.get<AdoptionApplication[]>("/adoptions/my-applications"),
-
   listReceivedApplications: () =>
     api.get<AdoptionApplication[]>("/adoptions/received"),
 

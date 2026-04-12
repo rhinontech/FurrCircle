@@ -114,9 +114,13 @@ function AppShell() {
         <Stack.Screen name="community/posts/[id]" />
         <Stack.Screen name="community/chat/[id]" />
         <Stack.Screen name="profile/edit" />
+        <Stack.Screen name="vet-profile/appointment-history" />
+        <Stack.Screen name="vet-profile/patients" />
+        <Stack.Screen name="vet-profile/reviews" />
+        <Stack.Screen name="vet-profile/working-hours" />
+        <Stack.Screen name="vet-profile/verification" />
         <Stack.Screen name="vets/[id]" />
         <Stack.Screen name="adoptions/apply" />
-        <Stack.Screen name="adoptions/my-applications" />
       </Stack>
       <StatusBar style={isDark ? 'light' : 'dark'} />
     </GestureHandlerRootView>

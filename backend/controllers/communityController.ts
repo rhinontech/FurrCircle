@@ -219,10 +219,10 @@ export const getMyPosts = async (req: any, res: Response): Promise<void> => {
   try {
     const { posts: Post, comments: Comment, likes: Like, saved_posts: SavedPost } = db as any;
     const posts = await Post.findAll({
-      where: { userId: req.user.id },
+      where: { userId: req.user.id, userType: req.userType || "user" },
       include: [
         { model: Comment, as: "comments" },
-        { model: Like, as: "likes", attributes: ["userId"] },
+        { model: Like, as: "likes", attributes: ["userId", "userType"] },
         { model: SavedPost, as: "savedPosts", attributes: ["userId", "userType"] },
       ],
       order: [["createdAt", "DESC"]],
@@ -245,7 +245,7 @@ export const getCommunityFeed = async (req: any, res: Response): Promise<void> =
       where: { status: "approved" },
       include: [
         { model: Comment, as: "comments" },
-        { model: Like, as: "likes", attributes: ["userId"] },
+        { model: Like, as: "likes", attributes: ["userId", "userType"] },
         { model: SavedPost, as: "savedPosts", attributes: ["userId", "userType"] },
       ],
       order: [["createdAt", "DESC"]],
@@ -268,7 +268,7 @@ export const getPostById = async (req: any, res: Response): Promise<void> => {
       where: { id: req.params.id, status: "approved" },
       include: [
         { model: Comment, as: "comments" },
-        { model: Like, as: "likes", attributes: ["userId"] },
+        { model: Like, as: "likes", attributes: ["userId", "userType"] },
         { model: SavedPost, as: "savedPosts", attributes: ["userId", "userType"] },
       ],
     });
@@ -297,7 +297,7 @@ export const toggleLike = async (req: any, res: Response): Promise<void> => {
     }
 
     const existingLike = await Like.findOne({
-      where: { postId: req.params.id, userId: req.user.id },
+      where: { postId: req.params.id, userId: req.user.id, userType: req.userType || "user" },
     });
 
     if (existingLike) {
@@ -403,7 +403,7 @@ export const addComment = async (req: any, res: Response): Promise<void> => {
 export const deleteComment = async (req: any, res: Response): Promise<void> => {
   try {
     const { comments: Comment } = db as any;
-    const comment = await Comment.findOne({ where: { id: req.params.id, userId: req.user.id } });
+    const comment = await Comment.findOne({ where: { id: req.params.id, userId: req.user.id, userType: req.userType || "user" } });
     if (!comment) {
       res.status(404).json({ message: "Comment not found or not yours" });
       return;

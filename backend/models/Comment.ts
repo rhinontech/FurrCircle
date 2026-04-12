@@ -37,7 +37,7 @@ export default (sequelize: Sequelize) => {
 
     (Comment as any).associate = (models: any) => {
         if (models.posts) Comment.belongsTo(models.posts, { foreignKey: 'postId' });
-        if (models.users) Comment.belongsTo(models.users, { foreignKey: 'userId', as: 'author' });
+        if (models.users) Comment.belongsTo(models.users, { foreignKey: 'userId', as: 'author', constraints: false });
     };
 
     return Comment;
