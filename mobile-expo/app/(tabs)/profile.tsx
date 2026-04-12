@@ -17,7 +17,6 @@ import {
   Phone,
   Pencil,
   CalendarDays,
-  Heart,
 } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -37,7 +36,7 @@ export default function ProfileScreen() {
     refreshUser();
     userDiscoverApi.getSavedVetsCount().then(setSavedVetsCount).catch(() => {});
     userCommunityApi.getMyPosts().then(p => setMyPostsCount(p.length)).catch(() => {});
-  }, []));
+  }, [refreshUser]));
 
   const menuItems = [
     {
@@ -62,11 +61,6 @@ export default function ProfileScreen() {
       label: "My Posts",
       count: myPostsCount !== null ? String(myPostsCount) : undefined,
       action: () => router.push("/profile/posts"),
-    },
-    {
-      icon: Heart,
-      label: "My Applications",
-      action: () => router.push("/adoptions/my-applications"),
     },
     {
       icon: Bell,

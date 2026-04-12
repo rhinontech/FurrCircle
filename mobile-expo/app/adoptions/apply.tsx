@@ -293,7 +293,7 @@ export default function ApplyScreen() {
               review it and get back to you.
             </Text>
             <Pressable
-              onPress={() => router.push("/adoptions/my-applications")}
+              onPress={() => router.replace("/(tabs)/discover")}
               style={{
                 marginTop: 8,
                 backgroundColor: colors.brand,
@@ -303,7 +303,7 @@ export default function ApplyScreen() {
               }}
             >
               <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>
-                View My Applications
+                Back to Discover
               </Text>
             </Pressable>
             <Pressable onPress={() => router.back()}>

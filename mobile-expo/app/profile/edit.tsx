@@ -37,7 +37,6 @@ type FormState = {
   clinic_name: string;
   specialty: string;
   yearsExp: string;
-  working_hours: string;
   clinicStampUrl: string;
   licenseNumber: string;
 };
@@ -53,7 +52,6 @@ const createInitialForm = (user: AuthUser | null): FormState => ({
   clinic_name: user?.clinic_name || "",
   specialty: user?.specialty || "",
   yearsExp: user?.yearsExp ? String(user.yearsExp) : "",
-  working_hours: user?.working_hours || "",
   clinicStampUrl: user?.clinicStampUrl || "",
   licenseNumber: user?.licenseNumber || "",
 });
@@ -212,7 +210,6 @@ export default function EditProfileScreen() {
         clinic_name: isVet ? form.clinic_name.trim() : undefined,
         specialty: isVet ? form.specialty.trim() : undefined,
         yearsExp: isVet ? form.yearsExp.trim() : undefined,
-        working_hours: isVet ? form.working_hours.trim() : undefined,
         clinicStampUrl: isVet ? form.clinicStampUrl : undefined,
         licenseNumber: isVet ? form.licenseNumber.trim() : undefined,
       });
@@ -339,7 +336,6 @@ export default function EditProfileScreen() {
               <InputField label="Clinic or Hospital Name" value={form.clinic_name} onChangeText={(v) => setField("clinic_name", v)} placeholder="PawsCare Animal Hospital" />
               <InputField label="Specialty" value={form.specialty} onChangeText={(v) => setField("specialty", v)} placeholder="Small Animal Medicine" />
               <InputField label="Experience" value={form.yearsExp} onChangeText={(v) => setField("yearsExp", v)} placeholder="8 years" />
-              <InputField label="Working Hours" value={form.working_hours} onChangeText={(v) => setField("working_hours", v)} placeholder="Mon-Fri, 9:00 AM - 6:00 PM" />
               <InputField label="License / Registration Number" value={form.licenseNumber} onChangeText={(v) => setField("licenseNumber", v)} placeholder="VET-12345" />
 
               {/* Clinic Stamp / Logo upload */}
@@ -386,7 +382,7 @@ export default function EditProfileScreen() {
               ...(isVet
                 ? [
                     { icon: Building2, label: "Clinic and specialty show up on the vet profile card" },
-                    { icon: Clock3, label: "Working hours help set booking expectations" },
+                    { icon: Clock3, label: "Set working hours from the vet profile menu" },
                   ]
                 : [{ icon: Phone, label: "A clear profile helps vets and shelters support you faster" }]),
             ].map((item) => (

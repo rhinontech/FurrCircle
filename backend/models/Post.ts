@@ -50,7 +50,7 @@ export default (sequelize: Sequelize) => {
     );
 
     (Post as any).associate = (models: any) => {
-        if (models.users) Post.belongsTo(models.users, { foreignKey: 'userId', as: 'author' });
+        if (models.users) Post.belongsTo(models.users, { foreignKey: 'userId', as: 'author', constraints: false });
         if (models.comments) Post.hasMany(models.comments, { foreignKey: 'postId', as: 'comments' });
         if (models.likes) Post.hasMany(models.likes, { foreignKey: 'postId', as: 'likes' });
         if (models.saved_posts) Post.hasMany(models.saved_posts, { foreignKey: 'postId', as: 'savedPosts' });

@@ -29,14 +29,14 @@ export default (sequelize: Sequelize) => {
             tableName: "likes",
             timestamps: true,
             indexes: [
-                { unique: true, fields: ['postId', 'userId'] } // prevent duplicate likes
+                { unique: true, fields: ['postId', 'userId', 'userType'] } // prevent duplicate likes
             ],
         }
     );
 
     (Like as any).associate = (models: any) => {
         if (models.posts) Like.belongsTo(models.posts, { foreignKey: 'postId' });
-        if (models.users) Like.belongsTo(models.users, { foreignKey: 'userId' });
+        if (models.users) Like.belongsTo(models.users, { foreignKey: 'userId', constraints: false });
     };
 
     return Like;

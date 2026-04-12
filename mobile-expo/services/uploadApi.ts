@@ -16,7 +16,8 @@ const getBaseUrl = () => {
   );
 };
 
-const API_BASE_URL = getBaseUrl();
+const baseRoot = getBaseUrl();
+const API_BASE_URL = /\/api$/.test(baseRoot) ? baseRoot : `${baseRoot}/api`;
 
 export const pickImage = async (options?: {
   aspect?: [number, number];
@@ -53,7 +54,7 @@ export const uploadImage = async (
     name: `upload.${ext}`,
   } as any);
 
-  const response = await fetch(`${API_BASE_URL}/api/upload/${folder}`, {
+  const response = await fetch(`${API_BASE_URL}/upload/${folder}`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

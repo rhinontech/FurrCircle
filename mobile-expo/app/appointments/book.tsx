@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, Modal, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, Calendar as CalendarIcon, Clock } from "lucide-react-native";
+import { ChevronLeft, Calendar as CalendarIcon, Clock, PawPrint, Plus } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { userAppointmentsApi } from "@/services/users/appointmentsApi";
@@ -23,9 +23,13 @@ function formatTimeValue(d: Date) {
   return `${h}:${m}`;
 }
 
+const firstParam = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
+
 export default function BookAppointmentScreen() {
   const router = useRouter();
-  const { vetId, vetName } = useLocalSearchParams();
+  const params = useLocalSearchParams<{ vetId?: string | string[]; vetName?: string | string[] }>();
+  const vetId = firstParam(params.vetId);
+  const vetName = firstParam(params.vetName) || "Vet Clinic";
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
 
@@ -60,6 +64,11 @@ export default function BookAppointmentScreen() {
   }, []);
 
   const handleBook = async () => {
+    if (!vetId) {
+      Alert.alert("Vet missing", "Please open this screen from a vet profile.");
+      return;
+    }
+
     if (!selectedPet || !date || !time || !reason) {
       Alert.alert("Error", "Please fill in all fields.");
       return;
@@ -106,20 +115,37 @@ export default function BookAppointmentScreen() {
 
         {/* Select Pet */}
         <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 12 }}>Select Pet</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }} contentContainerStyle={{ gap: 12 }}>
-          {pets.map((pet) => (
+        {pets.length === 0 ? (
+          <View style={{ backgroundColor: colors.bgCard, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 18, marginBottom: 24, alignItems: "center", gap: 10 }}>
+            <PawPrint size={28} color={colors.textMuted} />
+            <Text style={{ fontSize: 15, fontWeight: "700", color: colors.textPrimary }}>Add a pet first</Text>
+            <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: "center", lineHeight: 19 }}>
+              Appointments are linked to a pet so the vet knows who the visit is for.
+            </Text>
             <Pressable
-              key={pet.id}
-              onPress={() => setSelectedPet(pet.id)}
-              style={{ padding: 12, borderRadius: 16, borderWidth: 2, borderColor: selectedPet === pet.id ? colors.brand : colors.border, backgroundColor: colors.bgCard, width: 100, alignItems: 'center' }}
+              onPress={() => router.push("/pets/add")}
+              style={{ marginTop: 4, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.brand, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 11 }}
             >
-              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                <Text style={{ fontWeight: '700', color: colors.brand }}>{pet.name[0]}</Text>
-              </View>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: selectedPet === pet.id ? colors.brand : colors.textPrimary }} numberOfLines={1}>{pet.name}</Text>
+              <Plus size={15} color="#fff" />
+              <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Add Pet</Text>
             </Pressable>
-          ))}
-        </ScrollView>
+          </View>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }} contentContainerStyle={{ gap: 12 }}>
+            {pets.map((pet) => (
+              <Pressable
+                key={pet.id}
+                onPress={() => setSelectedPet(pet.id)}
+                style={{ padding: 12, borderRadius: 16, borderWidth: 2, borderColor: selectedPet === pet.id ? colors.brand : colors.border, backgroundColor: colors.bgCard, width: 100, alignItems: 'center' }}
+              >
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                  <Text style={{ fontWeight: '700', color: colors.brand }}>{pet.name[0]}</Text>
+                </View>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: selectedPet === pet.id ? colors.brand : colors.textPrimary }} numberOfLines={1}>{pet.name}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
 
         {/* Date */}
         <View style={{ marginBottom: 16 }}>
@@ -245,8 +271,8 @@ export default function BookAppointmentScreen() {
 
         <Pressable
           onPress={handleBook}
-          disabled={submitting}
-          style={{ backgroundColor: colors.brand, borderRadius: 16, height: 56, alignItems: 'center', justifyContent: 'center', opacity: submitting ? 0.7 : 1 }}
+          disabled={submitting || pets.length === 0 || !vetId}
+          style={{ backgroundColor: colors.brand, borderRadius: 16, height: 56, alignItems: 'center', justifyContent: 'center', opacity: submitting || pets.length === 0 || !vetId ? 0.55 : 1 }}
         >
           {submitting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Request Appointment</Text>}
         </Pressable>
