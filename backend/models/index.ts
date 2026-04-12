@@ -115,6 +115,17 @@ db.users.hasMany(db.reminders, { foreignKey: 'userId', as: 'reminders' });
 db.reminders.belongsTo(db.pets, { foreignKey: 'petId', as: 'pet' });
 db.pets.hasMany(db.reminders, { foreignKey: 'petId', as: 'reminders' });
 
+// Saved Vets
+db.saved_vets.belongsTo(db.users, { foreignKey: 'userId', as: 'user' });
+db.users.hasMany(db.saved_vets, { foreignKey: 'userId', as: 'savedVets' });
+db.saved_vets.belongsTo(db.vets, { foreignKey: 'vetId', as: 'vet' });
+
+// Adoption Applications
+db.adoption_applications.belongsTo(db.pets, { foreignKey: 'petId', as: 'pet' });
+db.pets.hasMany(db.adoption_applications, { foreignKey: 'petId', as: 'adoptionApplications' });
+db.adoption_applications.belongsTo(db.users, { foreignKey: 'applicantId', as: 'applicant' });
+db.adoption_applications.belongsTo(db.users, { foreignKey: 'ownerId', as: 'petOwner' });
+
 // ──────────────────────────────────────────────────────────────────────────────
 
 db.sequelize = sequelize;
@@ -140,6 +151,9 @@ export const event_bookings = db.event_bookings;
 export const conversations = db.conversations;
 export const messages = db.messages;
 export const reminders = db.reminders;
+export const saved_vets = db.saved_vets;
+export const notifications = db.notifications;
+export const adoption_applications = db.adoption_applications;
 
 export { sequelize, Sequelize };
 export default db;

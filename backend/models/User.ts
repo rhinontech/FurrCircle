@@ -62,6 +62,14 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
+            resetToken: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            resetTokenExpiry: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
         },
         {
             tableName: "users",

@@ -1,19 +1,48 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from "react-native";
-import { Heart, Mail, Lock, ChevronRight, PawPrint, Stethoscope } from "lucide-react-native";
-import { useAuth } from "../contexts/AuthContext";
+import { Heart, Mail, Lock, ChevronRight, PawPrint, Stethoscope, Building2 } from "lucide-react-native";
+import { useAuth, type UserRole } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+type LoginRole = "owner" | "shelter" | "veterinarian";
+
+const ROLES: { key: LoginRole; label: string; icon: typeof PawPrint; heading: string; hint: string }[] = [
+  {
+    key: "owner",
+    label: "Pet Owner",
+    icon: PawPrint,
+    heading: "Welcome back",
+    hint: "Sign in to manage your pets and discover vets",
+  },
+  {
+    key: "shelter",
+    label: "Shelter",
+    icon: Building2,
+    heading: "Shelter Sign In",
+    hint: "Sign in to manage your rescue listings and adoption requests",
+  },
+  {
+    key: "veterinarian",
+    label: "Veterinarian",
+    icon: Stethoscope,
+    heading: "Vet Sign In",
+    hint: "Sign in to manage appointments and patient records",
+  },
+];
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login } = useAuth();
   const { colors } = useTheme();
-  
+
+  const [selectedRole, setSelectedRole] = useState<LoginRole>("owner");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const currentRole = ROLES.find(r => r.key === selectedRole)!;
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -23,8 +52,7 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      await login(email.trim(), password);
-      // AuthContext handles state & persistence, router automatically handles redirect in layout
+      await login(email.trim(), password, selectedRole as UserRole);
     } catch (error: any) {
       Alert.alert("Login Failed", error.message || "Invalid credentials");
     } finally {
@@ -38,88 +66,84 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 40, paddingBottom: 40 }}>
 
           {/* Logo */}
-          <View style={{ alignItems: 'center', marginBottom: 40 }}>
+          <View style={{ alignItems: 'center', marginBottom: 32 }}>
             <View style={{ width: 72, height: 72, borderRadius: 24, backgroundColor: colors.heroBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
               <Heart size={36} color="#fff" fill="#fff" />
             </View>
             <Text style={{ fontSize: 24, fontWeight: '800', color: colors.textPrimary }}>Welcome Back</Text>
-            <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 6 }}>Sign in as a Pet Owner or Veterinarian</Text>
+            <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 6 }}>Sign in to your PawsHub account</Text>
           </View>
 
-          {/* Quick demo fill-in */}
-          <View style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: 'center', marginBottom: 10 }}>Quick demo login</Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
+          {/* Role Toggles */}
+          <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textMuted, marginBottom: 8, textTransform: 'uppercase' }}>Sign in as...</Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 28 }}>
+            {ROLES.map(({ key, label, icon: Icon }) => (
               <Pressable
-                onPress={() => { setEmail("demo.owner@pawshub.app"); setPassword("Demo1234"); }}
-                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 12 }}
+                key={key}
+                onPress={() => setSelectedRole(key)}
+                style={{ flex: 1, backgroundColor: selectedRole === key ? colors.brand + '15' : colors.bgCard, borderWidth: 1, borderColor: selectedRole === key ? colors.brand : colors.border, borderRadius: 16, padding: 12, alignItems: 'center', gap: 6 }}
               >
-                <PawPrint size={16} color={colors.brand} />
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textPrimary }}>Pet Owner</Text>
+                <Icon size={22} color={selectedRole === key ? colors.brand : colors.textMuted} />
+                <Text style={{ fontSize: 12, fontWeight: selectedRole === key ? '700' : '500', color: selectedRole === key ? colors.brand : colors.textPrimary }}>{label}</Text>
               </Pressable>
-              <Pressable
-                onPress={() => { setEmail("demo.vet@pawshub.app"); setPassword("Demo1234"); }}
-                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 12 }}
-              >
-                <Stethoscope size={16} color="#0ea5e9" />
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textPrimary }}>Veterinarian</Text>
-              </Pressable>
-            </View>
+            ))}
           </View>
 
-          {/* Login Form */}
-          <View style={{ marginBottom: 28 }}>
-            <Text style={{ fontSize: 22, fontWeight: '700', color: colors.textPrimary, marginBottom: 6 }}>Welcome back</Text>
-            <Text style={{ fontSize: 14, color: colors.textMuted, marginBottom: 24 }}>Sign in to continue</Text>
+          {/* Heading + hint */}
+          <Text style={{ fontSize: 22, fontWeight: '700', color: colors.textPrimary, marginBottom: 4 }}>{currentRole.heading}</Text>
+          <Text style={{ fontSize: 14, color: colors.textMuted, marginBottom: 24 }}>{currentRole.hint}</Text>
 
-            {/* Email */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, marginBottom: 12 }}>
-              <Mail size={18} color={colors.textMuted} />
-              <TextInput
-                placeholder="Email address"
-                placeholderTextColor={colors.textMuted}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={{ flex: 1, height: 52, marginLeft: 12, fontSize: 15, color: colors.textPrimary }}
-              />
-            </View>
+          {/* Email */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, marginBottom: 12 }}>
+            <Mail size={18} color={colors.textMuted} />
+            <TextInput
+              placeholder="Email address"
+              placeholderTextColor={colors.textMuted}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              style={{ flex: 1, height: 52, marginLeft: 12, fontSize: 15, color: colors.textPrimary }}
+            />
+          </View>
 
-            {/* Password */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, marginBottom: 24 }}>
-              <Lock size={18} color={colors.textMuted} />
-              <TextInput
-                placeholder="Password"
-                placeholderTextColor={colors.textMuted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                style={{ flex: 1, height: 52, marginLeft: 12, fontSize: 15, color: colors.textPrimary }}
-              />
-            </View>
+          {/* Password */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, marginBottom: 28 }}>
+            <Lock size={18} color={colors.textMuted} />
+            <TextInput
+              placeholder="Password"
+              placeholderTextColor={colors.textMuted}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              style={{ flex: 1, height: 52, marginLeft: 12, fontSize: 15, color: colors.textPrimary }}
+            />
+          </View>
 
-            <Pressable
-              onPress={handleLogin}
-              disabled={loading}
-              style={{ backgroundColor: colors.brand, borderRadius: 14, height: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16, opacity: loading ? 0.7 : 1 }}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>Sign In</Text>
-                  <ChevronRight size={18} color="#fff" />
-                </>
-              )}
+          <Pressable
+            onPress={handleLogin}
+            disabled={loading}
+            style={{ backgroundColor: colors.brand, borderRadius: 14, height: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16, opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>Sign In</Text>
+                <ChevronRight size={18} color="#fff" />
+              </>
+            )}
+          </Pressable>
+
+          <Pressable onPress={() => router.push("/forgot-password")} style={{ alignItems: 'center', marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, color: colors.brand, fontWeight: '600' }}>Forgot password?</Text>
+          </Pressable>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 4 }}>
+            <Text style={{ fontSize: 14, color: colors.textMuted }}>Don't have an account?</Text>
+            <Pressable onPress={() => router.push("/signup")}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.brand }}>Sign Up</Text>
             </Pressable>
-
-            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 4 }}>
-              <Text style={{ fontSize: 14, color: colors.textMuted }}>Don't have an account?</Text>
-              <Pressable onPress={() => router.push("/signup")}>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.brand }}>Sign Up</Text>
-              </Pressable>
-            </View>
           </View>
 
         </ScrollView>

@@ -12,6 +12,7 @@ export type AdminSession = {
   email: string;
   role: "admin";
   token: string;
+  title?: string;
 };
 
 type AdminAuthContextValue = {

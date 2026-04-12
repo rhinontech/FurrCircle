@@ -5,7 +5,7 @@ import { adminApi } from "@/lib/adminApiClient";
 
 const CATEGORIES = ["Social", "Health", "Training", "Adoption", "Other"];
 const STATUSES = ["Upcoming", "Draft", "Completed"];
-const emptyForm = { title: "", description: "", date: "", time: "", location: "", category: "Social", image_url: "", status: "Upcoming" };
+const emptyForm = { title: "", description: "", date: "", time: "", location: "", category: "Social", imageUrl: "", status: "Upcoming" };
 
 type DrawerMode = "create" | "edit" | "view" | null;
 
@@ -58,10 +58,10 @@ export default function EventsPage() {
       time: event.time || "",
       location: event.location || "",
       category: event.category || "Social",
-      image_url: event.image_url || "",
+      imageUrl: event.imageUrl || "",
       status: event.status || "Upcoming",
     });
-    setImagePreview(event.image_url || "");
+    setImagePreview(event.imageUrl || "");
     setError("");
     setDrawerMode("edit");
   };
@@ -83,7 +83,7 @@ export default function EventsPage() {
       const preview = URL.createObjectURL(file);
       setImagePreview(preview);
       const { url } = await adminApi.upload('events', file);
-      setForm(f => ({ ...f, image_url: url }));
+      setForm(f => ({ ...f, imageUrl: url }));
     } catch (err: any) {
       setError("Image upload failed: " + (err.message || "Try again"));
       setImagePreview("");
@@ -210,8 +210,8 @@ export default function EventsPage() {
                   <tr key={event.id} className="hover:bg-slate-50/60 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        {event.image_url ? (
-                          <img src={event.image_url} alt={event.title} className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                        {event.imageUrl ? (
+                          <img src={event.imageUrl} alt={event.title} className="w-10 h-10 rounded-xl object-cover shrink-0" />
                         ) : (
                           <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
                             <CalendarIcon size={18} className="text-primary-700" />
@@ -325,9 +325,9 @@ export default function EventsPage() {
         {/* VIEW MODE */}
         {drawerMode === "view" && selectedEvent && (
           <div className="flex-1 overflow-y-auto">
-            {selectedEvent.image_url && (
+            {selectedEvent.imageUrl && (
               <div className="w-full h-52 shrink-0">
-                <img src={selectedEvent.image_url} alt={selectedEvent.title} className="w-full h-full object-cover" />
+                <img src={selectedEvent.imageUrl} alt={selectedEvent.title} className="w-full h-full object-cover" />
               </div>
             )}
             <div className="px-8 py-6 space-y-6">
@@ -438,7 +438,7 @@ export default function EventsPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => { setImagePreview(""); setForm(f => ({ ...f, image_url: "" })); }}
+                          onClick={() => { setImagePreview(""); setForm(f => ({ ...f, imageUrl: "" })); }}
                           className="p-1.5 bg-white rounded-lg shadow text-slate-500 hover:text-rose-600"
                         >
                           <X size={14} />

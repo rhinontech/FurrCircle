@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { View, Text, ScrollView, Image, Pressable, Switch } from "react-native";
 import {
@@ -16,20 +16,28 @@ import {
   Mail,
   Phone,
   Pencil,
+  CalendarDays,
+  Heart,
 } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
+import { userDiscoverApi } from "../../services/users/discoverApi";
+import { userCommunityApi } from "../../services/users/communityApi";
 
 import { useRouter } from "expo-router";
-
-// No need for menuItems constant outside since it needs router
 
 export default function ProfileScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
   const { user, logout, refreshUser } = useAuth();
   const router = useRouter();
+  const [savedVetsCount, setSavedVetsCount] = useState<number | null>(null);
+  const [myPostsCount, setMyPostsCount] = useState<number | null>(null);
 
-  useFocusEffect(useCallback(() => { refreshUser(); }, []));
+  useFocusEffect(useCallback(() => {
+    refreshUser();
+    userDiscoverApi.getSavedVetsCount().then(setSavedVetsCount).catch(() => {});
+    userCommunityApi.getMyPosts().then(p => setMyPostsCount(p.length)).catch(() => {});
+  }, []));
 
   const menuItems = [
     {
@@ -39,21 +47,31 @@ export default function ProfileScreen() {
       action: () => router.push("/(tabs)/pets"),
     },
     {
+      icon: CalendarDays,
+      label: "My Appointments",
+      action: () => router.push("/appointments"),
+    },
+    {
       icon: Bookmark,
       label: "Saved Vets",
-      count: "5",
+      count: savedVetsCount !== null ? String(savedVetsCount) : undefined,
       action: () => router.push("/profile/vets"),
     },
     {
       icon: FileText,
       label: "My Posts",
-      count: "8",
+      count: myPostsCount !== null ? String(myPostsCount) : undefined,
       action: () => router.push("/profile/posts"),
+    },
+    {
+      icon: Heart,
+      label: "My Applications",
+      action: () => router.push("/adoptions/my-applications"),
     },
     {
       icon: Bell,
       label: "Notifications",
-      action: () => router.push("/reminders"),
+      action: () => router.push("/notifications"),
     },
     {
       icon: Shield,

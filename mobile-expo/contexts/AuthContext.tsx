@@ -39,8 +39,8 @@ interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
   hasCompletedOnboarding: boolean | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
+  login: (email: string, password: string, selectedRole?: UserRole) => Promise<void>;
+  register: (name: string, email: string, password: string, role: UserRole, extra?: Record<string, string>) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updatedData: Partial<User>) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -163,8 +163,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadState();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, selectedRole?: UserRole) => {
     const data = await authApi.login(email, password) as AuthPayload;
+    // Validate that the returned account role matches the selected toggle
+    if (selectedRole) {
+      const returnedRole = data.role;
+      const isVetAccount = returnedRole === 'veterinarian' || (data as any).userType === 'vet';
+      const selectedIsVet = selectedRole === 'veterinarian';
+      if (selectedIsVet && !isVetAccount) {
+        throw new Error("No veterinarian account found with these credentials.");
+      }
+      if (!selectedIsVet && isVetAccount) {
+        throw new Error(`No ${selectedRole} account found with these credentials.`);
+      }
+      if (!selectedIsVet && !isVetAccount && returnedRole !== selectedRole && returnedRole !== 'admin') {
+        throw new Error(`No ${selectedRole} account found with these credentials.`);
+      }
+    }
     const userData = toUser(data);
 
     // Set in-memory token FIRST — navigation may fire before AsyncStorage awaits complete
@@ -174,8 +189,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   };
 
-  const register = async (name: string, email: string, password: string, role: UserRole) => {
-    const data = await authApi.register(name, email, password, role) as AuthPayload;
+  const register = async (name: string, email: string, password: string, role: UserRole, extra?: Record<string, string>) => {
+    const data = await authApi.register(name, email, password, role, extra) as AuthPayload;
     const userData = toUser({
       ...data,
       isVerified: data.isVerified || (data.role === 'veterinarian' ? false : true),

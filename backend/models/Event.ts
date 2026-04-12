@@ -43,6 +43,11 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
+            status: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                defaultValue: "Upcoming",
+            },
         },
         {
             tableName: "events",

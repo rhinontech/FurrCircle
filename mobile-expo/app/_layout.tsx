@@ -3,10 +3,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, Pressable, Image } from 'react-native';
-import { Heart, Bell } from 'lucide-react-native';
+import { Bell } from 'lucide-react-native';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
-import { NotificationProvider } from '../contexts/NotificationContext';
+import { NotificationProvider, useNotifications } from '../contexts/NotificationContext';
 import React, { useEffect } from 'react';
 import '@/global.css';
 
@@ -14,6 +14,7 @@ import '@/global.css';
 function GlobalHeader() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { notifUnreadCount } = useNotifications();
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.border }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 20 }}>
@@ -23,7 +24,11 @@ function GlobalHeader() {
           style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
         >
           <Bell size={20} color={colors.textPrimary} />
-          <View style={{ position: 'absolute', top: 8, right: 10, width: 8, height: 8, backgroundColor: '#f43f5e', borderRadius: 4, borderWidth: 1, borderColor: colors.bgCard }} />
+          {notifUnreadCount > 0 && (
+            <View style={{ position: 'absolute', top: 8, right: 8, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#f43f5e', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1, borderColor: colors.bgCard }}>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{notifUnreadCount > 9 ? '9+' : notifUnreadCount}</Text>
+            </View>
+          )}
         </Pressable>
       </View>
     </SafeAreaView>
@@ -51,7 +56,16 @@ function AppShell() {
       router.replace('/login');
     } else if (isLoggedIn) {
       const isVet = user?.role === 'veterinarian';
-      
+      const isUnverifiedVet = isVet && user?.isVerified === false;
+
+      // Unverified vet: keep them on pending screen only
+      if (isUnverifiedVet) {
+        if (segments[0] !== 'verification-pending') {
+          router.replace('/verification-pending');
+        }
+        return;
+      }
+
       // If at root or on public pages, redirect to appropriate dashboard
       if (!segments[0] || inPublicGroup) {
         router.replace(isVet ? '/(vet-tabs)/dashboard' : '/(tabs)');
@@ -74,6 +88,9 @@ function AppShell() {
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
+        <Stack.Screen name="forgot-password" />
+        <Stack.Screen name="reset-password" />
+        <Stack.Screen name="verification-pending" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(vet-tabs)" />
         <Stack.Screen name="pets/add" />
@@ -88,6 +105,8 @@ function AppShell() {
         <Stack.Screen name="health/add-allergy" />
         <Stack.Screen name="reminders/index" />
         <Stack.Screen name="appointments/book" />
+        <Stack.Screen name="appointments/[id]" />
+        <Stack.Screen name="appointments/index" />
         <Stack.Screen name="notifications/index" />
         <Stack.Screen name="community/events" />
         <Stack.Screen name="community/events/[id]" />
@@ -95,6 +114,8 @@ function AppShell() {
         <Stack.Screen name="community/chat/[id]" />
         <Stack.Screen name="profile/edit" />
         <Stack.Screen name="vets/[id]" />
+        <Stack.Screen name="adoptions/apply" />
+        <Stack.Screen name="adoptions/my-applications" />
       </Stack>
       <StatusBar style={isDark ? 'light' : 'dark'} />
     </GestureHandlerRootView>

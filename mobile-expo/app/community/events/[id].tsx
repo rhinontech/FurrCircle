@@ -51,7 +51,7 @@ export default function EventDetailScreen() {
       setEvent(res.event);
       Alert.alert(
         "Booking confirmed",
-        `You're booked for ${event.title}. In the current mock setup this is stored locally in the app.`
+        `You're confirmed for ${event.title}. See you there!`
       );
     } catch (error: any) {
       Alert.alert("Error", error.message || "Could not complete booking.");

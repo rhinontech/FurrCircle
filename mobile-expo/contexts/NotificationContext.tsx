@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState } from 'react-native';
 import { userCommunityApi } from '@/services/users/communityApi';
+import { userNotificationsApi } from '@/services/users/notificationsApi';
 import { useAuth } from './AuthContext';
 
 // expo-notifications is NOT used — it was removed from Expo Go in SDK 53.
@@ -11,18 +12,33 @@ const SEEN_KEY = 'chat_last_seen'; // { [chatId]: lastMessageTimestamp }
 const POLL_INTERVAL = 30_000;
 
 interface NotificationContextValue {
+  /** Unread chat messages — used for Community tab badge */
+  chatUnreadCount: number;
+  /** Unread system notifications (appointments, events, etc.) */
+  notifUnreadCount: number;
+  /** Sum of chat + system notifications */
   unreadCount: number;
+  markChatsRead: () => Promise<void>;
+  markNotifsRead: () => Promise<void>;
+  /** Mark everything read */
   markAllRead: () => Promise<void>;
+  refreshNotifCount: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextValue>({
+  chatUnreadCount: 0,
+  notifUnreadCount: 0,
   unreadCount: 0,
+  markChatsRead: async () => {},
+  markNotifsRead: async () => {},
   markAllRead: async () => {},
+  refreshNotifCount: async () => {},
 });
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { isLoggedIn } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
+  const [notifUnreadCount, setNotifUnreadCount] = useState(0);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const appState = useRef(AppState.currentState);
 
@@ -39,13 +55,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     await AsyncStorage.setItem(SEEN_KEY, JSON.stringify(map));
   };
 
-  const pollChats = useCallback(async () => {
+  const pollAll = useCallback(async () => {
     if (!isLoggedIn) return;
+
+    // Poll chats
     try {
       const chats = await userCommunityApi.getChats();
       const seenMap = await getSeenMap();
       let newCount = 0;
-
       for (const chat of chats) {
         const lastMsg = chat.lastMessage;
         if (!lastMsg) continue;
@@ -56,14 +73,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           newCount++;
         }
       }
-
-      setUnreadCount(newCount);
+      setChatUnreadCount(newCount);
     } catch {
       // silently fail — don't disrupt the app
     }
+
+    // Poll system notifications
+    try {
+      const count = await userNotificationsApi.getUnreadCount();
+      setNotifUnreadCount(count);
+    } catch {
+      // silently fail
+    }
   }, [isLoggedIn]);
 
-  const markAllRead = useCallback(async () => {
+  const markChatsRead = useCallback(async () => {
     try {
       const chats = await userCommunityApi.getChats();
       const seenMap: Record<string, string> = {};
@@ -74,35 +98,69 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
       }
       await saveSeenMap(seenMap);
-      setUnreadCount(0);
+      setChatUnreadCount(0);
     } catch {
-      setUnreadCount(0);
+      setChatUnreadCount(0);
     }
   }, []);
 
+  const markNotifsRead = useCallback(async () => {
+    try {
+      await userNotificationsApi.markAllRead();
+      setNotifUnreadCount(0);
+    } catch {
+      setNotifUnreadCount(0);
+    }
+  }, []);
+
+  const markAllRead = useCallback(async () => {
+    await Promise.allSettled([markChatsRead(), markNotifsRead()]);
+  }, [markChatsRead, markNotifsRead]);
+
+  const refreshNotifCount = useCallback(async () => {
+    if (!isLoggedIn) return;
+    try {
+      const count = await userNotificationsApi.getUnreadCount();
+      setNotifUnreadCount(count);
+    } catch {
+      // silently fail
+    }
+  }, [isLoggedIn]);
+
   useEffect(() => {
     if (!isLoggedIn) {
-      setUnreadCount(0);
+      setChatUnreadCount(0);
+      setNotifUnreadCount(0);
       if (pollTimer.current) clearInterval(pollTimer.current);
       return;
     }
 
-    pollChats();
-    pollTimer.current = setInterval(pollChats, POLL_INTERVAL);
+    pollAll();
+    pollTimer.current = setInterval(pollAll, POLL_INTERVAL);
 
     const sub = AppState.addEventListener('change', (nextState) => {
       appState.current = nextState;
-      if (nextState === 'active') pollChats();
+      if (nextState === 'active') pollAll();
     });
 
     return () => {
       if (pollTimer.current) clearInterval(pollTimer.current);
       sub.remove();
     };
-  }, [isLoggedIn, pollChats]);
+  }, [isLoggedIn, pollAll]);
+
+  const unreadCount = chatUnreadCount + notifUnreadCount;
 
   return (
-    <NotificationContext.Provider value={{ unreadCount, markAllRead }}>
+    <NotificationContext.Provider value={{
+      chatUnreadCount,
+      notifUnreadCount,
+      unreadCount,
+      markChatsRead,
+      markNotifsRead,
+      markAllRead,
+      refreshNotifCount,
+    }}>
       {children}
     </NotificationContext.Provider>
   );

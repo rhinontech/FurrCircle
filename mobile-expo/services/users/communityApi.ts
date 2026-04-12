@@ -27,6 +27,10 @@ export const userCommunityApi = {
       event: normalizeEvent(result?.event),
     };
   },
+  getMyPosts: async () => {
+    const posts = await api.get<any[]>('/community/posts/me');
+    return (posts || []).map(normalizePost).filter(Boolean);
+  },
   createPost: async (payload: Record<string, unknown>) => {
     const result = await api.post<any>('/community/posts', payload);
     return normalizePost(result?.post ?? result);

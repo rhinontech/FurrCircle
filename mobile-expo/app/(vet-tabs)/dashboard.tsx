@@ -66,7 +66,7 @@ export default function VetDashboard() {
       >
         {/* Greeting */}
         <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 16, backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-          <Text style={{ fontSize: 13, color: colors.textMuted }}>Good morning 👋</Text>
+          <Text style={{ fontSize: 13, color: colors.textMuted }}>{(() => { const h = new Date().getHours(); return h < 12 ? 'Good morning 👋' : h < 18 ? 'Good afternoon 👋' : 'Good evening 👋'; })()}</Text>
           <Text style={{ fontSize: 22, fontWeight: '700', color: colors.textPrimary }}>
             {user?.name || "Dr. James Wilson"}
           </Text>

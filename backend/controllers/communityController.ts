@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import { Op } from "sequelize";
 import db from "../models/index.ts";
+import { createNotification } from "../services/notificationService.ts";
 
 const toPlain = (value: any) => (value && typeof value.toJSON === "function" ? value.toJSON() : value);
 
@@ -67,10 +68,11 @@ const createProfileResolver = () => {
 
 const serializeComment = async (comment: any, resolveProfile: ReturnType<typeof createProfileResolver>) => {
   const payload = toPlain(comment);
+  const authorType = payload.userType === "vet" ? "vet" : "user";
 
   return {
     ...payload,
-    author: await resolveProfile(payload.userId),
+    author: await resolveProfile(payload.userId, authorType),
   };
 };
 
@@ -95,11 +97,13 @@ const serializePost = async (
       .map((comment: any) => serializeComment(comment, resolveProfile))
   );
 
+  const postAuthorType = payload.userType === "vet" ? "vet" : "user";
+
   return {
     ...payload,
-    author: await resolveProfile(payload.userId),
+    author: await resolveProfile(payload.userId, postAuthorType),
     comments,
-    likes: (payload.likes || []).map((like: any) => ({ userId: like.userId })),
+    likes: (payload.likes || []).map((like: any) => ({ userId: like.userId, userType: like.userType })),
     savedBy: (payload.savedPosts || []).map((entry: any) => entry.userId),
     shareCount: payload.shareCount || 0,
   };
@@ -178,47 +182,6 @@ const fetchConversation = async (conversationId: string) => {
   });
 };
 
-const seedEventsIfNeeded = async (req: any) => {
-  const { events: Event, users: User, vets: Vet } = db as any;
-  let events = await Event.findAll({ order: [["date", "ASC"], ["time", "ASC"]] });
-
-  if (events.length > 0) {
-    return events;
-  }
-
-  const organizer =
-    (await User.findOne({ where: { role: "admin" } })) ||
-    (await User.findOne({ where: { role: "owner" } })) ||
-    (await Vet.findOne()) ||
-    req.user;
-
-  await Event.bulkCreate([
-    {
-      organizerId: organizer?.id || null,
-      title: "Puppy Social Mixer",
-      description: "An afternoon meet-up for playful pups and their humans to socialize and swap care tips.",
-      date: "2026-04-15",
-      time: "14:00",
-      location: "Central Park Pavilion",
-      category: "Social",
-      imageUrl: "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=900&q=80",
-    },
-    {
-      organizerId: organizer?.id || null,
-      title: "Vaccination Drive",
-      description: "Community vaccination day with quick wellness checks and preventive care guidance.",
-      date: "2026-04-20",
-      time: "09:00",
-      location: "Downtown Pet Wellness Center",
-      category: "Health",
-      imageUrl: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80",
-    },
-  ]);
-
-  events = await Event.findAll({ order: [["date", "ASC"], ["time", "ASC"]] });
-  return events;
-};
-
 // @desc    Submit a new post for moderation
 // @route   POST /api/community/posts
 export const createCommunityPost = async (req: any, res: Response): Promise<void> => {
@@ -233,6 +196,7 @@ export const createCommunityPost = async (req: any, res: Response): Promise<void
 
     const post = await Post.create({
       userId: req.user.id,
+      userType: req.userType || "user",
       content: String(content).trim(),
       category,
       imageUrl,
@@ -244,6 +208,29 @@ export const createCommunityPost = async (req: any, res: Response): Promise<void
       message: "Post published",
       post: await serializePost(post, resolveProfile),
     });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get current user's own posts (all statuses)
+// @route   GET /api/community/posts/me
+export const getMyPosts = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { posts: Post, comments: Comment, likes: Like, saved_posts: SavedPost } = db as any;
+    const posts = await Post.findAll({
+      where: { userId: req.user.id },
+      include: [
+        { model: Comment, as: "comments" },
+        { model: Like, as: "likes", attributes: ["userId"] },
+        { model: SavedPost, as: "savedPosts", attributes: ["userId", "userType"] },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    const resolveProfile = createProfileResolver();
+    const serialized = await Promise.all(posts.map((post: any) => serializePost(post, resolveProfile)));
+    res.json(serialized);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -319,7 +306,7 @@ export const toggleLike = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
-    await Like.create({ postId: req.params.id, userId: req.user.id });
+    await Like.create({ postId: req.params.id, userId: req.user.id, userType: req.userType || "user" });
     res.json({ liked: true, message: "Post liked" });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -400,6 +387,7 @@ export const addComment = async (req: any, res: Response): Promise<void> => {
     const comment = await Comment.create({
       postId: req.params.id,
       userId: req.user.id,
+      userType: req.userType || "user",
       text: String(text).trim(),
     });
 
@@ -432,8 +420,8 @@ export const deleteComment = async (req: any, res: Response): Promise<void> => {
 // @route   GET /api/community/events
 export const getEvents = async (req: any, res: Response): Promise<void> => {
   try {
-    const { event_bookings: EventBooking } = db as any;
-    const events = await seedEventsIfNeeded(req);
+    const { events: Event, event_bookings: EventBooking } = db as any;
+    const events = await Event.findAll({ order: [["date", "ASC"], ["time", "ASC"]] });
 
     const eventsWithBookings = await Promise.all(
       events.map(async (event: any) => ({
@@ -458,8 +446,6 @@ export const getEvents = async (req: any, res: Response): Promise<void> => {
 export const getEventById = async (req: any, res: Response): Promise<void> => {
   try {
     const { events: Event, event_bookings: EventBooking } = db as any;
-    await seedEventsIfNeeded(req);
-
     const event = await Event.findByPk(req.params.id);
     if (!event) {
       res.status(404).json({ message: "Event not found" });
@@ -505,15 +491,28 @@ export const bookEvent = async (req: any, res: Response): Promise<void> => {
       });
     }
 
-    const eventPayload = {
-      ...toPlain(event),
-      bookings: await EventBooking.findAll({ where: { eventId: req.params.id } }),
-    };
+    const allBookings = await EventBooking.findAll({ where: { eventId: req.params.id } });
+    const eventPayload = { ...toPlain(event), bookings: allBookings };
 
     const resolveProfile = createProfileResolver();
+    const serializedEvent = await serializeEvent(eventPayload, req.user.id, req.userType || "user", resolveProfile);
+
+    // Notify organizer about the new booking (if booker is not the organizer)
+    if (event.organizerId && event.organizerId !== req.user.id) {
+      await createNotification(
+        event.organizerId,
+        "user",
+        "event",
+        "New Event Booking",
+        `Someone has booked a spot for "${event.title}".`,
+        event.id,
+        "event"
+      );
+    }
+
     res.json({
       booking: { ...toPlain(booking), user: await resolveProfile(req.user.id, req.userType || "user") },
-      event: await serializeEvent(eventPayload, req.user.id, req.userType || "user", resolveProfile),
+      event: serializedEvent,
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
