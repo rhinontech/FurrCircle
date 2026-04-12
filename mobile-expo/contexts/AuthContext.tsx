@@ -24,6 +24,8 @@ export interface User {
   phone?: string;
   address?: string;
   working_hours?: string;
+  clinicStampUrl?: string;
+  licenseNumber?: string;
 }
 
 type AuthPayload = User & {
@@ -106,6 +108,8 @@ const toUser = (data: AuthPayload): User => ({
   phone: data.phone,
   address: data.address,
   working_hours: data.working_hours,
+  clinicStampUrl: (data as any).clinicStampUrl,
+  licenseNumber: (data as any).licenseNumber,
   memberSince: data.memberSince,
   petCount: data.petCount,
   rating: data.rating,

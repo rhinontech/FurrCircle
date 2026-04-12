@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Image, Pressable, Switch, ActivityIndicator, Alert, RefreshControl } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { ArrowLeft, Syringe, Pill, Calendar, FileText, ChevronRight, Edit3, Heart, Home, PawPrint, ShieldAlert } from "lucide-react-native";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -25,7 +25,11 @@ export default function PetDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isAdoptionOpen, setIsAdoptionOpen] = useState(false);
   const [isFosterOpen, setIsFosterOpen] = useState(false);
+  const isVet = user?.role === 'veterinarian';
   const canManagePet = !!pet?.canManage || !!pet?.isViewerOwner || (!!user?.id && pet?.ownerId === user.id);
+  const canEditPetProfile = canManagePet;
+  const canManageListing = canManagePet;
+  const canAddClinicalRecord = canManagePet || isVet;
 
   const fetchPet = async () => {
     try {
@@ -42,9 +46,11 @@ export default function PetDetailScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchPet();
-  }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchPet();
+    }, [id])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -98,7 +104,7 @@ export default function PetDetailScreen() {
           </Pressable>
           <Text style={{ fontSize: 20, fontWeight: '700', color: colors.textPrimary }}>Pet Profile</Text>
         </View>
-        {canManagePet ? (
+        {canEditPetProfile ? (
           <Pressable
             onPress={() => router.push(`/pets/add?id=${id}`)}
             style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
@@ -144,8 +150,8 @@ export default function PetDetailScreen() {
         </View>
       </View>
 
-      {/* Public Status Toggles */}
-      <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
+      {/* Public Status Toggles — hidden for vets */}
+      {!isVet && <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
         <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>{canManagePet ? "Public Listings" : "Listing Status"}</Text>
         <View style={{ backgroundColor: colors.bgCard, borderRadius: 24, borderWidth: 1, borderColor: colors.border, padding: 20, gap: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -196,10 +202,10 @@ export default function PetDetailScreen() {
             </View>
           )}
         </View>
-      </View>
+      </View>}
 
       {/* Quick Actions */}
-      {canManagePet ? (
+      {canAddClinicalRecord ? (
       <View style={{ paddingHorizontal: 20, flexDirection: 'row', gap: 12, marginBottom: 24 }}>
         {[
           { icon: Syringe, label: "Vaccines", color: "#10b981", bg: colors.successBg, path: `/health/vaccines?petId=${id}` },
@@ -220,7 +226,7 @@ export default function PetDetailScreen() {
       ) : null}
 
       {/* Vaccines */}
-      {canManagePet && pet.Vaccines && pet.Vaccines.length > 0 ? (
+      {canAddClinicalRecord && pet.Vaccines && pet.Vaccines.length > 0 ? (
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>Vaccine Tracker</Text>
           {pet.Vaccines.map((v: any) => (
@@ -241,7 +247,7 @@ export default function PetDetailScreen() {
       ) : null}
 
       {/* Medications */}
-      {canManagePet && pet.Medications && pet.Medications.length > 0 ? (
+      {canAddClinicalRecord && pet.Medications && pet.Medications.length > 0 ? (
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>Medications</Text>
           {pet.Medications.map((m: any) => (
@@ -260,7 +266,7 @@ export default function PetDetailScreen() {
       ) : null}
 
       {/* Allergies */}
-      {canManagePet && pet.Allergies && pet.Allergies.length > 0 ? (
+      {canAddClinicalRecord && pet.Allergies && pet.Allergies.length > 0 ? (
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>Known Allergies</Text>
           {pet.Allergies.map((allergy: any) => (
@@ -285,7 +291,7 @@ export default function PetDetailScreen() {
       ) : null}
 
       {/* Appointments */}
-      {canManagePet && pet.Appointments && pet.Appointments.length > 0 ? (
+      {canAddClinicalRecord && pet.Appointments && pet.Appointments.length > 0 ? (
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>Upcoming Appointments</Text>
           {pet.Appointments.map((a: any) => (

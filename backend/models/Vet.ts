@@ -77,6 +77,14 @@ export default (sequelize: Sequelize) => {
                 allowNull: true,
                 defaultValue: 0,
             },
+            clinicStampUrl: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            licenseNumber: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
             resetToken: {
                 type: DataTypes.STRING,
                 allowNull: true,

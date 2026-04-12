@@ -59,6 +59,7 @@ export const createAppointment = async (req: any, res: Response): Promise<void> 
       recurrence: 'none',
       type: 'appointment',
       isDone: false,
+      appointmentId: appointment.id,
     });
 
     // Notify the vet about the new appointment request
@@ -120,7 +121,7 @@ export const getVetAppointments = async (req: any, res: Response): Promise<void>
 // @route   PATCH /api/appointments/:id/status
 export const updateAppointmentStatus = async (req: any, res: Response): Promise<void> => {
   try {
-    const { appointments: Appointment } = db as any;
+    const { appointments: Appointment, reminders: Reminder } = db as any;
     const { status, notes } = req.body;
     const allowedStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
 
@@ -151,6 +152,14 @@ export const updateAppointmentStatus = async (req: any, res: Response): Promise<
     appointment.status = status;
     if (notes) appointment.notes = notes;
     await appointment.save();
+
+    // Mark the linked appointment reminder as done when cancelled or completed
+    if (status === 'cancelled' || status === 'completed') {
+      await Reminder.update(
+        { isDone: true },
+        { where: { appointmentId: appointment.id } }
+      );
+    }
 
     // Notify the other party about the status change
     const statusLabels: Record<string, string> = {

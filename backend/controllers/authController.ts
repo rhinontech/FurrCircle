@@ -49,6 +49,8 @@ const buildAuthPayload = async (subject: any, userType: 'user' | 'vet', token?: 
     payload.profession = subject.profession;
     payload.experience = subject.experience;
     payload.working_hours = subject.working_hours;
+    payload.clinicStampUrl = subject.clinicStampUrl;
+    payload.licenseNumber = subject.licenseNumber;
     payload.rating = subject.rating;
   } else {
     payload.petCount = await db.pets.count({ where: { ownerId: subject.id } });
@@ -191,7 +193,7 @@ export const updateUserProfile = async (req: any, res: Response): Promise<void> 
         return;
       }
 
-      const vetFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email', 'hospital_name', 'profession', 'experience', 'working_hours'];
+      const vetFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email', 'hospital_name', 'profession', 'experience', 'working_hours', 'clinicStampUrl', 'licenseNumber'];
       vetFields.forEach(field => {
         if (req.body[field] !== undefined) vet[field] = req.body[field];
       });

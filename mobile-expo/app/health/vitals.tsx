@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, Dimensions, ActivityIndicator, RefreshControl, Alert } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { ChevronLeft, TrendingUp, Activity, Weight, Heart, Thermometer, Plus } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userHealthApi } from "@/services/users/healthApi";
@@ -46,9 +46,11 @@ export default function VitalsScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchVitals();
-  }, [petId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchVitals();
+    }, [petId])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

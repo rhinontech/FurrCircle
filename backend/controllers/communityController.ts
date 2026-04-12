@@ -601,6 +601,21 @@ export const sendMessage = async (req: any, res: Response): Promise<void> => {
 
     await conversation.update({ updatedAt: new Date() } as any);
 
+    // Notify the other participant about the new message
+    const recipientId = conversation.initiatorId === req.user.id ? conversation.recipientId : conversation.initiatorId;
+    const recipientType = conversation.initiatorId === req.user.id ? conversation.recipientType : conversation.initiatorType;
+    if (recipientId) {
+      await createNotification(
+        recipientId,
+        recipientType,
+        "chat",
+        `New message from ${req.user.name || "Someone"}`,
+        text.length > 80 ? text.substring(0, 80) + "…" : text,
+        conversation.id,
+        "chat"
+      );
+    }
+
     const refreshedConversation = await fetchConversation(conversation.id);
     const resolveProfile = createProfileResolver();
     res.status(201).json({
@@ -682,6 +697,17 @@ export const startChat = async (req: any, res: Response): Promise<void> => {
         petId,
       });
       await conversation.update({ updatedAt: new Date() } as any);
+
+      // Notify recipient
+      await createNotification(
+        recipientId,
+        recipientType,
+        "chat",
+        `New message from ${req.user.name || "Someone"}`,
+        firstMessage.length > 80 ? firstMessage.substring(0, 80) + "…" : firstMessage,
+        conversation.id,
+        "chat"
+      );
     }
 
     const refreshedConversation = await fetchConversation(conversation.id);

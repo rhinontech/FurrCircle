@@ -12,7 +12,7 @@ const s3 = new S3Client({
 const BUCKET = process.env.AWS_S3_BUCKET_NAME!;
 const FOLDER = process.env.AWS_S3_FOLDER_NAME || 'pawshub-dev';
 
-export type UploadFolder = 'profiles' | 'pets' | 'posts' | 'events';
+export type UploadFolder = 'profiles' | 'pets' | 'posts' | 'events' | 'stamps' | 'reports' | 'certificates';
 
 export const uploadFileToS3 = async (
   buffer: Buffer,

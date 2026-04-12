@@ -10,8 +10,8 @@ type SignupRole = "owner" | "shelter" | "veterinarian";
 
 const ROLES: { key: SignupRole; label: string; icon: typeof PawPrint }[] = [
   { key: "owner", label: "Pet Owner", icon: PawPrint },
-  { key: "shelter", label: "Shelter", icon: Building2 },
   { key: "veterinarian", label: "Veterinarian", icon: Stethoscope },
+  { key: "shelter", label: "Shelter", icon: Building2 },
 ];
 
 export default function SignupScreen() {
@@ -20,6 +20,14 @@ export default function SignupScreen() {
   const { colors } = useTheme();
 
   const [role, setRole] = useState<SignupRole>("owner");
+
+  const handleRolePress = (key: SignupRole) => {
+    if (key === "shelter") {
+      Alert.alert("Coming Soon", "Shelter accounts are not available yet. Stay tuned!");
+      return;
+    }
+    setRole(key);
+  };
   const [loading, setLoading] = useState(false);
 
   // Shared fields
@@ -98,11 +106,16 @@ export default function SignupScreen() {
             {ROLES.map(({ key, label, icon: Icon }) => (
               <Pressable
                 key={key}
-                onPress={() => setRole(key)}
-                style={{ flex: 1, backgroundColor: role === key ? colors.brand + '15' : colors.bgCard, borderWidth: 1, borderColor: role === key ? colors.brand : colors.border, borderRadius: 16, padding: 12, alignItems: 'center', gap: 6 }}
+                onPress={() => handleRolePress(key)}
+                style={{ flex: 1, backgroundColor: role === key ? colors.brand + '15' : colors.bgCard, borderWidth: 1, borderColor: role === key ? colors.brand : colors.border, borderRadius: 16, padding: 12, alignItems: 'center', gap: 6, opacity: key === 'shelter' ? 0.6 : 1 }}
               >
                 <Icon size={22} color={role === key ? colors.brand : colors.textMuted} />
                 <Text style={{ fontSize: 12, fontWeight: role === key ? '700' : '500', color: role === key ? colors.brand : colors.textPrimary }}>{label}</Text>
+                {key === 'shelter' && (
+                  <View style={{ backgroundColor: colors.textMuted + '30', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                    <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase' }}>Soon</Text>
+                  </View>
+                )}
               </Pressable>
             ))}
           </View>

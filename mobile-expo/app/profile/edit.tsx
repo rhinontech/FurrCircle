@@ -38,6 +38,8 @@ type FormState = {
   specialty: string;
   yearsExp: string;
   working_hours: string;
+  clinicStampUrl: string;
+  licenseNumber: string;
 };
 
 const createInitialForm = (user: AuthUser | null): FormState => ({
@@ -52,6 +54,8 @@ const createInitialForm = (user: AuthUser | null): FormState => ({
   specialty: user?.specialty || "",
   yearsExp: user?.yearsExp ? String(user.yearsExp) : "",
   working_hours: user?.working_hours || "",
+  clinicStampUrl: user?.clinicStampUrl || "",
+  licenseNumber: user?.licenseNumber || "",
 });
 
 function InputField({
@@ -120,6 +124,7 @@ export default function EditProfileScreen() {
   const [form, setForm] = useState<FormState>(() => createInitialForm(user));
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingStamp, setUploadingStamp] = useState(false);
   const [fetchingLocation, setFetchingLocation] = useState(false);
   const isVet = user?.role === "veterinarian";
 
@@ -142,6 +147,18 @@ export default function EditProfileScreen() {
       Alert.alert("Photo upload failed", error.message || "Could not upload photo. Please try again.");
     } finally {
       setUploadingAvatar(false);
+    }
+  };
+
+  const pickStamp = async () => {
+    try {
+      setUploadingStamp(true);
+      const url = await pickAndUploadImage("stamps");
+      if (url) setField("clinicStampUrl", url);
+    } catch (error: any) {
+      Alert.alert("Stamp upload failed", error.message || "Could not upload stamp. Please try again.");
+    } finally {
+      setUploadingStamp(false);
     }
   };
 
@@ -196,6 +213,8 @@ export default function EditProfileScreen() {
         specialty: isVet ? form.specialty.trim() : undefined,
         yearsExp: isVet ? form.yearsExp.trim() : undefined,
         working_hours: isVet ? form.working_hours.trim() : undefined,
+        clinicStampUrl: isVet ? form.clinicStampUrl : undefined,
+        licenseNumber: isVet ? form.licenseNumber.trim() : undefined,
       });
       Alert.alert(
         "Profile updated",
@@ -321,6 +340,41 @@ export default function EditProfileScreen() {
               <InputField label="Specialty" value={form.specialty} onChangeText={(v) => setField("specialty", v)} placeholder="Small Animal Medicine" />
               <InputField label="Experience" value={form.yearsExp} onChangeText={(v) => setField("yearsExp", v)} placeholder="8 years" />
               <InputField label="Working Hours" value={form.working_hours} onChangeText={(v) => setField("working_hours", v)} placeholder="Mon-Fri, 9:00 AM - 6:00 PM" />
+              <InputField label="License / Registration Number" value={form.licenseNumber} onChangeText={(v) => setField("licenseNumber", v)} placeholder="VET-12345" />
+
+              {/* Clinic Stamp / Logo upload */}
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textSecondary, marginBottom: 6 }}>Clinic Stamp / Logo</Text>
+                <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 10 }}>This will appear on vaccine certificates generated for your patients.</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  {form.clinicStampUrl ? (
+                    <Image source={{ uri: form.clinicStampUrl }} style={{ width: 80, height: 80, borderRadius: 12, borderWidth: 1, borderColor: colors.border }} resizeMode="contain" />
+                  ) : (
+                    <View style={{ width: 80, height: 80, borderRadius: 12, borderWidth: 1, borderColor: colors.border, borderStyle: "dashed", backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center" }}>
+                      <Building2 size={28} color={colors.textMuted} />
+                    </View>
+                  )}
+                  <View style={{ gap: 8 }}>
+                    <Pressable
+                      onPress={pickStamp}
+                      disabled={uploadingStamp}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, height: 40, borderRadius: 12, backgroundColor: colors.brandLight, borderWidth: 1, borderColor: colors.brand + "40", opacity: uploadingStamp ? 0.7 : 1 }}
+                    >
+                      {uploadingStamp ? <ActivityIndicator size="small" color={colors.brand} /> : <Camera size={16} color={colors.brand} />}
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: colors.brand }}>{uploadingStamp ? "Uploading..." : form.clinicStampUrl ? "Change" : "Upload"}</Text>
+                    </Pressable>
+                    {!!form.clinicStampUrl && (
+                      <Pressable
+                        onPress={() => setField("clinicStampUrl", "")}
+                        style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, height: 40, borderRadius: 12, backgroundColor: colors.bgSubtle, borderWidth: 1, borderColor: colors.border }}
+                      >
+                        <Trash2 size={16} color={colors.textMuted} />
+                        <Text style={{ fontSize: 13, fontWeight: "600", color: colors.textMuted }}>Remove</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                </View>
+              </View>
             </View>
           )}
 

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import Constants from 'expo-constants';
 
-export type UploadFolder = 'profiles' | 'pets' | 'posts' | 'events';
+export type UploadFolder = 'profiles' | 'pets' | 'posts' | 'events' | 'stamps' | 'reports' | 'certificates';
 
 const normalizeBaseUrl = (value?: string | null) => {
   const fallback = 'http://127.0.0.1:5001';

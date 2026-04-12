@@ -6,9 +6,11 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { userHealthApi } from "@/services/users/healthApi";
 
 const vitalPresets = [
-  { type: "Weight", value: "28", unit: "kg" },
-  { type: "Heart Rate", value: "92", unit: "bpm" },
-  { type: "Temperature", value: "101.2", unit: "F" },
+  { type: "Weight", unit: "kg" },
+  { type: "Heart Rate", unit: "bpm" },
+  { type: "Temperature", unit: "°F" },
+  { type: "Blood Pressure", unit: "mmHg" },
+  { type: "Respiratory Rate", unit: "breaths/min" },
 ];
 
 export default function AddVitalScreen() {
@@ -56,12 +58,11 @@ export default function AddVitalScreen() {
                 key={preset.type}
                 onPress={() => {
                   setType(preset.type);
-                  setValue(preset.value);
                   setUnit(preset.unit);
                 }}
-                style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.bgSubtle, borderWidth: 1, borderColor: colors.border }}
+                style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: type === preset.type ? colors.infoBg : colors.bgSubtle, borderWidth: 1, borderColor: type === preset.type ? '#0ea5e9' : colors.border }}
               >
-                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>{preset.type}</Text>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: type === preset.type ? '#0369a1' : colors.textSecondary }}>{preset.type}</Text>
               </Pressable>
             ))}
           </ScrollView>

@@ -1,5 +1,7 @@
 import type { Response } from "express";
 import db from "../models/index.ts";
+import { createNotification } from "../services/notificationService.ts";
+import { generateVaccineCertificate } from "../services/certificateService.ts";
 
 const canAccessPet = async (petId: string, userId: string, userType: "user" | "vet"): Promise<boolean> => {
   const { pets: Pet, appointments: Appointment } = db as any;
@@ -93,18 +95,126 @@ export const getVaccines = async (req: any, res: Response): Promise<void> => {
 
 export const addVaccine = async (req: any, res: Response): Promise<void> => {
   try {
-    const { vaccines: Vaccine } = db as any;
-    if (!(await canAccessPet(req.params.petId, req.user.id, req.userType || "user"))) {
+    const { vaccines: Vaccine, pets: Pet, vets: Vet, appointments: Appointment } = db as any;
+    const userType: "user" | "vet" = req.userType || "user";
+    const isVet = userType === "vet";
+
+    if (!(await canAccessPet(req.params.petId, req.user.id, userType))) {
       res.status(403).json({ message: "Not authorized for this pet" });
       return;
     }
 
+    // hasCertificate: vet can pass true (default true for vets), owner always false
+    const hasCertificate = isVet ? (req.body.hasCertificate !== false) : false;
+
     const vaccine = await Vaccine.create({
-      ...req.body,
-      status: req.body?.status || "done",
+      name: req.body.name,
+      dateAdministered: req.body.dateAdministered,
+      nextDueDate: req.body.nextDueDate || null,
+      status: req.body.status || "done",
       petId: req.params.petId,
+      addedByRole: isVet ? "vet" : "owner",
+      addedByVetId: isVet ? req.user.id : null,
+      hasCertificate: false, // will update after cert generation
     });
+
+    // Auto-generate certificate if vet opted in
+    if (isVet && hasCertificate) {
+      try {
+        const [vet, pet] = await Promise.all([
+          Vet.findByPk(req.user.id),
+          Pet.findByPk(req.params.petId),
+        ]);
+
+        const certificateUrl = await generateVaccineCertificate({
+          petName: pet?.name || "Pet",
+          petSpecies: pet?.species,
+          petBreed: pet?.breed,
+          vaccineName: vaccine.name,
+          dateAdministered: vaccine.dateAdministered || new Date().toISOString().slice(0, 10),
+          nextDueDate: vaccine.nextDueDate,
+          vetName: vet?.name || "Veterinarian",
+          clinicName: vet?.hospital_name,
+          clinicCity: vet?.city,
+          licenseNumber: vet?.licenseNumber,
+          clinicStampUrl: vet?.clinicStampUrl,
+        });
+
+        await vaccine.update({ certificateUrl, hasCertificate: true });
+      } catch (certErr: any) {
+        // Certificate generation failed — log but don't fail the whole request
+        console.error("Certificate generation failed:", certErr.message);
+      }
+    }
+
+    // If owner added vaccine, notify any vet who has an appointment for this pet
+    if (!isVet) {
+      try {
+        const pet = await Pet.findByPk(req.params.petId);
+        const appt = await Appointment.findOne({
+          where: { petId: req.params.petId },
+          order: [["createdAt", "DESC"]],
+        });
+        if (appt?.vetId) {
+          await createNotification(
+            appt.vetId,
+            "vet",
+            "vaccine_review",
+            "Vaccine Record Added",
+            `${pet?.name || "A pet"}'s owner added a vaccine record (${vaccine.name}). Review and approve a certificate if needed.`,
+            vaccine.id,
+            "vaccine"
+          );
+        }
+      } catch {
+        // Notification failure is non-fatal
+      }
+    }
+
     res.status(201).json(vaccine);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// --- Generate Certificate for existing vaccine (vet approving owner-added vaccine) ---
+export const generateCertificate = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { vaccines: Vaccine, pets: Pet, vets: Vet } = db as any;
+    const userType: "user" | "vet" = req.userType || "user";
+    if (userType !== "vet") {
+      res.status(403).json({ message: "Only vets can generate certificates" });
+      return;
+    }
+
+    const vaccine = await Vaccine.findOne({ where: { id: req.params.vaccineId, petId: req.params.petId } });
+    if (!vaccine) {
+      res.status(404).json({ message: "Vaccine not found" });
+      return;
+    }
+
+    const [vet, pet] = await Promise.all([
+      Vet.findByPk(req.user.id),
+      Pet.findByPk(req.params.petId),
+    ]);
+
+    const certificateUrl = await generateVaccineCertificate({
+      petName: pet?.name || "Pet",
+      petSpecies: pet?.species,
+      petBreed: pet?.breed,
+      vaccineName: vaccine.name,
+      dateAdministered: vaccine.dateAdministered || new Date().toISOString().slice(0, 10),
+      nextDueDate: vaccine.nextDueDate,
+      vetName: vet?.name || "Veterinarian",
+      clinicName: vet?.hospital_name,
+      clinicCity: vet?.city,
+      licenseNumber: vet?.licenseNumber,
+      clinicStampUrl: vet?.clinicStampUrl,
+    });
+
+    await vaccine.update({ certificateUrl, hasCertificate: true, addedByVetId: req.user.id });
+
+    res.json({ certificateUrl });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

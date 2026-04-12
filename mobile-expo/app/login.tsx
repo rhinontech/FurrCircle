@@ -17,18 +17,18 @@ const ROLES: { key: LoginRole; label: string; icon: typeof PawPrint; heading: st
     hint: "Sign in to manage your pets and discover vets",
   },
   {
-    key: "shelter",
-    label: "Shelter",
-    icon: Building2,
-    heading: "Shelter Sign In",
-    hint: "Sign in to manage your rescue listings and adoption requests",
-  },
-  {
     key: "veterinarian",
     label: "Veterinarian",
     icon: Stethoscope,
     heading: "Vet Sign In",
     hint: "Sign in to manage appointments and patient records",
+  },
+  {
+    key: "shelter",
+    label: "Shelter",
+    icon: Building2,
+    heading: "Shelter Sign In",
+    hint: "Sign in to manage your rescue listings and adoption requests",
   },
 ];
 
@@ -43,6 +43,14 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const currentRole = ROLES.find(r => r.key === selectedRole)!;
+
+  const handleRolePress = (key: LoginRole) => {
+    if (key === "shelter") {
+      Alert.alert("Coming Soon", "Shelter accounts are not available yet. Stay tuned!");
+      return;
+    }
+    setSelectedRole(key);
+  };;
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -80,11 +88,16 @@ export default function LoginScreen() {
             {ROLES.map(({ key, label, icon: Icon }) => (
               <Pressable
                 key={key}
-                onPress={() => setSelectedRole(key)}
-                style={{ flex: 1, backgroundColor: selectedRole === key ? colors.brand + '15' : colors.bgCard, borderWidth: 1, borderColor: selectedRole === key ? colors.brand : colors.border, borderRadius: 16, padding: 12, alignItems: 'center', gap: 6 }}
+                onPress={() => handleRolePress(key)}
+                style={{ flex: 1, backgroundColor: selectedRole === key ? colors.brand + '15' : colors.bgCard, borderWidth: 1, borderColor: selectedRole === key ? colors.brand : colors.border, borderRadius: 16, padding: 12, alignItems: 'center', gap: 6, opacity: key === 'shelter' ? 0.6 : 1 }}
               >
                 <Icon size={22} color={selectedRole === key ? colors.brand : colors.textMuted} />
                 <Text style={{ fontSize: 12, fontWeight: selectedRole === key ? '700' : '500', color: selectedRole === key ? colors.brand : colors.textPrimary }}>{label}</Text>
+                {key === 'shelter' && (
+                  <View style={{ backgroundColor: colors.textMuted + '30', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                    <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase' }}>Soon</Text>
+                  </View>
+                )}
               </Pressable>
             ))}
           </View>

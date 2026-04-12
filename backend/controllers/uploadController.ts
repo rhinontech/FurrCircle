@@ -1,7 +1,7 @@
 import type { Response } from 'express';
 import { uploadFileToS3, type UploadFolder } from '../services/s3Service.ts';
 
-const VALID_FOLDERS: UploadFolder[] = ['profiles', 'pets', 'posts', 'events'];
+const VALID_FOLDERS: UploadFolder[] = ['profiles', 'pets', 'posts', 'events', 'stamps', 'reports', 'certificates'];
 
 // @desc    Upload image to S3 and return the public URL
 // @route   POST /api/upload/:folder  (folder: profiles | pets | posts | events)
