@@ -1,5 +1,4 @@
 import { api } from '../api';
-import { authApi } from '../auth/authApi';
 import { userAppointmentsApi } from './appointmentsApi';
 import { userCommunityApi } from './communityApi';
 import { userPetsApi } from './petsApi';
@@ -7,15 +6,13 @@ import { normalizeProfile } from '../shared/normalizers';
 
 export const userDiscoverApi = {
   getDiscoverData: async () => {
-    const [vets, shelters, pets] = await Promise.all([
+    const [vets, pets] = await Promise.all([
       userAppointmentsApi.listVets(),
-      authApi.listShelters(),
       userPetsApi.listDiscoverPets(),
     ]);
 
     return {
       vets: vets || [],
-      shelters: shelters || [],
       pets: pets || [],
     };
   },
