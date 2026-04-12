@@ -9,7 +9,7 @@ export default function Button({ text, onClick }: ButtonProps) {
     return (
         <button
             onClick={onClick}
-            className="relative w-fit h-14 px-10 rounded-full text-lg font-medium bg-primary hover:bg-[#8A7160] text-white transition-all duration-300 group overflow-hidden flex items-center justify-center"
+            className="relative w-fit h-14 px-10 rounded-full text-lg font-medium bg-primary hover:bg-primary/80 text-white transition-all duration-300 group overflow-hidden flex items-center justify-center"
         >
             {/* Text */}
             <span className="transition-transform duration-300 ease-out group-hover:-translate-x-2">

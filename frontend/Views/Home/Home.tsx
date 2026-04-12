@@ -12,7 +12,7 @@ import CTA from './CTA/CTA'
 const Home = () => {
   return (
      <>
-      <main className="flex-1 flex flex-col min-h-screen">
+      <main className="flex-1 flex flex-col min-h-screen max-md:overflow-hidden">
         <Hero />
         <Services />
         <FeaturedMarquee />

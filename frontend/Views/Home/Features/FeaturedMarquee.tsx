@@ -62,7 +62,7 @@ export function FeaturedMarquee() {
                 </div>
               </FadeInUp>
             </div>
-            <Image src="/featureCat.png" alt="Pet Care" width={500} height={500} />
+            <Image loading="eager" src="/infoCat1.png" alt="Pet Care" width={500} height={500} />
           </div>
         </FadeInUp>
 

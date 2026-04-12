@@ -49,7 +49,7 @@ export function Footer() {
                 className="flex-1 bg-[#F9F8F6] rounded-xl px-5 py-3.5 text-[15px] outline-none focus:ring-1 focus:ring-[#987D6B] transition-all"
                 required
               />
-              <button type="submit" className="flex items-center justify-center w-14 h-[52px] rounded-xl bg-[#987D6B] text-white hover:bg-[#8A7160] shrink-0 transition-colors">
+              <button type="submit" className="flex items-center justify-center w-14 h-[52px] rounded-xl bg-primary text-white hover:bg-primary/80 shrink-0 transition-colors">
                 <ArrowRight className="h-5 w-5" />
               </button>
             </form>
