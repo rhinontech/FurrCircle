@@ -26,7 +26,7 @@ if (NODE_ENV === "production" && !process.env.JWT_SECRET) {
 
 // Fail fast if S3 credentials are missing in production
 if (NODE_ENV === "production") {
-    const required = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_S3_BUCKET"];
+    const required = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_S3_BUCKET_NAME"];
     const missing = required.filter(k => !process.env[k]);
     if (missing.length > 0) {
         console.error(`FATAL: Missing required S3 environment variables: ${missing.join(", ")}`);
@@ -89,7 +89,7 @@ app.use('/api/adoptions', adoptionRoutes);
 app.use('/api/vets/:vetId/reviews', vetReviewRoutes);
 
 // Test DB Connection and Start Server
-const startServer = async () => {
+const startServer = async (attempt = 1) => {
     try {
         await sequelize.authenticate();
         console.log('Database connected successfully.');
@@ -103,6 +103,9 @@ const startServer = async () => {
         });
     } catch (error) {
         console.error('Unable to connect to the database:', error);
+        const retryDelayMs = Math.min(30000, 5000 * attempt);
+        console.log(`Retrying database connection in ${Math.round(retryDelayMs / 1000)}s...`);
+        setTimeout(() => startServer(attempt + 1), retryDelayMs);
     }
 };
 

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert, Linking } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { ChevronLeft, ShieldCheck, Download, Eye, Plus, Award } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -50,7 +50,7 @@ export default function VaccinesScreen() {
       const result = await userHealthApi.generateVaccineCertificate(String(petId), vaccineId);
       setVaccines((prev) => prev.map((v) => v.id === vaccineId ? { ...v, certificateUrl: result.certificateUrl, hasCertificate: true } : v));
       Alert.alert("Certificate Created", "The vaccine certificate has been generated.", [
-        { text: "View Now", onPress: () => Linking.openURL(result.certificateUrl) },
+        { text: "View Now", onPress: () => openCertificate(vaccineId) },
         { text: "Later", style: "cancel" },
       ]);
     } catch (error: any) {
@@ -60,8 +60,8 @@ export default function VaccinesScreen() {
     }
   };
 
-  const openCertificate = (url: string) => {
-    Linking.openURL(url).catch(() => Alert.alert("Error", "Could not open the certificate."));
+  const openCertificate = (vaccineId: string) => {
+    router.push(`/health/certificate?petId=${petId}&vaccineId=${vaccineId}` as any);
   };
 
   if (loading && !refreshing) {
@@ -140,18 +140,18 @@ export default function VaccinesScreen() {
                 {hasCert ? (
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
                     <Pressable
-                      onPress={() => openCertificate(v.certificateUrl)}
+                      onPress={() => openCertificate(v.id)}
                       style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, backgroundColor: colors.bgSubtle, borderRadius: 10 }}
                     >
                       <Eye size={14} color={colors.textSecondary} />
                       <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>View Certificate</Text>
                     </Pressable>
                     <Pressable
-                      onPress={() => openCertificate(v.certificateUrl)}
+                      onPress={() => openCertificate(v.id)}
                       style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, backgroundColor: colors.brand + '12', borderRadius: 10 }}
                     >
                       <Download size={14} color={colors.brand} />
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.brand }}>Download</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.brand }}>Share Certificate</Text>
                     </Pressable>
                   </View>
                 ) : isVet ? (
