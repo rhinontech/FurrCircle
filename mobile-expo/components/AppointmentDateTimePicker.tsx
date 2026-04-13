@@ -4,8 +4,10 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Calendar as CalendarIcon, Clock } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 
+import { formatDateLocal } from "../services/shared/dateUtils";
+
 function formatDateValue(d: Date) {
-  return d.toISOString().slice(0, 10);
+  return formatDateLocal(d);
 }
 
 function formatTimeLabel(d: Date) {

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, TextInput, Pressable, Image, Modal, ActivityIndicator, RefreshControl, Alert, Linking } from "react-native";
 import { Search, Stethoscope, MapPin, Star, ShieldCheck, Phone, Clock, X, Heart, PawPrint } from "lucide-react-native";
 import StatusChip from "../../components/ui/StatusChip";
@@ -7,6 +7,18 @@ import { useRouter } from "expo-router";
 import { userDiscoverApi } from "@/services/users/discoverApi";
 
 const categories = ["All", "Vets", "Adoption", "Foster"];
+
+function EmptyPlaceholder({ icon: Icon, title, description, colors }: any) {
+  return (
+    <View style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCard, borderRadius: 20, paddingVertical: 32, paddingHorizontal: 24, alignItems: "center", marginBottom: 16 }}>
+      <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+        <Icon size={24} color={colors.brand} strokeWidth={1.8} />
+      </View>
+      <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary }}>{title}</Text>
+      <Text style={{ marginTop: 4, color: colors.textMuted, fontSize: 13, textAlign: "center", lineHeight: 20 }}>{description}</Text>
+    </View>
+  );
+}
 
 export default function DiscoverScreen() {
   const router = useRouter();
@@ -89,6 +101,12 @@ export default function DiscoverScreen() {
   const filteredVets = vets.filter(v => (v.clinic_name || v.name || "").toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredPets = pets.filter(p => (p.name || "").toLowerCase().includes(searchQuery.toLowerCase()));
 
+  const displayPets = filteredPets.filter(p => {
+    if (active === "Adoption") return p.isAdoptionOpen;
+    if (active === "Foster") return p.isFosterOpen;
+    return true;
+  });
+
   if (loading && !refreshing) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }}>
@@ -135,7 +153,14 @@ export default function DiscoverScreen() {
               <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary }}>Nearby Vets</Text>
               <Text style={{ fontSize: 14, color: colors.brand, fontWeight: '500' }}>View all</Text>
             </View>
-            {filteredVets.length === 0 ? <Text style={{ color: colors.textMuted }}>No vets found</Text> : filteredVets.map((vet) => (
+            {filteredVets.length === 0 ? (
+              <EmptyPlaceholder
+                icon={Stethoscope}
+                title="No clinics found"
+                description={searchQuery ? `We couldn't find any vets matching "${searchQuery}".` : "New veterinary clinics will be added to your area soon."}
+                colors={colors}
+              />
+            ) : filteredVets.map((vet) => (
               <Pressable
                 key={vet.id}
                 onPress={() => router.push(`/vets/${vet.id}` as any)}
@@ -180,13 +205,16 @@ export default function DiscoverScreen() {
               {active === "Foster" ? "Needs a Foster Home" : "Adoption & Fostering"}
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-              {filteredPets
-                .filter(p => {
-                  if (active === "Adoption") return p.isAdoptionOpen;
-                  if (active === "Foster") return p.isFosterOpen;
-                  return true;
-                })
-                .map((pet) => (
+              {displayPets.length === 0 ? (
+                <View style={{ flex: 1 }}>
+                  <EmptyPlaceholder
+                    icon={active === "Foster" ? ShieldCheck : Heart}
+                    title={active === "Foster" ? "No fosters needed" : (active === "Adoption" ? "No pets for adoption" : "No results")}
+                    description={searchQuery ? `No pets matching "${searchQuery}" found in this category.` : `New pets for ${active === "Foster" ? "foster" : "adoption"} will appear here soon.`}
+                    colors={colors}
+                  />
+                </View>
+              ) : displayPets.map((pet) => (
                 <Pressable key={pet.id} onPress={() => { setSelectedItem(pet); setModalType("pet"); }} style={{ width: '47%', backgroundColor: colors.bgCard, borderRadius: 16, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
                   <View style={{ position: 'relative' }}>
                     {pet.avatar_url ? (

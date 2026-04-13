@@ -100,7 +100,8 @@ export default function AddMedicationScreen() {
   );
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/* Header outside KeyboardAvoidingView */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <Pressable onPress={() => router.back()} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}>
           <ChevronLeft size={20} color={colors.textPrimary} />
@@ -108,83 +109,104 @@ export default function AddMedicationScreen() {
         <Text style={{ flex: 1, fontSize: 18, fontWeight: '700', color: colors.textPrimary, textAlign: 'center', marginRight: 40 }}>Add Medication</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Medication Name</Text>
-          <TextInput
-            placeholder="e.g. Heartgard, Bravecto"
-            placeholderTextColor={colors.textMuted}
-            value={name}
-            onChangeText={setName}
-            style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
-          />
-        </View>
-
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Dosage</Text>
-          <TextInput
-            placeholder="e.g. 1 Tablet, 5ml"
-            placeholderTextColor={colors.textMuted}
-            value={dosage}
-            onChangeText={setDosage}
-            style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
-          />
-        </View>
-
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Frequency</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {['Daily', 'Twice Daily', 'Weekly', 'Monthly', 'As Needed'].map((f) => (
-              <Pressable
-                key={f}
-                onPress={() => setFrequency(f)}
-                style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: frequency === f ? colors.brand : colors.bgSubtle, borderWidth: 1, borderColor: frequency === f ? colors.brand : colors.border }}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: frequency === f ? '#fff' : colors.textSecondary }}>{f}</Text>
-              </Pressable>
-            ))}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : undefined} 
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      >
+        <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
+          <View style={{ gap: 8 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Medication Name</Text>
+            <TextInput
+              placeholder="e.g. Heartgard, Bravecto"
+              placeholderTextColor={colors.textMuted}
+              value={name}
+              onChangeText={setName}
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
+            />
           </View>
-          <TextInput
-            placeholder="Or type custom frequency"
-            placeholderTextColor={colors.textMuted}
-            value={frequency}
-            onChangeText={setFrequency}
-            style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
-          />
-        </View>
 
-        <DateField label="Start Date" value={startDate} field="start" />
-        <DateField label="End Date" value={endDate} field="end" optional />
+          <View style={{ gap: 8 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Dosage</Text>
+            <TextInput
+              placeholder="e.g. 1 Tablet, 5ml"
+              placeholderTextColor={colors.textMuted}
+              value={dosage}
+              onChangeText={setDosage}
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
+            />
+          </View>
 
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Medication Photo <Text style={{ color: colors.textMuted }}>(Optional)</Text></Text>
-          {imageUrl ? (
-            <View style={{ borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCard }}>
-              <Image source={{ uri: imageUrl }} style={{ width: "100%", height: 190 }} resizeMode="cover" />
-              <Pressable
-                onPress={() => setImageUrl(null)}
-                style={{ position: "absolute", top: 10, right: 10, width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(15,23,42,0.72)", alignItems: "center", justifyContent: "center" }}
-              >
-                <X size={18} color="#fff" />
-              </Pressable>
+          <View style={{ gap: 8 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Frequency</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {['Daily', 'Twice Daily', 'Weekly', 'Monthly', 'As Needed'].map((f) => (
+                <Pressable
+                  key={f}
+                  onPress={() => setFrequency(f)}
+                  style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: frequency === f ? colors.brand : colors.bgSubtle, borderWidth: 1, borderColor: frequency === f ? colors.brand : colors.border }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: frequency === f ? '#fff' : colors.textSecondary }}>{f}</Text>
+                </Pressable>
+              ))}
             </View>
-          ) : (
-            <Pressable
-              onPress={handleCapturePhoto}
-              disabled={capturing}
-              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, minHeight: 92, alignItems: "center", justifyContent: "center", gap: 8, opacity: capturing ? 0.7 : 1 }}
-            >
-              {capturing ? <ActivityIndicator color={colors.brand} /> : <Camera size={24} color={colors.brand} />}
-              <Text style={{ fontSize: 14, fontWeight: "700", color: colors.textPrimary }}>
-                {capturing ? "Opening camera..." : "Take Medication Photo"}
-              </Text>
-              <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>
-                Capture the strip, bottle, prescription, or label.
-              </Text>
-            </Pressable>
-          )}
+            <TextInput
+              placeholder="Or type custom frequency"
+              placeholderTextColor={colors.textMuted}
+              value={frequency}
+              onChangeText={setFrequency}
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
+            />
+          </View>
+
+          <DateField label="Start Date" value={startDate} field="start" />
+          <DateField label="End Date" value={endDate} field="end" optional />
+
+          <View style={{ gap: 8 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Medication Photo <Text style={{ color: colors.textMuted }}>(Optional)</Text></Text>
+            {imageUrl ? (
+              <View style={{ borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCard }}>
+                <Image source={{ uri: imageUrl }} style={{ width: "100%", height: 190 }} resizeMode="cover" />
+                <Pressable
+                  onPress={() => setImageUrl(null)}
+                  style={{ position: "absolute", top: 10, right: 10, width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(15,23,42,0.72)", alignItems: "center", justifyContent: "center" }}
+                >
+                  <X size={18} color="#fff" />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                onPress={handleCapturePhoto}
+                disabled={capturing}
+                style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, minHeight: 92, alignItems: "center", justifyContent: "center", gap: 8, opacity: capturing ? 0.7 : 1 }}
+              >
+                {capturing ? <ActivityIndicator color={colors.brand} /> : <Camera size={24} color={colors.brand} />}
+                <Text style={{ fontSize: 14, fontWeight: "700", color: colors.textPrimary }}>
+                  {capturing ? "Opening camera..." : "Take Medication Photo"}
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>
+                  Capture the strip, bottle, prescription, or label.
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </ScrollView>
+
+        <View style={{ padding: 20, paddingBottom: 40, borderTopWidth: 1, borderTopColor: colors.border }}>
+          <Pressable
+            onPress={handleSave}
+            disabled={loading}
+            style={{ backgroundColor: colors.brand, borderRadius: 16, paddingVertical: 16, alignItems: 'center', opacity: loading ? 0.7 : 1, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+          >
+            {loading ? <ActivityIndicator color="#fff" /> : (
+              <>
+                <Save size={20} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Save Medication</Text>
+              </>
+            )}
+          </Pressable>
         </View>
-      </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* iOS modal date picker */}
       {Platform.OS === 'ios' && (
@@ -231,21 +253,6 @@ export default function AddMedicationScreen() {
           }}
         />
       )}
-
-      <View style={{ padding: 20, paddingBottom: 40, borderTopWidth: 1, borderTopColor: colors.border }}>
-        <Pressable
-          onPress={handleSave}
-          disabled={loading}
-          style={{ backgroundColor: colors.brand, borderRadius: 16, paddingVertical: 16, alignItems: 'center', opacity: loading ? 0.7 : 1, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
-        >
-          {loading ? <ActivityIndicator color="#fff" /> : (
-            <>
-              <Save size={20} color="#fff" />
-              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Save Medication</Text>
-            </>
-          )}
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }

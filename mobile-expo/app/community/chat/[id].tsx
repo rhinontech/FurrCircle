@@ -31,6 +31,7 @@ export default function CommunityChatScreen() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const fetchConversation = async (silent = false) => {
     if (!id) return;
@@ -82,10 +83,7 @@ export default function CommunityChatScreen() {
     conversation?.participants?.find((item: any) => item.id !== user?.id);
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1, backgroundColor: colors.bg }}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <View
         style={{
           paddingHorizontal: 20,
@@ -138,7 +136,17 @@ export default function CommunityChatScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 28 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 180 : 0}
+        style={{ flex: 1 }}
+      >
+
+      <ScrollView 
+        ref={scrollViewRef}
+        onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 28 }}
+      >
         {conversation?.pet && (
           <View
             style={{
@@ -238,6 +246,7 @@ export default function CommunityChatScreen() {
           </Pressable>
         </View>
       </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }

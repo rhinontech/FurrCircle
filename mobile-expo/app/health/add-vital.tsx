@@ -41,7 +41,8 @@ export default function AddVitalScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/* Header outside KeyboardAvoidingView */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <Pressable onPress={() => router.back()} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}>
           <ChevronLeft size={20} color={colors.textPrimary} />
@@ -49,70 +50,76 @@ export default function AddVitalScreen() {
         <Text style={{ flex: 1, fontSize: 18, fontWeight: '700', color: colors.textPrimary, textAlign: 'center', marginRight: 40 }}>Log Vital</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Type</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
-            {vitalPresets.map((preset) => (
-              <Pressable
-                key={preset.type}
-                onPress={() => {
-                  setType(preset.type);
-                  setUnit(preset.unit);
-                }}
-                style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: type === preset.type ? colors.infoBg : colors.bgSubtle, borderWidth: 1, borderColor: type === preset.type ? '#0ea5e9' : colors.border }}
-              >
-                <Text style={{ fontSize: 12, fontWeight: '600', color: type === preset.type ? '#0369a1' : colors.textSecondary }}>{preset.type}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-          <TextInput
-            placeholder="e.g. Weight, Heart Rate, Temperature"
-            placeholderTextColor={colors.textMuted}
-            value={type}
-            onChangeText={setType}
-            style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
-          />
-        </View>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : undefined} 
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      >
+        <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
+          <View style={{ gap: 8 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Type</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
+              {vitalPresets.map((preset) => (
+                <Pressable
+                  key={preset.type}
+                  onPress={() => {
+                    setType(preset.type);
+                    setUnit(preset.unit);
+                  }}
+                  style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: type === preset.type ? colors.infoBg : colors.bgSubtle, borderWidth: 1, borderColor: type === preset.type ? '#0ea5e9' : colors.border }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: type === preset.type ? '#0369a1' : colors.textSecondary }}>{preset.type}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <TextInput
+              placeholder="e.g. Weight, Heart Rate, Temperature"
+              placeholderTextColor={colors.textMuted}
+              value={type}
+              onChangeText={setType}
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
+            />
+          </View>
 
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Value</Text>
-          <TextInput
-            placeholder="e.g. 15, 120, 101.5"
-            placeholderTextColor={colors.textMuted}
-            value={value}
-            onChangeText={setValue}
-            keyboardType="numeric"
-            style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
-          />
-        </View>
+          <View style={{ gap: 8 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Value</Text>
+            <TextInput
+              placeholder="e.g. 15, 120, 101.5"
+              placeholderTextColor={colors.textMuted}
+              value={value}
+              onChangeText={setValue}
+              keyboardType="numeric"
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
+            />
+          </View>
 
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Unit</Text>
-          <TextInput
-            placeholder="e.g. kg, lbs, bpm, °F"
-            placeholderTextColor={colors.textMuted}
-            value={unit}
-            onChangeText={setUnit}
-            style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
-          />
-        </View>
-      </ScrollView>
+          <View style={{ gap: 8 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Unit</Text>
+            <TextInput
+              placeholder="e.g. kg, lbs, bpm, °F"
+              placeholderTextColor={colors.textMuted}
+              value={unit}
+              onChangeText={setUnit}
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
+            />
+          </View>
+        </ScrollView>
 
-      <View style={{ padding: 20, paddingBottom: 40, borderTopWidth: 1, borderTopColor: colors.border }}>
-        <Pressable
-          onPress={handleSave}
-          disabled={loading}
-          style={{ backgroundColor: colors.brand, borderRadius: 16, paddingVertical: 16, alignItems: 'center', opacity: loading ? 0.7 : 1, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
-        >
-          {loading ? <ActivityIndicator color="#fff" /> : (
-            <>
-              <Save size={20} color="#fff" />
-              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Save Record</Text>
-            </>
-          )}
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+        <View style={{ padding: 20, paddingBottom: 40, borderTopWidth: 1, borderTopColor: colors.border }}>
+          <Pressable
+            onPress={handleSave}
+            disabled={loading}
+            style={{ backgroundColor: colors.brand, borderRadius: 16, paddingVertical: 16, alignItems: 'center', opacity: loading ? 0.7 : 1, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+          >
+            {loading ? <ActivityIndicator color="#fff" /> : (
+              <>
+                <Save size={20} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Save Record</Text>
+              </>
+            )}
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
