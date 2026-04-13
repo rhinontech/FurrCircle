@@ -3,6 +3,8 @@ import db from "../models/index.ts";
 import { Op } from "sequelize";
 import { createNotification } from "../services/notificationService.ts";
 
+const normalizeCity = (value: unknown) => String(value || "").trim();
+
 const parseFeedbackPayload = (body: any) => {
   const rating = Number(body?.rating);
   const tags = Array.isArray(body?.tags)
@@ -52,9 +54,19 @@ const parseReschedulePayload = (body: any) => {
 export const getVets = async (req: any, res: Response): Promise<void> => {
   try {
     const { vets: Vet } = db as any;
+    const requestedCity = normalizeCity(req.query?.city);
+    const viewerCity = normalizeCity(req.user?.city);
+    const cityFilter = requestedCity || viewerCity;
+
+    const where: Record<string, any> = { isVerified: true };
+    if (cityFilter) {
+      where.city = { [Op.iLike]: cityFilter };
+    }
+
     const vets = await Vet.findAll({
-      where: { isVerified: true },
-      attributes: { exclude: ['password'] }
+      where,
+      attributes: { exclude: ['password'] },
+      order: [["rating", "DESC"], ["name", "ASC"]],
     });
     res.json(vets);
   } catch (error: any) {

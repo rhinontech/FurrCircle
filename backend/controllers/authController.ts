@@ -7,6 +7,7 @@ import db from "../models/index.ts";
 
 const SELF_SERVICE_USER_ROLES = new Set(["owner", "shelter"]);
 const PROFILE_IMAGE_FIELDS = ["avatar_url", "phone", "bio", "city", "address"] as const;
+const normalizeCity = (value: unknown) => String(value || "").trim();
 
 // userType is embedded in the JWT so middleware knows which table to query
 const generateToken = (id: string, userType: 'user' | 'vet') => {
@@ -242,9 +243,16 @@ export const getUsersByRole = async (req: Request, res: Response): Promise<void>
 
     // Vets come from the Vet table
     if (role === 'veterinarian') {
+      const requestedCity = normalizeCity((req.query as any)?.city);
+      const where: Record<string, any> = { isVerified: true };
+      if (requestedCity) {
+        where.city = { [Op.iLike]: requestedCity };
+      }
+
       const vets = await Vet.findAll({
-        where: { isVerified: true },
+        where,
         attributes: ['id', 'name', 'email', 'hospital_name', 'profession', 'city', 'avatar_url', 'rating', 'bio', 'phone', 'working_hours', 'isVerified'],
+        order: [["rating", "DESC"], ["name", "ASC"]],
       });
       return res.json(vets) as any;
     }
