@@ -33,11 +33,11 @@ export function Teams() {
                 <div className="flex justify-between max-md:flex-col max-md:text-center gap-10 items-end px-5 lg:px-0">
                     <div className="flex flex-col gap-4">
                         <h2 className="text-5xl md:text-7xl font-heading text-foreground">
-                            Our PetPals Team
+                            Our FurrCircle Team
                         </h2>
                     </div>
                     <p className="text-muted-foreground max-w-sm text-md md:text-base font-normal">
-                        Meet the Passionate Specialists Who Make PetPals a Home for Your Beloved Pets
+                        Meet the Passionate Specialists Who Make FurrCircle a Safe Haven for Your Beloved Pets
                     </p>
                 </div>
 

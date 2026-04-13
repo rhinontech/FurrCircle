@@ -38,9 +38,9 @@ export function AboutCTA() {
             <div className="max-w-7xl  mx-auto flex justify-end max-xl:justify-center">
                 <FadeInUp delay={0.5}>
                     <div className='flex flex-col max-md:items-center max-md:text-center max-w-3xl '>
-                        <h2 className="text-4xl md:text-6xl  max-md:text-center font-heading text-foreground mb-10 max-md:mb-10">Ready to Experience <br /> PetPals Exceptional Care?</h2>
-                        <p className="text-muted-foreground text-lg mb-10 ">Contact Us Today and Discover a World of Happiness and Health for Your Pet.</p>
-                        <Button text="Claim Us Now" />
+                        <h2 className="text-4xl md:text-6xl  max-md:text-center font-heading text-foreground mb-10 max-md:mb-10">Ready to Experience the <br /> FurrCircle Ecosystem?</h2>
+                        <p className="text-muted-foreground text-lg mb-10 ">Get Started Today and Discover a World of Happiness and Health for Your Pet with our Digital Health Passport.</p>
+                        <Button text="Get Started Now" />
                     </div>
                 </FadeInUp>
             </div>

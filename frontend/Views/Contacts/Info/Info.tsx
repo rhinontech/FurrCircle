@@ -7,7 +7,7 @@ const contactInfo = [
     {
         icon: Mail,
         title: "Email",
-        description: "info@petpals.com"
+        description: "info@furrcircle.com"
     },
     {
         icon: Phone,

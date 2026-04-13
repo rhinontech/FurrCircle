@@ -6,40 +6,40 @@ import Link from "next/link";
 
 const services = [
   {
-    title: "Pet Training",
-    description: "We offer training classes to improve your pet's behavior and strengthen your bond.",
-    icon: Search, // Approximate match
-    link: "/service-details/pet-training-details",
+    title: "Digital Health Vault",
+    description: "Securely store and zoom into medical reports with our high-fidelity document viewer.",
+    icon: Search, // Approximate match for discovery/lookup
+    link: "#",
   },
   {
-    title: "Veterinary Care",
-    description: "Our experienced vets provide top-notch medical care to keep your furry friend healthy.",
+    title: "Vaccine Monitor",
+    description: "State-of-the-art tracking for vaccinations with automated reminders for next doses.",
     icon: HeartPulse,
-    link: "/service-details/veterinary-care-details",
+    link: "#",
   },
   {
-    title: "Pet Boarding",
-    description: "Leave your pet with us while you're away, knowing they'll receive love and attention.",
-    icon: Home,
-    link: "/service-details/pet-boarding-details",
+    title: "Professional Network",
+    description: "Find and connect with top-rated veterinarians and specialists in your area.",
+    icon: Home, // Approximate match for clinic/home
+    link: "#",
   },
   {
-    title: "Dog Walking",
-    description: "Our trained walkers ensure your dog gets the exercise they need to stay happy.",
+    title: "Community Hub",
+    description: "Engagement with a global network of pet lovers. Share stories and get expert advice.",
     icon: Bone,
-    link: "/service-details/dog-walking-details",
+    link: "#",
   },
   {
-    title: "Grooming & Spa",
-    description: "Pamper your pet with our grooming services, leaving them looking and feeling their best.",
-    icon: Scissors,
-    link: "/service-details/grooming-spa-details",
+    title: "Wellness Tracking",
+    description: "Monitor vital signs, weight, and daily medications to ensure peak wellness.",
+    icon: Scissors, // Approximate match for grooming/care
+    link: "#",
   },
   {
-    title: "Pet Sitting",
-    description: "Trust us to care for your pet in the comfort of their own home when you can't be there.",
+    title: "Unified Profiles",
+    description: "A single digital identity for all your companions, accessible anytime, anywhere.",
     icon: CalendarHeart,
-    link: "/service-details/pet-sitting-details",
+    link: "#",
   },
 ];
 

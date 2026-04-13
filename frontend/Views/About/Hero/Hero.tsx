@@ -5,7 +5,7 @@ import Image from "next/image"
 const AboutUs = () => {
     return (
         <div className="flex overflow-hidden relative mt-[95px] bg-primary/70 items-center max-md:py-20 px-24 max-md:px-10 justify-between">
-            <h1 className="text-6xl md:text-8xl text-white font-heading max-md:text-center ">Welcome, <br />Buddies to PetPals!</h1>
+            <h1 className="text-6xl md:text-8xl text-white font-heading max-md:text-center ">Welcome, <br />Buddies to FurrCircle!</h1>
             <Image src="/about-us/aboutHero.png" alt="aboutHero" width={500} height={500} className="z-10 max-md:hidden" />
 
             <BouncingElement

@@ -140,13 +140,13 @@ export function Hero() {
 
         <FadeInUp delay={0.1}>
           <h1 className="text-[56px] md:text-[88px] font-heading leading-[1.05] max-w-4xl mb-8 text-[#1A1A1A]">
-            Best Pals for<br />Your Paw Pals
+            The Digital Health<br />Passport for Pets
           </h1>
         </FadeInUp>
 
         <FadeInUp delay={0.2}>
           <p className="text-lg px-5 md:text-[22px] leading-relaxed text-[#666666] max-w-2xl mb-12 mx-auto">
-            Your Trusted Partner in Pet Care, Offering Tailored Services to Ensure the Health, Happiness, and Well-Being of Your Beloved Furry Companions.
+            Experience the ultimate pet care ecosystem. FurrCircle centralizes medical records, vaccinations, and community engagement in one premium app. Your pet's wellness, simplified.
           </p>
         </FadeInUp>
 

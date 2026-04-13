@@ -12,10 +12,10 @@ const CTA = () => {
             <FadeInUp delay={0.5}>
                 <div className='flex flex-col max-md:items-center '>
 
-                    <h2 className="text-4xl md:text-6xl max-w-2xl max-md:text-center font-heading text-foreground mb-20 max-md:mb-10">Ready to Give Your Pet the Best Care? Contact Us Today!</h2>
+                    <h2 className="text-4xl md:text-6xl max-w-2xl max-md:text-center font-heading text-foreground mb-20 max-md:mb-10">Ready to Join the FurrCircle? Get Your Pet's Digital Health Passport Today!</h2>
 
 
-                    <Button text=' Claim Us Now' />
+                    <Button text='Get FurrCircle Now' />
                 </div>
             </FadeInUp>
 

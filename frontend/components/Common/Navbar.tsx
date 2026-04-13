@@ -11,19 +11,18 @@ export function Navbar() {
 
   const navLinks = [
     { name: "About", href: "/about-us" },
-    { name: "Services", href: "/services" },
     { name: "Contact", href: "/contacts" },
   ];
 
   return (
     <>
       <header className="fixed top-0 w-full z-50 bg-[#F9F8F6]/70 backdrop-blur-md  transition-all duration-300">
-        <nav className="container mx-auto px-6 md:px-10 h-[70px] md:h-[90px] flex items-center justify-between">
+        <nav className="container mx-auto px-6 md:px-10 h-[70px] md:h-[90px] flex items-center justify-between relative">
           {/* Logo */}
           <Link href="/" className="relative z-[60] block">
             <Image 
               src="/logo/furrcircle_light_logo.png" 
-              alt="PawsHub" 
+              alt="FurrCircle" 
               width={200} 
               height={100} 
               className="h-auto object-contain" 
@@ -32,7 +31,7 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Links */}
-          <div className="hidden md:flex items-center gap-10">
+          <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-10">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
