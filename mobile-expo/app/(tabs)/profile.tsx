@@ -43,7 +43,7 @@ export default function ProfileScreen() {
       icon: PawPrint,
       label: "My Pets",
       count: String(user?.petCount ?? 0),
-      action: () => router.push("/(tabs)/pets"),
+      action: () => router.push("/profile/pets"),
     },
     {
       icon: CalendarDays,
@@ -52,9 +52,9 @@ export default function ProfileScreen() {
     },
     {
       icon: Bookmark,
-      label: "Saved Vets",
-      count: savedVetsCount !== null ? String(savedVetsCount) : undefined,
-      action: () => router.push("/profile/vets"),
+      label: "Saved",
+      // count: savedVetsCount !== null ? String(savedVetsCount) : undefined,
+      action: () => router.push("/profile/saved"),
     },
     {
       icon: FileText,
@@ -195,7 +195,7 @@ export default function ProfileScreen() {
                 {
                   n: String(user?.petCount ?? 0),
                   l: "Pets",
-                  action: () => router.push("/(tabs)/pets"),
+                  action: () => router.push("/profile/pets"),
                 },
                 {
                   n: user?.role === "shelter" ? "Shelter" : "Owner",

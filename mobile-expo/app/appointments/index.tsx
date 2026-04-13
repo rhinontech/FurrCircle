@@ -304,13 +304,13 @@ export default function OwnerAppointmentsScreen() {
           <ArrowLeft size={22} color={colors.textPrimary} />
         </Pressable>
         <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary, flex: 1 }}>My Appointments</Text>
-        <Pressable
+        {/* <Pressable
           onPress={() => router.push("/appointments/book")}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
         >
           <Plus size={15} color="#fff" />
           <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Book</Text>
-        </Pressable>
+        </Pressable> */}
       </View>
 
       {loading ? (

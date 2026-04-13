@@ -15,7 +15,20 @@ import AppointmentFeedbackPrompt from '@/components/AppointmentFeedbackPrompt';
 function GlobalHeader() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
+  const segments = useSegments();
   const { chatUnreadCount, notifUnreadCount } = useNotifications();
+
+  // Determine if we are already on a "utility" screen to avoid stacking them
+  const isOnUtility = segments[0] === 'notifications' || segments.includes('chats');
+
+  const handleNavigate = (path: string) => {
+    if (isOnUtility) {
+      router.replace(path as any);
+    } else {
+      router.push(path as any);
+    }
+  };
+
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.border }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 10 }}>
@@ -26,7 +39,7 @@ function GlobalHeader() {
         />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Pressable
-            onPress={() => router.push('/community/chats')}
+            onPress={() => handleNavigate('/community/chats')}
             style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
           >
             <MessageCircle size={20} color={colors.textPrimary} />
@@ -37,7 +50,7 @@ function GlobalHeader() {
             )}
           </Pressable>
           <Pressable
-            onPress={() => router.push('/notifications')}
+            onPress={() => handleNavigate('/notifications')}
             style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
           >
             <Bell size={20} color={colors.textPrimary} />

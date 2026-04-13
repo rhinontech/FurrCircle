@@ -42,7 +42,8 @@ export default function AddAllergyScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/* Header outside KeyboardAvoidingView */}
       <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <Pressable onPress={() => router.back()} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center" }}>
           <ChevronLeft size={20} color={colors.textPrimary} />
@@ -50,87 +51,93 @@ export default function AddAllergyScreen() {
         <Text style={{ flex: 1, fontSize: 18, fontWeight: "700", color: colors.textPrimary, textAlign: "center", marginRight: 40 }}>Add Allergy</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>Allergen</Text>
-          <TextInput
-            placeholder="e.g. Chicken, pollen, dust mites"
-            placeholderTextColor={colors.textMuted}
-            value={allergen}
-            onChangeText={setAllergen}
-            style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
-          />
-        </View>
-
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>Severity</Text>
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            {severityOptions.map((option) => {
-              const active = severity === option;
-              return (
-                <Pressable
-                  key={option}
-                  onPress={() => setSeverity(option)}
-                  style={{
-                    flex: 1,
-                    backgroundColor: active ? colors.brand : colors.bgCard,
-                    borderRadius: 14,
-                    borderWidth: 1,
-                    borderColor: active ? colors.brand : colors.border,
-                    paddingVertical: 12,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text style={{ fontSize: 13, fontWeight: "700", textTransform: "capitalize", color: active ? "#fff" : colors.textPrimary }}>
-                    {option}
-                  </Text>
-                </Pressable>
-              );
-            })}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : undefined} 
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      >
+        <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
+          <View style={{ gap: 8 }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>Allergen</Text>
+            <TextInput
+              placeholder="e.g. Chicken, pollen, dust mites"
+              placeholderTextColor={colors.textMuted}
+              value={allergen}
+              onChangeText={setAllergen}
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
+            />
           </View>
-        </View>
 
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>Reaction</Text>
-          <TextInput
-            placeholder="e.g. Itchy skin, sneezing, upset stomach"
-            placeholderTextColor={colors.textMuted}
-            value={reaction}
-            onChangeText={setReaction}
-            style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
-          />
-        </View>
+          <View style={{ gap: 8 }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>Severity</Text>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              {severityOptions.map((option) => {
+                const active = severity === option;
+                return (
+                  <Pressable
+                    key={option}
+                    onPress={() => setSeverity(option)}
+                    style={{
+                      flex: 1,
+                      backgroundColor: active ? colors.brand : colors.bgCard,
+                      borderRadius: 14,
+                      borderWidth: 1,
+                      borderColor: active ? colors.brand : colors.border,
+                      paddingVertical: 12,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: "700", textTransform: "capitalize", color: active ? "#fff" : colors.textPrimary }}>
+                      {option}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
 
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>Notes</Text>
-          <TextInput
-            placeholder="Food to avoid, seasonal pattern, vet guidance..."
-            placeholderTextColor={colors.textMuted}
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={4}
-            style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary, height: 100, textAlignVertical: "top" }}
-          />
-        </View>
-      </ScrollView>
+          <View style={{ gap: 8 }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>Reaction</Text>
+            <TextInput
+              placeholder="e.g. Itchy skin, sneezing, upset stomach"
+              placeholderTextColor={colors.textMuted}
+              value={reaction}
+              onChangeText={setReaction}
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary }}
+            />
+          </View>
 
-      <View style={{ padding: 20, paddingBottom: 40, borderTopWidth: 1, borderTopColor: colors.border }}>
-        <Pressable
-          onPress={handleSave}
-          disabled={loading}
-          style={{ backgroundColor: colors.brand, borderRadius: 16, paddingVertical: 16, alignItems: "center", opacity: loading ? 0.7 : 1, flexDirection: "row", justifyContent: "center", gap: 8 }}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <Save size={20} color="#fff" />
-              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>Save Allergy</Text>
-            </>
-          )}
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+          <View style={{ gap: 8 }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>Notes</Text>
+            <TextInput
+              placeholder="Food to avoid, seasonal pattern, vet guidance..."
+              placeholderTextColor={colors.textMuted}
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={4}
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, fontSize: 16, color: colors.textPrimary, height: 100, textAlignVertical: "top" }}
+            />
+          </View>
+        </ScrollView>
+
+        <View style={{ padding: 20, paddingBottom: 40, borderTopWidth: 1, borderTopColor: colors.border }}>
+          <Pressable
+            onPress={handleSave}
+            disabled={loading}
+            style={{ backgroundColor: colors.brand, borderRadius: 16, paddingVertical: 16, alignItems: "center", opacity: loading ? 0.7 : 1, flexDirection: "row", justifyContent: "center", gap: 8 }}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Save size={20} color="#fff" />
+                <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>Save Allergy</Text>
+              </>
+            )}
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
