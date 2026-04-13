@@ -31,6 +31,7 @@ export default function AdoptionApplicationsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [actionId, setActionId] = useState<string | null>(null);
 
   useEffect(() => {
     adminApi
@@ -79,6 +80,20 @@ export default function AdoptionApplicationsPage() {
       icon: Heart,
     },
   ];
+
+  const handleReview = async (id: string, status: "approved" | "rejected") => {
+    setActionId(id);
+    try {
+      await adminApi.patch(`/admin/adoptions/${id}/status`, { status });
+      setApplications(prev =>
+        prev.map(a => (a.id === id ? { ...a, status } : a))
+      );
+    } catch {
+      alert("Action failed. Please try again.");
+    } finally {
+      setActionId(null);
+    }
+  };
 
   const formatDate = (iso: string) => {
     try {
@@ -199,6 +214,7 @@ export default function AdoptionApplicationsPage() {
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4">Submitted</th>
                   <th className="px-6 py-4">Message</th>
+                  <th className="px-6 py-4">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -280,9 +296,35 @@ export default function AdoptionApplicationsPage() {
 
                     {/* Message */}
                     <td className="px-6 py-4 max-w-xs">
-                      <p className="text-sm text-slate-500 truncate max-w-[200px]">
+                      <p className="text-sm text-slate-500 truncate max-w-50">
                         {app.message || <span className="text-slate-300 italic">No message</span>}
                       </p>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-6 py-4">
+                      {app.status === "pending" ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleReview(app.id, "approved")}
+                            disabled={actionId === app.id}
+                            className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 transition-colors disabled:opacity-40"
+                            title="Approve"
+                          >
+                            <CheckCircle2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleReview(app.id, "rejected")}
+                            disabled={actionId === app.id}
+                            className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors disabled:opacity-40"
+                            title="Reject"
+                          >
+                            <XCircle size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-300 italic">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -2,10 +2,12 @@ import express from "express";
 import {
   getPendingPosts, moderatePost, getAllPosts,
   getUnverifiedVets, verifyVet, deleteVet, getAllVets,
-  getAllPets, getAllUsers, deleteUser,
+  getAllPets, getAllUsers, deleteUser, deletePet,
   getAdminStats,
   getAdminEvents, createAdminEvent, updateAdminEvent, deleteAdminEvent,
-  getAdoptionPets,
+  getAdoptionPets, adminReviewApplication,
+  getAllAppointments,
+  getAllVetReviews, adminDeleteVetReview,
 } from "../controllers/adminController.ts";
 import { protect, adminOnly } from "../middleware/authMiddleware.ts";
 
@@ -20,9 +22,11 @@ router.delete("/users/:userId", protect, adminOnly, deleteUser);
 
 // Pets
 router.get("/pets", protect, adminOnly, getAllPets);
+router.delete("/pets/:petId", protect, adminOnly, deletePet);
 
 // Adoptions
 router.get("/adoptions", protect, adminOnly, getAdoptionPets);
+router.patch("/adoptions/:id/status", protect, adminOnly, adminReviewApplication);
 
 // Vet management
 router.get("/vets", protect, adminOnly, getAllVets);
@@ -34,6 +38,13 @@ router.delete("/vets/:vetId", protect, adminOnly, deleteVet);
 router.get("/pending-posts", protect, adminOnly, getPendingPosts);
 router.get("/posts", protect, adminOnly, getAllPosts);
 router.patch("/post-moderation/:postId", protect, adminOnly, moderatePost);
+
+// Appointments
+router.get("/appointments", protect, adminOnly, getAllAppointments);
+
+// Vet Reviews
+router.get("/vet-reviews", protect, adminOnly, getAllVetReviews);
+router.delete("/vet-reviews/:reviewId", protect, adminOnly, adminDeleteVetReview);
 
 // Events
 router.get("/events", protect, adminOnly, getAdminEvents);

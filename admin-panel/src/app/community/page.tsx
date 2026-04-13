@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { MessageSquare, CheckCircle2, AlertTriangle, UserCheck, Trash2, Eye } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { MessageSquare, CheckCircle2, AlertTriangle, UserCheck, Trash2, Eye, Search, X } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
 
 export default function CommunityPage() {
@@ -9,6 +9,7 @@ export default function CommunityPage() {
   const [tab, setTab] = useState<"pending" | "all">("pending");
   const [loading, setLoading] = useState(true);
   const [moderatingId, setModeratingId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
@@ -47,7 +48,16 @@ export default function CommunityPage() {
     rejected: "bg-rose-50 text-rose-600",
   };
 
-  const displayPosts = tab === "pending" ? pendingPosts : allPosts;
+  const rawPosts = tab === "pending" ? pendingPosts : allPosts;
+
+  const displayPosts = useMemo(() => {
+    if (!search) return rawPosts;
+    const q = search.toLowerCase();
+    return rawPosts.filter(p => {
+      const authorName = (p.author?.name || p.vetAuthor?.name || "").toLowerCase();
+      return authorName.includes(q) || p.content?.toLowerCase().includes(q);
+    });
+  }, [rawPosts, search]);
 
   return (
     <div className="space-y-8">
@@ -76,7 +86,7 @@ export default function CommunityPage() {
       </div>
 
       <div className="bg-white rounded-card border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex items-center gap-3">
+        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex gap-1">
             <button
               onClick={() => setTab("pending")}
@@ -90,6 +100,21 @@ export default function CommunityPage() {
             >
               All Posts
             </button>
+          </div>
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+            <input
+              type="text"
+              placeholder="Search author or content..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 text-sm bg-slate-50 border border-slate-200 rounded-input focus:outline-none focus:ring-2 focus:ring-primary-900/20"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <X size={14} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -119,15 +144,21 @@ export default function CommunityPage() {
                   <tr key={post.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-6 py-4 max-w-md">
                       <div className="flex items-start gap-3">
-                        {post.author?.avatar_url ? (
-                          <img src={post.author.avatar_url} alt={post.author.name} className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5" />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 mt-0.5">
-                            {post.author?.name?.charAt(0)?.toUpperCase() || "?"}
-                          </div>
-                        )}
+                        {(() => {
+                          const displayAuthor = post.author || post.vetAuthor;
+                          return displayAuthor?.avatar_url ? (
+                            <img src={displayAuthor.avatar_url} alt={displayAuthor.name} className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs shrink-0 mt-0.5">
+                              {displayAuthor?.name?.charAt(0)?.toUpperCase() || "?"}
+                            </div>
+                          );
+                        })()}
                         <div>
-                          <p className="font-semibold text-slate-950 text-sm">{post.author?.name || "Unknown"}</p>
+                          <p className="font-semibold text-slate-950 text-sm">
+                            {post.author?.name || post.vetAuthor?.name || "Unknown"}
+                            {post.vetAuthor && <span className="ml-1.5 text-[10px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-full">Vet</span>}
+                          </p>
                           <p className="text-xs text-slate-500 mt-1 italic leading-relaxed line-clamp-2">
                             "{post.content}"
                           </p>

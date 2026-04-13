@@ -81,6 +81,8 @@ db.pets.hasMany(db.allergies, { foreignKey: 'petId', as: 'Allergies' });
 // Community: Post <-> User / Comments / Likes
 db.posts.belongsTo(db.users, { foreignKey: 'userId', as: 'author', constraints: false });
 db.users.hasMany(db.posts, { foreignKey: 'userId', as: 'posts', constraints: false });
+// Posts made by vets store the vet's id in userId — provide a separate association for the admin panel
+db.posts.belongsTo(db.vets, { foreignKey: 'userId', as: 'vetAuthor', constraints: false });
 
 db.comments.belongsTo(db.posts, { foreignKey: 'postId' });
 db.posts.hasMany(db.comments, { foreignKey: 'postId', as: 'comments' });

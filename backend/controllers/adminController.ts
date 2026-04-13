@@ -5,11 +5,12 @@ import db from "../models/index.ts";
 // @route   GET /api/admin/pending-posts
 export const getPendingPosts = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const { posts: Post, users: User } = db as any;
+    const { posts: Post, users: User, vets: Vet } = db as any;
     const posts = await Post.findAll({
       where: { status: 'pending' },
       include: [
-        { model: User, as: 'author', attributes: ['name', 'role'] }
+        { model: User, as: 'author', attributes: ['name', 'role', 'avatar_url'] },
+        { model: Vet, as: 'vetAuthor', attributes: ['name', 'profession', 'avatar_url'] },
       ]
     });
     res.json(posts);
@@ -158,9 +159,12 @@ export const deleteVet = async (req: Request, res: Response): Promise<void> => {
 // @route   GET /api/admin/posts
 export const getAllPosts = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const { posts: Post, users: User } = db as any;
+    const { posts: Post, users: User, vets: Vet } = db as any;
     const posts = await Post.findAll({
-      include: [{ model: User, as: 'author', attributes: ['name', 'role', 'avatar_url'] }],
+      include: [
+        { model: User, as: 'author', attributes: ['name', 'role', 'avatar_url'] },
+        { model: Vet, as: 'vetAuthor', attributes: ['name', 'profession', 'avatar_url'] },
+      ],
       order: [['createdAt', 'DESC']],
     });
     res.json(posts);
@@ -248,13 +252,14 @@ export const updateAdminEvent = async (req: Request, res: Response): Promise<voi
   }
 };
 
-// @desc    Delete an event
+// @desc    Delete an event (and its bookings to satisfy FK constraint)
 // @route   DELETE /api/admin/events/:eventId
 export const deleteAdminEvent = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { events: Event } = db as any;
+    const { events: Event, event_bookings: EventBooking } = db as any;
     const event = await Event.findByPk(req.params.eventId);
     if (!event) { res.status(404).json({ message: "Event not found" }); return; }
+    await EventBooking.destroy({ where: { eventId: req.params.eventId } });
     await event.destroy();
     res.json({ message: "Event deleted" });
   } catch (error: any) {
@@ -273,6 +278,100 @@ export const getAdoptionPets = async (_req: Request, res: Response): Promise<voi
       order: [['createdAt', 'DESC']],
     });
     res.json(pets);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a pet
+// @route   DELETE /api/admin/pets/:petId
+export const deletePet = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { pets: Pet } = db as any;
+    const pet = await Pet.findByPk(req.params.petId);
+    if (!pet) { res.status(404).json({ message: "Pet not found" }); return; }
+    await pet.destroy();
+    res.json({ message: "Pet removed successfully" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Admin approve/reject adoption application
+// @route   PATCH /api/admin/adoptions/:id/status
+export const adminReviewApplication = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { adoption_applications: Application } = db as any;
+    const { status } = req.body;
+    if (!["approved", "rejected"].includes(status)) {
+      res.status(400).json({ message: "status must be 'approved' or 'rejected'" });
+      return;
+    }
+    const application = await Application.findByPk(req.params.id);
+    if (!application) { res.status(404).json({ message: "Application not found" }); return; }
+    application.status = status;
+    await application.save();
+    res.json(application);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get all appointments across the platform
+// @route   GET /api/admin/appointments
+export const getAllAppointments = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { appointments: Appointment, users: User, vets: Vet, pets: Pet } = db as any;
+    const appointments = await Appointment.findAll({
+      include: [
+        { model: User, as: 'owner', attributes: ['id', 'name', 'email'] },
+        { model: Vet, as: 'veterinarian', attributes: ['id', 'name', 'hospital_name'] },
+        { model: Pet, as: 'pet', attributes: ['id', 'name', 'species'] },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(appointments);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get all vet reviews
+// @route   GET /api/admin/vet-reviews
+export const getAllVetReviews = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { vet_reviews: VetReview, users: User, vets: Vet } = db as any;
+    const reviews = await VetReview.findAll({
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'name', 'email'] },
+        { model: Vet, as: 'vet', attributes: ['id', 'name', 'hospital_name'] },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(reviews);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a vet review and recalculate vet rating
+// @route   DELETE /api/admin/vet-reviews/:reviewId
+export const adminDeleteVetReview = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { vet_reviews: VetReview, vets: Vet } = db as any;
+    const review = await VetReview.findByPk(req.params.reviewId);
+    if (!review) { res.status(404).json({ message: "Review not found" }); return; }
+    const vetId = review.vetId;
+    await review.destroy();
+    const allReviews = await VetReview.findAll({ where: { vetId } });
+    const vet = await Vet.findByPk(vetId);
+    if (vet) {
+      vet.rating = allReviews.length > 0
+        ? Math.round((allReviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / allReviews.length) * 10) / 10
+        : 0;
+      await vet.save();
+    }
+    res.json({ message: "Review removed successfully" });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
