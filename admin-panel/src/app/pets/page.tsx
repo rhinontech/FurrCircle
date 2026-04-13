@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { PawPrint, Search, X, Heart, Activity } from "lucide-react";
+import { PawPrint, Search, X, Heart, Activity, Trash2 } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
 
 export default function PetsPage() {
@@ -8,6 +8,7 @@ export default function PetsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     adminApi.get<any[]>('/admin/pets')
@@ -30,6 +31,19 @@ export default function PetsPage() {
       return matchSearch && matchStatus;
     });
   }, [pets, search, statusFilter]);
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Remove ${name} from the platform? This cannot be undone.`)) return;
+    setDeletingId(id);
+    try {
+      await adminApi.delete(`/admin/pets/${id}`);
+      setPets(prev => prev.filter(p => p.id !== id));
+    } catch {
+      alert("Failed to remove pet. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const stats = [
     { label: "Total Pets", value: pets.length, icon: Activity, color: "bg-primary-50 text-primary-900" },
@@ -108,6 +122,7 @@ export default function PetsPage() {
                   <th className="px-6 py-4">Details</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4">Added</th>
+                  <th className="px-6 py-4">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -148,6 +163,16 @@ export default function PetsPage() {
                       {pet.createdAt
                         ? new Date(pet.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
                         : "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleDelete(pet.id, pet.name)}
+                        disabled={deletingId === pet.id}
+                        className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors disabled:opacity-40"
+                        title="Remove pet"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </td>
                   </tr>
                 ))}

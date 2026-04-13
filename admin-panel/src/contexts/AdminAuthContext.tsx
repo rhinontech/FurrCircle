@@ -57,6 +57,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       email: data.email,
       role: "admin",
       token: data.token,
+      title: data.title,
     };
 
     setAdmin(session);

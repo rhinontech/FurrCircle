@@ -227,15 +227,27 @@ export default function CommunityScreen() {
             <View style={{ marginBottom: 32 }}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                 <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary }}>Upcoming Events</Text>
-                <Pressable onPress={() => router.push("/community/events" as any)}>
-                  <Text style={{ fontSize: 13, fontWeight: "600", color: colors.brand }}>See All</Text>
-                </Pressable>
+                {events.length > 0 && (
+                  <Pressable onPress={() => router.push("/community/events" as any)}>
+                    <Text style={{ fontSize: 13, fontWeight: "600", color: colors.brand }}>See All</Text>
+                  </Pressable>
+                )}
               </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 14 }}>
-                {events.map((event) => (
-                  <EventCard key={event.id} {...event} onPress={() => router.push(`/community/events/${event.id}` as any)} />
-                ))}
-              </ScrollView>
+              {events.length === 0 ? (
+                <View style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCard, borderRadius: 16, paddingVertical: 22, paddingHorizontal: 18, alignItems: "center" }}>
+                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+                    <Calendar size={22} color={colors.brand} strokeWidth={1.8} />
+                  </View>
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.textPrimary }}>Stay tuned</Text>
+                  <Text style={{ marginTop: 4, color: colors.textMuted, fontSize: 13, textAlign: "center" }}>New community events will appear here soon.</Text>
+                </View>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 14 }}>
+                  {events.map((event) => (
+                    <EventCard key={event.id} {...event} onPress={() => router.push(`/community/events/${event.id}` as any)} />
+                  ))}
+                </ScrollView>
+              )}
             </View>
           )}
 
