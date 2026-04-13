@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "pawshub",
-    "slug": "pawshub",
-    "scheme": "pawshub",
+    "name": "FurrCircle",
+    "slug": "furrcircle",
+    "scheme": "furrcircle",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/furrcircle_main_light_logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash-furrcircle-rhinon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -23,7 +23,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.pawshub"
+      "package": "com.anonymous.furrcircle"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -31,7 +31,21 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow FurrCircle to access your photos so you can upload a profile picture.",
+          "cameraPermission": "Allow FurrCircle to access your camera so you can take a profile picture."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow FurrCircle to access your location to auto-fill your city."
+        }
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }

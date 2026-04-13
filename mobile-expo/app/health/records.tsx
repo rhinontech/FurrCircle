@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, FileText, Calendar, ShieldAlert } from "lucide-react-native";
+import React, { useState, useCallback } from "react";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert, Image, Modal, Dimensions, Platform } from "react-native";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { ChevronLeft, FileText, Calendar, ShieldAlert, X } from "lucide-react-native";
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
+import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userHealthApi } from "@/services/users/healthApi";
 
 export default function RecordsScreen() {
   const router = useRouter();
@@ -15,15 +17,16 @@ export default function RecordsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Image Viewer State
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
   const fetchRecords = async () => {
     try {
       if (!petId) return;
-      const [recordsData, allergiesData] = await Promise.all([
-        api.get(`/health/records/${petId}`),
-        api.get(`/health/allergies/${petId}`),
-      ]);
-      setRecords(recordsData || []);
-      setAllergies(allergiesData || []);
+      const data = await userHealthApi.getRecordsData(String(petId));
+      setRecords(data.records);
+      setAllergies(data.allergies);
     } catch (error) {
       console.error("Error fetching medical records", error);
       Alert.alert("Error", "Could not load medical records.");
@@ -33,9 +36,11 @@ export default function RecordsScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchRecords();
-  }, [petId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchRecords();
+    }, [petId])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -128,16 +133,149 @@ export default function RecordsScreen() {
                     <Text style={{ fontSize: 12, color: colors.textMuted }}>{new Date(r.date).toLocaleDateString()}</Text>
                   </View>
                   <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>{r.clinic_name || 'Generic Clinic'}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 }}>
-                    <Calendar size={14} color={colors.textMuted} />
-                    <Text style={{ fontSize: 12, color: colors.textMuted }}>Vet: {r.veterinarian_name || 'N/A'}</Text>
-                  </View>
+                  {r.imageUrl && (
+                    <Pressable
+                      onPress={() => {
+                        setSelectedImage(r.imageUrl);
+                        setViewerVisible(true);
+                      }}
+                    >
+                      <Image
+                        source={{ uri: r.imageUrl }}
+                        style={{ width: "100%", height: 180, borderRadius: 14, marginTop: 12, backgroundColor: colors.bgSubtle }}
+                        resizeMode="cover"
+                      />
+                    </Pressable>
+                  )}
+                  {!r.imageUrl && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 }}>
+                      <Calendar size={14} color={colors.textMuted} />
+                      <Text style={{ fontSize: 12, color: colors.textMuted }}>Vet: {r.veterinarian_name || 'N/A'}</Text>
+                    </View>
+                  )}
                 </View>
               </View>
             </View>
           ))
         )}
       </ScrollView>
+
+      {/* Image Viewer Modal */}
+      <Modal
+        visible={viewerVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setViewerVisible(false)}
+      >
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)' }}>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            {selectedImage && (
+              <ZoomableImage 
+                uri={selectedImage} 
+                onClose={() => setViewerVisible(false)} 
+              />
+            )}
+            
+            <Pressable
+              onPress={() => setViewerVisible(false)}
+              style={{
+                position: 'absolute',
+                top: Platform.OS === 'ios' ? 60 : 40,
+                right: 20,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10,
+              }}
+            >
+              <X size={24} color="#fff" />
+            </Pressable>
+          </View>
+        </GestureHandlerRootView>
+      </Modal>
     </View>
+  );
+}
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+function ZoomableImage({ uri, onClose }: { uri: string; onClose: () => void }) {
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const savedTranslateX = useSharedValue(0);
+  const savedTranslateY = useSharedValue(0);
+
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((event) => {
+      scale.value = savedScale.value * event.scale;
+    })
+    .onEnd(() => {
+      if (scale.value < 1) {
+        scale.value = withSpring(1);
+        savedScale.value = 1;
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
+      } else {
+        savedScale.value = scale.value;
+      }
+    });
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      if (scale.value > 1) {
+        translateX.value = savedTranslateX.value + event.translationX;
+        translateY.value = savedTranslateY.value + event.translationY;
+      }
+    })
+    .onEnd(() => {
+      if (scale.value > 1) {
+        savedTranslateX.value = translateX.value;
+        savedTranslateY.value = translateY.value;
+      }
+    });
+
+  const doubleTapGesture = Gesture.Tap()
+    .numberOfTaps(2)
+    .onStart(() => {
+      if (scale.value > 1) {
+        scale.value = withSpring(1);
+        savedScale.value = 1;
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
+      } else {
+        scale.value = withSpring(2.5);
+        savedScale.value = 2.5;
+      }
+    });
+
+  const composed = Gesture.Race(pinchGesture, panGesture, doubleTapGesture);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+  }));
+
+  return (
+    <GestureDetector gesture={composed}>
+      <Animated.View style={[animatedStyle, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, justifyContent: 'center' }]}>
+        <Image 
+          source={{ uri }} 
+          style={{ width: SCREEN_WIDTH, height: '100%' }} 
+          resizeMode="contain" 
+        />
+      </Animated.View>
+    </GestureDetector>
   );
 }

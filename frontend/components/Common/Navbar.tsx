@@ -22,11 +22,11 @@ export function Navbar() {
           {/* Logo */}
           <Link href="/" className="relative z-[60] block">
             <Image 
-              src="/PawsHub_logo_full.png" 
+              src="/logo/furrcircle_light_logo.png" 
               alt="PawsHub" 
-              width={180} 
-              height={50} 
-              className="w-[100px] md:w-[120px] h-auto object-contain" 
+              width={200} 
+              height={100} 
+              className="h-auto object-contain" 
               priority 
             />
           </Link>

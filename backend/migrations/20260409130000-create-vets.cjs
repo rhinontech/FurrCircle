@@ -44,7 +44,7 @@ module.exports = {
         allowNull: true
       },
       profile_photo: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: true
       },
       phone_number: {

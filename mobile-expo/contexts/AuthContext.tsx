@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from "../services/api";
+import { clearAuthToken, setAuthToken } from "@/services/api";
+import { authApi } from "@/services/auth/authApi";
 
 export type UserRole = "owner" | "veterinarian" | "admin" | "shelter";
 
@@ -21,20 +22,30 @@ export interface User {
   bio?: string;
   city?: string;
   phone?: string;
+  address?: string;
+  working_hours?: string;
+  clinicStampUrl?: string;
+  licenseNumber?: string;
 }
 
 type AuthPayload = User & {
   avatar_url?: string;
+  // Vet-specific API field names (backend uses these, we map → User fields)
+  hospital_name?: string;
+  profession?: string;
+  experience?: string | number;
+  working_hours?: string;
 };
 
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
   hasCompletedOnboarding: boolean | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
+  login: (email: string, password: string, selectedRole?: UserRole) => Promise<void>;
+  register: (name: string, email: string, password: string, role: UserRole, extra?: Record<string, string>) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updatedData: Partial<User>) => Promise<void>;
+  refreshUser: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   isLoading: boolean;
   switchUser: (user: User) => Promise<void>;
@@ -48,9 +59,35 @@ const AuthContext = createContext<AuthContextType>({
   register: async () => {},
   logout: async () => {},
   updateProfile: async () => {},
+  refreshUser: async () => {},
   completeOnboarding: async () => {},
   isLoading: true,
   switchUser: async () => {},
+});
+
+const toAuthPayload = (data: Partial<User>): AuthPayload => ({
+  id: data.id || '',
+  name: data.name || '',
+  email: data.email || '',
+  role: data.role || 'owner',
+  token: data.token,
+  isVerified: data.isVerified,
+  clinic_name: data.clinic_name,
+  specialty: data.specialty,
+  bio: data.bio,
+  city: data.city,
+  phone: data.phone,
+  address: data.address,
+  working_hours: data.working_hours,
+  memberSince: data.memberSince,
+  petCount: data.petCount,
+  rating: data.rating,
+  yearsExp: data.yearsExp,
+  avatar: data.avatar,
+  avatar_url: data.avatar,
+  hospital_name: data.clinic_name,
+  profession: data.specialty,
+  experience: data.yearsExp,
 });
 
 const toUser = (data: AuthPayload): User => ({
@@ -60,15 +97,22 @@ const toUser = (data: AuthPayload): User => ({
   role: data.role,
   token: data.token,
   isVerified: data.isVerified,
-  clinic_name: data.clinic_name,
-  specialty: data.specialty,
+  // Vet profile: backend sends hospital_name / profession / experience;
+  // User profile: backend sends clinic_name / specialty / yearsExp.
+  // Map both so the UI always reads from the same User fields.
+  clinic_name: data.hospital_name ?? data.clinic_name,
+  specialty: data.profession ?? data.specialty,
+  yearsExp: data.experience ?? data.yearsExp,
   bio: data.bio,
   city: data.city,
   phone: data.phone,
+  address: data.address,
+  working_hours: data.working_hours,
+  clinicStampUrl: (data as any).clinicStampUrl,
+  licenseNumber: (data as any).licenseNumber,
   memberSince: data.memberSince,
   petCount: data.petCount,
   rating: data.rating,
-  yearsExp: data.yearsExp,
   avatar: data.avatar_url ?? data.avatar,
 });
 
@@ -83,26 +127,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const completed = await AsyncStorage.getItem('onboarding_completed');
         setHasCompletedOnboarding(completed === 'true');
 
+        const storedToken = await AsyncStorage.getItem('user_token');
+        if (storedToken?.startsWith('mock-token:')) {
+          clearAuthToken();
+          await AsyncStorage.removeItem('user_data');
+          await AsyncStorage.removeItem('user_token');
+          setUser(null);
+          return;
+        }
+
         const savedUser = await AsyncStorage.getItem('user_data');
         if (savedUser) {
           const parsedUser = JSON.parse(savedUser) as User;
+          // Seed in-memory token cache BEFORE setting user (avoids race with API calls)
+          if (storedToken) setAuthToken(storedToken);
           setUser(parsedUser);
-          // Optionally fetch fresh profile data
+          // Refresh profile from server on startup
           try {
-            const freshProfile = await api.get('/auth/me') as AuthPayload;
+            const freshProfile = await authApi.getMe() as AuthPayload;
             const updatedUser = toUser({ ...parsedUser, ...freshProfile });
             setUser(updatedUser);
             await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
-          } catch (err) {
-            const fallbackProfile = await api.post('/auth/login', {
-              email: parsedUser?.email || 'alex@pawshub.app',
-              password: 'mock-password',
-            }) as AuthPayload;
-            const fallbackUser = toUser(fallbackProfile);
-            setUser(fallbackUser);
-            await AsyncStorage.setItem('user_data', JSON.stringify(fallbackUser));
-            if (fallbackUser.token) {
-              await AsyncStorage.setItem('user_token', fallbackUser.token);
+          } catch (error: any) {
+            const message = String(error?.message || '').toLowerCase();
+            if (message.includes('not authorized') || message.includes('token failed') || message.includes('jwt')) {
+              clearAuthToken();
+              await AsyncStorage.removeItem('user_data');
+              await AsyncStorage.removeItem('user_token');
+              setUser(null);
             }
           }
         }
@@ -115,45 +167,87 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadState();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const data = await api.post('/auth/login', { email, password }) as AuthPayload;
+  const login = async (email: string, password: string, selectedRole?: UserRole) => {
+    const data = await authApi.login(email, password) as AuthPayload;
+    // Validate that the returned account role matches the selected toggle
+    if (selectedRole) {
+      const returnedRole = data.role;
+      const isVetAccount = returnedRole === 'veterinarian' || (data as any).userType === 'vet';
+      const selectedIsVet = selectedRole === 'veterinarian';
+      if (selectedIsVet && !isVetAccount) {
+        throw new Error("No veterinarian account found with these credentials.");
+      }
+      if (!selectedIsVet && isVetAccount) {
+        throw new Error(`No ${selectedRole} account found with these credentials.`);
+      }
+      if (!selectedIsVet && !isVetAccount && returnedRole !== selectedRole && returnedRole !== 'admin') {
+        throw new Error(`No ${selectedRole} account found with these credentials.`);
+      }
+    }
     const userData = toUser(data);
 
-    setUser(userData);
+    // Set in-memory token FIRST — navigation may fire before AsyncStorage awaits complete
+    if (userData.token) setAuthToken(userData.token);
     await AsyncStorage.setItem('user_data', JSON.stringify(userData));
-    if (userData.token) {
-      await AsyncStorage.setItem('user_token', userData.token);
-    }
+    if (userData.token) await AsyncStorage.setItem('user_token', userData.token);
+    setUser(userData);
   };
 
-  const register = async (name: string, email: string, password: string, role: UserRole) => {
-    const data = await api.post('/auth/register', { name, email, password, role }) as AuthPayload;
+  const register = async (name: string, email: string, password: string, role: UserRole, extra?: Record<string, string>) => {
+    const data = await authApi.register(name, email, password, role, extra) as AuthPayload;
     const userData = toUser({
       ...data,
       isVerified: data.isVerified || (data.role === 'veterinarian' ? false : true),
     });
 
-    setUser(userData);
+    if (userData.token) setAuthToken(userData.token);
     await AsyncStorage.setItem('user_data', JSON.stringify(userData));
-    if (userData.token) {
-      await AsyncStorage.setItem('user_token', userData.token);
-    }
+    if (userData.token) await AsyncStorage.setItem('user_token', userData.token);
+    setUser(userData);
   };
 
   const updateProfile = async (updatedData: Partial<User>) => {
-    const data = await api.put('/auth/profile', updatedData) as Partial<AuthPayload>;
+    const payload = {
+      ...updatedData,
+      avatar_url: updatedData.avatar,
+      hospital_name: updatedData.clinic_name,
+      profession: updatedData.specialty,
+      experience: updatedData.yearsExp,
+    };
+
+    delete (payload as Partial<User>).avatar;
+    delete (payload as Partial<User>).clinic_name;
+    delete (payload as Partial<User>).specialty;
+    delete (payload as Partial<User>).yearsExp;
+
+    const data = await authApi.updateProfile(payload) as AuthPayload;
     if (user) {
-      const newUser: User = {
-        ...user,
+      const newUser = toUser({
+        ...toAuthPayload(user),
         ...data,
-        avatar: data.avatar_url ?? data.avatar ?? user.avatar,
-      };
+      });
+      if (newUser.token) {
+        setAuthToken(newUser.token);
+        await AsyncStorage.setItem('user_token', newUser.token);
+      }
       setUser(newUser);
       await AsyncStorage.setItem('user_data', JSON.stringify(newUser));
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const freshProfile = await authApi.getMe() as AuthPayload;
+      const updatedUser = toUser({ ...toAuthPayload(user!), ...freshProfile });
+      setUser(updatedUser);
+      await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+    } catch (error) {
+      // Silently fail — stale data is acceptable if the network is unavailable
+    }
+  };
+
   const logout = async () => {
+    clearAuthToken();
     setUser(null);
     await AsyncStorage.removeItem('user_data');
     await AsyncStorage.removeItem('user_token');
@@ -165,22 +259,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const switchUser = async (userData: User) => {
-    setUser(userData);
+    if (userData.token) setAuthToken(userData.token);
     await AsyncStorage.setItem('user_data', JSON.stringify(userData));
-    if (userData.token) {
-      await AsyncStorage.setItem('user_token', userData.token);
-    }
+    if (userData.token) await AsyncStorage.setItem('user_token', userData.token);
+    setUser(userData);
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isLoggedIn: !!user, 
-      hasCompletedOnboarding, 
-      login, 
+    <AuthContext.Provider value={{
+      user,
+      isLoggedIn: !!user,
+      hasCompletedOnboarding,
+      login,
       register,
       logout,
       updateProfile,
+      refreshUser,
       completeOnboarding,
       isLoading,
       switchUser

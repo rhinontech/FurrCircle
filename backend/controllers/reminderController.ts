@@ -1,12 +1,11 @@
 import type { Response } from "express";
 import db from "../models/index.ts";
 
-const { Reminder, Pet } = db as any;
-
 // @desc    Get all reminders for the logged-in user
 // @route   GET /api/reminders
 export const getReminders = async (req: any, res: Response): Promise<void> => {
   try {
+    const { reminders: Reminder, pets: Pet } = db as any;
     const reminders = await Reminder.findAll({
       where: { userId: req.user.id },
       include: [{ model: Pet, as: 'pet', attributes: ['id', 'name', 'species', 'avatar_url'] }],
@@ -22,6 +21,7 @@ export const getReminders = async (req: any, res: Response): Promise<void> => {
 // @route   POST /api/reminders
 export const createReminder = async (req: any, res: Response): Promise<void> => {
   try {
+    const { reminders: Reminder, pets: Pet } = db as any;
     const { petId, title, notes, time, date, recurrence, type } = req.body;
 
     if (!title || !time) {
@@ -60,6 +60,7 @@ export const createReminder = async (req: any, res: Response): Promise<void> => 
 // @route   PUT /api/reminders/:id
 export const updateReminder = async (req: any, res: Response): Promise<void> => {
   try {
+    const { reminders: Reminder } = db as any;
     const reminder = await Reminder.findOne({ where: { id: req.params.id, userId: req.user.id } });
 
     if (!reminder) {
@@ -85,6 +86,7 @@ export const updateReminder = async (req: any, res: Response): Promise<void> => 
 // @route   PATCH /api/reminders/:id/toggle
 export const toggleReminder = async (req: any, res: Response): Promise<void> => {
   try {
+    const { reminders: Reminder } = db as any;
     const reminder = await Reminder.findOne({ where: { id: req.params.id, userId: req.user.id } });
 
     if (!reminder) {
@@ -105,6 +107,7 @@ export const toggleReminder = async (req: any, res: Response): Promise<void> => 
 // @route   DELETE /api/reminders/:id
 export const deleteReminder = async (req: any, res: Response): Promise<void> => {
   try {
+    const { reminders: Reminder } = db as any;
     const reminder = await Reminder.findOne({ where: { id: req.params.id, userId: req.user.id } });
 
     if (!reminder) {

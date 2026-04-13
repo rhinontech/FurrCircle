@@ -18,7 +18,7 @@ module.exports = {
           600: '#2834e0',
           700: '#2129cc',
           800: '#2025a5',
-          900: '#1e2584', // pawshub Primary
+          900: '#1e2584', // FurrCircle Primary
           950: '#12154d',
         },
         slate: {

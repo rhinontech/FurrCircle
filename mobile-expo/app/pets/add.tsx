@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from "react-native";
+import { View, Text, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Image, Modal } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { ArrowLeft, Camera, Check, Trash2 } from "lucide-react-native";
+import { ArrowLeft, Calendar, Camera, Check, Trash2 } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userPetsApi } from "@/services/users/petsApi";
+import { pickAndUploadImage } from "@/services/uploadApi";
 
 const speciesOptions = ["Dog", "Cat", "Rabbit", "Bird", "Fish", "Other"];
 const genderOptions = ["Male", "Female", "Unknown"];
@@ -12,11 +14,15 @@ export default function AddPetScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const isEditing = !!id;
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
-  
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [petPhoto, setPetPhoto] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pickerDate, setPickerDate] = useState<Date>(new Date());
+
   const [name, setName] = useState("");
   const [species, setSpecies] = useState("");
   const [breed, setBreed] = useState("");
@@ -32,9 +38,21 @@ export default function AddPetScreen() {
     }
   }, [id]);
 
+  const handlePickPhoto = async () => {
+    try {
+      setUploadingPhoto(true);
+      const url = await pickAndUploadImage('pets');
+      if (url) setPetPhoto(url);
+    } catch (error: any) {
+      Alert.alert("Upload failed", error.message || "Could not upload photo. Please try again.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const fetchPetData = async () => {
     try {
-      const data = await api.get(`/pets/${id}`);
+      const data = await userPetsApi.getPetById(String(id));
       setName(data.name || "");
       setSpecies(data.species || "");
       setBreed(data.breed || "");
@@ -43,6 +61,7 @@ export default function AddPetScreen() {
       setGender(data.gender || "Unknown");
       setBirthDate(data.birth_date || "");
       setMicrochipId(data.microchip_id || "");
+      setPetPhoto(data.avatar_url || "");
     } catch (error) {
       console.error("Error fetching pet", error);
       Alert.alert("Error", "Could not load pet data.");
@@ -68,13 +87,14 @@ export default function AddPetScreen() {
         gender,
         birth_date: birthDate || null,
         microchip_id: microchipId,
+        avatar_url: petPhoto || undefined,
       };
 
       if (isEditing) {
-        await api.put(`/pets/${id}`, payload);
+        await userPetsApi.updatePet(String(id), payload);
         Alert.alert("Success", `${name}'s info has been updated! ✨`);
       } else {
-        await api.post('/pets', payload);
+        await userPetsApi.createPet(payload);
         Alert.alert("Success", `${name} has been added! 🎉`);
       }
       router.back();
@@ -97,7 +117,7 @@ export default function AddPetScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              await api.delete(`/pets/${id}`);
+              await userPetsApi.deletePet(String(id));
               router.replace("/(tabs)/pets");
             } catch (error: any) {
               Alert.alert("Error", error.message || "Failed to delete pet.");
@@ -134,10 +154,27 @@ export default function AddPetScreen() {
 
         <View style={{ paddingHorizontal: 20 }}>
           <View style={{ alignItems: 'center', marginBottom: 24 }}>
-            <Pressable style={{ width: 112, height: 112, borderRadius: 28, backgroundColor: colors.bgSubtle, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
-              <Camera size={28} color={colors.textMuted} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted, marginTop: 4 }}>Add Photo</Text>
+            <Pressable
+              onPress={handlePickPhoto}
+              disabled={uploadingPhoto}
+              style={{ width: 112, height: 112, borderRadius: 28, backgroundColor: colors.bgSubtle, borderWidth: 2, borderStyle: petPhoto ? 'solid' : 'dashed', borderColor: petPhoto ? colors.brand : colors.border, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
+            >
+              {petPhoto ? (
+                <Image source={{ uri: petPhoto }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              ) : uploadingPhoto ? (
+                <ActivityIndicator size="small" color={colors.brand} />
+              ) : (
+                <>
+                  <Camera size={28} color={colors.textMuted} />
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted, marginTop: 4 }}>Add Photo</Text>
+                </>
+              )}
             </Pressable>
+            {petPhoto ? (
+              <Pressable onPress={handlePickPhoto} disabled={uploadingPhoto} style={{ marginTop: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: colors.brand }}>{uploadingPhoto ? "Uploading..." : "Change Photo"}</Text>
+              </Pressable>
+            ) : null}
           </View>
 
           <View style={{ marginBottom: 16 }}>
@@ -220,15 +257,63 @@ export default function AddPetScreen() {
           </View>
 
           <View style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Birth Date (YYYY-MM-DD)</Text>
-            <TextInput
-              placeholder="e.g. 2021-05-20"
-              placeholderTextColor={colors.textMuted}
-              value={birthDate}
-              onChangeText={setBirthDate}
-              style={{ backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 16, height: 48, fontSize: 16, color: colors.textPrimary }}
-              maxLength={10}
-            />
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Birth Date</Text>
+            <Pressable
+              onPress={() => {
+                setPickerDate(birthDate ? new Date(birthDate) : new Date());
+                setShowDatePicker(true);
+              }}
+              style={{ backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 16, height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <Text style={{ fontSize: 16, color: birthDate ? colors.textPrimary : colors.textMuted }}>
+                {birthDate || 'Select birth date'}
+              </Text>
+              <Calendar size={18} color={colors.textMuted} />
+            </Pressable>
+
+            {/* iOS — inline modal picker */}
+            {Platform.OS === 'ios' && (
+              <Modal visible={showDatePicker} transparent animationType="slide">
+                <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}>
+                  <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 34 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                      <Pressable onPress={() => setShowDatePicker(false)}>
+                        <Text style={{ fontSize: 16, color: colors.textMuted, fontWeight: '600' }}>Cancel</Text>
+                      </Pressable>
+                      <Pressable onPress={() => {
+                        setBirthDate(pickerDate.toISOString().slice(0, 10));
+                        setShowDatePicker(false);
+                      }}>
+                        <Text style={{ fontSize: 16, color: colors.brand, fontWeight: '700' }}>Done</Text>
+                      </Pressable>
+                    </View>
+                    <DateTimePicker
+                      value={pickerDate}
+                      mode="date"
+                      display="spinner"
+                      maximumDate={new Date()}
+                      onChange={(_e, date) => { if (date) setPickerDate(date); }}
+                      themeVariant={isDark ? 'dark' : 'light'}
+                      style={{ backgroundColor: colors.bgCard }}
+                    />
+                  </View>
+                </View>
+              </Modal>
+            )}
+
+            {/* Android — native dialog */}
+            {Platform.OS === 'android' && showDatePicker && (
+              <DateTimePicker
+                value={pickerDate}
+                mode="date"
+                display="default"
+                maximumDate={new Date()}
+                onChange={(_e, date) => {
+                  setShowDatePicker(false);
+                  if (date) setBirthDate(date.toISOString().slice(0, 10));
+                }}
+              />
+            )}
           </View>
 
           <View style={{ marginBottom: 32 }}>

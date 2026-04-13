@@ -11,17 +11,23 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.UUID,
                 defaultValue: DataTypes.UUIDV4
             },
-            vet_id: {
+            // Maps to existing 'vet_id' column in DB (references vets table)
+            vetId: {
                 type: DataTypes.UUID,
                 allowNull: false,
+                field: 'vet_id',
             },
-            user_id: {
+            // Maps to existing 'user_id' column in DB (the pet owner)
+            ownerId: {
                 type: DataTypes.UUID,
                 allowNull: false,
+                field: 'user_id',
             },
-            pet_id: {
+            // Maps to existing 'pet_id' column in DB
+            petId: {
                 type: DataTypes.UUID,
                 allowNull: false,
+                field: 'pet_id',
             },
             date: {
                 type: DataTypes.DATEONLY,
@@ -31,12 +37,68 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
-            description: {
+            // Maps to existing 'description' column — used as appointment reason
+            reason: {
                 type: DataTypes.TEXT,
                 allowNull: true,
+                field: 'description',
             },
             status: {
                 type: DataTypes.STRING,
+                allowNull: true,
+                defaultValue: 'pending',
+            },
+            // New field — alter:true will ADD this column
+            notes: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            proposedDate: {
+                type: DataTypes.DATEONLY,
+                allowNull: true,
+            },
+            proposedTime: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            rescheduleRequestedBy: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            rescheduleReason: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            ownerFeedbackRating: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+            ownerFeedbackTags: {
+                type: DataTypes.JSONB,
+                allowNull: true,
+            },
+            ownerFeedbackComment: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            ownerFeedbackSubmittedAt: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
+            vetFeedbackRating: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
+            vetFeedbackTags: {
+                type: DataTypes.JSONB,
+                allowNull: true,
+            },
+            vetFeedbackComment: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            vetFeedbackSubmittedAt: {
+                type: DataTypes.DATE,
                 allowNull: true,
             },
         },
@@ -47,9 +109,9 @@ export default (sequelize: Sequelize) => {
     );
 
     (Appointment as any).associate = (models: any) => {
-        if (models.Vet) Appointment.belongsTo(models.Vet, { foreignKey: 'vet_id', as: 'vet' });
-        if (models.User) Appointment.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
-        if (models.Pet) Appointment.belongsTo(models.Pet, { foreignKey: 'pet_id', as: 'pet' });
+        if (models.vets) Appointment.belongsTo(models.vets, { foreignKey: 'vetId', as: 'veterinarian' });
+        if (models.users) Appointment.belongsTo(models.users, { foreignKey: 'ownerId', as: 'owner' });
+        if (models.pets) Appointment.belongsTo(models.pets, { foreignKey: 'petId', as: 'pet' });
     };
 
     return Appointment;

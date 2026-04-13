@@ -4,8 +4,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Heart, MessageCircle, Share2, Bookmark, PawPrint } from "lucide-react-native";
 import StatusChip from "../../../components/ui/StatusChip";
 import { useTheme } from "../../../contexts/ThemeContext";
-import { api } from "../../../services/api";
 import { useAuth } from "../../../contexts/AuthContext";
+import { userCommunityApi } from "@/services/users/communityApi";
 
 function timeAgo(date: string) {
   const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
@@ -36,7 +36,7 @@ export default function CommunityPostDetailScreen() {
   const fetchPost = async () => {
     if (!id) return;
     try {
-      const data = await api.get(`/community/posts/${id}`);
+      const data = await userCommunityApi.getPostById(String(id));
       setPost(data);
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to load post.");
@@ -55,7 +55,7 @@ export default function CommunityPostDetailScreen() {
   const handleLike = async () => {
     if (!post) return;
     try {
-      const res = await api.post(`/community/posts/${post.id}/like`);
+      const res = await userCommunityApi.togglePostLike(post.id);
       setPost((prev: any) => {
         if (!prev) return prev;
         const likes = res.liked
@@ -71,7 +71,7 @@ export default function CommunityPostDetailScreen() {
   const handleSave = async () => {
     if (!post) return;
     try {
-      const res = await api.post(`/community/posts/${post.id}/save`);
+      const res = await userCommunityApi.togglePostSave(post.id);
       setPost((prev: any) => {
         if (!prev) return prev;
         const savedBy = res.saved
@@ -87,9 +87,9 @@ export default function CommunityPostDetailScreen() {
   const handleShare = async () => {
     if (!post) return;
     try {
-      const res = await api.post(`/community/posts/${post.id}/share`);
+      const res = await userCommunityApi.sharePost(post.id);
       await Share.share({
-        message: `${post.author?.name || "PawsHub member"} posted in ${post.category}: ${post.content}`,
+        message: `${post.author?.name || "FurrCircle member"} posted in ${post.category}: ${post.content}`,
       });
       setPost((prev: any) => (prev ? { ...prev, shareCount: res.shareCount } : prev));
     } catch (error) {
@@ -101,7 +101,7 @@ export default function CommunityPostDetailScreen() {
     if (!post || !commentText.trim()) return;
     setCommentSubmitting(true);
     try {
-      const res = await api.post(`/community/posts/${post.id}/comment`, { text: commentText.trim() });
+      const res = await userCommunityApi.addPostComment(post.id, commentText.trim());
       setPost((prev: any) => (prev ? { ...prev, comments: [...(prev.comments || []), res.comment] } : prev));
       setCommentText("");
     } catch (error: any) {
@@ -196,10 +196,21 @@ export default function CommunityPostDetailScreen() {
             ) : (
               <View style={{ gap: 14 }}>
                 {(post.comments || []).map((comment: any) => (
-                  <View key={comment.id} style={{ paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: colors.borderSubtle || colors.border }}>
-                    <Text style={{ fontSize: 13, fontWeight: "700", color: colors.textPrimary }}>{comment.author?.name || "Member"}</Text>
-                    <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>{timeAgo(comment.createdAt)}</Text>
-                    <Text style={{ fontSize: 14, color: colors.textPrimary, marginTop: 8, lineHeight: 20 }}>{comment.text}</Text>
+                  <View key={comment.id} style={{ flexDirection: "row", gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.borderSubtle || colors.border }}>
+                    {comment.author?.avatar_url ? (
+                      <Image source={{ uri: comment.author.avatar_url }} style={{ width: 36, height: 36, borderRadius: 18 }} resizeMode="cover" />
+                    ) : (
+                      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center" }}>
+                        <PawPrint size={16} color={colors.textMuted} />
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <Text style={{ fontSize: 13, fontWeight: "700", color: colors.textPrimary }}>{comment.author?.name || "Member"}</Text>
+                        <Text style={{ fontSize: 11, color: colors.textMuted }}>{timeAgo(comment.createdAt)}</Text>
+                      </View>
+                      <Text style={{ fontSize: 14, color: colors.textPrimary, marginTop: 4, lineHeight: 20 }}>{comment.text}</Text>
+                    </View>
                   </View>
                 ))}
               </View>

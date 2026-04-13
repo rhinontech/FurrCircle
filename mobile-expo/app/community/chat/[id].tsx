@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -13,8 +13,8 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, PawPrint, Send } from "lucide-react-native";
 import { useTheme } from "../../../contexts/ThemeContext";
-import { api } from "../../../services/api";
 import { useAuth } from "../../../contexts/AuthContext";
+import { userCommunityApi } from "@/services/users/communityApi";
 
 function formatMessageTime(date: string) {
   return new Date(date).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -30,28 +30,34 @@ export default function CommunityChatScreen() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  const fetchConversation = async () => {
+  const fetchConversation = async (silent = false) => {
     if (!id) return;
     try {
-      const data = await api.get(`/community/chats/${id}`);
+      const data = await userCommunityApi.getChatById(String(id));
       setConversation(data);
     } catch (error) {
-      console.error("Error fetching conversation", error);
+      if (!silent) console.error("Error fetching conversation", error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchConversation();
+    pollRef.current = setInterval(() => fetchConversation(true), 3000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [id]);
 
   const handleSend = async () => {
     if (!conversation || !message.trim()) return;
     setSending(true);
     try {
-      const res = await api.post(`/community/chats/${conversation.id}/messages`, {
+      const res = await userCommunityApi.sendMessage(conversation.id, {
         text: message.trim(),
         petId: conversation.pet?.id,
       });
@@ -77,10 +83,7 @@ export default function CommunityChatScreen() {
     conversation?.participants?.find((item: any) => item.id !== user?.id);
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1, backgroundColor: colors.bg }}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <View
         style={{
           paddingHorizontal: 20,
@@ -133,7 +136,17 @@ export default function CommunityChatScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 28 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 180 : 0}
+        style={{ flex: 1 }}
+      >
+
+      <ScrollView 
+        ref={scrollViewRef}
+        onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 28 }}
+      >
         {conversation?.pet && (
           <View
             style={{
@@ -233,6 +246,7 @@ export default function CommunityChatScreen() {
           </Pressable>
         </View>
       </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }

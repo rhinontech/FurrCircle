@@ -11,13 +11,17 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.UUID,
                 defaultValue: DataTypes.UUIDV4
             },
-            vet_id: {
+            // Maps to existing 'vet_id' column in DB
+            vetId: {
                 type: DataTypes.UUID,
                 allowNull: false,
+                field: 'vet_id',
             },
-            user_id: {
+            // Maps to existing 'user_id' column in DB
+            userId: {
                 type: DataTypes.UUID,
                 allowNull: false,
+                field: 'user_id',
             },
             rating: {
                 type: DataTypes.INTEGER,
@@ -39,8 +43,8 @@ export default (sequelize: Sequelize) => {
     );
 
     (VetReview as any).associate = (models: any) => {
-        if (models.Vet) VetReview.belongsTo(models.Vet, { foreignKey: 'vet_id', as: 'vet' });
-        if (models.User) VetReview.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
+        if (models.vets) VetReview.belongsTo(models.vets, { foreignKey: 'vetId', as: 'vet' });
+        if (models.users) VetReview.belongsTo(models.users, { foreignKey: 'userId', as: 'user' });
     };
 
     return VetReview;

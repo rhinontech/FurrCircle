@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft, Bell, Calendar, Clock, AlertCircle, Syringe, ClipboardList, CheckCircle } from "lucide-react-native";
+import { ChevronLeft, Bell, Calendar, Syringe, ClipboardList, CheckCircle, Plus, Pencil, Trash2 } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import StatusChip from "../../components/ui/StatusChip";
-import { api } from "../../services/api";
+import { userRemindersApi } from "@/services/users/remindersApi";
 
 export default function RemindersScreen() {
   const router = useRouter();
@@ -14,10 +14,11 @@ export default function RemindersScreen() {
   const [reminders, setReminders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchReminders = useCallback(async () => {
     try {
-      const data = await api.get('/reminders');
+      const data = await userRemindersApi.listReminders();
       setReminders(data || []);
     } catch (error) {
       console.error("Error fetching reminders", error);
@@ -38,14 +39,32 @@ export default function RemindersScreen() {
 
   const toggleReminder = async (id: string) => {
     try {
-      // Optimistic update
       setReminders(prev => prev.map(r => r.id === id ? { ...r, isDone: !r.isDone } : r));
-      await api.patch(`/reminders/${id}/toggle`);
+      await userRemindersApi.toggleReminder(id);
     } catch (error) {
       console.error("Error toggling reminder", error);
-      // Revert if failed
       fetchReminders();
     }
+  };
+
+  const handleDelete = (id: string, title: string) => {
+    Alert.alert("Delete Reminder", `Delete "${title}"?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete", style: "destructive",
+        onPress: async () => {
+          setDeletingId(id);
+          try {
+            await userRemindersApi.deleteReminder(id);
+            setReminders(prev => prev.filter(r => r.id !== id));
+          } catch (e: any) {
+            Alert.alert("Error", e.message || "Could not delete reminder.");
+          } finally {
+            setDeletingId(null);
+          }
+        },
+      },
+    ]);
   };
 
   const getIcon = (type: string) => {
@@ -77,11 +96,18 @@ export default function RemindersScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 }}>
         <Pressable onPress={() => router.back()} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
           <ChevronLeft size={20} color={colors.textPrimary} />
         </Pressable>
-        <Text style={{ flex: 1, fontSize: 18, fontWeight: '700', color: colors.textPrimary, textAlign: 'center', marginRight: 40 }}>Reminders</Text>
+        <Text style={{ flex: 1, fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>Reminders</Text>
+        <Pressable
+          onPress={() => router.push("/reminders/edit")}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
+        >
+          <Plus size={15} color="#fff" />
+          <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Add</Text>
+        </Pressable>
       </View>
 
       <ScrollView 
@@ -102,26 +128,48 @@ export default function RemindersScreen() {
           const variant = status === 'urgent' ? 'danger' : 'info';
           const Icon = getIcon(r.type);
 
+          const isDeleting = deletingId === r.id;
           return (
-            <Pressable 
-              key={r.id.toString()} 
-              onPress={() => toggleReminder(r.id)}
-              style={{ backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center' }}
+            <View
+              key={r.id.toString()}
+              style={{ backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 16, marginBottom: 12 }}
             >
-              <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: bgIcon, alignItems: 'center', justifyContent: 'center' }}>
-                <Icon size={24} color={iconColor} />
+              <Pressable
+                onPress={() => toggleReminder(r.id)}
+                style={{ flexDirection: 'row', alignItems: 'center' }}
+              >
+                <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: bgIcon, alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon size={24} color={iconColor} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0, marginLeft: 16 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: colors.textPrimary }} numberOfLines={2}>{r.title}</Text>
+                  <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
+                    {r.pet?.name || 'General'} · Due {r.date ? new Date(r.date).toLocaleDateString() : 'N/A'}
+                  </Text>
+                </View>
+                <View style={{ marginLeft: 12, alignItems: 'flex-end', justifyContent: 'space-between', alignSelf: 'stretch' }}>
+                  <StatusChip label={status.charAt(0).toUpperCase() + status.slice(1)} variant={variant} />
+                  <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.textMuted, opacity: 0.3, marginTop: 12 }} />
+                </View>
+              </Pressable>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
+                <Pressable
+                  onPress={() => router.push({ pathname: "/reminders/edit", params: { id: r.id } })}
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgSubtle ?? colors.bgCard }}
+                >
+                  <Pencil size={14} color={colors.textMuted} />
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary ?? colors.textMuted }}>Edit</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleDelete(r.id, r.title)}
+                  disabled={isDeleting}
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#FCA5A5', backgroundColor: '#FFF1F1', opacity: isDeleting ? 0.6 : 1 }}
+                >
+                  {isDeleting ? <ActivityIndicator size="small" color="#EF4444" /> : <Trash2 size={14} color="#EF4444" />}
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#EF4444' }}>Delete</Text>
+                </Pressable>
               </View>
-              <View style={{ flex: 1, minWidth: 0, marginLeft: 16 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: colors.textPrimary }} numberOfLines={2}>{r.title}</Text>
-                <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
-                  {r.pet?.name || 'General'} · Due {r.date ? new Date(r.date).toLocaleDateString() : 'N/A'}
-                </Text>
-              </View>
-              <View style={{ marginLeft: 12, alignItems: 'flex-end', justifyContent: 'space-between', alignSelf: 'stretch' }}>
-                <StatusChip label={status.charAt(0).toUpperCase() + status.slice(1)} variant={variant} />
-                <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.textMuted, opacity: 0.3, marginTop: 12 }} />
-              </View>
-            </Pressable>
+            </View>
           );
         })}
 

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, Dimensions, ActivityIndicator, RefreshControl, Alert } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { ChevronLeft, TrendingUp, Activity, Weight, Heart, Thermometer, Plus } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userHealthApi } from "@/services/users/healthApi";
 
 const { width } = Dimensions.get("window");
 
@@ -35,7 +35,7 @@ export default function VitalsScreen() {
   const fetchVitals = async () => {
     try {
       if (!petId) return;
-      const data = await api.get(`/health/vitals/${petId}`);
+      const data = await userHealthApi.listVitals(String(petId));
       setVitals(data);
     } catch (error) {
       console.error("Error fetching vitals", error);
@@ -46,9 +46,11 @@ export default function VitalsScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchVitals();
-  }, [petId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchVitals();
+    }, [petId])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

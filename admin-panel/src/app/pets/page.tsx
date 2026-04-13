@@ -1,136 +1,177 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { 
-  PawPrint, 
-  Search, 
-  Filter, 
-  ChevronRight, 
-  MoreVertical,
-  Activity,
-  Heart,
-  Droplets,
-  Calendar
-} from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { PawPrint, Search, X, Heart, Activity, Trash2 } from "lucide-react";
+import { adminApi } from "@/lib/adminApiClient";
 
 export default function PetsPage() {
   const [pets, setPets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api") + "/admin";
+  useEffect(() => {
+    adminApi.get<any[]>('/admin/pets')
+      .then(setPets)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
-  const fetchPets = async () => {
+  const filtered = useMemo(() => {
+    return pets.filter(p => {
+      const matchSearch = !search
+        || p.name?.toLowerCase().includes(search.toLowerCase())
+        || p.species?.toLowerCase().includes(search.toLowerCase())
+        || p.breed?.toLowerCase().includes(search.toLowerCase())
+        || p.owner?.name?.toLowerCase().includes(search.toLowerCase());
+      const matchStatus =
+        statusFilter === "all"
+        || (statusFilter === "adoption" && p.isAdoptionOpen)
+        || (statusFilter === "owned" && !p.isAdoptionOpen);
+      return matchSearch && matchStatus;
+    });
+  }, [pets, search, statusFilter]);
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Remove ${name} from the platform? This cannot be undone.`)) return;
+    setDeletingId(id);
     try {
-      const response = await fetch(`${API_BASE_URL}/pets`);
-      const data = await response.json();
-      if (response.ok) setPets(data);
-    } catch (err) {
-      console.error(err);
+      await adminApi.delete(`/admin/pets/${id}`);
+      setPets(prev => prev.filter(p => p.id !== id));
+    } catch {
+      alert("Failed to remove pet. Please try again.");
     } finally {
-      setLoading(false);
+      setDeletingId(null);
     }
   };
 
-  useEffect(() => {
-    fetchPets();
-  }, []);
+  const stats = [
+    { label: "Total Pets", value: pets.length, icon: Activity, color: "bg-primary-50 text-primary-900" },
+    { label: "Owned / Under Care", value: pets.filter(p => !p.isAdoptionOpen).length, icon: Heart, color: "bg-emerald-50 text-emerald-600" },
+    { label: "Open for Adoption", value: pets.filter(p => p.isAdoptionOpen).length, icon: PawPrint, color: "bg-amber-50 text-amber-600" },
+  ];
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-slate-500 text-xs uppercase tracking-widest font-bold">
-          <PawPrint size={14} className="text-primary-900" />
-          <span>Ecosystem</span>
-          <ChevronRight size={14} className="text-slate-300" />
-          <span className="text-slate-900">Pet Listings</span>
-        </div>
-      </div>
-
       <div>
-        <h1 className="text-2xl font-bold text-slate-950">Pet Ecosystem Overview</h1>
-        <p className="text-slate-500 mt-1">Monitoring {pets.length} active pets across the PawsHub network.</p>
+        <h1 className="text-2xl font-bold text-slate-950">Pet Ecosystem</h1>
+        <p className="text-slate-500 mt-1">All pets registered across the PawsHub network.</p>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-card border border-slate-200 shadow-sm relative overflow-hidden group">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-primary-50 rounded-lg">
-              <Activity size={20} className="text-primary-900" />
-            </div>
-            <h3 className="font-bold text-slate-950 text-xs uppercase tracking-wider">Total Active</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {stats.map((s, i) => (
+          <div key={i} className="bg-white p-5 rounded-card border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+            <div className={`inline-flex p-2 rounded-lg mb-3 ${s.color}`}><s.icon size={20} /></div>
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{s.label}</p>
+            <p className="text-3xl font-bold text-slate-950 mt-1">{s.value}</p>
           </div>
-          <p className="text-4xl font-bold text-slate-950">{pets.length}</p>
-          <p className="text-xs text-slate-500 font-medium mt-4">Growth tracking enabled</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-card border border-slate-200 shadow-sm relative overflow-hidden group">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-rose-50 rounded-lg">
-              <Heart size={20} className="text-rose-600" />
-            </div>
-            <h3 className="font-bold text-slate-950 text-xs uppercase tracking-wider">Under Care</h3>
-          </div>
-          <p className="text-4xl font-bold text-slate-950">{pets.filter(p => !p.isAdoptionOpen).length}</p>
-          <p className="text-xs text-slate-500 font-medium mt-4">Verified by PawsHub Vets</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-card border border-slate-200 shadow-sm relative overflow-hidden group">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <Droplets size={20} className="text-blue-600" />
-            </div>
-            <h3 className="font-bold text-slate-950 text-xs uppercase tracking-wider">Listed</h3>
-          </div>
-          <p className="text-4xl font-bold text-slate-950">{pets.filter(p => p.isAdoptionOpen).length}</p>
-          <p className="text-xs text-slate-500 font-medium mt-4">Open for Adoption/Foster</p>
-        </div>
+        ))}
       </div>
 
       <div className="bg-white rounded-card border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-4">
           <h3 className="font-bold text-slate-950 whitespace-nowrap">Pet Database</h3>
+          <div className="flex flex-1 items-center gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+              <input
+                type="text"
+                placeholder="Search name, species, breed, owner..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 text-sm bg-slate-50 border border-slate-200 rounded-input focus:outline-none focus:ring-2 focus:ring-primary-900/20"
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <div className="flex gap-1">
+              {[
+                { key: "all", label: "All" },
+                { key: "owned", label: "Owned" },
+                { key: "adoption", label: "Adoption" },
+              ].map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setStatusFilter(f.key)}
+                  className={`px-3 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${statusFilter === f.key ? "bg-primary-900 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           {loading ? (
-             <div className="p-12 text-center text-slate-500 font-bold">Accessing ecosystem database...</div>
+            <div className="p-12 text-center text-slate-500 font-medium">Accessing pet database...</div>
+          ) : filtered.length === 0 ? (
+            <div className="p-12 text-center">
+              <PawPrint size={40} className="text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-400 font-medium">No pets found.</p>
+            </div>
           ) : (
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/50 text-[11px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">
-                  <th className="px-6 py-4">Pet Detail</th>
+                <tr className="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">
+                  <th className="px-6 py-4">Pet</th>
                   <th className="px-6 py-4">Owner</th>
+                  <th className="px-6 py-4">Details</th>
                   <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Action</th>
+                  <th className="px-6 py-4">Added</th>
+                  <th className="px-6 py-4">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {pets.map((pet) => (
-                  <tr key={pet.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-5">
+                {filtered.map((pet) => (
+                  <tr key={pet.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400">
-                          <PawPrint size={20} />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-950 text-xs tracking-tight">{pet.name}</span>
-                          <span className="text-[11px] text-slate-400 font-medium">{pet.species} • {pet.breed || "N/A"}</span>
+                        {pet.avatar_url ? (
+                          <img src={pet.avatar_url} alt={pet.name} className="w-10 h-10 rounded-xl object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                            <PawPrint size={18} className="text-slate-400" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-semibold text-slate-950 text-sm">{pet.name}</p>
+                          <p className="text-xs text-slate-400">{pet.species}{pet.breed ? ` · ${pet.breed}` : ""}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
-                      <span className="text-xs text-slate-700 font-semibold">{pet.owner?.name || "Unknown"}</span>
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-medium text-slate-800">{pet.owner?.name || "—"}</p>
+                      <p className="text-xs text-slate-400">{pet.owner?.email || ""}</p>
                     </td>
-                    <td className="px-6 py-5">
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        pet.isAdoptionOpen ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"
-                      }`}>
-                        {pet.isAdoptionOpen ? "Listed Adoption" : "Healthy / Owned"}
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1.5">
+                        {pet.gender && <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{pet.gender}</span>}
+                        {pet.age && <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{pet.age}</span>}
+                        {pet.weight && <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{pet.weight}</span>}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${pet.isAdoptionOpen ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"}`}>
+                        {pet.isAdoptionOpen ? "Adoption Open" : "Owned"}
                       </span>
                     </td>
-                    <td className="px-6 py-5 text-right">
-                      <button className="p-2 text-slate-400 hover:text-primary-900 transition-colors">
-                        <MoreVertical size={18} />
+                    <td className="px-6 py-4 text-xs text-slate-500">
+                      {pet.createdAt
+                        ? new Date(pet.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                        : "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleDelete(pet.id, pet.name)}
+                        disabled={deletingId === pet.id}
+                        className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors disabled:opacity-40"
+                        title="Remove pet"
+                      >
+                        <Trash2 size={15} />
                       </button>
                     </td>
                   </tr>
@@ -139,6 +180,11 @@ export default function PetsPage() {
             </table>
           )}
         </div>
+        {!loading && (
+          <div className="px-6 py-3 border-t border-slate-100 text-xs text-slate-400 font-medium">
+            Showing {filtered.length} of {pets.length} pets
+          </div>
+        )}
       </div>
     </div>
   );

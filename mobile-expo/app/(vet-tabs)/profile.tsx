@@ -1,26 +1,46 @@
-import React from "react";
+import React, { useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { View, Text, ScrollView, Image, Pressable, Switch } from "react-native";
-import { ChevronRight, CalendarDays, Users, Star, Clock, LogOut, Moon, Sun, UserCheck, Stethoscope } from "lucide-react-native";
+import { ChevronRight, CalendarDays, Users, Star, Clock, LogOut, Moon, Sun, UserCheck, Stethoscope, MapPin, Phone, Pencil } from "lucide-react-native";
+import { useRouter } from "expo-router";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 
-const vetMenuItems = [
-  { icon: CalendarDays, label: "Appointment History" },
-  { icon: Users, label: "All Patients" },
-  { icon: Star, label: "My Reviews" },
-  { icon: Clock, label: "Working Hours" },
-  { icon: UserCheck, label: "Verification Status" },
-];
-
 export default function VetProfileScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
+  const router = useRouter();
+
+  useFocusEffect(useCallback(() => { refreshUser(); }, []));
+  const ratingLabel = user?.rating != null && user?.rating !== "" ? String(user.rating) : "New";
+  const experienceLabel = user?.yearsExp ? String(user.yearsExp) : "Add";
+  const profilePills = [
+    { icon: MapPin, label: user?.city || "Add clinic city" },
+    { icon: Phone, label: user?.phone || "Add clinic phone" },
+    { icon: Clock, label: user?.working_hours || "Add working hours" },
+  ];
+  const vetMenuItems = [
+    { icon: CalendarDays, label: "Appointment History", action: () => router.push("/vet-profile/appointment-history") },
+    { icon: Users, label: "All Patients", action: () => router.push("/vet-profile/patients") },
+    { icon: Star, label: "My Reviews", action: () => router.push("/vet-profile/reviews") },
+    { icon: Clock, label: "Working Hours", action: () => router.push("/vet-profile/working-hours") },
+    { icon: UserCheck, label: "Verification Status", action: () => router.push("/vet-profile/verification") },
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingTop: 16 }}>
         <View style={{ paddingHorizontal: 20, paddingBottom: 24 }}>
-          <Text style={{ fontSize: 24, fontWeight: '700', color: colors.textPrimary, marginBottom: 24 }}>Profile</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+            <Text style={{ fontSize: 24, fontWeight: '700', color: colors.textPrimary }}>Profile</Text>
+            <Pressable
+              onPress={() => router.push('/profile/edit')}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 14, borderRadius: 12, backgroundColor: colors.bgSubtle, borderWidth: 1, borderColor: colors.border }}
+            >
+              <Pencil size={15} color={colors.textSecondary} />
+              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>Edit</Text>
+            </Pressable>
+          </View>
 
           {/* Vet Hero Card */}
           <View style={{ backgroundColor: colors.heroBg, borderRadius: 28, padding: 24, marginBottom: 24 }}>
@@ -36,20 +56,36 @@ export default function VetProfileScreen() {
                 <Text style={{ fontSize: 18, fontWeight: '700', color: '#fff' }}>{user?.name || "Dr. Anonymous"}</Text>
                 <Text style={{ fontSize: 14, color: colors.heroSub, marginTop: 2 }}>{user?.clinic_name || "Pet Clinic"}</Text>
                 <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{user?.specialty || "Veterinarian"}</Text>
+                <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', marginTop: 8, lineHeight: 18 }}>
+                  {user?.bio || "Add your clinic details, working hours, and a stronger introduction so pet parents know what kind of care you provide."}
+                </Text>
               </View>
             </View>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
+              {profilePills.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <Icon size={14} color="#fff" />
+                    <Text style={{ fontSize: 12, color: '#fff', maxWidth: 190 }} numberOfLines={1}>{item.label}</Text>
+                  </View>
+                );
+              })}
+            </View>
+
             <View style={{ flexDirection: 'row', gap: 32, marginTop: 20 }}>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>{user?.rating || "4.8"}</Text>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>{ratingLabel}</Text>
                 <Text style={{ fontSize: 12, color: colors.heroSub, marginTop: 2 }}>Rating</Text>
               </View>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>{user?.yearsExp || "5"}+ M</Text>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>{experienceLabel}</Text>
                 <Text style={{ fontSize: 12, color: colors.heroSub, marginTop: 2 }}>Experience</Text>
               </View>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>24</Text>
-                <Text style={{ fontSize: 12, color: colors.heroSub, marginTop: 2 }}>Patients</Text>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>{user?.isVerified ? "Verified" : "Pending"}</Text>
+                <Text style={{ fontSize: 12, color: colors.heroSub, marginTop: 2 }}>Status</Text>
               </View>
             </View>
           </View>
@@ -73,7 +109,11 @@ export default function VetProfileScreen() {
             {vetMenuItems.map((item, i) => {
               const Icon = item.icon;
               return (
-                <Pressable key={item.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: i < vetMenuItems.length - 1 ? 1 : 0, borderBottomColor: colors.border }}>
+                <Pressable
+                  key={item.label}
+                  onPress={item.action}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: i < vetMenuItems.length - 1 ? 1 : 0, borderBottomColor: colors.border }}
+                >
                   <Icon size={20} color={colors.textMuted} />
                   <Text style={{ flex: 1, fontSize: 14, fontWeight: '500', color: colors.textPrimary }}>{item.label}</Text>
                   <ChevronRight size={16} color={colors.textMuted} />

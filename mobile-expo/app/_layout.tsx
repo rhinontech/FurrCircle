@@ -2,31 +2,65 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, Pressable } from 'react-native';
-import { Heart, Bell } from 'lucide-react-native';
+import { View, Text, Pressable, Image } from 'react-native';
+import { Bell, MessageCircle } from 'lucide-react-native';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { NotificationProvider, useNotifications } from '../contexts/NotificationContext';
 import React, { useEffect } from 'react';
 import '@/global.css';
+import AppointmentFeedbackPrompt from '@/components/AppointmentFeedbackPrompt';
 
 
 function GlobalHeader() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const router = useRouter();
+  const segments = useSegments();
+  const { chatUnreadCount, notifUnreadCount } = useNotifications();
+
+  // Determine if we are already on a "utility" screen to avoid stacking them
+  const isOnUtility = segments[0] === 'notifications' || segments.includes('chats');
+
+  const handleNavigate = (path: string) => {
+    if (isOnUtility) {
+      router.replace(path as any);
+    } else {
+      router.push(path as any);
+    }
+  };
+
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 20 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Heart size={24} color={colors.brand} fill={colors.brand} />
-          <Text style={{ fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginLeft: 8 }}>PawsHub</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 10 }}>
+        <Image
+          source={isDark ? require("../assets/furrcircle_dark_logo.png") : require("../assets/furrcircle_light_logo.png")}
+          style={{ width: 150, height: 45 }}
+          resizeMode="contain"
+        />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Pressable
+            onPress={() => handleNavigate('/community/chats')}
+            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <MessageCircle size={20} color={colors.textPrimary} />
+            {chatUnreadCount > 0 && (
+              <View style={{ position: 'absolute', top: 8, right: 8, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1, borderColor: colors.bgCard }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{chatUnreadCount > 9 ? '9+' : chatUnreadCount}</Text>
+              </View>
+            )}
+          </Pressable>
+          <Pressable
+            onPress={() => handleNavigate('/notifications')}
+            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Bell size={20} color={colors.textPrimary} />
+            {notifUnreadCount > 0 && (
+              <View style={{ position: 'absolute', top: 8, right: 8, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#f43f5e', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1, borderColor: colors.bgCard }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{notifUnreadCount > 9 ? '9+' : notifUnreadCount}</Text>
+              </View>
+            )}
+          </Pressable>
         </View>
-        <Pressable
-          onPress={() => router.push('/notifications')}
-          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <Bell size={20} color={colors.textPrimary} />
-          <View style={{ position: 'absolute', top: 8, right: 10, width: 8, height: 8, backgroundColor: '#f43f5e', borderRadius: 4, borderWidth: 1, borderColor: colors.bgCard }} />
-        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -53,7 +87,16 @@ function AppShell() {
       router.replace('/login');
     } else if (isLoggedIn) {
       const isVet = user?.role === 'veterinarian';
-      
+      const isUnverifiedVet = isVet && user?.isVerified === false;
+
+      // Unverified vet: keep them on pending screen only
+      if (isUnverifiedVet) {
+        if (segments[0] !== 'verification-pending') {
+          router.replace('/verification-pending');
+        }
+        return;
+      }
+
       // If at root or on public pages, redirect to appropriate dashboard
       if (!segments[0] || inPublicGroup) {
         router.replace(isVet ? '/(vet-tabs)/dashboard' : '/(tabs)');
@@ -76,6 +119,9 @@ function AppShell() {
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
+        <Stack.Screen name="forgot-password" />
+        <Stack.Screen name="reset-password" />
+        <Stack.Screen name="verification-pending" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(vet-tabs)" />
         <Stack.Screen name="pets/add" />
@@ -87,16 +133,28 @@ function AppShell() {
         <Stack.Screen name="health/add-record" />
         <Stack.Screen name="health/add-vital" />
         <Stack.Screen name="health/add-vaccine" />
+        <Stack.Screen name="health/add-med" />
         <Stack.Screen name="health/add-allergy" />
         <Stack.Screen name="reminders/index" />
         <Stack.Screen name="appointments/book" />
+        <Stack.Screen name="appointments/[id]" />
+        <Stack.Screen name="appointments/index" />
         <Stack.Screen name="notifications/index" />
         <Stack.Screen name="community/events" />
         <Stack.Screen name="community/events/[id]" />
         <Stack.Screen name="community/posts/[id]" />
+        <Stack.Screen name="community/chats" />
         <Stack.Screen name="community/chat/[id]" />
+        <Stack.Screen name="profile/edit" />
+        <Stack.Screen name="vet-profile/appointment-history" />
+        <Stack.Screen name="vet-profile/patients" />
+        <Stack.Screen name="vet-profile/reviews" />
+        <Stack.Screen name="vet-profile/working-hours" />
+        <Stack.Screen name="vet-profile/verification" />
         <Stack.Screen name="vets/[id]" />
+        <Stack.Screen name="adoptions/apply" />
       </Stack>
+      <AppointmentFeedbackPrompt />
       <StatusBar style={isDark ? 'light' : 'dark'} />
     </GestureHandlerRootView>
   );
@@ -106,7 +164,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppShell />
+        <NotificationProvider>
+          <AppShell />
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   );

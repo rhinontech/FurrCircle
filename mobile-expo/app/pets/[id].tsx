@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Image, Pressable, Switch, ActivityIndicator, Alert, RefreshControl } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { ArrowLeft, Syringe, Pill, Calendar, FileText, ChevronRight, Edit3, Heart, Home, PawPrint, ShieldAlert } from "lucide-react-native";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
+import { userPetsApi } from "@/services/users/petsApi";
+import { useAuth } from "../../contexts/AuthContext";
 
 const statusVariant = (s: string) => {
   const status = s?.toLowerCase() || '';
@@ -17,16 +18,22 @@ export default function PetDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { colors } = useTheme();
+  const { user } = useAuth();
 
   const [pet, setPet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isAdoptionOpen, setIsAdoptionOpen] = useState(false);
   const [isFosterOpen, setIsFosterOpen] = useState(false);
+  const isVet = user?.role === 'veterinarian';
+  const canManagePet = !!pet?.canManage || !!pet?.isViewerOwner || (!!user?.id && pet?.ownerId === user.id);
+  const canEditPetProfile = canManagePet;
+  const canManageListing = canManagePet;
+  const canAddClinicalRecord = canManagePet || isVet;
 
   const fetchPet = async () => {
     try {
-      const data = await api.get(`/pets/${id}`);
+      const data = await userPetsApi.getPetById(String(id));
       setPet(data);
       setIsAdoptionOpen(data.isAdoptionOpen || false);
       setIsFosterOpen(data.isFosterOpen || false);
@@ -39,9 +46,11 @@ export default function PetDetailScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchPet();
-  }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchPet();
+    }, [id])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -51,7 +60,7 @@ export default function PetDetailScreen() {
   const handleToggleListing = async (type: "adoption" | "foster", value: boolean) => {
     try {
       const payload = type === "adoption" ? { isAdoptionOpen: value } : { isFosterOpen: value };
-      const updatedPet = await api.patch(`/pets/${id}/listing`, payload);
+      const updatedPet = await userPetsApi.updateListing(String(id), payload);
       if (type === "adoption") setIsAdoptionOpen(updatedPet.isAdoptionOpen);
       else setIsFosterOpen(updatedPet.isFosterOpen);
     } catch (error: any) {
@@ -95,12 +104,14 @@ export default function PetDetailScreen() {
           </Pressable>
           <Text style={{ fontSize: 20, fontWeight: '700', color: colors.textPrimary }}>Pet Profile</Text>
         </View>
-        <Pressable 
-          onPress={() => router.push(`/pets/add?id=${id}`)}
-          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <Edit3 size={18} color={colors.brand} />
-        </Pressable>
+        {canEditPetProfile ? (
+          <Pressable
+            onPress={() => router.push(`/pets/add?id=${id}`)}
+            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Edit3 size={18} color={colors.brand} />
+          </Pressable>
+        ) : null}
       </View>
 
       {/* Hero */}
@@ -139,9 +150,9 @@ export default function PetDetailScreen() {
         </View>
       </View>
 
-      {/* Public Status Toggles */}
-      <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
-        <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>Public Listings</Text>
+      {/* Public Status Toggles — hidden for vets */}
+      {!isVet && <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
+        <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>{canManagePet ? "Public Listings" : "Listing Status"}</Text>
         <View style={{ backgroundColor: colors.bgCard, borderRadius: 24, borderWidth: 1, borderColor: colors.border, padding: 20, gap: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, paddingRight: 12 }}>
@@ -155,6 +166,7 @@ export default function PetDetailScreen() {
             </View>
             <Switch 
               value={isAdoptionOpen} 
+              disabled={!canManagePet}
               onValueChange={(val) => handleToggleListing("adoption", val)} 
               trackColor={{ false: colors.border, true: colors.brand }}
               thumbColor="#fff"
@@ -175,6 +187,7 @@ export default function PetDetailScreen() {
             </View>
             <Switch 
               value={isFosterOpen} 
+              disabled={!canManagePet}
               onValueChange={(val) => handleToggleListing("foster", val)} 
               trackColor={{ false: colors.border, true: colors.brand }}
               thumbColor="#fff"
@@ -183,13 +196,16 @@ export default function PetDetailScreen() {
 
           {(isAdoptionOpen || isFosterOpen) && (
             <View style={{ marginTop: 8, padding: 12, backgroundColor: colors.infoBg + '40', borderRadius: 12, borderLeftWidth: 3, borderLeftColor: colors.brand }}>
-              <Text style={{ fontSize: 11, color: colors.textPrimary, fontWeight: '500' }}>Your pet is now listed in the Discover feed. Potential caretakers can contact you through the app.</Text>
+              <Text style={{ fontSize: 11, color: colors.textPrimary, fontWeight: '500' }}>
+                {canManagePet ? "Your pet is now listed in the Discover feed. Potential caretakers can contact you through the app." : `${pet.name} is listed publicly for ${isFosterOpen && !isAdoptionOpen ? "foster care" : "adoption"}.`}
+              </Text>
             </View>
           )}
         </View>
-      </View>
+      </View>}
 
       {/* Quick Actions */}
+      {canAddClinicalRecord ? (
       <View style={{ paddingHorizontal: 20, flexDirection: 'row', gap: 12, marginBottom: 24 }}>
         {[
           { icon: Syringe, label: "Vaccines", color: "#10b981", bg: colors.successBg, path: `/health/vaccines?petId=${id}` },
@@ -207,9 +223,10 @@ export default function PetDetailScreen() {
           </Pressable>
         ))}
       </View>
+      ) : null}
 
       {/* Vaccines */}
-      {pet.Vaccines && pet.Vaccines.length > 0 ? (
+      {canAddClinicalRecord && pet.Vaccines && pet.Vaccines.length > 0 ? (
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>Vaccine Tracker</Text>
           {pet.Vaccines.map((v: any) => (
@@ -230,7 +247,7 @@ export default function PetDetailScreen() {
       ) : null}
 
       {/* Medications */}
-      {pet.Medications && pet.Medications.length > 0 ? (
+      {canAddClinicalRecord && pet.Medications && pet.Medications.length > 0 ? (
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>Medications</Text>
           {pet.Medications.map((m: any) => (
@@ -249,7 +266,7 @@ export default function PetDetailScreen() {
       ) : null}
 
       {/* Allergies */}
-      {pet.Allergies && pet.Allergies.length > 0 ? (
+      {canAddClinicalRecord && pet.Allergies && pet.Allergies.length > 0 ? (
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>Known Allergies</Text>
           {pet.Allergies.map((allergy: any) => (
@@ -274,7 +291,7 @@ export default function PetDetailScreen() {
       ) : null}
 
       {/* Appointments */}
-      {pet.Appointments && pet.Appointments.length > 0 ? (
+      {canAddClinicalRecord && pet.Appointments && pet.Appointments.length > 0 ? (
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>Upcoming Appointments</Text>
           {pet.Appointments.map((a: any) => (

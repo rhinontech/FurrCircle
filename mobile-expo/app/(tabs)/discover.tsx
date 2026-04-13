@@ -1,12 +1,24 @@
-﻿import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TextInput, Pressable, Image, Modal, ActivityIndicator, RefreshControl, Alert } from "react-native";
-import { Search, Stethoscope, MapPin, Star, ShieldCheck, Phone, Clock, Users, X, Heart, PawPrint } from "lucide-react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, ScrollView, TextInput, Pressable, Image, Modal, ActivityIndicator, RefreshControl, Alert, Linking } from "react-native";
+import { Search, Stethoscope, MapPin, Star, ShieldCheck, Phone, Clock, X, Heart, PawPrint } from "lucide-react-native";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
-import { api } from "../../services/api";
 import { useRouter } from "expo-router";
+import { userDiscoverApi } from "@/services/users/discoverApi";
 
-const categories = ["All", "Vets", "Adoption", "Foster", "Shelters"];
+const categories = ["All", "Vets", "Adoption", "Foster"];
+
+function EmptyPlaceholder({ icon: Icon, title, description, colors }: any) {
+  return (
+    <View style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCard, borderRadius: 20, paddingVertical: 32, paddingHorizontal: 24, alignItems: "center", marginBottom: 16 }}>
+      <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+        <Icon size={24} color={colors.brand} strokeWidth={1.8} />
+      </View>
+      <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary }}>{title}</Text>
+      <Text style={{ marginTop: 4, color: colors.textMuted, fontSize: 13, textAlign: "center", lineHeight: 20 }}>{description}</Text>
+    </View>
+  );
+}
 
 export default function DiscoverScreen() {
   const router = useRouter();
@@ -14,24 +26,18 @@ export default function DiscoverScreen() {
   const [active, setActive] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [modalType, setModalType] = useState<"vet" | "pet" | "shelter" | null>(null);
+  const [modalType, setModalType] = useState<"vet" | "pet" | null>(null);
 
   const [vets, setVets] = useState<any[]>([]);
-  const [shelters, setShelters] = useState<any[]>([]);
   const [pets, setPets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchData = async () => {
     try {
-      const [vetsRes, sheltersRes, petsRes] = await Promise.all([
-        api.get('/appointments/vets'),
-        api.get('/auth/users/shelter'),
-        api.get('/pets/discover')
-      ]);
-      setVets(vetsRes || []);
-      setShelters(sheltersRes || []);
-      setPets(petsRes || []);
+      const data = await userDiscoverApi.getDiscoverData();
+      setVets(data.vets);
+      setPets(data.pets);
     } catch (error) {
       console.error("Error fetching discover data", error);
     } finally {
@@ -61,7 +67,7 @@ export default function DiscoverScreen() {
     }
 
     try {
-      const conversation = await api.post("/community/chats/start", {
+      const conversation = await userDiscoverApi.startPetInterestChat({
         recipientId: owner.id,
         petId: pet.id,
         message: `Hi ${owner.name || ""}, I would love to ask about ${pet?.name || "this pet"} and whether ${actionLabel} is still available.`,
@@ -73,9 +79,33 @@ export default function DiscoverScreen() {
     }
   };
 
+  const handleContactVet = async (vet: any) => {
+    const phone = vet?.phone;
+    if (!phone) {
+      Alert.alert("Phone unavailable", "This clinic does not have a phone number listed.");
+      return;
+    }
+    const url = `tel:${phone.replace(/[^\d+]/g, "")}`;
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        Alert.alert("Unable to call", "Calling is not supported on this device.");
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Unable to call", "Please try again in a moment.");
+    }
+  };
+
   const filteredVets = vets.filter(v => (v.clinic_name || v.name || "").toLowerCase().includes(searchQuery.toLowerCase()));
-  const filteredShelters = shelters.filter(s => (s.name || "").toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredPets = pets.filter(p => (p.name || "").toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const displayPets = filteredPets.filter(p => {
+    if (active === "Adoption") return p.isAdoptionOpen;
+    if (active === "Foster") return p.isFosterOpen;
+    return true;
+  });
 
   if (loading && !refreshing) {
     return (
@@ -96,7 +126,7 @@ export default function DiscoverScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgSubtle, borderRadius: 12, paddingHorizontal: 12, marginBottom: 16 }}>
             <Search size={18} color={colors.textMuted} />
             <TextInput
-              placeholder="Search vets, shelters, pets..."
+              placeholder="Search vets and pets..."
               placeholderTextColor={colors.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -123,7 +153,14 @@ export default function DiscoverScreen() {
               <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary }}>Nearby Vets</Text>
               <Text style={{ fontSize: 14, color: colors.brand, fontWeight: '500' }}>View all</Text>
             </View>
-            {filteredVets.length === 0 ? <Text style={{ color: colors.textMuted }}>No vets found</Text> : filteredVets.map((vet) => (
+            {filteredVets.length === 0 ? (
+              <EmptyPlaceholder
+                icon={Stethoscope}
+                title="No clinics found"
+                description={searchQuery ? `We couldn't find any vets matching "${searchQuery}".` : "New veterinary clinics will be added to your area soon."}
+                colors={colors}
+              />
+            ) : filteredVets.map((vet) => (
               <Pressable
                 key={vet.id}
                 onPress={() => router.push(`/vets/${vet.id}` as any)}
@@ -168,13 +205,16 @@ export default function DiscoverScreen() {
               {active === "Foster" ? "Needs a Foster Home" : "Adoption & Fostering"}
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-              {filteredPets
-                .filter(p => {
-                  if (active === "Adoption") return p.isAdoptionOpen;
-                  if (active === "Foster") return p.isFosterOpen;
-                  return true;
-                })
-                .map((pet) => (
+              {displayPets.length === 0 ? (
+                <View style={{ flex: 1 }}>
+                  <EmptyPlaceholder
+                    icon={active === "Foster" ? ShieldCheck : Heart}
+                    title={active === "Foster" ? "No fosters needed" : (active === "Adoption" ? "No pets for adoption" : "No results")}
+                    description={searchQuery ? `No pets matching "${searchQuery}" found in this category.` : `New pets for ${active === "Foster" ? "foster" : "adoption"} will appear here soon.`}
+                    colors={colors}
+                  />
+                </View>
+              ) : displayPets.map((pet) => (
                 <Pressable key={pet.id} onPress={() => { setSelectedItem(pet); setModalType("pet"); }} style={{ width: '47%', backgroundColor: colors.bgCard, borderRadius: 16, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
                   <View style={{ position: 'relative' }}>
                     {pet.avatar_url ? (
@@ -202,34 +242,6 @@ export default function DiscoverScreen() {
                 </Pressable>
               ))}
             </View>
-          </View>
-        )}
-
-        {/* Shelters */}
-        {(active === "All" || active === "Shelters") && (
-          <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>Nearby Shelters</Text>
-            {filteredShelters.length === 0 ? <Text style={{ color: colors.textMuted }}>No shelters found</Text> : filteredShelters.map((s) => (
-              <Pressable key={s.id} onPress={() => { setSelectedItem(s); setModalType("shelter"); }} style={{ backgroundColor: colors.bgCard, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                 <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                  {s.avatar_url ? (
-                    <Image source={{ uri: s.avatar_url }} style={{ width: 44, height: 44, borderRadius: 12 }} />
-                  ) : (
-                    <Users size={20} color={colors.brand} />
-                  )}
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>{s.name}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                    <MapPin size={12} color={colors.textMuted} />
-                    <Text style={{ fontSize: 12, color: colors.textMuted, marginLeft: 4, marginRight: 12 }}>{s.city || 'Available'}</Text>
-                    <Users size={12} color={colors.textMuted} />
-                    <Text style={{ fontSize: 12, color: colors.textMuted, marginLeft: 4 }}>Shelter</Text>
-                  </View>
-                </View>
-                <StatusChip label="RESCUE" variant="info" />
-              </Pressable>
-            ))}
           </View>
         )}
       </ScrollView>
@@ -276,8 +288,12 @@ export default function DiscoverScreen() {
                     >
                       <Text style={{ color: '#fff', fontWeight: '700' }}>Book Now</Text>
                     </Pressable>
-                    <Pressable style={{ flex: 1, backgroundColor: colors.bgSubtle, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}>
-                      <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>Contact</Text>
+                    <Pressable
+                      onPress={() => handleContactVet(selectedItem)}
+                      style={{ flex: 1, backgroundColor: colors.bgSubtle, borderRadius: 12, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+                    >
+                      <Phone size={15} color={colors.textPrimary} />
+                      <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>Call Clinic</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -323,20 +339,26 @@ export default function DiscoverScreen() {
                     <Text style={{ fontSize: 13, color: colors.textSecondary }}>{selectedItem.owner?.name || 'Pet owner'}</Text>
                     <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>{selectedItem.city || 'Location not set'}</Text>
                   </View>
-                  <Pressable onPress={() => handlePetInterest(selectedItem)} style={{ backgroundColor: colors.brand, borderRadius: 12, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
-                    <Heart size={18} color="#fff" />
-                    <Text style={{ color: '#fff', fontWeight: '700' }}>
-                      {selectedItem.isFosterOpen && !selectedItem.isAdoptionOpen ? `Request Foster for ${selectedItem.name}` : `Request Adoption for ${selectedItem.name}`}
-                    </Text>
-                  </Pressable>
-                </View>
-              )}
-              {modalType === "shelter" && selectedItem && (
-                <View>
-                  <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 16 }}>{selectedItem.bio || 'Helping pets find their forever families.'}</Text>
-                  <Pressable style={{ backgroundColor: colors.brand, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}>
-                    <Text style={{ color: '#fff', fontWeight: '700' }}>Visit Website</Text>
-                  </Pressable>
+                  <View style={{ gap: 10 }}>
+                    <Pressable
+                      onPress={() => {
+                        closeModal();
+                        router.push(`/adoptions/apply?petId=${selectedItem.id}&petName=${encodeURIComponent(selectedItem.name || "")}&applicationType=${selectedItem.isFosterOpen && !selectedItem.isAdoptionOpen ? "foster" : "adoption"}` as any);
+                      }}
+                      style={{ backgroundColor: colors.brand, borderRadius: 12, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                    >
+                      <Heart size={18} color="#fff" />
+                      <Text style={{ color: '#fff', fontWeight: '700' }}>
+                        {selectedItem.isFosterOpen && !selectedItem.isAdoptionOpen ? `Apply to Foster ${selectedItem.name}` : `Apply to Adopt ${selectedItem.name}`}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handlePetInterest(selectedItem)}
+                      style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, paddingVertical: 12, alignItems: 'center' }}
+                    >
+                      <Text style={{ color: colors.textPrimary, fontWeight: '600', fontSize: 13 }}>Message Owner Instead</Text>
+                    </Pressable>
+                  </View>
                 </View>
               )}
             </ScrollView>
@@ -346,4 +368,3 @@ export default function DiscoverScreen() {
     </View>
   );
 }
-
