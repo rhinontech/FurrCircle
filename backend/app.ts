@@ -37,6 +37,7 @@ if (NODE_ENV === "production") {
 // Middleware
 const productionDefaultOrigins = [
     "https://furrcircle-admin.vercel.app",
+    "https://admin.furrcircle.com",
 ];
 
 const allowedOrigins = NODE_ENV === "production"
