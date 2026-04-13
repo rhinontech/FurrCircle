@@ -30,7 +30,7 @@ export function ValuesGrid() {
             </div>
             
             <p className="text-white text-lg leading-relaxed">
-              We approach every pet with empathy and kindness, ensuring their comfort and well-being.
+              We approach every pet's journey with empathy and kindness, ensuring their comfort and well-being.
             </p>
           </FadeInUp>
 
@@ -43,7 +43,7 @@ export function ValuesGrid() {
                <h3 className="text-xl font-heading group-hover:text-black transition-colors duration-300 text-white">Excellence</h3>
             </div>
             <p className="text-white text-lg leading-relaxed">
-              We strive for excellence in all we do, from medical to service.
+              Professional-grade tracking and care standards used by pet parents and veterinarians.
             </p>
           </FadeInUp>
 
@@ -56,7 +56,7 @@ export function ValuesGrid() {
                <h3 className="text-xl font-heading group-hover:text-black transition-colors duration-300 text-white">Trust</h3>
             </div>
             <p className="text-white text-lg leading-relaxed">
-              Your trust is paramount, and we work tirelessly to maintain it.
+              Your pet's data is secure. We provide a private and reliable hub for lifelong wellness.
             </p>
           </FadeInUp>
 
@@ -69,7 +69,7 @@ export function ValuesGrid() {
                <h3 className="text-xl font-heading group-hover:text-black transition-colors duration-300 text-white">Community</h3>
             </div>
             <p className="text-white text-lg leading-relaxed">
-              We're proud to be a part of the local pet-loving community, supporting pet owners like you.
+              Connecting minds and hearts across a global network of pet lovers, supporting owners like you.
             </p>
           </FadeInUp>
 

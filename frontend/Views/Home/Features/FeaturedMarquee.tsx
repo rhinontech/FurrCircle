@@ -6,7 +6,7 @@ import { FadeInUp } from "@/components/AnimationProvider";
 import { BouncingElement, PawPrint } from "../Hero/Hero";
 
 export function FeaturedMarquee() {
-  const text = "WELCOME TO PETPALS, BUDDIES! ✨ ";
+  const text = "WELCOME TO FURRCIRCLE, BUDDIES! ✨ ";
 
   return (
     <section className="py-32 max-md:py-10 bg-[#F9F8F6] overflow-hidden flex justify-center px-5">
@@ -17,9 +17,9 @@ export function FeaturedMarquee() {
           <div className="flex items-center max-w-2xl">
             <div className="flex flex-col gap-10">
               <h2 className="text-4xl md:text-6xl font-heading text-foreground mb-4">
-                We are Dedicated to the Well-Being of Your Beloved Pets
+                We are Dedicated to Your Pet's Digital Health Journey
               </h2>
-              <p className="text-muted-foreground text-lg max-w-lg leading-relaxed group-hover:text-primary-foreground/90 transition-colors">PetPals is more than just a pet care center – we're a family of passionate animal lovers. With years of experience, our team is committed to providing the highest quality care and services to your furry, feathered, or scaled companions. Your pet's happiness and health are our top priorities, and we treat them with the same love and care as if they were our own.</p>
+              <p className="text-muted-foreground text-lg max-w-lg leading-relaxed group-hover:text-primary-foreground/90 transition-colors">FurrCircle is more than just a tracking app – we're a community of passionate pet parents committed to simplifying pet wellness. Our team has built a comprehensive digital ecosystem to ensure the highest quality health management for your furry companions. Your pet's happiness and health are our top priorities, and we've designed every feature to give you the peace of mind you deserve.</p>
             </div>
           </div>
         </FadeInUp>
@@ -44,7 +44,7 @@ export function FeaturedMarquee() {
                         d="M 50, 50 m -45, 0 a 45,45 0 1,1 90,0 a 45,45 0 1,1 -90,0"
                         fill="transparent"
                       />
-                      <text className="text-[10px] font-heading fill-primary tracking-[0.25em] uppercase">
+                      <text className="text-[10px] font-heading fill-blue-300 tracking-[0.25em] uppercase">
                         <textPath href="#circlePath" startOffset="0%">
                           {text} {text} {text}
                         </textPath>

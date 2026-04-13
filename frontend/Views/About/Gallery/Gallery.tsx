@@ -23,7 +23,7 @@ export function Gallery() {
         <div className="flex flex-col items-center text-center">
           <FadeInUp>
             <h2 className="text-4xl md:text-7xl font-heading text-foreground mb-6">
-              Our PetPals Family in Pictures
+              Our FurrCircle Family in Pictures
             </h2>
           </FadeInUp>
           <FadeInUp delay={0.1}>

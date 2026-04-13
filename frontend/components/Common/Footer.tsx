@@ -37,10 +37,10 @@ export function Footer() {
                 <circle cx="14.5" cy="18.5" r="1.5" fill="#FFFFFF"/>
                 <circle cx="20.5" cy="18.5" r="1.5" fill="#FFFFFF"/>
               </svg>
-              <span className="text-3xl font-heading tracking-tight text-[#1A1A1A]">PetPals<span className="text-[#987D6B] text-[8px] relative -top-3">●</span></span>
+              <span className="text-3xl font-heading tracking-tight text-[#1A1A1A]">FurrCircle<span className="text-blue-400 text-[8px] relative -top-3">●</span></span>
             </Link>
             <p className="text-[#666666] leading-relaxed mb-8">
-              Join Our Pet Loving Community. Subscribe to Our Newsletter and Our Updates for Pet Tips and Care.
+              Join the FurrCircle ecosystem. The digital health passport and community hub for modern pet parents.
             </p>
             <form className="flex gap-2">
               <input
@@ -74,8 +74,8 @@ export function Footer() {
             <h4 className="text-[22px] font-heading mb-6 text-[#1A1A1A]">Contact Information</h4>
             <ul className="space-y-5 text-[#666666] text-[15px]">
               <li>123 PetCare Avenue, Cityville, USA</li>
-              <li>1-800-PET-CARE</li>
-              <li>Info@petpals.com</li>
+              <li>1-800-FURR-CIRCLE</li>
+              <li>info@furrcircle.com</li>
             </ul>
           </StaggerItem>
 
@@ -109,7 +109,7 @@ export function Footer() {
 
         {/* <FadeInUp delay={0.4}>
           <div className="pt-8 border-t border-[#EDECED] flex flex-col md:flex-row items-center justify-between gap-4 text-[13px] text-[#666666]">
-            <p>© {new Date().getFullYear()} PetPals. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} FurrCircle. All rights reserved.</p>
             <p>
               Designed by <span className="text-[#1A1A1A] font-medium">Peterdraw</span>
             </p>

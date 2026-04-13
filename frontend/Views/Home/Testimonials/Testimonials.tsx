@@ -7,17 +7,17 @@ import { BouncingElement, PawPrint } from "../Hero/Hero";
 
 const testimonials = [
   {
-    quote: "PetPals exceeded my expectations. Their pet sitting service was truly exceptional. Thanks to their dedicated care and attention.",
+    quote: "FurrCircle's vaccine tracking is a lifesaver. No more digging through papers—all my pet's dates are right here in one digital passport.",
     name: "Sarah L.",
     image: "/assets/testimonial-1.png",
   },
   {
-    quote: "I can't praise PetPals' grooming team enough. They transformed my dog into a furry superstar and made my pup feel truly pampered.",
+    quote: "The record zoom feature is incredibly helpful. I can finally read the small print on vet reports and share them with specialists in seconds.",
     name: "Michael R.",
     image: "/assets/testimonial-2.png",
   },
   {
-    quote: "PetPals' veterinarians are absolute gems. They provided top-notch medical care and showed immense compassion for my aging dog.",
+    quote: "The FurrCircle community is absolute gems. They provided great advice and shared similar experiences when my pup was going through a tough time.",
     name: "Jennifer M.",
     image: "/assets/testimonial-3.png",
   },
@@ -33,7 +33,7 @@ export function Testimonials() {
         {/* left side */}
         <div className="relative flex">
           <FadeInUp>
-            <h2 className="text-4xl md:text-7xl mt-28 max-w-lg font-heading text-foreground mb-4">Real Stories from PetPals Families</h2>
+            <h2 className="text-4xl md:text-7xl mt-28 max-w-lg font-heading text-foreground mb-4">Real Stories from FurrCircle Families</h2>
           </FadeInUp>
 
           <BouncingElement
@@ -73,7 +73,7 @@ export function Testimonials() {
               <div className="bg-card group hover:bg-primary border border-border p-8 rounded-3xl relative h-full flex flex-col transition-all hover:-translate-y-2 hover:shadow-xl">
                 <Quote className="text-primary/20 group-hover:text-white w-12 h-12 absolute top-6 right-6 rotate-180" />
 
-                <p className="text-muted-foreground group-hover:text-section-bg italic leading-relaxed grow relative z-10 mb-8 pt-4">
+                <p className="text-muted-foreground group-hover:text-section-bg italic leading-relaxed grow relative z-10 mb-8 mr-10 pt-4">
                   "{item.quote}"
                 </p>
 

@@ -12,12 +12,12 @@ import {
 } from "lucide-react";
 
 const partners = [
-  { name: "SafePet", icon: ShieldCheck },
-  { name: "PetLove", icon: Heart },
-  { name: "HealthVet", icon: Stethoscope },
-  { name: "FetchGo", icon: Truck },
-  { name: "PawsShop", icon: ShoppingBag },
-  { name: "BarkCafe", icon: Coffee },
+  { name: "SafePet Insurance", icon: ShieldCheck },
+  { name: "Global Pet Connect", icon: Heart },
+  { name: "MediVet Solutions", icon: Stethoscope },
+  { name: "FastTrack Logistics", icon: Truck },
+  { name: "FurrCircle Shop", icon: ShoppingBag },
+  { name: "Wellness Cafe", icon: Coffee },
 ];
 
 export function Partners() {

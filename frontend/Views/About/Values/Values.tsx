@@ -10,19 +10,19 @@ export const values = [
     icon: HeartHandshake,
     title: "Compassion",
     content:
-      "We approach every pet with empathy and kindness, ensuring their comfort and well-being. Our caring touch extends to all animals, from the tiniest hamster to the largest dog, creating a safe and loving environment where their happiness and health flourish.",
+      "We approach every pet's digital health journey with empathy and kindness. Our digital ecosystem is designed to ensure their comfort and well-being, creating a safe and loving environment where their happiness and health can flourish through proactive care.",
   },
   {
     icon: BadgeCheck,
     title: "Excellence",
     content:
-      "We uphold uncompromising standards in every aspect of our service, from meticulous medical care to unparalleled customer service. Our dedication to excellence is a promise that your pet will receive the best, ensuring their well-being and your peace of mind.",
+      "We uphold uncompromising standards in every aspect of our digital platform, from meticulous health tracking to unparalleled support. Our dedication to excellence is a promise that your pet's records are managed with the highest care, ensuring their lifelong well-being.",
   },
   {
     icon: Handshake,
     title: "Trust",
     content:
-      "Your trust is paramount in our relationship. We are committed to maintaining it through unwavering transparency, reliability, and clear communication. Count on us to be your dependable partner in pet care, always putting your pet’s best interests first.",
+      "Your trust is the foundation of the FurrCircle community. We are committed to maintaining it through unwavering transparency, data security, and clear communication. Count on us to be your dependable digital partner, always putting your pet’s health first.",
   },
 ];
 

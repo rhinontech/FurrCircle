@@ -64,12 +64,11 @@ const Info = () => {
                 <div className='flex flex-col max-md:items-center '>
 
                     <h2 className="text-4xl md:text-6xl max-w-2xl max-md:text-center font-heading text-foreground mb-10 max-md:mb-5">
-                        Dedicated to the
-                        Well-Being of Your Beloved Pets</h2>
+                        Dedicated to Your Pet's Digital Health Journey</h2>
 
 
                     <p className='text-lg max-w-2xl text-muted-foreground max-md:text-center'>
-                        PetPals is more than just a pet care center – we're a family of passionate animal lovers. With years of experience, our team is committed to providing the highest quality care and services to your furry, feathered, or scaled companions. Your pet's happiness and health are our top priorities, and we treat them with the same love and care as if they were our own.
+                        FurrCircle is more than just a tracking app – we're a community of passionate pet parents committed to simplifying pet wellness. Our team has built a comprehensive digital ecosystem to ensure the highest quality health management for your furry companions. Your pet's happiness and health are our top priorities, and we've designed every feature to give you the peace of mind you deserve.
                     </p>
                 </div>
             </FadeInUp>

@@ -9,33 +9,33 @@ import { FadeInUp } from '@/components/AnimationProvider';
 export const stats = [
     {
         value: "10K+",
-        title: "Happy Pets",
+        title: "Protected Pets",
         content:
-            "PetPals has brought joy and well-being to over 10,000 pets, enriching their lives with love and care.",
+            "FurrCircle has secured the health journeys of over 10,000 pets, providing peace of mind to their parents.",
     },
     {
         value: "99%",
-        title: "Customer Satisfaction",
+        title: "Parent Satisfaction",
         content:
-            "We take pride in our 99% customer satisfaction rate, a testament to our commitment to excellence.",
+            "We take pride in our 99% satisfaction rate, a testament to our commitment to digital excellence.",
     },
     {
-        value: "25",
-        title: "Years of Caring",
+        value: "5",
+        title: "Years of Innovation",
         content:
-            "With 25 years of experience, we've been dedicated to ensuring your pets lead healthy and happy lives.",
+            "With 5 years of digital pioneering, we've been dedicated to ensuring your pets lead healthy and happy lives.",
     },
     {
         value: "50+",
         title: "Expert Team Members",
         content:
-            "Our team comprises 50+ passionate experts in pet care, including veterinarians, trainers, and groomers.",
+            "Our team comprises 50+ experts, including veterinarians, developers, and pet health specialists.",
     },
     {
         value: "1st",
         title: "Choice for Pet Parents",
         content:
-            "Many consider PetPals their first choice for pet care, making us a trusted name in the community.",
+            "Many consider FurrCircle their first choice for digital pet care, making us a trusted name in the ecosystem.",
     },
 ];
 
