@@ -31,7 +31,7 @@ const config = {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: "postgres",
-    dialectOptions: {
+    dialectOptions: isLocalDB(process.env.DB_HOST || 'db') ? {} : {
       ssl: {
         require: true,
         rejectUnauthorized: false,
@@ -48,7 +48,7 @@ const config = {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: "postgres",
-    dialectOptions: {
+    dialectOptions: isLocalDB(process.env.DB_HOST || 'db') ? {} : {
       ssl: {
         require: true,
         rejectUnauthorized: false,
