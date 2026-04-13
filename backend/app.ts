@@ -26,7 +26,7 @@ if (NODE_ENV === "production" && !process.env.JWT_SECRET) {
 
 // Fail fast if S3 credentials are missing in production
 if (NODE_ENV === "production") {
-    const required = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_S3_BUCKET"];
+    const required = ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_S3_BUCKET_NAME"];
     const missing = required.filter(k => !process.env[k]);
     if (missing.length > 0) {
         console.error(`FATAL: Missing required S3 environment variables: ${missing.join(", ")}`);
