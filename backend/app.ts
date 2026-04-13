@@ -35,8 +35,15 @@ if (NODE_ENV === "production") {
 }
 
 // Middleware
+const productionDefaultOrigins = [
+    "https://furrcircle-admin.vercel.app",
+];
+
 const allowedOrigins = NODE_ENV === "production"
-    ? (process.env.CORS_ORIGINS || "").split(",").map(o => o.trim()).filter(Boolean)
+    ? Array.from(new Set([
+        ...(process.env.CORS_ORIGINS || "").split(",").map(o => o.trim()).filter(Boolean),
+        ...productionDefaultOrigins,
+      ]))
     : ["*"];
 
 const corsOptions = {
