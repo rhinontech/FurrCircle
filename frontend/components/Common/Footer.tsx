@@ -59,10 +59,16 @@ export function Footer() {
           <StaggerItem>
             <h4 className="text-[22px] font-heading mb-6 text-[#1A1A1A]">Quick Links</h4>
             <ul className="space-y-4">
-              {["Home", "Services", "About Us", "Contact Us"].map((link) => (
-                <li key={link}>
-                  <Link href="#" className="text-[#666666] text-[15px] hover:text-[#987D6B] transition-colors">
-                    {link}
+              {[
+                { label: "Home", href: "/" },
+                { label: "Services", href: "/_services" },
+                { label: "About Us", href: "/about-us" },
+                { label: "Contact Us", href: "/contacts" },
+                { label: "Privacy Policy", href: "/privacy-policy" },
+              ].map((link) => (
+                <li key={link.label}>
+                  <Link href={link.href} className="text-[#666666] text-[15px] hover:text-[#987D6B] transition-colors">
+                    {link.label}
                   </Link>
                 </li>
               ))}
