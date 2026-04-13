@@ -19,6 +19,7 @@ export const userHealthApi = {
     return (medications || []).map(normalizeMedication).filter(Boolean);
   },
   addMedication: async (petId: string, payload: Record<string, unknown>) => normalizeMedication(await api.post<any>(`/health/meds/${petId}`, payload)),
+  deleteMedication: (petId: string, medId: string) => api.delete<{ message: string }>(`/health/meds/${petId}/${medId}`),
   listRecords: async (petId: string) => {
     const records = await api.get<any[]>(`/health/records/${petId}`);
     return (records || []).map(normalizeMedicalRecord).filter(Boolean);

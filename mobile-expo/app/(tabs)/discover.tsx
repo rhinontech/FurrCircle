@@ -1,12 +1,12 @@
 ﻿import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, TextInput, Pressable, Image, Modal, ActivityIndicator, RefreshControl, Alert, Linking } from "react-native";
-import { Search, Stethoscope, MapPin, Star, ShieldCheck, Phone, Clock, Users, X, Heart, PawPrint, Globe } from "lucide-react-native";
+import { Search, Stethoscope, MapPin, Star, ShieldCheck, Phone, Clock, X, Heart, PawPrint } from "lucide-react-native";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import { userDiscoverApi } from "@/services/users/discoverApi";
 
-const categories = ["All", "Vets", "Adoption", "Foster", "Shelters"];
+const categories = ["All", "Vets", "Adoption", "Foster"];
 
 export default function DiscoverScreen() {
   const router = useRouter();
@@ -14,10 +14,9 @@ export default function DiscoverScreen() {
   const [active, setActive] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [modalType, setModalType] = useState<"vet" | "pet" | "shelter" | null>(null);
+  const [modalType, setModalType] = useState<"vet" | "pet" | null>(null);
 
   const [vets, setVets] = useState<any[]>([]);
-  const [shelters, setShelters] = useState<any[]>([]);
   const [pets, setPets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -26,7 +25,6 @@ export default function DiscoverScreen() {
     try {
       const data = await userDiscoverApi.getDiscoverData();
       setVets(data.vets);
-      setShelters(data.shelters);
       setPets(data.pets);
     } catch (error) {
       console.error("Error fetching discover data", error);
@@ -88,27 +86,7 @@ export default function DiscoverScreen() {
     }
   };
 
-  const handleVisitWebsite = async (item: any) => {
-    const url = item?.website || item?.websiteUrl;
-    if (!url) {
-      Alert.alert("Website unavailable", "This shelter has not provided a website yet.");
-      return;
-    }
-    const normalized = url.startsWith("http") ? url : `https://${url}`;
-    try {
-      const supported = await Linking.canOpenURL(normalized);
-      if (!supported) {
-        Alert.alert("Cannot open URL", "Could not open the website link.");
-        return;
-      }
-      await Linking.openURL(normalized);
-    } catch {
-      Alert.alert("Cannot open URL", "Please try again in a moment.");
-    }
-  };
-
   const filteredVets = vets.filter(v => (v.clinic_name || v.name || "").toLowerCase().includes(searchQuery.toLowerCase()));
-  const filteredShelters = shelters.filter(s => (s.name || "").toLowerCase().includes(searchQuery.toLowerCase()));
   const filteredPets = pets.filter(p => (p.name || "").toLowerCase().includes(searchQuery.toLowerCase()));
 
   if (loading && !refreshing) {
@@ -130,7 +108,7 @@ export default function DiscoverScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgSubtle, borderRadius: 12, paddingHorizontal: 12, marginBottom: 16 }}>
             <Search size={18} color={colors.textMuted} />
             <TextInput
-              placeholder="Search vets, shelters, pets..."
+              placeholder="Search vets and pets..."
               placeholderTextColor={colors.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -236,34 +214,6 @@ export default function DiscoverScreen() {
                 </Pressable>
               ))}
             </View>
-          </View>
-        )}
-
-        {/* Shelters */}
-        {(active === "All" || active === "Shelters") && (
-          <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>Nearby Shelters</Text>
-            {filteredShelters.length === 0 ? <Text style={{ color: colors.textMuted }}>No shelters found</Text> : filteredShelters.map((s) => (
-              <Pressable key={s.id} onPress={() => { setSelectedItem(s); setModalType("shelter"); }} style={{ backgroundColor: colors.bgCard, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                 <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                  {s.avatar_url ? (
-                    <Image source={{ uri: s.avatar_url }} style={{ width: 44, height: 44, borderRadius: 12 }} />
-                  ) : (
-                    <Users size={20} color={colors.brand} />
-                  )}
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>{s.name}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                    <MapPin size={12} color={colors.textMuted} />
-                    <Text style={{ fontSize: 12, color: colors.textMuted, marginLeft: 4, marginRight: 12 }}>{s.city || 'Available'}</Text>
-                    <Users size={12} color={colors.textMuted} />
-                    <Text style={{ fontSize: 12, color: colors.textMuted, marginLeft: 4 }}>Shelter</Text>
-                  </View>
-                </View>
-                <StatusChip label="RESCUE" variant="info" />
-              </Pressable>
-            ))}
           </View>
         )}
       </ScrollView>
@@ -380,41 +330,6 @@ export default function DiscoverScreen() {
                     >
                       <Text style={{ color: colors.textPrimary, fontWeight: '600', fontSize: 13 }}>Message Owner Instead</Text>
                     </Pressable>
-                  </View>
-                </View>
-              )}
-              {modalType === "shelter" && selectedItem && (
-                <View>
-                  <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 16 }}>{selectedItem.bio || 'Helping pets find their forever families.'}</Text>
-                  {selectedItem.city && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                      <MapPin size={15} color={colors.textMuted} />
-                      <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 8 }}>{selectedItem.city}</Text>
-                    </View>
-                  )}
-                  {selectedItem.phone && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-                      <Phone size={15} color={colors.textMuted} />
-                      <Text style={{ fontSize: 13, color: colors.textSecondary, marginLeft: 8 }}>{selectedItem.phone}</Text>
-                    </View>
-                  )}
-                  <View style={{ gap: 10 }}>
-                    <Pressable
-                      onPress={() => handleVisitWebsite(selectedItem)}
-                      style={{ backgroundColor: colors.brand, borderRadius: 12, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
-                    >
-                      <Globe size={16} color="#fff" />
-                      <Text style={{ color: '#fff', fontWeight: '700' }}>Visit Website</Text>
-                    </Pressable>
-                    {selectedItem.phone && (
-                      <Pressable
-                        onPress={() => handleContactVet(selectedItem)}
-                        style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
-                      >
-                        <Phone size={15} color={colors.textPrimary} />
-                        <Text style={{ color: colors.textPrimary, fontWeight: '600', fontSize: 13 }}>Call Shelter</Text>
-                      </Pressable>
-                    )}
                   </View>
                 </View>
               )}

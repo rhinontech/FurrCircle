@@ -228,7 +228,7 @@ export default function NotificationsScreen() {
                     onPress={() => !notification.isRead && handleMarkRead(notification.id)}
                     style={{
                       backgroundColor: colors.bgCard,
-                      borderRadius: 20,
+                      borderRadius: 8,
                       borderWidth: 1,
                       borderColor: notification.isRead ? colors.border : colors.brand + "40",
                       padding: 16,
@@ -249,11 +249,11 @@ export default function NotificationsScreen() {
                     >
                       <Icon size={22} color={meta.accent} />
                     </View>
-                    <View style={{ flex: 1, marginLeft: 14 }}>
+                    <View style={{ flex: 1, marginLeft: 14, minWidth: 0 }}>
                       <View
                         style={{
                           flexDirection: "row",
-                          alignItems: "center",
+                          alignItems: "flex-start",
                           justifyContent: "space-between",
                           gap: 12,
                         }}
@@ -264,13 +264,26 @@ export default function NotificationsScreen() {
                             fontSize: 15,
                             fontWeight: notification.isRead ? "600" : "700",
                             color: colors.textPrimary,
+                            lineHeight: 20,
                           }}
+                          numberOfLines={2}
                         >
                           {notification.title}
                         </Text>
-                        <Text style={{ fontSize: 12, color: colors.textMuted }}>
-                          {formatRelativeTime(notification.createdAt)}
-                        </Text>
+                        <View style={{ minWidth: 58, alignItems: "flex-end", flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
+                          <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 18 }}>
+                            {formatRelativeTime(notification.createdAt)}
+                          </Text>
+                          <View
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: 4,
+                              marginTop: 5,
+                              backgroundColor: notification.isRead ? "transparent" : colors.brand,
+                            }}
+                          />
+                        </View>
                       </View>
                       <Text
                         style={{
@@ -282,18 +295,6 @@ export default function NotificationsScreen() {
                       >
                         {notification.message}
                       </Text>
-                      {!notification.isRead && (
-                        <View
-                          style={{
-                            marginTop: 8,
-                            alignSelf: "flex-start",
-                            width: 8,
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: colors.brand,
-                          }}
-                        />
-                      )}
                     </View>
                   </Pressable>
                 );

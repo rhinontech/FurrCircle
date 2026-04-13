@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert } from "react-native";
+import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert, Image } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { ChevronLeft, Pill, Clock, Plus } from "lucide-react-native";
+import { ChevronLeft, Pill, Clock, Plus, Trash2 } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userHealthApi } from "@/services/users/healthApi";
 
@@ -13,6 +13,7 @@ export default function MedsScreen() {
   const [meds, setMeds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchMeds = async () => {
     try {
@@ -37,6 +38,32 @@ export default function MedsScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     fetchMeds();
+  };
+
+  const handleDelete = (med: any) => {
+    Alert.alert(
+      "Delete Medication",
+      `Delete ${med.name || "this medication"} from records?`,
+      [
+        { text: "Keep", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            if (!petId) return;
+            setDeletingId(med.id);
+            try {
+              await userHealthApi.deleteMedication(String(petId), med.id);
+              setMeds(prev => prev.filter(item => item.id !== med.id));
+            } catch (error: any) {
+              Alert.alert("Error", error.message || "Could not delete medication.");
+            } finally {
+              setDeletingId(null);
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading && !refreshing) {
@@ -68,6 +95,9 @@ export default function MedsScreen() {
         ) : (
           meds.map((m) => (
             <View key={m.id} style={{ backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 20, marginBottom: 16 }}>
+              {m.imageUrl ? (
+                <Image source={{ uri: m.imageUrl }} style={{ width: "100%", height: 180, borderRadius: 16, marginBottom: 16, backgroundColor: colors.bgSubtle }} resizeMode="cover" />
+              ) : null}
               <View style={{ flexDirection: 'row', gap: 16, marginBottom: 16 }}>
                 <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: '#fff1f2', alignItems: 'center', justifyContent: 'center' }}>
                   <Pill size={26} color="#e11d48" />
@@ -76,6 +106,13 @@ export default function MedsScreen() {
                   <Text style={{ fontSize: 17, fontWeight: '700', color: colors.textPrimary }}>{m.name}</Text>
                   <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>{m.dosage}</Text>
                 </View>
+                <Pressable
+                  onPress={() => handleDelete(m)}
+                  disabled={deletingId === m.id}
+                  style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#fff1f2', alignItems: 'center', justifyContent: 'center', opacity: deletingId === m.id ? 0.55 : 1 }}
+                >
+                  {deletingId === m.id ? <ActivityIndicator size="small" color="#e11d48" /> : <Trash2 size={18} color="#e11d48" />}
+                </Pressable>
               </View>
 
               <View style={{ gap: 12 }}>

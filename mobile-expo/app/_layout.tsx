@@ -3,33 +3,51 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, Pressable, Image } from 'react-native';
-import { Bell } from 'lucide-react-native';
+import { Bell, MessageCircle } from 'lucide-react-native';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { NotificationProvider, useNotifications } from '../contexts/NotificationContext';
 import React, { useEffect } from 'react';
 import '@/global.css';
+import AppointmentFeedbackPrompt from '@/components/AppointmentFeedbackPrompt';
 
 
 function GlobalHeader() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const router = useRouter();
-  const { notifUnreadCount } = useNotifications();
+  const { chatUnreadCount, notifUnreadCount } = useNotifications();
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 20 }}>
-        <Image source={require("../assets/PawsHub_logo_full.png")} style={{ width: 120, height: 36 }} resizeMode="contain" />
-        <Pressable
-          onPress={() => router.push('/notifications')}
-          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <Bell size={20} color={colors.textPrimary} />
-          {notifUnreadCount > 0 && (
-            <View style={{ position: 'absolute', top: 8, right: 8, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#f43f5e', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1, borderColor: colors.bgCard }}>
-              <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{notifUnreadCount > 9 ? '9+' : notifUnreadCount}</Text>
-            </View>
-          )}
-        </Pressable>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 10 }}>
+        <Image
+          source={isDark ? require("../assets/furrcircle_dark_logo.png") : require("../assets/furrcircle_light_logo.png")}
+          style={{ width: 150, height: 45 }}
+          resizeMode="contain"
+        />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Pressable
+            onPress={() => router.push('/community/chats')}
+            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <MessageCircle size={20} color={colors.textPrimary} />
+            {chatUnreadCount > 0 && (
+              <View style={{ position: 'absolute', top: 8, right: 8, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1, borderColor: colors.bgCard }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{chatUnreadCount > 9 ? '9+' : chatUnreadCount}</Text>
+              </View>
+            )}
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/notifications')}
+            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Bell size={20} color={colors.textPrimary} />
+            {notifUnreadCount > 0 && (
+              <View style={{ position: 'absolute', top: 8, right: 8, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#f43f5e', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1, borderColor: colors.bgCard }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{notifUnreadCount > 9 ? '9+' : notifUnreadCount}</Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -112,6 +130,7 @@ function AppShell() {
         <Stack.Screen name="community/events" />
         <Stack.Screen name="community/events/[id]" />
         <Stack.Screen name="community/posts/[id]" />
+        <Stack.Screen name="community/chats" />
         <Stack.Screen name="community/chat/[id]" />
         <Stack.Screen name="profile/edit" />
         <Stack.Screen name="vet-profile/appointment-history" />
@@ -122,6 +141,7 @@ function AppShell() {
         <Stack.Screen name="vets/[id]" />
         <Stack.Screen name="adoptions/apply" />
       </Stack>
+      <AppointmentFeedbackPrompt />
       <StatusBar style={isDark ? 'light' : 'dark'} />
     </GestureHandlerRootView>
   );

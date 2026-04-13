@@ -8,14 +8,14 @@ const DEMO_PASSWORD = "Demo1234";
 
 const demoOwner = {
   name: "Demo Owner",
-  email: "demo.owner@pawshub.app",
+  email: "demo.owner@furrcircle.app",
   role: "owner" as const,
 };
 
 const demoVet = {
   name: "Dr. Demo Vet",
-  email: "demo.vet@pawshub.app",
-  hospital_name: "PawsHub Clinic",
+  email: "demo.vet@furrcircle.app",
+  hospital_name: "FurrCircle Clinic",
   profession: "General Veterinarian",
 };
 

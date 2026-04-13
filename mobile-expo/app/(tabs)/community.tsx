@@ -1,19 +1,16 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, ScrollView, Image, Pressable, TextInput, Modal, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, RefreshControl, Share } from "react-native";
-import { Heart, MessageCircle, Share2, Bookmark, Calendar, Plus, X, ArrowRight, ShieldCheck, PawPrint, ImagePlus, Send } from "lucide-react-native";
+import { Heart, MessageCircle, Share2, Bookmark, Calendar, Plus, X, ArrowRight, PawPrint, ImagePlus } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
 import EventCard from "../../components/ui/EventCard";
 import { useAuth } from "../../contexts/AuthContext";
 import { userCommunityApi } from "@/services/users/communityApi";
-import { useFocusEffect } from "@react-navigation/native";
-import { useNotifications } from "../../contexts/NotificationContext";
 import { pickAndUploadImage } from "@/services/uploadApi";
 
 const postCategories = ["General", "Health", "Adoption", "Training", "Nutrition", "Lost & Found"];
 const feedCategories = ["All", "Events", "Health", "Adoption", "Training", "Nutrition"];
-const communitySections = ["Feed", "Chats"];
 
 function timeAgo(date: string) {
   const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
@@ -45,15 +42,10 @@ export default function CommunityScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { markAllRead } = useNotifications();
 
-  useFocusEffect(useCallback(() => { markAllRead(); }, [markAllRead]));
-
-  const [activeSection, setActiveSection] = useState("Feed");
   const [activeCategory, setActiveCategory] = useState("All");
   const [posts, setPosts] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
-  const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
@@ -72,7 +64,6 @@ export default function CommunityScreen() {
       const data = await userCommunityApi.getCommunityData();
       setPosts(data.feed);
       setEvents(formatEvents(data.events));
-      setChats(data.chats);
     } catch (error) {
       console.error("Error fetching community data", error);
     } finally {
@@ -164,7 +155,7 @@ export default function CommunityScreen() {
     try {
       const res = await userCommunityApi.sharePost(post.id);
       await Share.share({
-        message: `${post.author?.name || "PawsHub member"} posted in ${post.category}: ${post.content}`
+        message: `${post.author?.name || "FurrCircle member"} posted in ${post.category}: ${post.content}`
       });
       setPosts((prev) => prev.map((item) => (item.id === post.id ? { ...item, shareCount: res.shareCount } : item)));
     } catch (error) {
@@ -220,68 +211,40 @@ export default function CommunityScreen() {
             <Text style={{ fontSize: 24, fontWeight: "700", color: colors.textPrimary }}>Community</Text>
           </View>
 
-          <View style={{ flexDirection: "row", backgroundColor: colors.bgSubtle, borderRadius: 18, padding: 4, marginBottom: 20 }}>
-            {communitySections.map((section) => {
-              const selected = activeSection === section;
-              return (
-                <Pressable
-                  key={section}
-                  onPress={() => setActiveSection(section)}
-                  style={{ flex: 1, paddingVertical: 12, borderRadius: 14, backgroundColor: selected ? colors.bgCard : "transparent", alignItems: "center" }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: selected ? colors.textPrimary : colors.textMuted }}>{section}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24, marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
+            {feedCategories.map((category) => (
+              <Pressable
+                key={category}
+                onPress={() => setActiveCategory(category)}
+                style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: activeCategory === category ? colors.brand : colors.bgSubtle }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: "600", color: activeCategory === category ? "#fff" : colors.textMuted }}>{category}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          {(activeCategory === "All" || activeCategory === "Events") && (
+            <View style={{ marginBottom: 32 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary }}>Upcoming Events</Text>
+                <Pressable onPress={() => router.push("/community/events" as any)}>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: colors.brand }}>See All</Text>
                 </Pressable>
-              );
-            })}
-          </View>
-
-
-          {activeSection === "Feed" ? (
-            <>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24, marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
-                {feedCategories.map((category) => (
-                  <Pressable
-                    key={category}
-                    onPress={() => setActiveCategory(category)}
-                    style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: activeCategory === category ? colors.brand : colors.bgSubtle }}
-                  >
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: activeCategory === category ? "#fff" : colors.textMuted }}>{category}</Text>
-                  </Pressable>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 14 }}>
+                {events.map((event) => (
+                  <EventCard key={event.id} {...event} onPress={() => router.push(`/community/events/${event.id}` as any)} />
                 ))}
               </ScrollView>
-
-              {(activeCategory === "All" || activeCategory === "Events") && (
-                <View style={{ marginBottom: 32 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                    <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary }}>Upcoming Events</Text>
-                    <Pressable onPress={() => router.push("/community/events" as any)}>
-                      <Text style={{ fontSize: 13, fontWeight: "600", color: colors.brand }}>See All</Text>
-                    </Pressable>
-                  </View>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 14 }}>
-                    {events.map((event) => (
-                      <EventCard key={event.id} {...event} onPress={() => router.push(`/community/events/${event.id}` as any)} />
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-
-              <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary, marginBottom: 16 }}>
-                {activeCategory === "Events" ? "Past Events" : "Recent Posts"}
-              </Text>
-            </>
-          ) : (
-            <View style={{ backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 18, marginBottom: 20 }}>
-              <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary, marginBottom: 6 }}>Messages & Adoption Requests</Text>
-              <Text style={{ fontSize: 13, color: colors.textMuted, lineHeight: 20 }}>
-                Use chat for adoption questions, foster follow-ups, and direct conversations with pet owners, shelters, and vets.
-              </Text>
             </View>
           )}
+
+          <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary, marginBottom: 16 }}>
+            {activeCategory === "Events" ? "Past Events" : "Recent Posts"}
+          </Text>
         </View>
 
-        {activeSection === "Feed" ? (
-          <View style={{ paddingHorizontal: 20, gap: 16 }}>
+        <View style={{ paddingHorizontal: 20, gap: 16 }}>
             {activeCategory === "Events" && (
               <View style={{ paddingVertical: 40, alignItems: "center", opacity: 0.5 }}>
                 <Calendar size={48} color={colors.textMuted} strokeWidth={1} />
@@ -340,64 +303,14 @@ export default function CommunityScreen() {
               </Pressable>
             ))}
           </View>
-        ) : (
-          <View style={{ paddingHorizontal: 20, gap: 14 }}>
-            {chats.length === 0 ? (
-              <View style={{ backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: colors.border, paddingVertical: 40, alignItems: "center" }}>
-                <MessageCircle size={42} color={colors.textMuted} strokeWidth={1.5} />
-                <Text style={{ marginTop: 14, fontSize: 16, fontWeight: "700", color: colors.textPrimary }}>No chats yet</Text>
-                <Text style={{ marginTop: 8, fontSize: 13, color: colors.textMuted, textAlign: "center", paddingHorizontal: 32, lineHeight: 20 }}>
-                  Start an adoption or foster request from Discover and your conversation will appear here.
-                </Text>
-              </View>
-            ) : (
-              chats.map((chat) => {
-                const partner = chat.otherParticipants?.[0] || chat.participants?.find((item: any) => item.id !== user?.id);
-                const lastMessage = chat.lastMessage;
-                return (
-                  <Pressable
-                    key={chat.id}
-                    onPress={() => router.push(`/community/chat/${chat.id}` as any)}
-                    style={{ backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 16, flexDirection: "row", alignItems: "center", gap: 12 }}
-                  >
-                    {partner?.avatar_url ? (
-                      <Image source={{ uri: partner.avatar_url }} style={{ width: 52, height: 52, borderRadius: 18 }} resizeMode="cover" />
-                    ) : (
-                      <View style={{ width: 52, height: 52, borderRadius: 18, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center" }}>
-                        <PawPrint size={22} color={colors.brand} />
-                      </View>
-                    )}
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                        <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: "700", color: colors.textPrimary, flex: 1, marginRight: 8 }}>
-                          {chat.title || partner?.clinic_name || partner?.name || "Conversation"}
-                        </Text>
-                        <Text style={{ fontSize: 11, color: colors.textMuted }}>{lastMessage?.createdAt ? timeAgo(lastMessage.createdAt) : ""}</Text>
-                      </View>
-                      <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted, marginBottom: 8 }}>
-                        {chat.pet?.name ? `About ${chat.pet.name}` : partner?.role === "veterinarian" ? "Vet support chat" : "Direct message"}
-                      </Text>
-                      <Text numberOfLines={2} style={{ fontSize: 13, color: colors.textPrimary, lineHeight: 18 }}>
-                        {lastMessage?.text || "No messages yet"}
-                      </Text>
-                    </View>
-                    <Send size={18} color={colors.brand} />
-                  </Pressable>
-                );
-              })
-            )}
-          </View>
-        )}
       </ScrollView>
 
-      {activeSection === "Feed" && (
-        <Pressable
-          onPress={() => setIsCreateModalVisible(true)}
-          style={{ position: "absolute", bottom: 20, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: colors.brand, alignItems: "center", justifyContent: "center", shadowColor: colors.brand, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 10 }}
-        >
-          <Plus size={24} color="#fff" strokeWidth={3} />
-        </Pressable>
-      )}
+      <Pressable
+        onPress={() => setIsCreateModalVisible(true)}
+        style={{ position: "absolute", bottom: 20, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: colors.brand, alignItems: "center", justifyContent: "center", shadowColor: colors.brand, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 10 }}
+      >
+        <Plus size={24} color="#fff" strokeWidth={3} />
+      </Pressable>
 
       <Modal visible={isCreateModalVisible} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>

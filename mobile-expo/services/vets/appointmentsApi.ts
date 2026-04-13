@@ -8,7 +8,15 @@ export const vetAppointmentsApi = {
     const appointments = await api.get<any[]>('/appointments/vet');
     return (appointments || []).map(normalizeAppointment).filter(Boolean).slice().sort(sortByDateTime);
   },
-  updateStatus: (id: string, status: string) => api.patch<any>(`/appointments/${id}/status`, { status }),
+  updateStatus: (id: string, status: string, notes?: string) => api.patch<any>(`/appointments/${id}/status`, { status, notes }),
+  requestReschedule: async (id: string, payload: { date: string; time: string; reason?: string }) => {
+    const appointment = await api.patch<any>(`/appointments/${id}/reschedule`, payload);
+    return normalizeAppointment(appointment);
+  },
+  respondReschedule: async (id: string, payload: { action: "accept" | "counter" | "cancel"; date?: string; time?: string; reason?: string }) => {
+    const appointment = await api.patch<any>(`/appointments/${id}/reschedule/respond`, payload);
+    return normalizeAppointment(appointment);
+  },
   getStats: () => api.get<any>('/appointments/vet/stats'),
   listPatients: async () => {
     const appointments = await vetAppointmentsApi.listAppointments();

@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Modal } from "react-native";
+import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Modal, Image } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, Save, Calendar } from "lucide-react-native";
+import { ChevronLeft, Save, Calendar, Camera, X } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userHealthApi } from "@/services/users/healthApi";
+import { captureAndUploadImage } from "@/services/uploadApi";
 
 function formatDisplay(iso: string) {
   if (!iso) return '';
@@ -21,6 +22,8 @@ export default function AddMedicationScreen() {
   const [frequency, setFrequency] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [capturing, setCapturing] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Picker state — 'start' | 'end' | null
@@ -54,12 +57,25 @@ export default function AddMedicationScreen() {
         frequency,
         startDate: startDate || new Date().toISOString(),
         endDate: endDate || undefined,
+        imageUrl: imageUrl || undefined,
       });
       router.back();
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to add medication.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCapturePhoto = async () => {
+    setCapturing(true);
+    try {
+      const url = await captureAndUploadImage("reports", { aspect: [4, 3], allowsEditing: true });
+      if (url) setImageUrl(url);
+    } catch (error: any) {
+      Alert.alert("Camera Error", error.message || "Could not capture medication photo.");
+    } finally {
+      setCapturing(false);
     }
   };
 
@@ -139,6 +155,35 @@ export default function AddMedicationScreen() {
 
         <DateField label="Start Date" value={startDate} field="start" />
         <DateField label="End Date" value={endDate} field="end" optional />
+
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>Medication Photo <Text style={{ color: colors.textMuted }}>(Optional)</Text></Text>
+          {imageUrl ? (
+            <View style={{ borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCard }}>
+              <Image source={{ uri: imageUrl }} style={{ width: "100%", height: 190 }} resizeMode="cover" />
+              <Pressable
+                onPress={() => setImageUrl(null)}
+                style={{ position: "absolute", top: 10, right: 10, width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(15,23,42,0.72)", alignItems: "center", justifyContent: "center" }}
+              >
+                <X size={18} color="#fff" />
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              onPress={handleCapturePhoto}
+              disabled={capturing}
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, minHeight: 92, alignItems: "center", justifyContent: "center", gap: 8, opacity: capturing ? 0.7 : 1 }}
+            >
+              {capturing ? <ActivityIndicator color={colors.brand} /> : <Camera size={24} color={colors.brand} />}
+              <Text style={{ fontSize: 14, fontWeight: "700", color: colors.textPrimary }}>
+                {capturing ? "Opening camera..." : "Take Medication Photo"}
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>
+                Capture the strip, bottle, prescription, or label.
+              </Text>
+            </Pressable>
+          )}
+        </View>
       </ScrollView>
 
       {/* iOS modal date picker */}

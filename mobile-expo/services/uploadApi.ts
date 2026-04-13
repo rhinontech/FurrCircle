@@ -78,3 +78,32 @@ export const pickAndUploadImage = async (
   if (!asset) return null;
   return uploadImage(asset, folder);
 };
+
+export const captureImage = async (options?: {
+  aspect?: [number, number];
+  allowsEditing?: boolean;
+}): Promise<ImagePicker.ImagePickerAsset | null> => {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== 'granted') {
+    throw new Error('Camera access is required to capture records.');
+  }
+
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: options?.allowsEditing ?? true,
+    aspect: options?.aspect ?? [4, 3],
+    quality: 0.8,
+  });
+
+  if (result.canceled || !result.assets?.[0]) return null;
+  return result.assets[0];
+};
+
+export const captureAndUploadImage = async (
+  folder: UploadFolder,
+  options?: { aspect?: [number, number]; allowsEditing?: boolean }
+): Promise<string | null> => {
+  const asset = await captureImage(options);
+  if (!asset) return null;
+  return uploadImage(asset, folder);
+};

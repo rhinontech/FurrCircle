@@ -45,6 +45,7 @@ const parseMedicalRecordPayload = (body: Record<string, unknown>) => ({
   description: body.description ?? body.clinic_name ?? "",
   veterinarian: body.veterinarian ?? body.veterinarian_name ?? "",
   notes: body.notes ?? "",
+  imageUrl: body.imageUrl ?? null,
   date: body.date ?? new Date().toISOString().slice(0, 10),
 });
 
@@ -244,6 +245,27 @@ export const addMedication = async (req: any, res: Response): Promise<void> => {
     }
     const med = await Medication.create({ ...req.body, petId: req.params.petId });
     res.status(201).json(med);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteMedication = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { medications: Medication } = db as any;
+    if (!(await canAccessPet(req.params.petId, req.user.id, req.userType || "user"))) {
+      res.status(403).json({ message: "Not authorized for this pet" });
+      return;
+    }
+
+    const med = await Medication.findOne({ where: { id: req.params.medId, petId: req.params.petId } });
+    if (!med) {
+      res.status(404).json({ message: "Medication not found" });
+      return;
+    }
+
+    await med.destroy();
+    res.json({ message: "Medication deleted" });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

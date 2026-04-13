@@ -144,7 +144,7 @@ export default function EventDetailScreen() {
               )}
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 15, fontWeight: "700", color: colors.textPrimary }}>
-                  {event.host?.clinic_name || event.host?.name || "PawsHub Host"}
+                  {event.host?.clinic_name || event.host?.name || "FurrCircle Host"}
                 </Text>
                 <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
                   {event.host?.role || "Organizer"}

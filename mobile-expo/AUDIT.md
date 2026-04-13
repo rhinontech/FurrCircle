@@ -1,4 +1,4 @@
-# PawsHub Mobile App — Non-Functional Audit
+# FurrCircle Mobile App — Non-Functional Audit
 > Generated: 2026-04-04 | Auditor: Claude Sonnet 4.6
 
 ## Summary

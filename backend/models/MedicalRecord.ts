@@ -35,6 +35,10 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
+            imageUrl: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
         },
         {
             tableName: "medical_records",

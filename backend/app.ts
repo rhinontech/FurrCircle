@@ -71,7 +71,7 @@ import vetReviewRoutes from './routes/vetReviewRoutes.ts';
 
 // Routes
 app.get('/', (req: Request, res: Response) => {
-    res.send('Hello, pawshub backend is running!');
+    res.send('Hello, furrcircle backend is running!');
 });
 
 app.use('/api/auth', authRoutes);
@@ -99,7 +99,7 @@ const startServer = async () => {
         console.log('Database schema synchronized (Persistent Mode).');
 
         httpServer.listen(Number(PORT), "0.0.0.0", () => {
-            console.log(`🚀 PawsHub API Live on Network -> http://0.0.0.0:${PORT}`);
+            console.log(`🚀 FurrCircle API Live on Network -> http://0.0.0.0:${PORT}`);
         });
     } catch (error) {
         console.error('Unable to connect to the database:', error);
