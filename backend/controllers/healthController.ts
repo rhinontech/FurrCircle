@@ -82,12 +82,23 @@ export const addVital = async (req: any, res: Response): Promise<void> => {
 // --- Vaccines ---
 export const getVaccines = async (req: any, res: Response): Promise<void> => {
   try {
-    const { vaccines: Vaccine } = db as any;
+    const { vaccines: Vaccine, vets: Vet } = db as any;
     if (!(await canAccessPet(req.params.petId, req.user.id, req.userType || "user"))) {
       res.status(403).json({ message: "Not authorized for this pet" });
       return;
     }
-    const vaccines = await Vaccine.findAll({ where: { petId: req.params.petId }, order: [["dateAdministered", "DESC"]] });
+    const vaccines = await Vaccine.findAll({
+      where: { petId: req.params.petId },
+      order: [["dateAdministered", "DESC"]],
+      include: [
+        {
+          model: Vet,
+          as: 'vet',
+          attributes: ['id', 'name', 'hospital_name', 'avatar_url', 'clinicStampUrl', 'licenseNumber', 'address'],
+          required: false,
+        }
+      ]
+    });
     res.json(vaccines);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

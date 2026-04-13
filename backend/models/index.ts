@@ -62,6 +62,9 @@ db.users.hasMany(db.appointments, { foreignKey: 'ownerId', as: 'ownerAppointment
 db.appointments.belongsTo(db.pets, { foreignKey: 'petId', as: 'pet' });
 db.pets.hasMany(db.appointments, { foreignKey: 'petId', as: 'Appointments' });
 
+// Vaccine -> Vet (who added it)
+db.vaccines.belongsTo(db.vets, { foreignKey: 'addedByVetId', as: 'vet', constraints: false });
+
 // Health: Pet <-> Vitals / Vaccines / Medications / MedicalRecords
 db.vitals.belongsTo(db.pets, { foreignKey: 'petId', as: 'pet' });
 db.pets.hasMany(db.vitals, { foreignKey: 'petId', as: 'vitals' });

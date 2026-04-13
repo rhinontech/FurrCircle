@@ -109,10 +109,19 @@ export const normalizeVaccine = (vaccine: any) => {
     return null;
   }
 
+  const v = vaccine.vet;
   return {
     ...vaccine,
     status: vaccine.status || (vaccine.nextDueDate ? 'due' : 'done'),
     lastVaccinationDate: vaccine.lastVaccinationDate ?? vaccine.dateAdministered ?? null,
+    // Flatten vet/clinic info for easy access on the certificate
+    vetProfile: v ? {
+      name: v.name,
+      clinicName: v.hospital_name,
+      clinicLogo: v.clinicStampUrl || v.avatar_url || null,
+      licenseNumber: v.licenseNumber || null,
+      address: v.address || null,
+    } : null,
   };
 };
 
