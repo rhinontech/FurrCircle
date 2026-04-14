@@ -20,7 +20,7 @@ const Home = () => {
         <Testimonials />
         <Gallery />
         <PetCare />
-        <FAQ />
+        {/* <FAQ /> */}
         <Contact />
       </main>
     </>

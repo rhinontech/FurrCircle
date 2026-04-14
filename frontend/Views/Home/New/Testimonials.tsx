@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatedHeading } from "@/components/AnimationProvider";
 import { motion } from "framer-motion";
 import { Star, PawPrint } from "lucide-react";
 import Image from "next/image";
@@ -33,33 +34,20 @@ export function Testimonials() {
   return (
     <section id="reviews" className="relative py-24 overflow-hidden">
       {/* Background Paws */}
-      {backgroundPaws.map((paw, i) => (
-        <div
-          key={i}
-          className="absolute text-gray-300 pointer-events-none opacity-40 z-0"
-          style={{
-            top: paw.top,
-            left: paw.left,
-            right: paw.right,
-            bottom: paw.bottom,
-            transform: `rotate(${paw.rotate}deg)`,
-          }}
-        >
-          <PawPrint size={paw.size} />
-        </div>
-      ))}
+      <div className="absolute max-md:hidden top-30 left-40 w-34 h-34 pointer-events-none opacity-100">
+        <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+      </div>
+      <div className="absolute max-md:hidden top-30 right-40 w-34 h-34 pointer-events-none opacity-100">
+        <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+      </div>
 
       <div className="container mx-auto px-6 relative z-10">
         {/* Header */}
         <div className="text-center mb-20 px-4">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-5xl md:text-7xl font-black font-heading mb-6 text-[#1A1A1A] uppercase tracking-tight leading-[1.1]"
-          >
-            WHAT OUR CLIENTS <br className="hidden md:block" /> SAY ABOUT US
-          </motion.h2>
+          <AnimatedHeading
+            text="WHAT OUR CLIENTS \n SAY ABOUT US"
+            className="text-5xl md:text-6xl font-black font-heading mb-6 text-[#1A1A1A] uppercase tracking-tight leading-[1.1]"
+          />
         </div>
 
         {/* Testimonials Grid */}

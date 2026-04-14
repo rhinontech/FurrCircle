@@ -13,7 +13,6 @@ export function Navbar() {
     { name: "Services", href: "#services" },
     { name: "Patients", href: "#patients" },
     { name: "Reviews", href: "#reviews" },
-    { name: "FAQ", href: "#faq" },
   ];
 
   return (
@@ -25,7 +24,7 @@ export function Navbar() {
             <Image
               src="/logo/furrcircle_light_logo.png"
               alt="FurrCircle"
-              width={200}
+              width={150}
               height={100}
               className="w-auto h-auto object-contain"
               priority
@@ -33,12 +32,12 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Links */}
-          <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-10">
+          <div className="hidden md:flex absolute right-20  items-center gap-20">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
-                className="text-[15px] font-medium text-[#1A1A1A] hover:text-blue-400 transition-colors"
+                className="text-[15px] font-semibold text-[#1A1A1A] hover:text-blue-400 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 {link.name}

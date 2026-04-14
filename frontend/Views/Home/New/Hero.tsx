@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { PawPrint } from "../Hero/Hero";
+import { AnimatedHeading } from "@/components/AnimationProvider";
 
 const frames = [
   {
@@ -12,7 +14,8 @@ const frames = [
     rotate: -12,
     delay: 0,
     margin: "mr-[-40px] md:mr-[-40px] mt-20",
-    image: "/CTADog1.png"
+    image: "/CTADog1.png",
+    imageClass: "!top-[20%] !h-[80%]"
   },
   {
     id: "center",
@@ -22,7 +25,8 @@ const frames = [
     rotate: 0,
     delay: 0.2,
     margin: "z-10",
-    image: "/about-us/aboutInfo.png"
+    image: "/about-us/aboutInfo.png",
+    imageClass: "!top-[20%] !h-[80%]"
   },
   {
     id: "right",
@@ -32,31 +36,99 @@ const frames = [
     rotate: 12,
     delay: 0.4,
     margin: "ml-[-40px] md:ml-[-40px] mt-20",
-    image: "/about-us/aboutCTA1.png"
+    image: "/rabbit1.avif",
+    imageClass: "!h-[100%] scale-[1.3] !top-[10%] origin-bottom"
   },
 ];
 
 export function Hero() {
   return (
-    <section className="relative pb-32 overflow-hidden ">
+    <section className="relative pb-20 overflow-hidden ">
       <div className="container mx-auto px-6 relative z-10">
         <div className="flex flex-col items-center text-center max-w-5xl mx-auto gap-6 pt-40">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
+            className="relative"
           >
-            <h1 className="text-5xl md:text-8xl font-black font-heading leading-tight text-[#1A1A1A] uppercase tracking-tighter pt-5">
-              Caring for your <br />
-              pets like our own
-            </h1>
+            {/* Decorations */}
+            {/* Tennis Ball */}
+            <motion.div
+              animate={{
+                y: [0, -15, 0],
+                rotate: [0, 10, -10, 0]
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="absolute -left-4 -top-0 w-10 h-10 md:w-14 md:h-14 z-10 hidden md:block"
+            >
+              <Image
+                src="/decorations/tennis-ball.svg"
+                alt="Tennis Ball"
+                fill
+                className="drop-shadow-xl"
+              />
+            </motion.div>
+
+            {/* Blue Badge */}
+            <motion.div
+              animate={{
+                scale: [1, 1.05, 1],
+                rotate: [0, 5, -5, 0]
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="absolute left-[24%] top-[45%] w-12 h-16 md:w-10 md:h-14 z-20 hidden md:block"
+            >
+              <Image
+                src="/decorations/prize-badge.svg"
+                alt="Prize Badge"
+                fill
+                className="drop-shadow-xl"
+              />
+            </motion.div>
+
+            {/* Pet Bowl */}
+            <motion.div
+              animate={{
+                x: [0, 5, 0],
+                rotate: [0, -3, 3, 0]
+              }}
+              transition={{
+                duration: 6,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="absolute -right-16 md:-right-8 bottom-24 w-24 h-12 md:w-18 md:h-12 z-20 hidden md:block"
+            >
+              <Image
+                src="/decorations/pet-bowl.svg"
+                alt="Pet Bowl"
+                fill
+                className="drop-shadow-xl"
+              />
+            </motion.div>
+
+            <AnimatedHeading
+              text="Caring for your \n pets like our own"
+              tag="h1"
+              stagger={0.1}
+              className="text-5xl md:text-8xl font-black font-heading leading-[1.15] text-[#1A1A1A] uppercase tracking-tighter pt-5 relative z-10"
+            />
           </motion.div>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-lg md:text-2xl text-[#1A1A1A]/70 max-w-2xl font-medium"
+            className="text-lg md:text-2xl text-[#1A1A1A] max-w-2xl font-medium"
           >
             Quality veterinary services for dogs, cats, rabbits and more.
           </motion.p>
@@ -99,7 +171,7 @@ export function Hero() {
         </div>
 
         {/* Hero Visual Frames */}
-        <div className="flex flex-row items-center justify-center gap-4 md:gap-8 mt-12 w-full">
+        <div className="flex relative flex-row items-center justify-center gap-4 md:gap-8 mt-12 w-full">
           {frames.map((frame) => (
             <motion.div
               key={frame.id}
@@ -131,7 +203,7 @@ export function Hero() {
                 fill
                 sizes="(max-width: 768px) 10rem, (max-width: 1024px) 16rem, 23rem"
                 priority={frame.id === "left"}
-                className="object-contain object-bottom !top-[20%] !h-[80%]"
+                className={`object-contain object-bottom ${frame.imageClass}`}
               />
 
               {/* <div className="absolute inset-0 flex items-center justify-center">
@@ -141,6 +213,53 @@ export function Hero() {
               </div> */}
             </motion.div>
           ))}
+
+          <div className="absolute max-md:hidden top-10 left-20 w-44 h-44 pointer-events-none opacity-100">
+            <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+          </div>
+
+          <div className="absolute max-md:hidden  bottom-0 right-30 w-44 h-44 pointer-events-none opacity-100">
+            <Image src='/pawprint2.png' alt="Paw Print" fill className="object-contain" />
+          </div>
+
+
+          {/* <div
+            className="absolute top-[25%] max-md:top-[24%] max-md:left-[5%] left-[10%] w-20 h-20 text-[#1A1A1A]/10"
+          >
+            <PawPrint className="w-full h-full" />
+          </div>
+          <div
+            className="absolute top-[13%] max-md:top-[24%] max-md:left-[5%] left-[6%] w-20 h-20 text-[#1A1A1A]/10 -rotate-30"
+          >
+            <PawPrint className="w-full h-full" />
+          </div>
+          <div
+            className="absolute top-[8%] max-md:top-[24%] max-md:left-[5%] left-[13%] w-16 h-16 text-[#1A1A1A]/10"
+          >
+            <PawPrint className="w-full h-full" />
+          </div> */}
+
+
+
+          {/* <div
+            className="absolute -rotate-45 bottom-[8%] max-md:bottom-[24%] max-md:right-[5%] right-[13%] w-20 h-20 text-[#1A1A1A]/10"
+          >
+            <PawPrint className="w-full h-full" />
+          </div>
+          <div
+            className="absolute -rotate-30 bottom-[20%] max-md:bottom-[24%] max-md:right-[5%] right-[15%] w-16 h-16 text-[#1A1A1A]/10"
+          >
+            <PawPrint className="w-full h-full" />
+          </div>
+
+          <div
+            className="absolute -rotate-15 bottom-[32%] max-md:bottom-[24%] max-md:right-[5%] right-[13%] w-12 h-12 text-[#1A1A1A]/10"
+          >
+            <PawPrint className="w-full h-full" />
+          </div> */}
+
+
+
         </div>
       </div>
 
