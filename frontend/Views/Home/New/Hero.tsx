@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-// import Image from "next/image";
 
 const frames = [
   {
@@ -39,15 +38,15 @@ const frames = [
 
 export function Hero() {
   return (
-    <section className="relative pt-32 pb-32 overflow-hidden ">
+    <section className="relative pb-32 overflow-hidden ">
       <div className="container mx-auto px-6 relative z-10">
-        <div className="flex flex-col items-center text-center max-w-5xl mx-auto mb-20">
+        <div className="flex flex-col items-center text-center max-w-5xl mx-auto gap-6 pt-40">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-5xl md:text-8xl font-black font-heading leading-tight mb-8 text-[#1A1A1A] uppercase tracking-tighter">
+            <h1 className="text-5xl md:text-8xl font-black font-heading leading-tight text-[#1A1A1A] uppercase tracking-tighter pt-5">
               Caring for your <br />
               pets like our own
             </h1>
@@ -57,7 +56,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-lg md:text-2xl text-[#1A1A1A]/70 mb-12 max-w-2xl font-bold"
+            className="text-lg md:text-2xl text-[#1A1A1A]/70 max-w-2xl font-medium"
           >
             Quality veterinary services for dogs, cats, rabbits and more.
           </motion.p>
@@ -66,16 +65,42 @@ export function Hero() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, delay: 0.2 }}
+            className="flex flex-wrap items-center justify-center gap-4"
           >
-            <button className="h-16 px-12 rounded-full text-xl font-black uppercase tracking-widest bg-[#87CEEB] text-[#1A1A1A] hover:bg-[#76BCD9] transition-all hover:scale-105 active:scale-95 shadow-xl">
-              Book an appointment
-            </button>
+            <a
+              href="#"
+              aria-label="Download on the App Store"
+              className="transition-transform hover:scale-105 active:scale-95"
+            >
+              <Image
+                src="/appleButton.svg"
+                alt="Download on the App Store"
+                width={180}
+                height={54}
+                className="h-14 w-auto"
+                priority
+              />
+            </a>
+            <a
+              href="#"
+              aria-label="Get it on Google Play"
+              className="transition-transform hover:scale-105 active:scale-95"
+            >
+              <Image
+                src="/googleButton.svg"
+                alt="Get it on Google Play"
+                width={180}
+                height={54}
+                className="h-14 w-auto"
+                priority
+              />
+            </a>
           </motion.div>
         </div>
 
         {/* Hero Visual Frames */}
         <div className="flex flex-row items-center justify-center gap-4 md:gap-8 mt-12 w-full">
-          {frames.map((frame, i) => (
+          {frames.map((frame) => (
             <motion.div
               key={frame.id}
               initial={{ scale: 0.7, opacity: 0, rotate: frame.rotate }}
@@ -104,6 +129,8 @@ export function Hero() {
                 src={frame.image}
                 alt={`${frame.id} pet`}
                 fill
+                sizes="(max-width: 768px) 10rem, (max-width: 1024px) 16rem, 23rem"
+                priority={frame.id === "left"}
                 className="object-contain object-bottom !top-[20%] !h-[80%]"
               />
 

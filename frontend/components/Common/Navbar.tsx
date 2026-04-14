@@ -27,7 +27,7 @@ export function Navbar() {
               alt="FurrCircle"
               width={200}
               height={100}
-              className="h-auto object-contain"
+              className="w-auto h-auto object-contain"
               priority
             />
           </Link>
