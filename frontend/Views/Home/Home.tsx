@@ -1,25 +1,25 @@
-import { Navbar } from '@/components/Common/Navbar'
-import React from 'react'
-import { Hero } from './Hero/Hero'
-import { Footer } from '@/components/Common/Footer'
-import { Services } from './Services/Services'
-import { FeaturedMarquee } from './Features/FeaturedMarquee'
-import { ValuesGrid } from './Values/ValuesGrid'
-import { Testimonials } from './Testimonials/Testimonials'
-import { Partners } from './Partners/Partners'
-import CTA from './CTA/CTA'
+import { Contact } from "./New/Contact"
+import { FAQ } from "./New/FAQ"
+import { Hero } from "./New/Hero"
+import { Patients } from "./New/Patients"
+import { PetCare } from "./New/PetCare"
+import { Services } from "./New/Services"
+import { Testimonials } from "./New/Testimonials"
+import { ValuesSignpost } from "./New/ValuesSignpost"
+
 
 const Home = () => {
   return (
-     <>
-      <main className="flex-1 flex flex-col min-h-screen max-md:overflow-hidden">
+    <>
+      <main className="flex-1 flex flex-col min-h-screen max-md:overflow-hidden bg-[#F3F0E9]">
         <Hero />
+        <ValuesSignpost />
         <Services />
-        <FeaturedMarquee />
-        <ValuesGrid />
+        <Patients />
         <Testimonials />
-        <Partners />
-        <CTA />
+        <PetCare />
+        <FAQ />
+        <Contact />
       </main>
     </>
   )

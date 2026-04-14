@@ -1,0 +1,107 @@
+"use client";
+
+import { motion } from "framer-motion";
+import Image from "next/image";
+import { PawPrint } from "lucide-react";
+
+const careTips = [
+  {
+    title: "REGULAR EXERCISE",
+    description: "Ensure your pet gets daily exercise to maintain a healthy weight and prevent behavioral issues.",
+    color: "bg-[#53AF54]",
+  },
+  {
+    title: "PROPER NUTRITION",
+    description: "Feed your pet a balanced diet suited to their needs for overall well-being.",
+    color: "bg-[#EA5222]",
+  },
+  {
+    title: "ROUTINE VET VISITS",
+    description: "Schedule regular check-ups to keep vaccinations up to date and catch any health issues early.",
+    color: "bg-[#0CA2D0]",
+  },
+];
+
+const backgroundPaws = [
+  { top: "10%", right: "15%", rotate: 25, size: 45 },
+  { top: "30%", right: "10%", rotate: -10, size: 35 },
+  { bottom: "20%", right: "12%", rotate: 10, size: 40 },
+];
+
+export function PetCare() {
+  return (
+    <section className="relative py-24 bg-[#F3F0E9] overflow-hidden">
+      {/* Background Paws */}
+      {backgroundPaws.map((paw, i) => (
+        <div
+          key={i}
+          className="absolute text-gray-300 pointer-events-none opacity-40 z-0"
+          style={{
+            top: paw.top,
+            right: paw.right,
+            transform: `rotate(${paw.rotate}deg)`,
+          }}
+        >
+          <PawPrint size={paw.size} />
+        </div>
+      ))}
+
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+          {/* Left Side: Oval Image */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="w-full lg:w-1/2 flex justify-center"
+          >
+            <div className="relative w-full max-w-md aspect-[3/4] rounded-[200px] overflow-hidden bg-[#87CEEB] border-8 border-white shadow-2xl">
+              <Image
+                src="C:\Users\Lenovo\.gemini\antigravity\brain\926eb4bc-3874-451a-b67c-6e08e01f8f49\dog_and_cat_petcare_1776142940881.png"
+                alt="Happy Dog and Cat"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+          </motion.div>
+
+          {/* Right Side: Content */}
+          <div className="w-full lg:w-1/2">
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-4xl md:text-6xl font-black font-heading mb-12 text-[#1A1A1A] leading-tight uppercase"
+            >
+              HOW TO TAKE CARE <br /> OF YOUR PET
+            </motion.h2>
+
+            <div className="space-y-10">
+              {careTips.map((tip, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex gap-6"
+                >
+                  <div className={`mt-2 w-4 h-4 rounded-full shrink-0 ${tip.color}`} />
+                  <div>
+                    <h3 className="text-2xl font-black font-heading mb-3 text-[#1A1A1A] uppercase tracking-tight">
+                      {tip.title}
+                    </h3>
+                    <p className="text-lg text-[#1A1A1A]/70 leading-relaxed max-w-md">
+                      {tip.description}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
