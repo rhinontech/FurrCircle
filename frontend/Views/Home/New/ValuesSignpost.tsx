@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import { Stethoscope, Monitor, Banknote, Heart, Timer, PawPrint } from "lucide-react";
+import Image from "next/image";
+import { AnimatedHeading } from "@/components/AnimationProvider";
 
 const signs = [
   {
@@ -52,35 +54,33 @@ const backgroundPaws = [
 
 export function ValuesSignpost() {
   return (
-    <section className="relative py-24 overflow-hidden min-h-[900px] flex flex-col items-center">
-      {/* Background Paws */}
-      {backgroundPaws.map((paw, i) => (
-        <div
-          key={i}
-          className="absolute text-gray-300 pointer-events-none opacity-40"
-          style={{
-            top: paw.top,
-            left: paw.left,
-            right: paw.right,
-            bottom: paw.bottom,
-            transform: `rotate(${paw.rotate}deg)`,
-          }}
-        >
-          <PawPrint size={paw.size} />
-        </div>
-      ))}
+    <section className="relative py-20 overflow-hidden min-h-[900px] flex flex-col items-center">
 
       <div className="container mx-auto px-6 relative z-10 flex flex-col items-center">
-        {/* Header Text */}
+
+
+        {/* paw prints */}
+          <div className="absolute max-md:hidden top-50 left-50 w-44 h-44 pointer-events-none opacity-100">
+            <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+          </div>
+          <div className="absolute max-md:hidden top-50 right-40 w-34 h-34 pointer-events-none opacity-100">
+            <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+          </div>
+          <div className="absolute max-md:hidden bottom-50 right-40 w-34 h-34 pointer-events-none opacity-100">
+            <Image src='/pawprint2.png' alt="Paw Print" fill className="object-contain" />
+          </div>
+
+          <div className="absolute max-md:hidden bottom-30 left-40 w-44 h-44 pointer-events-none opacity-100">
+            <Image src='/pawprint2.png' alt="Paw Print" fill className="object-contain" />
+          </div>
+
+
+
         <div className="text-center mb-16">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+          <AnimatedHeading
+            text="WHY CHOOSE US?"
             className="text-5xl md:text-7xl font-extrabold mb-6 text-[#1A1A1A] uppercase"
-          >
-            WHY CHOOSE US?
-          </motion.h2>
+          />
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -94,11 +94,16 @@ export function ValuesSignpost() {
 
         {/* The Signpost */}
         <div className="relative flex flex-col items-center w-full max-w-lg mt-12 pb-24">
-          {/* Central Pole */}
-          <div className="absolute top-0 bottom-0 w-8 bg-[#1A1A1A] rounded-full mx-auto" />
+
           
-          {/* Top Knob */}
-          <div className="absolute -top-4 w-12 h-12 bg-[#1A1A1A] rounded-full z-20" />
+
+
+          {/* Central Pole */}
+          {/* Central Pole */}
+          <div className="absolute top-0 bottom-0 w-8 bg-[#1A1A1A] rounded-full left-1/2 -translate-x-1/2" />
+
+          {/* Top Cap */}
+          <div className="absolute -top-4 w-16 h-8 bg-[#1A1A1A] rounded-full z-20 left-1/2 -translate-x-1/2" />
 
           {/* Signs Grid */}
           <div className="relative z-10 flex flex-col items-center gap-6 pt-12">
@@ -108,7 +113,7 @@ export function ValuesSignpost() {
                 initial={{ opacity: 0, scale: 0.8, x: i % 2 === 0 ? -50 : 50 }}
                 whileInView={{ opacity: 1, scale: 1, x: 0 }}
                 viewport={{ once: true }}
-                transition={{ 
+                transition={{
                   delay: sign.delay,
                   type: "spring",
                   stiffness: 100
@@ -128,7 +133,7 @@ export function ValuesSignpost() {
           </div>
 
           {/* Base */}
-          <div className="absolute bottom-0 w-48 h-10 bg-[#1A1A1A] rounded-full" />
+          <div className="absolute -bottom-4 w-64 h-10 bg-[#1A1A1A] rounded-[100%] left-1/2 -translate-x-1/2" />
         </div>
       </div>
     </section>

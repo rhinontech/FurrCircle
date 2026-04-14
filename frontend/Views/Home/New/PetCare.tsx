@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { PawPrint } from "lucide-react";
+import { AnimatedHeading } from "@/components/AnimationProvider";
 
 const careTips = [
   {
@@ -30,21 +31,11 @@ const backgroundPaws = [
 
 export function PetCare() {
   return (
-    <section className="relative py-24 overflow-hidden">
+    <section className="relative pb-20 overflow-hidden">
       {/* Background Paws */}
-      {backgroundPaws.map((paw, i) => (
-        <div
-          key={i}
-          className="absolute text-gray-300 pointer-events-none opacity-40 z-0"
-          style={{
-            top: paw.top,
-            right: paw.right,
-            transform: `rotate(${paw.rotate}deg)`,
-          }}
-        >
-          <PawPrint size={paw.size} />
-        </div>
-      ))}
+      <div className="absolute max-md:hidden top-80 right-20 w-34 h-34 pointer-events-none opacity-100">
+        <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+      </div>
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
@@ -55,7 +46,7 @@ export function PetCare() {
             viewport={{ once: true }}
             className="w-full lg:w-1/2 flex justify-center"
           >
-            <div className="relative w-full max-w-lg aspect-[3/4] rounded-full overflow-hidden bg-[#87CEEB] shadow-2xl">
+            <div className="relative w-full max-w-xl aspect-[3/4.5] rounded-full overflow-hidden bg-[#87CEEB] shadow-2xl">
               <Image
                 src="/contact/contactHero.png"
                 alt="Happy Dog and Cat"
@@ -68,14 +59,10 @@ export function PetCare() {
 
           {/* Right Side: Content */}
           <div className="w-full lg:w-1/2">
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+            <AnimatedHeading
+              text="HOW TO TAKE CARE \n OF YOUR PET"
               className="text-4xl md:text-6xl font-black font-heading mb-12 text-[#1A1A1A] leading-tight uppercase"
-            >
-              HOW TO TAKE CARE <br /> OF YOUR PET
-            </motion.h2>
+            />
 
             <div className="space-y-10">
               {careTips.map((tip, i) => (

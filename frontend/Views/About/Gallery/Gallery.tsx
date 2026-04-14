@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { FadeInUp } from "@/components/AnimationProvider";
+import { AnimatedHeading, FadeInUp } from "@/components/AnimationProvider";
 
 const galleryImages = [
   "/gallery/family1.png",
@@ -19,13 +19,19 @@ const allImages = [...galleryImages, ...galleryImages];
 export function Gallery() {
   return (
     <section className="py-32 overflow-hidden">
-      <div className="container mx-auto px-6 max-w-7xl mb-16">
+      <div className="container relative mx-auto px-6 max-w-7xl mb-16">
+
+
+        <div className="absolute max-md:hidden top-15 right-40 w-34 h-34 pointer-events-none opacity-100">
+          <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+        </div>
+
+
         <div className="flex flex-col items-center text-center">
-          <FadeInUp>
-            <h2 className="text-5xl md:text-7xl font-black font-heading mb-6 text-[#1A1A1A] uppercase tracking-tight leading-[1.1]">
-              Our FurrCircle Family in Pictures
-            </h2>
-          </FadeInUp>
+          <AnimatedHeading
+            text="Our FurrCircle Family in Pictures"
+            className="text-5xl md:text-7xl font-black font-heading mb-6 text-[#1A1A1A] uppercase tracking-tight leading-[1.1]"
+          />
           <FadeInUp delay={0.1}>
             <p className="text-muted-foreground text-lg md:text-xl max-w-3xl">
               A Glimpse into the Joyful Moments We Share with Your Beloved Pets
