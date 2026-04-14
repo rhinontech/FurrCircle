@@ -31,7 +31,7 @@ const backgroundPaws = [
 
 export function Testimonials() {
   return (
-    <section id="reviews" className="relative py-24 bg-[#F3F0E9] overflow-hidden">
+    <section id="reviews" className="relative py-24 overflow-hidden">
       {/* Background Paws */}
       {backgroundPaws.map((paw, i) => (
         <div

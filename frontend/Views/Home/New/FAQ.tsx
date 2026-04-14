@@ -37,7 +37,7 @@ export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="relative py-24 bg-[#F3F0E9] overflow-hidden">
+    <section id="faq" className="relative py-24 overflow-hidden">
       {/* Background Paws */}
       {backgroundPaws.map((paw, i) => (
         <div

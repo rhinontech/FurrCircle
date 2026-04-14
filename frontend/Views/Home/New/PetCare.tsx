@@ -30,7 +30,7 @@ const backgroundPaws = [
 
 export function PetCare() {
   return (
-    <section className="relative py-24 bg-[#F3F0E9] overflow-hidden">
+    <section className="relative py-24 overflow-hidden">
       {/* Background Paws */}
       {backgroundPaws.map((paw, i) => (
         <div
@@ -55,12 +55,12 @@ export function PetCare() {
             viewport={{ once: true }}
             className="w-full lg:w-1/2 flex justify-center"
           >
-            <div className="relative w-full max-w-md aspect-[3/4] rounded-[200px] overflow-hidden bg-[#87CEEB] border-8 border-white shadow-2xl">
+            <div className="relative w-full max-w-lg aspect-[3/4] rounded-full overflow-hidden bg-[#87CEEB] shadow-2xl">
               <Image
-                src="C:\Users\Lenovo\.gemini\antigravity\brain\926eb4bc-3874-451a-b67c-6e08e01f8f49\dog_and_cat_petcare_1776142940881.png"
+                src="/contact/contactHero.png"
                 alt="Happy Dog and Cat"
                 fill
-                className="object-cover"
+                className="object-cover !h-[70%] !top-auto !bottom-0"
                 unoptimized
               />
             </div>

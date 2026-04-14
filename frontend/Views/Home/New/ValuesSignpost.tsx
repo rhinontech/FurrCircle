@@ -52,7 +52,7 @@ const backgroundPaws = [
 
 export function ValuesSignpost() {
   return (
-    <section className="relative py-24 bg-[#F3F0E9] overflow-hidden min-h-[900px] flex flex-col items-center">
+    <section className="relative py-24 overflow-hidden min-h-[900px] flex flex-col items-center">
       {/* Background Paws */}
       {backgroundPaws.map((paw, i) => (
         <div
@@ -77,7 +77,7 @@ export function ValuesSignpost() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-5xl md:text-7xl font-black font-heading mb-6 text-[#1A1A1A] tracking-tight uppercase"
+            className="text-5xl md:text-7xl font-extrabold mb-6 text-[#1A1A1A] uppercase"
           >
             WHY CHOOSE US?
           </motion.h2>
@@ -86,7 +86,7 @@ export function ValuesSignpost() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-xl md:text-2xl text-[#1A1A1A]/80 font-medium"
+            className="text-xl md:text-3xl text-gray-600 font-normal"
           >
             Exceptional care, advanced technology, and unbeatable value.
           </motion.p>
@@ -115,7 +115,7 @@ export function ValuesSignpost() {
                 }}
                 className={`
                   flex items-center gap-4 px-10 py-5 rounded-2xl shadow-xl border-b-4 border-black/20
-                  ${sign.color} text-white font-black text-2xl md:text-3xl whitespace-nowrap
+                  ${sign.color} text-white font-extrabold text-2xl md:text-3xl whitespace-nowrap
                 `}
                 style={{ rotate: `${sign.rotate}deg` }}
               >
