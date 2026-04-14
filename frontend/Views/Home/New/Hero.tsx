@@ -39,7 +39,7 @@ const frames = [
 
 export function Hero() {
   return (
-    <section className="relative pt-32 pb-32 overflow-hidden bg-[#F3F0E9]">
+    <section className="relative pt-32 pb-32 overflow-hidden ">
       <div className="container mx-auto px-6 relative z-10">
         <div className="flex flex-col items-center text-center max-w-5xl mx-auto mb-20">
           <motion.div
@@ -47,9 +47,9 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-5xl md:text-7xl font-black font-heading leading-tight mb-8 text-[#1A1A1A] uppercase tracking-tighter">
-              Personalized Pet Care <br />
-              at FurrCircle
+            <h1 className="text-5xl md:text-8xl font-black font-heading leading-tight mb-8 text-[#1A1A1A] uppercase tracking-tighter">
+              Caring for your <br />
+              pets like our own
             </h1>
           </motion.div>
 
@@ -57,9 +57,9 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-lg md:text-2xl text-[#1A1A1A]/70 mb-12 max-w-2xl font-medium"
+            className="text-lg md:text-2xl text-[#1A1A1A]/70 mb-12 max-w-2xl font-bold"
           >
-            Your Trusted Partner in Pet Care, Offering Tailored Services to Ensure the Health, Happiness, and Well-Being of Your Beloved Furry Companions.
+            Quality veterinary services for dogs, cats, rabbits and more.
           </motion.p>
 
           <motion.div
@@ -118,8 +118,8 @@ export function Hero() {
       </div>
 
       {/* Background blobs */}
-      <div className="absolute top-[10%] -left-[10%] w-[40%] h-[40%] bg-[#87CEEB]/10 blur-[100px] rounded-full" />
-      <div className="absolute bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-[#FABC3F]/10 blur-[100px] rounded-full" />
+      {/* <div className="absolute top-[10%] -left-[10%] w-[40%] h-[40%] bg-[#87CEEB]/10 blur-[100px] rounded-full" />
+      <div className="absolute bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-[#FABC3F]/10 blur-[100px] rounded-full" /> */}
     </section>
   );
 }

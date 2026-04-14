@@ -2,15 +2,16 @@
 
 import { motion } from "framer-motion";
 import { PawPrint } from "lucide-react";
+import Image from "next/image";
 // import Image from "next/image";
 
 const patients = [
-  { name: "DOGS", delay: 0.1 },
-  { name: "CATS", delay: 0.2 },
-  { name: "SQUIRRELS", delay: 0.3 },
-  { name: "RABBITS", delay: 0.4 },
-  { name: "TURTLES", delay: 0.5 },
-  { name: "PARROTS", delay: 0.6 },
+  { name: "DOGS", delay: 0.1, image: '/dog.avif' },
+  { name: "CATS", delay: 0.2, image: '/cat.avif' },
+  { name: "SQUIRRELS", delay: 0.3, image: '/squirrel.avif' },
+  { name: "RABBITS", delay: 0.4, image: '/rabbit.avif' },
+  { name: "TURTLES", delay: 0.5, image: '/turtle.avif' },
+  { name: "PARROTS", delay: 0.6, image: '/parrot.avif' },
 ];
 
 const backgroundPaws = [
@@ -22,7 +23,7 @@ const backgroundPaws = [
 
 export function Patients() {
   return (
-    <section className="relative py-24 bg-[#F3F0E9] overflow-hidden">
+    <section id="patients" className="relative py-24 overflow-hidden">
       {/* Background Paws */}
       {backgroundPaws.map((paw, i) => (
         <div
@@ -74,22 +75,24 @@ export function Patients() {
               className="flex flex-col items-center group"
             >
               {/* Circular Frame */}
-              <div className="w-56 h-56 md:w-64 md:h-64 rounded-full border border-gray-200 bg-white flex items-center justify-center p-4 mb-6 transition-transform group-hover:scale-105 shadow-sm overflow-hidden relative">
+              <div className="w-56 h-56 md:w-64 md:h-64 rounded-full border flex items-center justify-center p-4 mb-6 transition-transform group-hover:scale-105 shadow-sm overflow-hidden relative">
                 {/* 
                   IMAGE PLACEHOLDER
                   Uncomment the following Image tag and add your pet image URL:
                 */}
-                {/* 
-                <Image 
-                  src="/path/to/your/pet-image.png" 
-                  alt={p.name} 
-                  fill 
-                  className="object-cover" 
-                /> 
-                */}
-                <div className="text-gray-200 font-bold uppercase tracking-widest text-xs opacity-50 z-0 select-none">
-                  Image Placeholder
+
+                <div className="relative w-[90%] h-[90%]">
+                  <Image
+                    src={p.image}
+                    alt={p.name}
+                    fill
+                    className="object-contain mt-10"
+                  />
                 </div>
+
+                {/* <div className="text-gray-200 font-bold uppercase tracking-widest text-xs opacity-50 z-0 select-none">
+                  Image Placeholder
+                </div> */}
               </div>
 
               {/* Title */}

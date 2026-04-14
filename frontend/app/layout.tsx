@@ -1,12 +1,24 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter, DM_Serif_Display, Lexend } from "next/font/google";
+import { Inter, DM_Serif_Display, Lexend, Outfit, Nunito } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Common/Navbar";
 import { Footer } from "@/components/Common/Footer";
+import { Metadata } from "next";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+});
+
+const nunito = Nunito({
+  variable: "--font-nunito",
+  subsets: ["latin"],
+  weight: ["400", "600", "800"],
+});
+
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
 const lexend = Lexend({
@@ -28,9 +40,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${lexend.variable} antialiased`}
+      className={`${nunito.variable} ${inter.variable} ${lexend.variable} ${outfit.variable} antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
+      <body className="min-h-full flex flex-col font-nunito bg-[#fffbf5] text-foreground">
         <Navbar />
         {children}
         <Footer />

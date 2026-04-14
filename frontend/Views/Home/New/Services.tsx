@@ -49,7 +49,7 @@ const services = [
 
 export function Services() {
   return (
-    <section id="services" className="py-24 bg-[#F3F0E9]">
+    <section id="services" className="py-24 ">
       <div className="container mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-20">
