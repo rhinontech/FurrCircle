@@ -1,27 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter, DM_Serif_Display } from "next/font/google";
+import { Geist, Geist_Mono, Inter, DM_Serif_Display, Lexend } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Common/Navbar";
 import { Footer } from "@/components/Common/Footer";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const dmSerifDisplay = DM_Serif_Display({
-  variable: "--font-dm-serif",
-  weight: "400",
+const lexend = Lexend({
+  variable: "--font-lexend",
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
 });
 
@@ -38,7 +28,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${dmSerifDisplay.variable} antialiased`}
+      className={`${inter.variable} ${lexend.variable} antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
         <Navbar />
@@ -46,7 +36,7 @@ export default function RootLayout({
         <Footer />
 
         <script src="/oneko.js"></script>
-        </body>
+      </body>
     </html>
   );
 }
