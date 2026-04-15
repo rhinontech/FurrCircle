@@ -8,17 +8,17 @@ import { AnimatedHeading } from "@/components/AnimationProvider";
 const careTips = [
   {
     title: "REGULAR EXERCISE",
-    description: "Ensure your pet gets daily exercise to maintain a healthy weight and prevent behavioral issues.",
+    description: "Keep your pet active with daily walks, play sessions, and enrichment activities suited to their breed and age.",
     color: "bg-[#53AF54]",
   },
   {
     title: "PROPER NUTRITION",
-    description: "Feed your pet a balanced diet suited to their needs for overall well-being.",
+    description: "Feed your pet a balanced, age-appropriate diet and track their nutrition with FurrCircle's health log.",
     color: "bg-[#EA5222]",
   },
   {
     title: "ROUTINE VET VISITS",
-    description: "Schedule regular check-ups to keep vaccinations up to date and catch any health issues early.",
+    description: "Book regular check-ups through FurrCircle to stay on top of vaccinations and catch health issues early.",
     color: "bg-[#0CA2D0]",
   },
 ];

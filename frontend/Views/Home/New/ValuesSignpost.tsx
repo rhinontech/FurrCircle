@@ -1,42 +1,42 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Stethoscope, Monitor, Banknote, Heart, Timer, PawPrint } from "lucide-react";
+import { Stethoscope, CalendarCheck, Bell, Users, BadgeDollarSign, PawPrint } from "lucide-react";
 import Image from "next/image";
 import { AnimatedHeading } from "@/components/AnimationProvider";
 
 const signs = [
   {
-    title: "EXPERT CARE",
+    title: "HEALTH TRACKING",
     icon: <Stethoscope className="w-6 h-6" />,
     color: "bg-[#0CA2D0]",
     rotate: -3,
     delay: 0.1,
   },
   {
-    title: "TOP EQUIPMENT",
-    icon: <Monitor className="w-6 h-6" />,
+    title: "VET BOOKING",
+    icon: <CalendarCheck className="w-6 h-6" />,
     color: "bg-[#EA5222]",
     rotate: 2,
     delay: 0.2,
   },
   {
-    title: "AFFORDABLE",
-    icon: <Banknote className="w-6 h-6" />,
+    title: "REMINDERS",
+    icon: <Bell className="w-6 h-6" />,
     color: "bg-[#53AF54]",
     rotate: -2,
     delay: 0.3,
   },
   {
-    title: "COMPASSIONATE CARE",
-    icon: <Heart className="w-6 h-6 fill-white" />,
+    title: "PET COMMUNITY",
+    icon: <Users className="w-6 h-6" />,
     color: "bg-[#9D8FE4]",
     rotate: 3,
     delay: 0.4,
   },
   {
-    title: "FAST SERVICE",
-    icon: <Timer className="w-6 h-6" />,
+    title: "ALWAYS FREE",
+    icon: <BadgeDollarSign className="w-6 h-6" />,
     color: "bg-[#FABC3F]",
     rotate: -1,
     delay: 0.5,
@@ -78,7 +78,7 @@ export function ValuesSignpost() {
 
         <div className="text-center mb-16">
           <AnimatedHeading
-            text="WHY CHOOSE US?"
+            text="WHY FURRCIRCLE?"
             className="text-5xl md:text-7xl font-extrabold mb-6 text-[#1A1A1A] uppercase"
           />
           <motion.p
@@ -88,7 +88,7 @@ export function ValuesSignpost() {
             transition={{ delay: 0.1 }}
             className="text-xl md:text-3xl text-gray-600 font-normal"
           >
-            Exceptional care, advanced technology, and unbeatable value.
+            Everything your pet needs, right at your fingertips.
           </motion.p>
         </div>
 

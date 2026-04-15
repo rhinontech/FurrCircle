@@ -2,48 +2,31 @@
 
 import { AnimatedHeading } from "@/components/AnimationProvider";
 import { motion } from "framer-motion";
-import { Stethoscope, Siren, Syringe } from "lucide-react";
-
-// Custom Tooth Icon since it's often missing in older Lucide versions
-const ToothIcon = ({ className }: { className?: string }) => (
-  <svg 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <path d="M7 11c.2-3.3 1.5-6 5-6s4.8 2.7 5 6c.2 4.4-1.2 8-5 8s-5.2-3.6-5-8Z" />
-    <path d="M7 18.5c-.5-.3-1-1-1-1.5s.5-.8 1-1h.5" />
-    <path d="M17 18.5c.5-.3 1-1 1-1.5s-.5-.8-1-1h-.5" />
-  </svg>
-);
+import { ClipboardList, CalendarCheck, Bell, Users } from "lucide-react";
 
 const services = [
   {
-    title: "ROUTINE CHECK-UPS",
-    description: "Regular check-ups to ensure your pet's health and catch issues early.",
-    icon: <Stethoscope className="w-8 h-8" />,
+    title: "HEALTH RECORDS",
+    description: "Store and access your pet's full medical history, vaccinations, and vitals anytime, anywhere.",
+    icon: <ClipboardList className="w-8 h-8" />,
     color: "bg-[#53AF54]",
   },
   {
-    title: "EMERGENCY CARE",
-    description: "Immediate care for urgent situations to provide quick relief.",
-    icon: <Siren className="w-8 h-8" />,
+    title: "BOOK A VET",
+    description: "Find verified veterinarians near you and book appointments in just a few taps.",
+    icon: <CalendarCheck className="w-8 h-8" />,
     color: "bg-[#EA5222]",
   },
   {
-    title: "VACCINATIONS",
-    description: "Vaccines to protect your pet from diseases and keep them healthy.",
-    icon: <Syringe className="w-8 h-8" />,
+    title: "SMART REMINDERS",
+    description: "Never miss a vaccine, medication dose, or vet visit with automated reminders.",
+    icon: <Bell className="w-8 h-8" />,
     color: "bg-[#0CA2D0]",
   },
   {
-    title: "DENTAL CARE",
-    description: "Immediate care for urgent situations to provide quick relief.",
-    icon: <ToothIcon className="w-8 h-8" />,
+    title: "PET COMMUNITY",
+    description: "Connect with fellow pet parents, share moments, and discover local pet events.",
+    icon: <Users className="w-8 h-8" />,
     color: "bg-[#FABC3F]",
   },
 ];
@@ -55,7 +38,7 @@ export function Services() {
         {/* Header */}
         <div className="text-center mb-20">
           <AnimatedHeading
-            text="OUR SERVICES"
+            text="WHAT YOU CAN DO"
             className="text-5xl md:text-7xl font-black font-heading mb-6 text-[#1A1A1A] uppercase tracking-tight"
           />
           <motion.p
@@ -65,7 +48,7 @@ export function Services() {
             transition={{ delay: 0.1 }}
             className="text-xl md:text-2xl text-[#1A1A1A]/80 font-medium"
           >
-            Comprehensive veterinary care for pets of all kinds
+            Everything you need to keep your pet healthy and happy.
           </motion.p>
         </div>
 

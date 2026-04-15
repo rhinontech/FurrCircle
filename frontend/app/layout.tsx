@@ -11,8 +11,8 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-  title: "FurrCircle | The Digital Health Passport for Your Pets",
-  description: "Centralize medical records, track vaccinations, and join a global community of pet parents with FurrCircle.",
+  title: "FurrCircle — The Pet Care App for Every Pet Parent",
+  description: "Track your pet's health records, book vet appointments, set reminders, and join a community of pet parents — all in one app.",
 };
 
 export default function RootLayout({

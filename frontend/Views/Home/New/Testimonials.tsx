@@ -7,18 +7,18 @@ import Image from "next/image";
 
 const testimonials = [
   {
-    quote: "Excellent service! My dog is now healthy and happy thanks to the wonderful team. They took the time to explain everything and made us feel at ease. I highly recommend them to any pet owner!",
-    name: "PETER K.",
+    quote: "FurrCircle completely changed how I manage my dog's health. I can see all his records, upcoming vaccines, and vet appointments in one app. It's a game changer!",
+    name: "ANJALI P.",
     image: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&q=80&w=200&h=200",
   },
   {
-    quote: "The veterinarians here are incredibly kind and dedicated. They treated my dog like their own and provided us with the best care possible. I'm so grateful for their compassion and professionalism.",
-    name: "PETER K.",
+    quote: "Booking a vet through FurrCircle was so easy. I found a great clinic nearby, picked a time, and got a reminder the day before. My cat's care has never been this stress-free.",
+    name: "ISHRA F.",
     image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200&h=200",
   },
   {
-    quote: "They responded so quickly when my cat was unwell. Thanks to their swift action and expertise, they saved her life! I couldn't be more thankful for the care and attention they gave her.",
-    name: "PETER K.",
+    quote: "I love the community on FurrCircle. I've met so many pet parents nearby, discovered local pet events, and even got great advice on my rabbit's diet. Highly recommend!",
+    name: "JAMES L.",
     image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200&h=200",
   },
 ];
@@ -45,7 +45,7 @@ export function Testimonials() {
         {/* Header */}
         <div className="text-center mb-20 px-4">
           <AnimatedHeading
-            text="WHAT OUR CLIENTS \n SAY ABOUT US"
+            text="LOVED BY \n PET PARENTS"
             className="text-5xl md:text-6xl font-black font-heading mb-6 text-[#1A1A1A] uppercase tracking-tight leading-[1.1]"
           />
         </div>

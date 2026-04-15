@@ -10,7 +10,7 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
   const navLinks = [
-    { name: "Services", href: "#services" },
+    { name: "Features", href: "#services" },
     { name: "Patients", href: "#patients" },
     { name: "Reviews", href: "#reviews" },
   ];

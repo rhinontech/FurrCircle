@@ -42,7 +42,7 @@ export function Patients() {
         {/* Header */}
         <div className="text-center mb-20 px-4">
           <AnimatedHeading
-            text="OUR PATIENTS"
+            text="MADE FOR ALL PETS"
             className="text-5xl md:text-7xl font-black font-heading mb-6 text-[#1A1A1A] uppercase tracking-tight"
           />
           <motion.p
@@ -52,7 +52,7 @@ export function Patients() {
             transition={{ delay: 0.1 }}
             className="text-xl md:text-2xl text-[#1A1A1A]/80 font-medium"
           >
-            We provide expert care for all your beloved pets.
+            Whether you have a dog, cat, rabbit, or something more exotic — FurrCircle has you covered.
           </motion.p>
         </div>
 

@@ -117,7 +117,7 @@ export function Hero() {
             </motion.div>
 
             <AnimatedHeading
-              text="Caring for your \n pets like our own"
+              text="Your Pet's Health, \n All in One Place"
               tag="h1"
               stagger={0.1}
               className="text-5xl md:text-8xl font-black font-heading leading-[1.15] text-[#1A1A1A] uppercase tracking-tighter pt-5 relative z-10"
@@ -130,7 +130,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-lg md:text-2xl text-[#1A1A1A] max-w-2xl font-medium"
           >
-            Quality veterinary services for dogs, cats, rabbits and more.
+            Track health records, book vet appointments, and stay connected with a community that loves pets as much as you do.
           </motion.p>
 
           <motion.div

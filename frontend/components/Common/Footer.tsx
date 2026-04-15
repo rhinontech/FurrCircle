@@ -40,7 +40,7 @@ export function Footer() {
               <span className="text-3xl font-heading tracking-tight text-[#1A1A1A]">FurrCircle<span className="text-blue-400 text-[8px] relative -top-3">●</span></span>
             </Link>
             <p className="text-[#666666] leading-relaxed mb-8">
-              Join the FurrCircle ecosystem. The digital health passport and community hub for modern pet parents.
+              The all-in-one pet care app for pet owners and veterinarians. Health records, vet bookings, reminders, and community — in one place.
             </p>
             <form className="flex gap-2">
               <input
@@ -60,7 +60,7 @@ export function Footer() {
             <h4 className="text-[22px] font-heading mb-6 text-[#1A1A1A]">Quick Links</h4>
             <ul className="space-y-4">
               {[
-                { label: "Services", href: "#services" },
+                { label: "Features", href: "#services" },
                 { label: "Patients", href: "#patients" },
                 { label: "Reviews", href: "#reviews" },
                 { label: "Privacy Policy", href: "/privacy-policy" },
@@ -113,7 +113,7 @@ export function Footer() {
         </StaggerContainer>
 
         <div className="pt-6 pb-6 border-t border-[#1A1A1A]/10 flex flex-col md:flex-row items-center justify-between gap-4 text-[13px] text-[#1A1A1A]">
-          <p>© 2026 FurrCircle product of Rhinon Tech. All rights reserved.</p>
+          <p>© 2026 FurrCircle - The Product of Rhinon Tech. All rights reserved.</p>
         </div>
       </div>
     </footer>
