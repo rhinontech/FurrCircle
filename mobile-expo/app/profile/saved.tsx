@@ -319,7 +319,7 @@ export default function SavedScreen() {
                 Save vets from their profile page to find them quickly later.
               </Text>
               <Pressable
-                onPress={() => router.push("/(tabs)/discover")}
+                onPress={() => router.push("/(tabs)/discover?category=Vets")}
                 style={{
                   marginTop: 12,
                   backgroundColor: colors.brand,

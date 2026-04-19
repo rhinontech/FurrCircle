@@ -87,7 +87,7 @@ export default function SavedVetsScreen() {
           <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>No saved vets yet</Text>
           <Text style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>Save vets from their profile page to find them quickly later.</Text>
           <Pressable
-            onPress={() => router.push("/(tabs)/discover")}
+            onPress={() => router.push("/(tabs)/discover?category=Vets")}
             style={{ marginTop: 8, backgroundColor: colors.brand, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
           >
             <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Discover Vets</Text>
