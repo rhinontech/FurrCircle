@@ -323,7 +323,7 @@ export default function OwnerAppointmentsScreen() {
           <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>No appointments yet</Text>
           <Text style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>Book your first appointment with a vet to get started.</Text>
           <Pressable
-            onPress={() => router.push("/appointments/book")}
+            onPress={() => router.push("/(tabs)/discover")}
             style={{ marginTop: 8, backgroundColor: colors.brand, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
           >
             <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Book Appointment</Text>
