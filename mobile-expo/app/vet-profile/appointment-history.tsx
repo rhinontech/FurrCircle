@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { ArrowLeft, CalendarDays, Clock, PawPrint } from "lucide-react-native";
+import { ArrowLeft, CalendarDays, Clock, PawPrint } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import StatusChip from "../../components/ui/StatusChip";
 import { vetAppointmentsApi } from "@/services/vets/appointmentsApi";

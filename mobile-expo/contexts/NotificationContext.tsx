@@ -1,46 +1,92 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import { io, type Socket } from 'socket.io-client';
+import { useRouter } from 'expo-router';
 import { userCommunityApi } from '@/services/users/communityApi';
-import { userNotificationsApi } from '@/services/users/notificationsApi';
+import { userNotificationsApi, type NotificationCategory, type NotificationCounts } from '@/services/users/notificationsApi';
+import { navigateFromNotification } from '@/services/users/notificationRouting';
 import { useAuth } from './AuthContext';
+import { getApiRootUrl } from '@/services/api';
 
-// expo-notifications is NOT used — it was removed from Expo Go in SDK 53.
-// Badge count is powered by polling + AsyncStorage only.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
-const SEEN_KEY = 'chat_last_seen'; // { [chatId]: lastMessageTimestamp }
+const SEEN_KEY = 'chat_last_seen';
+const INSTALLATION_KEY = 'notification_installation_id';
 const POLL_INTERVAL = 30_000;
 
 interface NotificationContextValue {
-  /** Unread chat messages — used for Community tab badge */
+  activityUnreadCount: number;
+  campaignUnreadCount: number;
   chatUnreadCount: number;
-  /** Unread system notifications (appointments, events, etc.) */
   notifUnreadCount: number;
-  /** Sum of chat + system notifications */
   unreadCount: number;
+  pushEnabled: boolean;
+  marketingEnabled: boolean;
+  notificationVersion: number;
   markChatsRead: () => Promise<void>;
-  markNotifsRead: () => Promise<void>;
-  /** Mark everything read */
+  markNotifsRead: (category?: NotificationCategory) => Promise<void>;
   markAllRead: () => Promise<void>;
   refreshNotifCount: () => Promise<void>;
+  refreshPreferences: () => Promise<void>;
+  setPushNotificationsEnabled: (enabled: boolean) => Promise<void>;
+  setMarketingEnabled: (enabled: boolean) => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextValue>({
+  activityUnreadCount: 0,
+  campaignUnreadCount: 0,
   chatUnreadCount: 0,
   notifUnreadCount: 0,
   unreadCount: 0,
+  pushEnabled: false,
+  marketingEnabled: true,
+  notificationVersion: 0,
   markChatsRead: async () => {},
   markNotifsRead: async () => {},
   markAllRead: async () => {},
   refreshNotifCount: async () => {},
+  refreshPreferences: async () => {},
+  setPushNotificationsEnabled: async () => {},
+  setMarketingEnabled: async () => {},
 });
 
+const getInstallationId = async () => {
+  const existing = await AsyncStorage.getItem(INSTALLATION_KEY);
+  if (existing) return existing;
+  const next = `install_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  await AsyncStorage.setItem(INSTALLATION_KEY, next);
+  return next;
+};
+
+const getExpoProjectId = () =>
+  (Constants.expoConfig?.extra as any)?.eas?.projectId
+  || (Constants as any).easConfig?.projectId
+  || (Constants.expoConfig as any)?.extra?.projectId
+  || null;
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const { isLoggedIn } = useAuth();
+  const router = useRouter();
+  const { isLoggedIn, user } = useAuth();
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
-  const [notifUnreadCount, setNotifUnreadCount] = useState(0);
+  const [activityUnreadCount, setActivityUnreadCount] = useState(0);
+  const [campaignUnreadCount, setCampaignUnreadCount] = useState(0);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [marketingEnabled, setMarketingEnabledState] = useState(true);
+  const [notificationVersion, setNotificationVersion] = useState(0);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const appState = useRef(AppState.currentState);
+  const socketRef = useRef<Socket | null>(null);
+  const responseListenerRef = useRef<Notifications.EventSubscription | null>(null);
 
   const getSeenMap = async (): Promise<Record<string, string>> => {
     try {
@@ -55,10 +101,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     await AsyncStorage.setItem(SEEN_KEY, JSON.stringify(map));
   };
 
-  const pollAll = useCallback(async () => {
+  const refreshChatCount = useCallback(async () => {
     if (!isLoggedIn) return;
-
-    // Poll chats
     try {
       const chats = await userCommunityApi.getChats();
       const seenMap = await getSeenMap();
@@ -75,17 +119,84 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
       setChatUnreadCount(newCount);
     } catch {
-      // silently fail — don't disrupt the app
-    }
-
-    // Poll system notifications
-    try {
-      const count = await userNotificationsApi.getUnreadCount();
-      setNotifUnreadCount(count);
-    } catch {
-      // silently fail
+      // silent
     }
   }, [isLoggedIn]);
+
+  const applyCounts = useCallback((counts: NotificationCounts) => {
+    setActivityUnreadCount(counts.activity ?? 0);
+    setCampaignUnreadCount(counts.campaign ?? 0);
+  }, []);
+
+  const refreshNotifCount = useCallback(async () => {
+    if (!isLoggedIn) return;
+    try {
+      applyCounts(await userNotificationsApi.getUnreadCounts());
+    } catch {
+      // silent
+    }
+  }, [applyCounts, isLoggedIn]);
+
+  const refreshPreferences = useCallback(async () => {
+    if (!isLoggedIn) return;
+    try {
+      const prefs = await userNotificationsApi.getPreferences();
+      setMarketingEnabledState(prefs.marketingEnabled !== false);
+    } catch {
+      // silent
+    }
+  }, [isLoggedIn]);
+
+  const syncPushPreference = useCallback(async () => {
+    if (!isLoggedIn || (Platform.OS !== 'ios' && Platform.OS !== 'android')) return;
+
+    try {
+      const settings = await Notifications.getPermissionsAsync();
+      const enabled = settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
+      setPushEnabled(enabled);
+    } catch {
+      setPushEnabled(false);
+    }
+  }, [isLoggedIn]);
+
+  const registerDevice = useCallback(async (enabled: boolean) => {
+    if (!isLoggedIn || (Platform.OS !== 'ios' && Platform.OS !== 'android')) return;
+
+    try {
+      const installationId = await getInstallationId();
+      let expoPushToken: string | null = null;
+
+      if (enabled) {
+        let settings = await Notifications.getPermissionsAsync();
+        if (!settings.granted) {
+          settings = await Notifications.requestPermissionsAsync();
+        }
+
+        enabled = settings.granted;
+        if (enabled) {
+          const projectId = getExpoProjectId();
+          const tokenResponse = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
+          expoPushToken = tokenResponse.data;
+        }
+      }
+
+      await userNotificationsApi.registerDevice({
+        installationId,
+        expoPushToken,
+        platform: Platform.OS,
+        pushEnabled: enabled,
+      });
+
+      setPushEnabled(enabled);
+    } catch {
+      setPushEnabled(false);
+    }
+  }, [isLoggedIn]);
+
+  const pollAll = useCallback(async () => {
+    if (!isLoggedIn) return;
+    await Promise.allSettled([refreshChatCount(), refreshNotifCount(), refreshPreferences(), syncPushPreference()]);
+  }, [isLoggedIn, refreshChatCount, refreshNotifCount, refreshPreferences, syncPushPreference]);
 
   const markChatsRead = useCallback(async () => {
     try {
@@ -104,38 +215,87 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
-  const markNotifsRead = useCallback(async () => {
+  const markNotifsRead = useCallback(async (category?: NotificationCategory) => {
     try {
-      await userNotificationsApi.markAllRead();
-      setNotifUnreadCount(0);
-    } catch {
-      setNotifUnreadCount(0);
+      await userNotificationsApi.markAllRead(category);
+      if (!category || category === 'activity') setActivityUnreadCount(0);
+      if (!category || category === 'campaign') setCampaignUnreadCount(0);
+    } finally {
+      await refreshNotifCount();
     }
-  }, []);
+  }, [refreshNotifCount]);
 
   const markAllRead = useCallback(async () => {
     await Promise.allSettled([markChatsRead(), markNotifsRead()]);
   }, [markChatsRead, markNotifsRead]);
 
-  const refreshNotifCount = useCallback(async () => {
-    if (!isLoggedIn) return;
-    try {
-      const count = await userNotificationsApi.getUnreadCount();
-      setNotifUnreadCount(count);
-    } catch {
-      // silently fail
+  const setPushNotificationsEnabled = useCallback(async (enabled: boolean) => {
+    await registerDevice(enabled);
+  }, [registerDevice]);
+
+  const setMarketingEnabled = useCallback(async (enabled: boolean) => {
+    await userNotificationsApi.updatePreferences({ marketingEnabled: enabled });
+    setMarketingEnabledState(enabled);
+  }, []);
+
+  useEffect(() => {
+    responseListenerRef.current = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data || {};
+      navigateFromNotification(router, {
+        actionType: typeof data.actionType === 'string' ? data.actionType : null,
+        actionPayload: typeof data.actionPayload === 'object' && data.actionPayload ? data.actionPayload as Record<string, unknown> : null,
+        relatedId: typeof data.relatedId === 'string' ? data.relatedId : undefined,
+      });
+    });
+
+    return () => {
+      responseListenerRef.current?.remove();
+    };
+  }, [router]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !user?.token) {
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+      return;
     }
-  }, [isLoggedIn]);
+
+    const socket = io(getApiRootUrl(), {
+      auth: { token: user.token },
+      transports: ['websocket'],
+    });
+    socketRef.current = socket;
+
+    socket.on('notification:counts', (counts: NotificationCounts) => {
+      applyCounts(counts);
+    });
+    socket.on('notification:new', () => {
+      setNotificationVersion((value) => value + 1);
+      refreshNotifCount().catch(() => {});
+    });
+    socket.on('chat:unread', () => {
+      refreshChatCount().catch(() => {});
+    });
+
+    return () => {
+      socket.disconnect();
+      if (socketRef.current === socket) socketRef.current = null;
+    };
+  }, [applyCounts, isLoggedIn, refreshChatCount, refreshNotifCount, user?.token]);
 
   useEffect(() => {
     if (!isLoggedIn) {
       setChatUnreadCount(0);
-      setNotifUnreadCount(0);
+      setActivityUnreadCount(0);
+      setCampaignUnreadCount(0);
+      setPushEnabled(false);
+      setMarketingEnabledState(true);
       if (pollTimer.current) clearInterval(pollTimer.current);
       return;
     }
 
     pollAll();
+    registerDevice(true).catch(() => {});
     pollTimer.current = setInterval(pollAll, POLL_INTERVAL);
 
     const sub = AppState.addEventListener('change', (nextState) => {
@@ -147,19 +307,28 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (pollTimer.current) clearInterval(pollTimer.current);
       sub.remove();
     };
-  }, [isLoggedIn, pollAll]);
+  }, [isLoggedIn, pollAll, registerDevice]);
 
+  const notifUnreadCount = activityUnreadCount + campaignUnreadCount;
   const unreadCount = chatUnreadCount + notifUnreadCount;
 
   return (
     <NotificationContext.Provider value={{
+      activityUnreadCount,
+      campaignUnreadCount,
       chatUnreadCount,
       notifUnreadCount,
       unreadCount,
+      pushEnabled,
+      marketingEnabled,
+      notificationVersion,
       markChatsRead,
       markNotifsRead,
       markAllRead,
       refreshNotifCount,
+      refreshPreferences,
+      setPushNotificationsEnabled,
+      setMarketingEnabled,
     }}>
       {children}
     </NotificationContext.Provider>

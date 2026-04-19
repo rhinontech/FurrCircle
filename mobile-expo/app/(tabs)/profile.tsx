@@ -17,7 +17,7 @@ import {
   Phone,
   Pencil,
   CalendarDays,
-} from "lucide-react-native";
+} from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { userDiscoverApi } from "../../services/users/discoverApi";

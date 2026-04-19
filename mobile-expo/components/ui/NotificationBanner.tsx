@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Animated, Pressable, StyleSheet, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
-import { Bell, X } from "lucide-react-native";
+import { Bell, X } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 
 const { width } = Dimensions.get("window");

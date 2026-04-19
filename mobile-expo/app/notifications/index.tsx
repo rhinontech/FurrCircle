@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -17,19 +17,23 @@ import {
   ShieldCheck,
   CheckCheck,
   Info,
-} from "lucide-react-native";
+  Megaphone,
+} from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useNotifications } from "../../contexts/NotificationContext";
-import { userNotificationsApi, type AppNotification } from "@/services/users/notificationsApi";
+import { userNotificationsApi, type AppNotification, type NotificationCategory } from "@/services/users/notificationsApi";
+import { navigateFromNotification } from "@/services/users/notificationRouting";
 
 const TYPE_META: Record<string, { icon: any; accent: string; bg: string; bgDark: string }> = {
   appointment: { icon: CalendarDays, accent: "#0ea5e9", bg: "#eff6ff", bgDark: "#0c1a3a" },
   event: { icon: Heart, accent: "#ec4899", bg: "#fdf2f8", bgDark: "#2a0a1a" },
   reminder: { icon: ShieldCheck, accent: "#10b981", bg: "#ecfdf5", bgDark: "#002b12" },
+  adoption: { icon: Heart, accent: "#ef4444", bg: "#fff1f2", bgDark: "#31111a" },
+  campaign: { icon: Megaphone, accent: "#7c3aed", bg: "#f5f3ff", bgDark: "#241038" },
   general: { icon: Info, accent: "#6366f1", bg: "#eef2ff", bgDark: "#1a1a3a" },
 };
 
-const getTypeMeta = (type: string) => TYPE_META[type] || TYPE_META.general;
+const getTypeMeta = (notification: AppNotification) => TYPE_META[notification.type] || TYPE_META[notification.category] || TYPE_META.general;
 
 const formatRelativeTime = (isoString: string): string => {
   const diff = Date.now() - new Date(isoString).getTime();
@@ -42,20 +46,37 @@ const formatRelativeTime = (isoString: string): string => {
   return `${days}d ago`;
 };
 
+const TABS: Array<{ key: NotificationCategory; label: string }> = [
+  { key: "activity", label: "Activity" },
+  { key: "campaign", label: "Campaigns" },
+];
+
 export default function NotificationsScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
-  const { markNotifsRead, refreshNotifCount } = useNotifications();
+  const {
+    markNotifsRead,
+    refreshNotifCount,
+    activityUnreadCount,
+    campaignUnreadCount,
+    notificationVersion,
+  } = useNotifications();
 
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [activeTab, setActiveTab] = useState<NotificationCategory>("activity");
+  const [activityNotifications, setActivityNotifications] = useState<AppNotification[]>([]);
+  const [campaignNotifications, setCampaignNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const data = await userNotificationsApi.list();
-      setNotifications(data);
+      const [activity, campaign] = await Promise.all([
+        userNotificationsApi.list("activity"),
+        userNotificationsApi.list("campaign"),
+      ]);
+      setActivityNotifications(activity);
+      setCampaignNotifications(campaign);
     } catch {
       // silently fail
     } finally {
@@ -67,39 +88,55 @@ export default function NotificationsScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchNotifications();
-    }, [fetchNotifications])
+    }, [fetchNotifications, notificationVersion])
   );
+
+  const notifications = activeTab === "activity" ? activityNotifications : campaignNotifications;
+  const unreadNotifications = notifications.filter((n) => !n.isRead);
+  const hasUnread = unreadNotifications.length > 0;
+  const unreadForTab = activeTab === "activity" ? activityUnreadCount : campaignUnreadCount;
 
   const handleMarkAllRead = async () => {
     setMarkingAll(true);
-    await markNotifsRead();
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    await markNotifsRead(activeTab);
+    if (activeTab === "activity") {
+      setActivityNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } else {
+      setCampaignNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    }
     await refreshNotifCount();
     setMarkingAll(false);
   };
 
-  const handleMarkRead = async (id: string) => {
-    await userNotificationsApi.markRead(id);
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
-    await refreshNotifCount();
+  const handleOpenNotification = async (notification: AppNotification) => {
+    if (!notification.isRead) {
+      await userNotificationsApi.markRead(notification.id);
+      if (notification.category === "activity") {
+        setActivityNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n)));
+      } else {
+        setCampaignNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n)));
+      }
+      await refreshNotifCount();
+    }
+
+    navigateFromNotification(router, notification);
   };
 
-  const unreadNotifications = notifications.filter((n) => !n.isRead);
-  const hasUnread = unreadNotifications.length > 0;
+  const emptyCopy = useMemo(() => (
+    activeTab === "activity"
+      ? {
+          title: "No activity yet",
+          body: "Appointments, adoptions, reminders, and other product updates will appear here.",
+        }
+      : {
+          title: "No campaigns yet",
+          body: "Feature launches, event promotions, and company updates will appear here.",
+        }
+  ), [activeTab]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Header */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          paddingHorizontal: 20,
-          paddingVertical: 12,
-        }}
-      >
+      <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 12 }}>
         <Pressable
           onPress={() => router.back()}
           style={{
@@ -129,7 +166,40 @@ export default function NotificationsScreen() {
         </Text>
       </View>
 
-      {/* Mark all read button */}
+      <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
+        <View style={{ flexDirection: "row", backgroundColor: colors.bgSubtle, borderRadius: 14, padding: 4 }}>
+          {TABS.map((tab) => {
+            const selected = activeTab === tab.key;
+            const badge = tab.key === "activity" ? activityUnreadCount : campaignUnreadCount;
+            return (
+              <Pressable
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key)}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  paddingVertical: 11,
+                  borderRadius: 10,
+                  backgroundColor: selected ? colors.bgCard : "transparent",
+                }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: "700", color: selected ? colors.textPrimary : colors.textMuted }}>
+                  {tab.label}
+                </Text>
+                {badge > 0 && (
+                  <View style={{ minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 6, backgroundColor: selected ? colors.brand : colors.border, alignItems: "center", justifyContent: "center" }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#fff" }}>{badge > 99 ? "99+" : badge}</Text>
+                  </View>
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
       {hasUnread && (
         <View style={{ paddingHorizontal: 20, paddingBottom: 8, alignItems: "flex-end" }}>
           <Pressable
@@ -153,7 +223,7 @@ export default function NotificationsScreen() {
               <CheckCheck size={14} color={colors.brand} />
             )}
             <Text style={{ fontSize: 13, fontWeight: "600", color: colors.brand }}>
-              Mark all read
+              Mark {activeTab} read
             </Text>
           </Pressable>
         </View>
@@ -203,38 +273,31 @@ export default function NotificationsScreen() {
                   <Bell size={28} color={colors.textMuted} />
                 </View>
                 <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary }}>
-                  No notifications yet
+                  {emptyCopy.title}
                 </Text>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: colors.textMuted,
-                    textAlign: "center",
-                    lineHeight: 19,
-                  }}
-                >
-                  Appointment updates, event bookings, and other alerts will appear here.
+                <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: "center", lineHeight: 19 }}>
+                  {emptyCopy.body}
                 </Text>
               </View>
             ) : (
               notifications.map((notification) => {
-                const meta = getTypeMeta(notification.type);
+                const meta = getTypeMeta(notification);
                 const Icon = meta.icon;
                 const iconBg = isDark ? meta.bgDark : meta.bg;
 
                 return (
                   <Pressable
                     key={notification.id}
-                    onPress={() => !notification.isRead && handleMarkRead(notification.id)}
+                    onPress={() => handleOpenNotification(notification)}
                     style={{
                       backgroundColor: colors.bgCard,
-                      borderRadius: 8,
+                      borderRadius: 12,
                       borderWidth: 1,
                       borderColor: notification.isRead ? colors.border : colors.brand + "40",
                       padding: 16,
                       flexDirection: "row",
                       alignItems: "flex-start",
-                      opacity: notification.isRead ? 0.8 : 1,
+                      opacity: notification.isRead ? 0.82 : 1,
                     }}
                   >
                     <View
@@ -250,14 +313,7 @@ export default function NotificationsScreen() {
                       <Icon size={22} color={meta.accent} />
                     </View>
                     <View style={{ flex: 1, marginLeft: 14, minWidth: 0 }}>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "flex-start",
-                          justifyContent: "space-between",
-                          gap: 12,
-                        }}
-                      >
+                      <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                         <Text
                           style={{
                             flex: 1,
@@ -285,14 +341,7 @@ export default function NotificationsScreen() {
                           />
                         </View>
                       </View>
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          color: colors.textSecondary,
-                          marginTop: 6,
-                          lineHeight: 19,
-                        }}
-                      >
+                      <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 6, lineHeight: 19 }}>
                         {notification.message}
                       </Text>
                     </View>
@@ -302,26 +351,17 @@ export default function NotificationsScreen() {
             )}
 
             {notifications.length > 0 && (
-              <View
-                style={{
-                  marginTop: 8,
-                  padding: 20,
-                  borderRadius: 18,
-                  backgroundColor: colors.bgSubtle,
-                }}
-              >
+              <View style={{ marginTop: 8, padding: 20, borderRadius: 18, backgroundColor: colors.bgSubtle }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                   <Bell size={18} color={colors.brand} />
-                  <Text
-                    style={{ fontSize: 14, fontWeight: "700", color: colors.textPrimary }}
-                  >
-                    {hasUnread ? `${unreadNotifications.length} unread` : "All caught up"}
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: colors.textPrimary }}>
+                    {unreadForTab > 0 ? `${unreadForTab} unread` : "All caught up"}
                   </Text>
                 </View>
-                <Text
-                  style={{ fontSize: 13, color: colors.textMuted, marginTop: 8 }}
-                >
-                  Appointment updates, event bookings, and alerts appear here.
+                <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 8 }}>
+                  {activeTab === "activity"
+                    ? "Transactional product updates appear here."
+                    : "Company announcements and feature campaigns appear here."}
                 </Text>
               </View>
             )}

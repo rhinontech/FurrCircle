@@ -36,6 +36,12 @@
       "expo-router",
       "expo-web-browser",
       [
+        "expo-notifications",
+        {
+          "defaultChannel": "default"
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Allow FurrCircle to access your photos so you can upload a profile picture.",

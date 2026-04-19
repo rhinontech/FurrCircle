@@ -10,7 +10,7 @@ import {
   Image,
 } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
-import { ChevronLeft, Share2, Download, ShieldCheck, PawPrint, Syringe, Building2 } from "lucide-react-native";
+import { ChevronLeft, Share2, Download, ShieldCheck, PawPrint, Syringe, Building2 } from "@/components/ui/IconCompat";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";

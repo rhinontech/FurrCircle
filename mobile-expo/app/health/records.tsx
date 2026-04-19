@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert, Image, Modal, Dimensions, Platform } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { ChevronLeft, FileText, Calendar, ShieldAlert, X } from "lucide-react-native";
+import { ChevronLeft, FileText, Calendar, ShieldAlert, X } from "@/components/ui/IconCompat";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useTheme } from "../../contexts/ThemeContext";

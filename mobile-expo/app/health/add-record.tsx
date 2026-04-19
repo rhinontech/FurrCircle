@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Camera, ChevronLeft, FileText, Save } from "lucide-react-native";
+import { Camera, ChevronLeft, FileText, Save } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userHealthApi } from "@/services/users/healthApi";
 import { captureAndUploadImage } from "@/services/uploadApi";

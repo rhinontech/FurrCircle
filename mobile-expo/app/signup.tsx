@@ -22,7 +22,7 @@ import {
   Building2,
   Phone,
   MapPin,
-} from "lucide-react-native";
+} from "@/components/ui/IconCompat";
 import { useAuth, type UserRole } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useRouter } from "expo-router";

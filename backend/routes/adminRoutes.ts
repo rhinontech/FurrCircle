@@ -10,6 +10,13 @@ import {
   getAllVetReviews, adminDeleteVetReview,
 } from "../controllers/adminController.ts";
 import {
+  getAdminCampaigns,
+  createAdminCampaign,
+  updateAdminCampaign,
+  publishAdminCampaign,
+  cancelAdminCampaign,
+} from "../controllers/adminCampaignController.ts";
+import {
   getAllContactLeads,
   updateContactLead,
 } from "../controllers/contactLeadController.ts";
@@ -59,5 +66,12 @@ router.get("/events", protect, adminOnly, getAdminEvents);
 router.post("/events", protect, adminOnly, createAdminEvent);
 router.patch("/events/:eventId", protect, adminOnly, updateAdminEvent);
 router.delete("/events/:eventId", protect, adminOnly, deleteAdminEvent);
+
+// Campaigns
+router.get("/campaigns", protect, adminOnly, getAdminCampaigns);
+router.post("/campaigns", protect, adminOnly, createAdminCampaign);
+router.patch("/campaigns/:id", protect, adminOnly, updateAdminCampaign);
+router.post("/campaigns/:id/publish", protect, adminOnly, publishAdminCampaign);
+router.post("/campaigns/:id/cancel", protect, adminOnly, cancelAdminCampaign);
 
 export default router;

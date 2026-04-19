@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, Image, Pressable, TextInput, ActivityIndicator, Alert, Share, KeyboardAvoidingView, Platform } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, Heart, MessageCircle, Share2, Bookmark, PawPrint } from "lucide-react-native";
+import { ArrowLeft, Heart, MessageCircle, Share2, Bookmark, PawPrint } from "@/components/ui/IconCompat";
 import StatusChip from "../../../components/ui/StatusChip";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { useAuth } from "../../../contexts/AuthContext";

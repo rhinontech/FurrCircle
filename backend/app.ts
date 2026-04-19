@@ -5,6 +5,8 @@ import cors from 'cors';
 import { sequelize } from './models/index.ts';
 import http from 'http';
 import { Server } from 'socket.io';
+import { setupRealtimeServer } from './services/realtimeService.ts';
+import { startCampaignWorker } from './services/campaignService.ts';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -14,6 +16,7 @@ const io = new Server(httpServer, {
         credentials: true
     }
 });
+setupRealtimeServer(io);
 
 const PORT = process.env.PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || "development";
@@ -111,6 +114,7 @@ const startServer = async (attempt = 1) => {
         httpServer.listen(Number(PORT), "0.0.0.0", () => {
             console.log(`🚀 FurrCircle API Live on Network -> http://0.0.0.0:${PORT}`);
         });
+        startCampaignWorker();
     } catch (error) {
         console.error('Unable to connect to the database:', error);
         const retryDelayMs = Math.min(30000, 5000 * attempt);

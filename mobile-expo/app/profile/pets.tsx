@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import PetsList from "../../components/pets/PetsList";
 

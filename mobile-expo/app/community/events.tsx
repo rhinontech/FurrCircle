@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft } from "@/components/ui/IconCompat";
 import EventCard from "../../components/ui/EventCard";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userCommunityApi } from "@/services/users/communityApi";

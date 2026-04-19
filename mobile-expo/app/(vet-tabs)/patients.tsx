@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, Image, Pressable, TextInput, ActivityIndicator, RefreshControl } from "react-native";
-import { Search, PawPrint } from "lucide-react-native";
+import { Search, PawPrint } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import StatusChip from "../../components/ui/StatusChip";

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, Image, Pressable, ActivityIndicator, RefreshControl } from "react-native";
-import { CalendarDays, PawPrint, Star, Clock, ChevronRight, CheckCircle, AlertCircle } from "lucide-react-native";
+import { CalendarDays, PawPrint, Star, Clock, ChevronRight, CheckCircle, AlertCircle } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import StatusChip from "../../components/ui/StatusChip";

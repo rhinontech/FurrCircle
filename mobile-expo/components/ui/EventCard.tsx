@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Pressable, Image } from "react-native";
-import { MapPin, Clock, Users } from "lucide-react-native";
+import { MapPin, Clock, Users } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 
 interface EventCardProps {

@@ -7,6 +7,7 @@ import {
   Stethoscope,
   Bell,
   Calendar,
+  Megaphone,
   MessageSquare,
   ShieldCheck,
   ClipboardList,
@@ -26,6 +27,7 @@ const Sidebar = () => {
     { label: "Vet Management", icon: Stethoscope, href: "/vets" },
     { label: "Vet Reviews", icon: Star, href: "/vet-reviews" },
     { label: "Appointments", icon: Calendar, href: "/appointments" },
+    { label: "Campaigns", icon: Megaphone, href: "/campaigns" },
     { label: "Contact Leads", icon: Mail, href: "/contact-leads" },
     { label: "Community", icon: MessageSquare, href: "/community" },
   ];

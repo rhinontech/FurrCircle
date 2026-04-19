@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, RefreshControl, Alert, Linking } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import { ChevronLeft, Star, MapPin, Phone, Bookmark, Stethoscope } from "lucide-react-native";
+import { ChevronLeft, Star, MapPin, Phone, Bookmark, Stethoscope } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userDiscoverApi } from "../../services/users/discoverApi";
 

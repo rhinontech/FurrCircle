@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { ArrowLeft, CheckCircle, Clock, FileText, ShieldCheck } from "lucide-react-native";
+import { ArrowLeft, CheckCircle, Clock, FileText, ShieldCheck } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 

@@ -5,7 +5,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, Bell, Syringe, ClipboardList, Calendar, Check } from "lucide-react-native";
+import { ArrowLeft, Bell, Syringe, ClipboardList, Calendar, Check } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userRemindersApi } from "../../services/users/remindersApi";
 import { userPetsApi } from "../../services/users/petsApi";

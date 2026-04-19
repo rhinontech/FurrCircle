@@ -29,7 +29,7 @@ import {
   Share2,
   X,
   PawPrint,
-} from "lucide-react-native";
+} from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { userDiscoverApi } from "../../services/users/discoverApi";

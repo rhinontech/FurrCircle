@@ -10,7 +10,7 @@ import {
   Dimensions,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
-import { Plus, PawPrint } from "lucide-react-native";
+import { Plus, PawPrint } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userPetsApi } from "@/services/users/petsApi";
 

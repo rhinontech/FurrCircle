@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, Image, Pressable, ActivityIndicator, RefreshControl, Alert, Modal, TextInput } from "react-native";
-import { Clock, CheckCircle, XCircle, AlertCircle, PawPrint, CalendarDays } from "lucide-react-native";
+import { Clock, CheckCircle, XCircle, AlertCircle, PawPrint, CalendarDays } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import StatusChip from "../../components/ui/StatusChip";

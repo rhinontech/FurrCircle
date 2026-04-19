@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ShieldCheck, Clock, Mail, LogOut } from "lucide-react-native";
+import { ShieldCheck, Clock, Mail, LogOut } from "@/components/ui/IconCompat";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
 

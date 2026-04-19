@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { ChevronLeft, ShieldCheck, Download, Eye, Plus, Award } from "lucide-react-native";
+import { ChevronLeft, ShieldCheck, Download, Eye, Plus, Award } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import StatusChip from "../../components/ui/StatusChip";

@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { View, Text, ScrollView, Image, Pressable, Switch } from "react-native";
-import { ChevronRight, CalendarDays, Users, Star, Clock, LogOut, Moon, Sun, UserCheck, Stethoscope, MapPin, Phone, Pencil } from "lucide-react-native";
+import { ChevronRight, CalendarDays, Users, Star, Clock, LogOut, Moon, Sun, UserCheck, Stethoscope, MapPin, Phone, Pencil } from "@/components/ui/IconCompat";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";

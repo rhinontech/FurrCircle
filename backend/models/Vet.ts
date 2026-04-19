@@ -68,6 +68,11 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
+            hasCompletedOnboarding: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
             bio: {
                 type: DataTypes.TEXT,
                 allowNull: true,

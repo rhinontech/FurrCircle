@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Image, Pressable, Switch, ActivityIndicator, Alert, RefreshControl } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
-import { ArrowLeft, Syringe, Pill, Calendar, FileText, ChevronRight, Edit3, Heart, Home, PawPrint, ShieldAlert } from "lucide-react-native";
+import { ArrowLeft, Syringe, Pill, Calendar, FileText, ChevronRight, Edit3, Heart, Home, PawPrint, ShieldAlert } from "@/components/ui/IconCompat";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userPetsApi } from "@/services/users/petsApi";

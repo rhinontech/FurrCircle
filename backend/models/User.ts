@@ -62,6 +62,11 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
+            hasCompletedOnboarding: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
             resetToken: {
                 type: DataTypes.STRING,
                 allowNull: true,

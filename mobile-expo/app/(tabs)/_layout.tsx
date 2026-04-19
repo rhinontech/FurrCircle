@@ -1,8 +1,8 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { Home, Heart, Compass, Users, User } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AppIcon from "@/components/ui/AppIcon";
 
 export default function TabLayout() {
   const { colors } = useTheme();
@@ -26,11 +26,11 @@ export default function TabLayout() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: "500" },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: ({ color, size }) => <Home color={color} size={size} /> }} />
-      <Tabs.Screen name="pets" options={{ title: "Pets", tabBarIcon: ({ color, size }) => <Heart color={color} size={size} /> }} />
-      <Tabs.Screen name="discover" options={{ title: "Discover", tabBarIcon: ({ color, size }) => <Compass color={color} size={size} /> }} />
-      <Tabs.Screen name="community" options={{ title: "Community", tabBarIcon: ({ color, size }) => <Users color={color} size={size} /> }} />
-      <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: ({ color, size }) => <User color={color} size={size} /> }} />
+      <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: ({ color, size }) => <AppIcon name="home" color={color} size={size} /> }} />
+      <Tabs.Screen name="pets" options={{ title: "Pets", tabBarIcon: ({ color, size }) => <AppIcon name="pets" color={color} size={size} /> }} />
+      <Tabs.Screen name="discover" options={{ title: "Discover", tabBarIcon: ({ color, size }) => <AppIcon name="discover" color={color} size={size} /> }} />
+      <Tabs.Screen name="community" options={{ title: "Community", tabBarIcon: ({ color, size }) => <AppIcon name="community" color={color} size={size} /> }} />
+      <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: ({ color, size }) => <AppIcon name="profile" color={color} size={size} /> }} />
     </Tabs>
   );
 }

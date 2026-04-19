@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, ScrollView, Pressable, Switch } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft, Lock, Shield, Eye, Bell, Smartphone, Key } from "lucide-react-native";
+import { ChevronLeft, Lock, Shield, Eye, Bell, Smartphone, Key } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export default function SecurityScreen() {

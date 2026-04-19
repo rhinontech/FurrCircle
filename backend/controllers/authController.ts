@@ -6,7 +6,7 @@ import { Op } from "sequelize";
 import db from "../models/index.ts";
 
 const SELF_SERVICE_USER_ROLES = new Set(["owner", "shelter"]);
-const PROFILE_IMAGE_FIELDS = ["avatar_url", "phone", "bio", "city", "address"] as const;
+const PROFILE_IMAGE_FIELDS = ["avatar_url", "phone", "bio", "city", "address", "hasCompletedOnboarding"] as const;
 const normalizeCity = (value: unknown) => String(value || "").trim();
 
 // userType is embedded in the JWT so middleware knows which table to query
@@ -37,6 +37,7 @@ const buildAuthPayload = async (subject: any, userType: 'user' | 'vet', token?: 
     email: subject.email,
     role: isVet ? 'veterinarian' : subject.role,
     isVerified: subject.isVerified,
+    hasCompletedOnboarding: subject.hasCompletedOnboarding,
     avatar_url: subject.avatar_url,
     phone: subject.phone,
     bio: subject.bio,
@@ -175,6 +176,29 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 export const getUserProfile = async (req: any, res: Response): Promise<void> => {
   try {
     res.json(await buildAuthPayload(req.user, req.userType || 'user'));
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Mark onboarding complete for the current account
+// @route   POST /api/auth/onboarding-complete
+export const completeOnboarding = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { users: User, vets: Vet } = db as any;
+    const isVet = req.userType === 'vet';
+    const Model = isVet ? Vet : User;
+    const actor = await Model.findByPk(req.user.id);
+
+    if (!actor) {
+      res.status(404).json({ message: isVet ? "Veterinarian not found" : "User not found" });
+      return;
+    }
+
+    actor.hasCompletedOnboarding = true;
+    await actor.save();
+
+    res.json(await buildAuthPayload(actor, isVet ? 'vet' : 'user'));
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

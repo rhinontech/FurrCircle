@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Image, Modal } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { ArrowLeft, Calendar, Camera, Check, Trash2 } from "lucide-react-native";
+import { ArrowLeft, Calendar, Camera, Check, Trash2 } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userPetsApi } from "@/services/users/petsApi";
 import { pickAndUploadImage } from "@/services/uploadApi";

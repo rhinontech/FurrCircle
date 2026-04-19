@@ -3,10 +3,11 @@ import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, RefreshCon
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, Calendar, Clock, PawPrint, Stethoscope, XCircle, Plus } from "lucide-react-native";
+import { Calendar, Clock, PawPrint, Stethoscope, XCircle } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userAppointmentsApi } from "../../services/users/appointmentsApi";
 import AppointmentDateTimePicker from "@/components/AppointmentDateTimePicker";
+import AppIcon from "@/components/ui/AppIcon";
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   pending: { bg: "#FEF3C7", text: "#92400E" },
@@ -301,14 +302,14 @@ export default function OwnerAppointmentsScreen() {
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}>
         <Pressable onPress={() => router.back()} style={{ padding: 4 }}>
-          <ArrowLeft size={22} color={colors.textPrimary} />
+          <AppIcon name="back" size={22} color={colors.textPrimary} weight="semibold" />
         </Pressable>
         <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary, flex: 1 }}>My Appointments</Text>
         {/* <Pressable
           onPress={() => router.push("/appointments/book")}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
         >
-          <Plus size={15} color="#fff" />
+          <AppIcon name="add" size={15} color="#fff" weight="bold" />
           <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Book</Text>
         </Pressable> */}
       </View>

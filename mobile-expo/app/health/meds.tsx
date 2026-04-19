@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert, Image } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { ChevronLeft, Pill, Clock, Plus, Trash2 } from "lucide-react-native";
+import { ChevronLeft, Pill, Clock, Plus, Trash2 } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userHealthApi } from "@/services/users/healthApi";
 

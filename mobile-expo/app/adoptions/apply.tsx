@@ -11,7 +11,7 @@ import {
   Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, Heart, Home, CheckCircle } from "lucide-react-native";
+import { ChevronLeft, Heart, Home, CheckCircle } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { userAdoptionsApi } from "@/services/users/adoptionsApi";

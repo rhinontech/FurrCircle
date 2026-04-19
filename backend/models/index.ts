@@ -158,6 +158,10 @@ export const messages = db.messages;
 export const reminders = db.reminders;
 export const saved_vets = db.saved_vets;
 export const notifications = db.notifications;
+export const notification_devices = db.notification_devices;
+export const notification_preferences = db.notification_preferences;
+export const notification_campaigns = db.notification_campaigns;
+export const campaign_deliveries = db.campaign_deliveries;
 export const adoption_applications = db.adoption_applications;
 export const contact_leads = db.contact_leads;
 

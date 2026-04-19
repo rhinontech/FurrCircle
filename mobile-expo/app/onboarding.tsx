@@ -36,7 +36,7 @@ import Reanimated, {
   Easing,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-import { ArrowRight } from "lucide-react-native";
+import { ArrowRight } from "@/components/ui/IconCompat";
 
 const { width } = Dimensions.get("window");
 
