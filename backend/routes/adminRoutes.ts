@@ -9,6 +9,10 @@ import {
   getAllAppointments,
   getAllVetReviews, adminDeleteVetReview,
 } from "../controllers/adminController.ts";
+import {
+  getAllContactLeads,
+  updateContactLead,
+} from "../controllers/contactLeadController.ts";
 import { protect, adminOnly } from "../middleware/authMiddleware.ts";
 
 const router = express.Router();
@@ -41,6 +45,10 @@ router.patch("/post-moderation/:postId", protect, adminOnly, moderatePost);
 
 // Appointments
 router.get("/appointments", protect, adminOnly, getAllAppointments);
+
+// Contact leads
+router.get("/contact-leads", protect, adminOnly, getAllContactLeads);
+router.patch("/contact-leads/:leadId", protect, adminOnly, updateContactLead);
 
 // Vet Reviews
 router.get("/vet-reviews", protect, adminOnly, getAllVetReviews);

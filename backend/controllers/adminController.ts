@@ -381,8 +381,25 @@ export const adminDeleteVetReview = async (req: Request, res: Response): Promise
 // @route   GET /api/admin/stats
 export const getAdminStats = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const { posts: Post, users: User, pets: Pet, vets: Vet, appointments: Appointment } = db as any;
-    const [totalUsers, totalVets, totalPets, totalPosts, pendingPosts, pendingVets, totalAppointments] = await Promise.all([
+    const {
+      posts: Post,
+      users: User,
+      pets: Pet,
+      vets: Vet,
+      appointments: Appointment,
+      contact_leads: ContactLead,
+    } = db as any;
+    const [
+      totalUsers,
+      totalVets,
+      totalPets,
+      totalPosts,
+      pendingPosts,
+      pendingVets,
+      totalAppointments,
+      totalContactLeads,
+      newContactLeads,
+    ] = await Promise.all([
       User.count(),
       Vet.count(),
       Pet.count(),
@@ -390,6 +407,8 @@ export const getAdminStats = async (_req: Request, res: Response): Promise<void>
       Post ? Post.count({ where: { status: 'pending' } }) : Promise.resolve(0),
       Vet.count({ where: { isVerified: false } }),
       Appointment ? Appointment.count() : Promise.resolve(0),
+      ContactLead ? ContactLead.count() : Promise.resolve(0),
+      ContactLead ? ContactLead.count({ where: { status: 'new' } }) : Promise.resolve(0),
     ]);
 
     res.json({
@@ -400,6 +419,8 @@ export const getAdminStats = async (_req: Request, res: Response): Promise<void>
       pendingPosts,
       pendingVets,
       totalAppointments,
+      totalContactLeads,
+      newContactLeads,
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });

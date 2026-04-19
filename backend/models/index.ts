@@ -159,6 +159,7 @@ export const reminders = db.reminders;
 export const saved_vets = db.saved_vets;
 export const notifications = db.notifications;
 export const adoption_applications = db.adoption_applications;
+export const contact_leads = db.contact_leads;
 
 export { sequelize, Sequelize };
 export default db;

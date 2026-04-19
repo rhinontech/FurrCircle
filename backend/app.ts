@@ -76,6 +76,7 @@ import notificationRoutes from './routes/notificationRoutes.ts';
 import uploadRoutes from './routes/uploadRoutes.ts';
 import adoptionRoutes from './routes/adoptionRoutes.ts';
 import vetReviewRoutes from './routes/vetReviewRoutes.ts';
+import contactLeadRoutes from './routes/contactLeadRoutes.ts';
 
 // Routes
 app.get('/', (req: Request, res: Response) => {
@@ -95,6 +96,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/adoptions', adoptionRoutes);
 app.use('/api/vets/:vetId/reviews', vetReviewRoutes);
+app.use('/api/contact-leads', contactLeadRoutes);
 
 // Test DB Connection and Start Server
 const startServer = async (attempt = 1) => {

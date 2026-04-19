@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
+import AdminLayout from "@/components/AdminLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,11 +14,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-import AdminLayout from "@/components/AdminLayout";
 
 export const metadata: Metadata = {
-  title: "PawsHub Admin CMS",
-  description: "Administrative console for PawsHub pet care ecosystem.",
+  title: "FurrCircle Admin",
+  description: "Administrative console for the FurrCircle pet care ecosystem.",
 };
 
 export default function RootLayout({

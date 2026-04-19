@@ -3,7 +3,9 @@ const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001') + 
 const getToken = (): string | null => {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem('pawshub_admin_token');
+    const raw =
+      window.localStorage.getItem('furrcircle_admin_token')
+      || window.localStorage.getItem('pawshub_admin_token');
     return raw || null;
   } catch {
     return null;

@@ -3,8 +3,10 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001') + '/api';
-const SESSION_KEY = "pawshub_admin_session";
-const TOKEN_KEY = "pawshub_admin_token";
+const SESSION_KEY = "furrcircle_admin_session";
+const TOKEN_KEY = "furrcircle_admin_token";
+const LEGACY_SESSION_KEY = "pawshub_admin_session";
+const LEGACY_TOKEN_KEY = "pawshub_admin_token";
 
 export type AdminSession = {
   id: string;
@@ -30,7 +32,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(SESSION_KEY);
+      const raw =
+        window.localStorage.getItem(SESSION_KEY)
+        || window.localStorage.getItem(LEGACY_SESSION_KEY);
       if (raw) setAdmin(JSON.parse(raw) as AdminSession);
     } catch {
       // ignore
@@ -63,12 +67,16 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     setAdmin(session);
     window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     window.localStorage.setItem(TOKEN_KEY, data.token);
+    window.localStorage.removeItem(LEGACY_SESSION_KEY);
+    window.localStorage.removeItem(LEGACY_TOKEN_KEY);
   };
 
   const logout = () => {
     setAdmin(null);
     window.localStorage.removeItem(SESSION_KEY);
     window.localStorage.removeItem(TOKEN_KEY);
+    window.localStorage.removeItem(LEGACY_SESSION_KEY);
+    window.localStorage.removeItem(LEGACY_TOKEN_KEY);
   };
 
   return (

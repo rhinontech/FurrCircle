@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Lock, ShieldCheck, PawPrint, Eye, EyeOff, AlertCircle } from "lucide-react";
+import Image from "next/image";
+import { Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 const AdminLoginScreen = () => {
@@ -29,11 +30,20 @@ const AdminLoginScreen = () => {
     <div className="min-h-screen bg-slate-50 text-slate-950 flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-5xl grid lg:grid-cols-[1.1fr_0.9fr] gap-8 items-stretch">
         {/* Left panel */}
-        <div className="rounded-[32px] bg-primary-900 text-white p-10 lg:p-12 shadow-xl flex flex-col justify-between">
+        <div className="bg-primary-900 text-white p-10 lg:p-12 shadow-xl flex flex-col justify-between">
           <div>
-            <div className="inline-flex items-center gap-3 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold tracking-wide">
-              <PawPrint size={18} />
-              PawsHub Internal Console
+            <div className="inline-flex flex-col gap-3 rounded-[28px] bg-white/10 px-5 py-4">
+              <Image
+                src="/furrcircle_light_logo.png"
+                alt="FurrCircle"
+                width={184}
+                height={60}
+                priority
+                className="h-8 w-auto"
+              />
+              <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/65">
+                Internal Admin Console
+              </span>
             </div>
             <h1 className="mt-8 text-4xl lg:text-5xl font-bold leading-tight">
               Manage users, vets, community, pets, events, and approvals in one place.
@@ -59,7 +69,13 @@ const AdminLoginScreen = () => {
         {/* Right panel — login form */}
         <div className="rounded-[32px] bg-white border border-slate-200 shadow-sm p-8 lg:p-10 flex flex-col justify-center">
           <div className="w-14 h-14 rounded-2xl bg-primary-50 text-primary-900 flex items-center justify-center">
-            <ShieldCheck size={28} />
+            <Image
+              src="/brand/icon.png"
+              alt="FurrCircle icon"
+              width={30}
+              height={30}
+              className="h-7 w-7"
+            />
           </div>
           <h2 className="mt-6 text-3xl font-bold text-slate-950">Admin Access</h2>
           <p className="mt-3 text-slate-500 leading-7">
@@ -75,7 +91,7 @@ const AdminLoginScreen = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@pawshub.app"
+                placeholder="admin@furrcircle.app"
                 required
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-900/20 focus:border-primary-900 transition"
               />
