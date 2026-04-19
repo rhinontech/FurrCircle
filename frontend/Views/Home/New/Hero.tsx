@@ -70,6 +70,7 @@ export function Hero() {
                 src="/decorations/tennis-ball.svg"
                 alt="Tennis Ball"
                 fill
+                sizes="56px"
                 className="drop-shadow-xl"
               />
             </motion.div>
@@ -91,6 +92,7 @@ export function Hero() {
                 src="/decorations/prize-badge.svg"
                 alt="Prize Badge"
                 fill
+                sizes="40px"
                 className="drop-shadow-xl"
               />
             </motion.div>
@@ -112,6 +114,7 @@ export function Hero() {
                 src="/decorations/pet-bowl.svg"
                 alt="Pet Bowl"
                 fill
+                sizes="72px"
                 className="drop-shadow-xl"
               />
             </motion.div>
@@ -128,7 +131,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-lg md:text-2xl text-[#1A1A1A] max-w-2xl font-medium"
+            className="text-lg md:text-2xl text-[#1A1A1A] max-w-3xl font-medium"
           >
             Track health records, book vet appointments, and stay connected with a community that loves pets as much as you do.
           </motion.p>
@@ -215,11 +218,11 @@ export function Hero() {
           ))}
 
           <div className="absolute max-md:hidden top-10 left-20 w-44 h-44 pointer-events-none opacity-100">
-            <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+            <Image src='/pawprint1.png' alt="Paw Print" fill sizes="176px" className="object-contain" />
           </div>
 
           <div className="absolute max-md:hidden  bottom-0 right-30 w-44 h-44 pointer-events-none opacity-100">
-            <Image src='/pawprint2.png' alt="Paw Print" fill className="object-contain" />
+            <Image src='/pawprint2.png' alt="Paw Print" fill sizes="176px" className="object-contain" />
           </div>
 
 

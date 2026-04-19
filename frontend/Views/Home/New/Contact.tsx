@@ -26,6 +26,7 @@ export function Contact() {
           src="/parrot.avif"
           alt="Parrot"
           fill
+          sizes="256px"
           className="object-contain p-8 mt-5"
         />
 
@@ -50,6 +51,7 @@ export function Contact() {
           src="/rabbit.avif"
           alt="Rabbit"
           fill
+          sizes="224px"
           className="object-contain !h-[90%] mt-10"
         />
 
@@ -60,10 +62,10 @@ export function Contact() {
 
       {/* Background Paws */}
       <div className="absolute max-md:hidden top-96 left-40 w-34 h-34 rotate-90 pointer-events-none opacity-100">
-        <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+        <Image src='/pawprint1.png' alt="Paw Print" fill sizes="136px" className="object-contain" />
       </div>
       <div className="absolute max-md:hidden top-96 right-40 w-34 h-34 pointer-events-none opacity-100">
-        <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+        <Image src='/pawprint1.png' alt="Paw Print" fill sizes="136px" className="object-contain" />
       </div>
 
       <div className="max-w-xl mx-auto px-6 relative z-10">

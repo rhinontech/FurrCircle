@@ -5,6 +5,17 @@ import { ArrowRight } from "lucide-react";
 import { FaFacebook, FaInstagram, FaTwitter, FaLinkedin } from "react-icons/fa";
 import { FadeInUp, StaggerContainer, StaggerItem } from "@/components/AnimationProvider";
 
+const handleFooterLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  if (href.startsWith("#")) {
+    e.preventDefault();
+    const el = document.getElementById(href.slice(1));
+    if (el) {
+      const top = el.getBoundingClientRect().top + window.scrollY - 50;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  }
+};
+
 export function Footer() {
   return (
     <footer className="bg-[url('/curveBg.svg')] bg-cover bg-top bg-no-repeat relative pt-32">
@@ -66,7 +77,7 @@ export function Footer() {
                 { label: "Privacy Policy", href: "/privacy-policy" },
               ].map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className="text-[#666666] text-[15px] hover:text-[#987D6B] transition-colors">
+                  <Link href={link.href} onClick={(e) => handleFooterLinkClick(e, link.href)} className="text-[#666666] text-[15px] hover:text-[#987D6B] transition-colors">
                     {link.label}
                   </Link>
                 </li>
@@ -94,7 +105,12 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="#" className="flex items-center gap-3 text-[#666666] text-[15px] hover:text-[#987D6B] transition-colors">
+                <Link
+                  href="https://www.instagram.com/furrcircle"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 text-[#666666] text-[15px] hover:text-[#987D6B] transition-colors"
+                >
                   <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[#F9F8F6]"><FaInstagram className="h-4 w-4" /></span> Instagram
                 </Link>
               </li>

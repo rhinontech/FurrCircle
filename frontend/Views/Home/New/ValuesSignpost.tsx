@@ -61,17 +61,17 @@ export function ValuesSignpost() {
 
         {/* paw prints */}
           <div className="absolute max-md:hidden top-50 left-50 w-44 h-44 pointer-events-none opacity-100">
-            <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+            <Image src='/pawprint1.png' alt="Paw Print" fill sizes="176px" className="object-contain" />
           </div>
           <div className="absolute max-md:hidden top-50 right-40 w-34 h-34 pointer-events-none opacity-100">
-            <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+            <Image src='/pawprint1.png' alt="Paw Print" fill sizes="136px" className="object-contain" />
           </div>
           <div className="absolute max-md:hidden bottom-50 right-40 w-34 h-34 pointer-events-none opacity-100">
-            <Image src='/pawprint2.png' alt="Paw Print" fill className="object-contain" />
+            <Image src='/pawprint2.png' alt="Paw Print" fill sizes="136px" className="object-contain" />
           </div>
 
           <div className="absolute max-md:hidden bottom-30 left-40 w-44 h-44 pointer-events-none opacity-100">
-            <Image src='/pawprint2.png' alt="Paw Print" fill className="object-contain" />
+            <Image src='/pawprint2.png' alt="Paw Print" fill sizes="176px" className="object-contain" />
           </div>
 
 

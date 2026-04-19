@@ -34,7 +34,7 @@ export function PetCare() {
     <section className="relative pb-20 overflow-hidden">
       {/* Background Paws */}
       <div className="absolute max-md:hidden top-80 right-20 w-34 h-34 pointer-events-none opacity-100">
-        <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+        <Image src='/pawprint1.png' alt="Paw Print" fill sizes="136px" className="object-contain" />
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
@@ -51,6 +51,7 @@ export function PetCare() {
                 src="/contact/contactHero.png"
                 alt="Happy Dog and Cat"
                 fill
+                sizes="(max-width: 1024px) 90vw, 36rem"
                 className="object-cover !h-[70%] !top-auto !bottom-0"
                 unoptimized
               />

@@ -68,8 +68,8 @@ const sections = [
 
 export default function PrivacyPolicyPage() {
   return (
-    <main className="flex-1 bg-white">
-      <section className="mx-auto max-w-4xl px-6 py-20 sm:px-8 lg:px-10">
+    <main className="flex-1 bg-[#fffbf5]">
+      <section className="mx-auto max-w-4xl px-6 pt-36 pb-20 sm:px-8 lg:px-10">
         <p className="mb-4 text-sm font-medium uppercase tracking-[0.08em] text-primary">
           Privacy Policy
         </p>
@@ -87,7 +87,7 @@ export default function PrivacyPolicyPage() {
         </p>
       </section>
 
-      <section className="border-t border-[#EEE8E3] bg-[#FCFAF8]">
+      <section className="border-t border-[#EEE8E3] bg-[#fffbf5]">
         <div className="mx-auto max-w-4xl px-6 py-16 sm:px-8 lg:px-10">
           <div className="space-y-12">
             {sections.map((section) => (

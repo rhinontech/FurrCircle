@@ -5,12 +5,12 @@ import Image from "next/image";
 import { AnimatedHeading, FadeInUp } from "@/components/AnimationProvider";
 
 const galleryImages = [
-  "/gallery/family1.png",
-  "/gallery/family2.png",
-  "/gallery/family3.png",
-  "/gallery/family4.png",
-  "/gallery/family5.png",
-  "/gallery/family6.png",
+  "/gallery/family1.jpeg",
+  "/gallery/family2.jpeg",
+  "/gallery/family3.jpeg",
+  "/gallery/family4.jpeg",
+  "/gallery/family5.jpeg",
+  "/gallery/family6.jpeg",
 ];
 
 // Duplicate for infinite effect to ensure seamless scrolling
@@ -23,7 +23,7 @@ export function Gallery() {
 
 
         <div className="absolute max-md:hidden top-15 right-40 w-34 h-34 pointer-events-none opacity-100">
-          <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+          <Image src='/pawprint1.png' alt="Paw Print" fill sizes="136px" className="object-contain" />
         </div>
 
 
@@ -56,7 +56,7 @@ export function Gallery() {
           {allImages.map((src, index) => (
             <div
               key={index}
-              className="relative w-[200px] h-[280px] md:w-[300px] md:h-[350px] rounded-[1rem] overflow-hidden shrink-0 shadow-lg"
+              className="relative w-50 h-70 md:w-75 md:h-87.5 rounded-[1rem] overflow-hidden shrink-0 shadow-lg"
             >
               <motion.div
                 className="relative w-full h-full cursor-pointer"

@@ -15,6 +15,20 @@ export function Navbar() {
     { name: "Reviews", href: "#reviews" },
   ];
 
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      const id = href.slice(1);
+      const el = document.getElementById(id);
+      if (el) {
+        const offset = 50;
+        const top = el.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
+      setIsOpen(false);
+    }
+  };
+
   return (
     <>
       <header className="fixed top-0 w-full z-50 bg-[#fffbf5]/70 border-1 border-b backdrop-blur-md  transition-all duration-300">
@@ -32,13 +46,13 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Links */}
-          <div className="hidden md:flex absolute right-20  items-center gap-20">
+          <div className="hidden md:flex absolute right-20  items-center gap-10">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
                 className="text-[15px] font-semibold text-[#1A1A1A] hover:text-blue-400 transition-colors"
-                onClick={() => setIsOpen(false)}
+                onClick={(e) => handleNavClick(e, link.href)}
               >
                 {link.name}
               </Link>
@@ -86,7 +100,7 @@ export function Navbar() {
                     <Link
                       href={link.href}
                       className="text-4xl font-heading text-[#1A1A1A] hover:text-[#987D6B] transition-colors"
-                      onClick={() => setIsOpen(false)}
+                      onClick={(e) => handleNavClick(e, link.href)}
                     >
                       {link.name}
                     </Link>

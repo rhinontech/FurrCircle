@@ -9,17 +9,17 @@ const testimonials = [
   {
     quote: "FurrCircle completely changed how I manage my dog's health. I can see all his records, upcoming vaccines, and vet appointments in one app. It's a game changer!",
     name: "ANJALI P.",
-    image: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&q=80&w=200&h=200",
+    image: '/testimonials/testimonial1.jpeg',
   },
   {
     quote: "Booking a vet through FurrCircle was so easy. I found a great clinic nearby, picked a time, and got a reminder the day before. My cat's care has never been this stress-free.",
     name: "ISHRA F.",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200&h=200",
+    image: '/testimonials/testimonial2.jpeg',
   },
   {
     quote: "I love the community on FurrCircle. I've met so many pet parents nearby, discovered local pet events, and even got great advice on my rabbit's diet. Highly recommend!",
-    name: "JAMES L.",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200&h=200",
+    name: "RITIKA S.",
+    image: '/testimonials/testimonial3.png',
   },
 ];
 
@@ -35,10 +35,10 @@ export function Testimonials() {
     <section id="reviews" className="relative py-24 overflow-hidden">
       {/* Background Paws */}
       <div className="absolute max-md:hidden top-30 left-40 w-34 h-34 pointer-events-none opacity-100">
-        <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+        <Image src='/pawprint1.png' alt="Paw Print" fill sizes="136px" className="object-contain" />
       </div>
       <div className="absolute max-md:hidden top-30 right-40 w-34 h-34 pointer-events-none opacity-100">
-        <Image src='/pawprint1.png' alt="Paw Print" fill className="object-contain" />
+        <Image src='/pawprint1.png' alt="Paw Print" fill sizes="136px" className="object-contain" />
       </div>
 
       <div className="container mx-auto px-6 relative z-10">

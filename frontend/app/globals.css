@@ -1,4 +1,12 @@
 @import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+}
+
+section[id] {
+  scroll-margin-top: 100px;
+}
 @import "../node_modules/tw-animate-css/dist/tw-animate.css";
 @import "shadcn/tailwind.css";
 

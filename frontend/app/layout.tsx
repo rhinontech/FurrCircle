@@ -25,7 +25,10 @@ export default function RootLayout({
       lang="en"
       className={`${nunito.variable} antialiased`}
     >
-      <body className="min-h-full flex flex-col font-nunito bg-[#fffbf5] text-foreground">
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col font-nunito bg-[#fffbf5] text-foreground"
+      >
         <Navbar />
         {children}
         <Footer />
