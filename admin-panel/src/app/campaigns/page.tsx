@@ -7,8 +7,10 @@ import {
   Loader2,
   Megaphone,
   Pencil,
+  RefreshCw,
   Send,
   SquarePen,
+  Trash2,
   X,
 } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
@@ -338,6 +340,33 @@ export default function CampaignsPage() {
     }
   };
 
+  const handleDelete = async (campaign: CampaignRecord) => {
+    if (!window.confirm(`Delete "${campaign.title}"? This cannot be undone.`)) return;
+    setActionCampaignId(campaign.id);
+    try {
+      await adminApi.delete(`/admin/campaigns/${campaign.id}`);
+      setCampaigns((current) => current.filter((item) => item.id !== campaign.id));
+      if (selectedCampaign?.id === campaign.id) closeDrawer();
+    } catch (err: any) {
+      setError(err.message || "Failed to delete campaign.");
+    } finally {
+      setActionCampaignId(null);
+    }
+  };
+
+  const handleResend = async (campaign: CampaignRecord) => {
+    if (!window.confirm(`Resend "${campaign.title}" to all current users?`)) return;
+    setActionCampaignId(campaign.id);
+    try {
+      const updated = await adminApi.post<CampaignRecord>(`/admin/campaigns/${campaign.id}/resend`);
+      upsertCampaign(updated);
+    } catch (err: any) {
+      setError(err.message || "Failed to resend campaign.");
+    } finally {
+      setActionCampaignId(null);
+    }
+  };
+
   const handlePublishExisting = async (campaign: CampaignRecord, mode: "now" | "schedule") => {
     if (mode === "schedule" && !campaign.scheduledFor) {
       openEdit(campaign);
@@ -520,6 +549,16 @@ export default function CampaignsPage() {
                               {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                             </button>
                           )}
+                          {(campaign.status === "sent" || campaign.status === "failed" || campaign.status === "cancelled") && (
+                            <button
+                              onClick={() => handleResend(campaign)}
+                              disabled={isProcessing}
+                              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-40"
+                              title="Resend campaign"
+                            >
+                              {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                            </button>
+                          )}
                           {campaign.status === "scheduled" && (
                             <button
                               onClick={() => handleCancelScheduled(campaign)}
@@ -530,6 +569,14 @@ export default function CampaignsPage() {
                               {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
                             </button>
                           )}
+                          <button
+                            onClick={() => handleDelete(campaign)}
+                            disabled={isProcessing}
+                            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:opacity-40"
+                            title="Delete campaign"
+                          >
+                            {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -826,6 +873,24 @@ export default function CampaignsPage() {
                   Cancel Schedule
                 </button>
               )}
+              {(selectedCampaign.status === "sent" || selectedCampaign.status === "failed" || selectedCampaign.status === "cancelled") && (
+                <button
+                  onClick={() => handleResend(selectedCampaign)}
+                  disabled={actionCampaignId === selectedCampaign.id}
+                  className="inline-flex items-center gap-2 rounded-input bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-50"
+                >
+                  {actionCampaignId === selectedCampaign.id ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                  Resend
+                </button>
+              )}
+              <button
+                onClick={() => handleDelete(selectedCampaign)}
+                disabled={actionCampaignId === selectedCampaign.id}
+                className="inline-flex items-center gap-2 rounded-input bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 transition-colors hover:bg-rose-100 disabled:opacity-50"
+              >
+                <Trash2 size={16} />
+                Delete
+              </button>
             </div>
           ) : (
             <div className="flex flex-wrap items-center justify-end gap-3">

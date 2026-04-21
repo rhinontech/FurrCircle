@@ -122,3 +122,47 @@ export const cancelAdminCampaign = async (req: Request, res: Response): Promise<
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Delete a campaign
+// @route   DELETE /api/admin/campaigns/:id
+export const deleteAdminCampaign = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { notification_campaigns: NotificationCampaign, campaign_deliveries: CampaignDelivery } = db as any;
+    const campaign = await NotificationCampaign.findByPk(req.params.id);
+    if (!campaign) {
+      res.status(404).json({ message: "Campaign not found" });
+      return;
+    }
+    await CampaignDelivery.destroy({ where: { campaignId: campaign.id } });
+    await campaign.destroy();
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Resend a completed/failed campaign
+// @route   POST /api/admin/campaigns/:id/resend
+export const resendAdminCampaign = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { notification_campaigns: NotificationCampaign, campaign_deliveries: CampaignDelivery } = db as any;
+    const campaign = await NotificationCampaign.findByPk(req.params.id);
+    if (!campaign) {
+      res.status(404).json({ message: "Campaign not found" });
+      return;
+    }
+    await CampaignDelivery.destroy({ where: { campaignId: campaign.id } });
+    campaign.status = "sending";
+    campaign.startedAt = new Date();
+    campaign.completedAt = null;
+    campaign.sentCount = 0;
+    campaign.failedCount = 0;
+    campaign.targetedCount = 0;
+    campaign.lastError = null;
+    await campaign.save();
+    await processCampaignBatch(campaign.id);
+    res.json(campaign);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

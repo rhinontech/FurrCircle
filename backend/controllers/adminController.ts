@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import db from "../models/index.ts";
+import { createRichNotification } from "../services/notificationService.ts";
 
 // @desc    Get all pending community posts
 // @route   GET /api/admin/pending-posts
@@ -220,10 +221,41 @@ export const getAdminEvents = async (_req: Request, res: Response): Promise<void
 // @route   POST /api/admin/events
 export const createAdminEvent = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { events: Event } = db as any;
+    const { events: Event, users: User, vets: Vet } = db as any;
     const { title, description, date, time, location, category, imageUrl } = req.body;
     const event = await Event.create({ title, description, date, time, location, category, imageUrl, organizerId: (req as any).user?.id });
     res.status(201).json(event);
+
+    // Notify all users and vets about the new event (fire and forget)
+    (async () => {
+      try {
+        const [users, vets] = await Promise.all([
+          User.findAll({ where: { role: ['owner', 'shelter'] }, attributes: ['id'] }),
+          Vet.findAll({ attributes: ['id'] }),
+        ]);
+        const actors = [
+          ...(users as any[]).map((u: any) => ({ actorId: u.id, actorType: 'user' as const })),
+          ...(vets as any[]).map((v: any) => ({ actorId: v.id, actorType: 'vet' as const })),
+        ];
+        await Promise.allSettled(actors.map((actor) =>
+          createRichNotification({
+            actorId: actor.actorId,
+            actorType: actor.actorType,
+            type: 'event',
+            category: 'activity',
+            title: `New Event: ${title}`,
+            message: `${location ? location + ' · ' : ''}${date || ''}`,
+            relatedId: event.id,
+            relatedType: 'event',
+            actionType: 'event_detail',
+            actionPayload: { eventId: event.id },
+            sendPush: true,
+          })
+        ));
+      } catch (err) {
+        console.error('Event notification broadcast failed:', err);
+      }
+    })();
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

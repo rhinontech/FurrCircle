@@ -15,6 +15,8 @@ import {
   updateAdminCampaign,
   publishAdminCampaign,
   cancelAdminCampaign,
+  deleteAdminCampaign,
+  resendAdminCampaign,
 } from "../controllers/adminCampaignController.ts";
 import {
   getAllContactLeads,
@@ -73,5 +75,7 @@ router.post("/campaigns", protect, adminOnly, createAdminCampaign);
 router.patch("/campaigns/:id", protect, adminOnly, updateAdminCampaign);
 router.post("/campaigns/:id/publish", protect, adminOnly, publishAdminCampaign);
 router.post("/campaigns/:id/cancel", protect, adminOnly, cancelAdminCampaign);
+router.post("/campaigns/:id/resend", protect, adminOnly, resendAdminCampaign);
+router.delete("/campaigns/:id", protect, adminOnly, deleteAdminCampaign);
 
 export default router;
