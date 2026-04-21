@@ -100,13 +100,12 @@ export const updateAdminCampaign = async (req: Request, res: Response): Promise<
 // @route   POST /api/admin/campaigns/:id/publish
 export const publishAdminCampaign = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { notification_campaigns: NotificationCampaign } = db as any;
     const mode = req.body?.mode === "schedule" ? "schedule" : "now";
     const campaignId = String(req.params.id || "");
     const campaign = await publishCampaign(campaignId, mode, req.body?.scheduledFor || null);
-    if (mode === "now") {
-      await processCampaignBatch(campaign.id);
-    }
-    res.json(campaign);
+    const refreshedCampaign = await NotificationCampaign.findByPk(campaign.id);
+    res.json(refreshedCampaign || campaign);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -161,7 +160,8 @@ export const resendAdminCampaign = async (req: Request, res: Response): Promise<
     campaign.lastError = null;
     await campaign.save();
     await processCampaignBatch(campaign.id);
-    res.json(campaign);
+    const refreshedCampaign = await NotificationCampaign.findByPk(campaign.id);
+    res.json(refreshedCampaign || campaign);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

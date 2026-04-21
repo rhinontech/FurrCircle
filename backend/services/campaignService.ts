@@ -6,7 +6,7 @@ type CampaignFilterPayload = {
   city?: string;
   onboardingStatus?: "all" | "completed" | "not_completed";
   platform?: "all" | "ios" | "android";
-  role?: "all" | "owner" | "veterinarian" | "shelter";
+  role?: "all" | "owner" | "veterinarian" | "shelter" | "admin";
 };
 
 const normalizeCity = (value: unknown) => String(value || "").trim();
@@ -35,9 +35,12 @@ const getAudienceActors = async (filters: CampaignFilterPayload) => {
   const city = normalizeCity(filters.city);
   const onboardingStatus = filters.onboardingStatus || "all";
   const platform = filters.platform || "all";
+  const userRoles = role === "owner" || role === "shelter" || role === "admin"
+    ? [role]
+    : ["owner", "shelter", "admin"];
 
   const userWhere: Record<string, any> = {
-    role: role === "owner" || role === "shelter" ? role : { [Op.in]: ["owner", "shelter"] },
+    role: userRoles.length === 1 ? userRoles[0] : { [Op.in]: userRoles },
   };
   if (city) userWhere.city = { [Op.iLike]: city };
   if (onboardingStatus === "completed") userWhere.hasCompletedOnboarding = true;
@@ -54,7 +57,7 @@ const getAudienceActors = async (filters: CampaignFilterPayload) => {
   ]);
 
   let actors = [
-    ...(users as any[]).filter((item) => item.role !== "admin").map((item) => ({ actorId: item.id, actorType: "user" as const })),
+    ...(users as any[]).map((item) => ({ actorId: item.id, actorType: "user" as const })),
     ...(vets as any[]).map((item) => ({ actorId: item.id, actorType: "vet" as const })),
   ];
 
@@ -138,7 +141,7 @@ export const processCampaignBatch = async (campaignId: string, batchSize = 100) 
 
   for (const delivery of deliveries) {
     try {
-      await createRichNotification({
+      const result = await createRichNotification({
         actorId: delivery.actorId,
         actorType: delivery.actorType,
         type: "campaign",
@@ -153,13 +156,25 @@ export const processCampaignBatch = async (campaignId: string, batchSize = 100) 
         respectMarketingPreference: true,
       });
 
-      delivery.status = "sent";
-      delivery.deliveredAt = new Date();
-      delivery.error = null;
-      campaign.sentCount += 1;
-    } catch (error: any) {
+      const pushResult = result.push;
+      const pushFailed = !pushResult || pushResult.status === "failed";
+
+      if (pushFailed) {
+        delivery.status = "failed";
+        delivery.error = pushResult?.error || "Push delivery failed";
+        delivery.deliveredAt = null;
+        campaign.failedCount += 1;
+        campaign.lastError = delivery.error;
+      } else {
+        delivery.status = "sent";
+        delivery.deliveredAt = new Date();
+        delivery.error = pushResult.error;
+        campaign.sentCount += 1;
+      }
+    } catch (error: unknown) {
       delivery.status = "failed";
-      delivery.error = String(error?.message || "Delivery failed");
+      delivery.error = error instanceof Error && error.message ? error.message : "Delivery failed";
+      delivery.deliveredAt = null;
       campaign.failedCount += 1;
       campaign.lastError = delivery.error;
     }

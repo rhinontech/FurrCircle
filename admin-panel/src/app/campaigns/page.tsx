@@ -17,7 +17,7 @@ import { adminApi } from "@/lib/adminApiClient";
 
 type CampaignStatus = "draft" | "scheduled" | "sending" | "sent" | "cancelled" | "failed";
 type PublishMode = "draft" | "now" | "schedule";
-type CampaignRole = "all" | "owner" | "veterinarian" | "shelter";
+type CampaignRole = "all" | "owner" | "veterinarian" | "shelter" | "admin";
 type CampaignPlatform = "all" | "ios" | "android";
 type CampaignOnboarding = "all" | "completed" | "not_completed";
 type CampaignTargetType = "notifications" | "discover" | "community" | "events" | "event";
@@ -90,6 +90,7 @@ const ROLE_OPTIONS: Array<{ value: CampaignRole; label: string }> = [
   { value: "owner", label: "Pet owners" },
   { value: "veterinarian", label: "Veterinarians" },
   { value: "shelter", label: "Shelters" },
+  { value: "admin", label: "Admins" },
 ];
 
 const PLATFORM_OPTIONS: Array<{ value: CampaignPlatform; label: string }> = [

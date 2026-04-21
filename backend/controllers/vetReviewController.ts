@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import db from "../models/index.ts";
+import { createRichNotification } from "../services/notificationService.ts";
 
 // @desc    Get all reviews for a vet
 // @route   GET /api/vets/:vetId/reviews
@@ -76,6 +77,18 @@ export const submitVetReview = async (req: any, res: Response): Promise<void> =>
     await vet.save();
 
     res.status(created ? 201 : 200).json(vetReview);
+
+    // Notify the vet (fire and forget)
+    createRichNotification({
+      actorId: req.params.vetId,
+      actorType: "vet",
+      type: "review",
+      category: "activity",
+      title: created ? "You received a new review" : "A review was updated",
+      message: review ? String(review).slice(0, 80) : `${rating} star rating`,
+      relatedId: req.params.vetId,
+      sendPush: true,
+    }).catch(() => {});
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

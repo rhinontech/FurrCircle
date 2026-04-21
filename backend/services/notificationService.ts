@@ -3,8 +3,21 @@ import { emitToActor } from "./realtimeService.ts";
 
 type ActorType = "user" | "vet";
 type NotificationCategory = "activity" | "campaign";
+type PushStatus = "sent" | "failed" | "skipped";
 
 type NotificationActionPayload = Record<string, unknown> | null;
+
+type PushSendResult = {
+  status: PushStatus;
+  deliveredCount: number;
+  failedCount: number;
+  error: string | null;
+};
+
+type NotificationDeliveryResult = {
+  notificationCreated: boolean;
+  push: PushSendResult | null;
+};
 
 type CreateNotificationInput = {
   actorId: string;
@@ -23,6 +36,25 @@ type CreateNotificationInput = {
 };
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+
+const getErrorMessage = (error: unknown, fallback = "Unknown error") => {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "string" && error.trim()) return error;
+  return fallback;
+};
+
+const summarizeExpoTicketError = (ticket: Record<string, unknown>) => {
+  const details = ticket?.details;
+  if (details && typeof details === "object" && typeof (details as { error?: unknown }).error === "string") {
+    return String((details as { error: string }).error);
+  }
+
+  if (typeof ticket?.message === "string" && ticket.message.trim()) {
+    return ticket.message;
+  }
+
+  return "Expo push rejected the message";
+};
 
 const defaultActionFromRelated = (relatedType?: string, relatedId?: string) => {
   switch (relatedType) {
@@ -61,11 +93,18 @@ const isMarketingEnabledForActor = async (actorId: string, actorType: ActorType)
   return pref ? Boolean(pref.marketingEnabled) : true;
 };
 
-const sendExpoPush = async (messages: Array<Record<string, unknown>>) => {
-  if (messages.length === 0) return;
+const sendExpoPush = async (messages: Array<Record<string, unknown>>): Promise<PushSendResult> => {
+  if (messages.length === 0) {
+    return {
+      status: "failed",
+      deliveredCount: 0,
+      failedCount: 0,
+      error: "No Expo push tokens registered for the targeted actor",
+    };
+  }
 
   try {
-    await fetch(EXPO_PUSH_URL, {
+    const response = await fetch(EXPO_PUSH_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -73,8 +112,76 @@ const sendExpoPush = async (messages: Array<Record<string, unknown>>) => {
       },
       body: JSON.stringify(messages),
     });
+
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      const fallback = `Expo push request failed with status ${response.status}`;
+      const payloadErrors = payload && typeof payload === "object" && Array.isArray((payload as { errors?: unknown[] }).errors)
+        ? (payload as { errors: Array<{ message?: string }> }).errors
+        : [];
+      const message = typeof payloadErrors[0]?.message === "string" && payloadErrors[0].message
+        ? payloadErrors[0].message
+        : fallback;
+
+      return {
+        status: "failed",
+        deliveredCount: 0,
+        failedCount: messages.length,
+        error: message,
+      };
+    }
+
+    const tickets = payload && typeof payload === "object" && Array.isArray((payload as { data?: unknown[] }).data)
+      ? (payload as { data: Array<Record<string, unknown>> }).data
+      : [];
+
+    if (tickets.length === 0) {
+      return {
+        status: "failed",
+        deliveredCount: 0,
+        failedCount: messages.length,
+        error: "Expo push returned no ticket data",
+      };
+    }
+
+    let deliveredCount = 0;
+    let failedCount = 0;
+    const errors: string[] = [];
+
+    for (const ticket of tickets) {
+      if (ticket?.status === "ok") {
+        deliveredCount += 1;
+        continue;
+      }
+
+      failedCount += 1;
+      errors.push(summarizeExpoTicketError(ticket));
+    }
+
+    if (deliveredCount > 0) {
+      return {
+        status: "sent",
+        deliveredCount,
+        failedCount,
+        error: errors.length > 0 ? errors.join("; ") : null,
+      };
+    }
+
+    return {
+      status: "failed",
+      deliveredCount: 0,
+      failedCount: failedCount || messages.length,
+      error: errors.join("; ") || "Expo push rejected all messages",
+    };
   } catch (error) {
+    const message = getErrorMessage(error, "Failed to send Expo push notifications");
     console.error("Failed to send Expo push notifications:", error);
+    return {
+      status: "failed",
+      deliveredCount: 0,
+      failedCount: messages.length,
+      error: message,
+    };
   }
 };
 
@@ -87,13 +194,18 @@ const sendPushToActor = async (
   actionPayload: NotificationActionPayload,
   category: NotificationCategory,
   respectMarketingPreference: boolean
-) => {
+): Promise<PushSendResult> => {
   const { notification_devices: NotificationDevice } = db as any;
 
   if (respectMarketingPreference) {
     const enabled = await isMarketingEnabledForActor(actorId, actorType);
     if (!enabled) {
-      return;
+      return {
+        status: "skipped",
+        deliveredCount: 0,
+        failedCount: 0,
+        error: "Recipient has marketing notifications disabled",
+      };
     }
   }
 
@@ -104,6 +216,15 @@ const sendPushToActor = async (
       pushEnabled: true,
     },
   });
+
+  if (devices.length === 0) {
+    return {
+      status: "failed",
+      deliveredCount: 0,
+      failedCount: 0,
+      error: "No enabled devices registered for the targeted actor",
+    };
+  }
 
   const messages = devices
     .map((device: any) => String(device.expoPushToken || "").trim())
@@ -120,7 +241,16 @@ const sendPushToActor = async (
       },
     }));
 
-  await sendExpoPush(messages);
+  if (messages.length === 0) {
+    return {
+      status: "failed",
+      deliveredCount: 0,
+      failedCount: devices.length,
+      error: "No Expo push tokens registered for the targeted actor",
+    };
+  }
+
+  return sendExpoPush(messages);
 };
 
 export const dispatchChatAlert = async (
@@ -129,13 +259,13 @@ export const dispatchChatAlert = async (
   title: string,
   message: string,
   conversationId?: string
-) => {
+): Promise<PushSendResult> => {
   emitToActor(actorId, actorType, "chat:unread", {
     conversationId: conversationId || null,
     at: new Date().toISOString(),
   });
 
-  await sendPushToActor(
+  return sendPushToActor(
     actorId,
     actorType,
     title,
@@ -155,8 +285,8 @@ export const createNotification = async (
   message: string,
   relatedId?: string,
   relatedType?: string
-): Promise<void> => {
-  await createRichNotification({
+): Promise<NotificationDeliveryResult> => {
+  return createRichNotification({
     actorId: userId,
     actorType: (userType === "vet" ? "vet" : "user") as ActorType,
     type,
@@ -181,11 +311,13 @@ export const createRichNotification = async ({
   campaignId,
   sendPush = true,
   respectMarketingPreference = category === "campaign",
-}: CreateNotificationInput): Promise<void> => {
+}: CreateNotificationInput): Promise<NotificationDeliveryResult> => {
   try {
     if (shouldTreatAsChatAlert(type, relatedType)) {
-      await dispatchChatAlert(actorId, actorType, title, message, relatedId);
-      return;
+      return {
+        notificationCreated: false,
+        push: await dispatchChatAlert(actorId, actorType, title, message, relatedId),
+      };
     }
 
     const { notifications: Notification } = db as any;
@@ -209,8 +341,9 @@ export const createRichNotification = async ({
     emitToActor(actorId, actorType, "notification:new", notification.toJSON());
     await emitUnreadCounts(actorId, actorType);
 
+    let push: PushSendResult | null = null;
     if (sendPush) {
-      await sendPushToActor(
+      push = await sendPushToActor(
         actorId,
         actorType,
         title,
@@ -221,8 +354,22 @@ export const createRichNotification = async ({
         respectMarketingPreference
       );
     }
+
+    return {
+      notificationCreated: true,
+      push,
+    };
   } catch (err) {
     console.error("Failed to create notification:", err);
+    return {
+      notificationCreated: false,
+      push: {
+        status: "failed",
+        deliveredCount: 0,
+        failedCount: 1,
+        error: getErrorMessage(err, "Failed to create notification"),
+      },
+    };
   }
 };
 
