@@ -230,7 +230,7 @@ export const createAdminEvent = async (req: Request, res: Response): Promise<voi
     (async () => {
       try {
         const [users, vets] = await Promise.all([
-          User.findAll({ where: { role: ['owner', 'shelter'] }, attributes: ['id'] }),
+          User.findAll({ attributes: ['id'] }),
           Vet.findAll({ attributes: ['id'] }),
         ]);
         const actors = [
