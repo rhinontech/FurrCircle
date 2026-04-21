@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppState, Platform } from 'react-native';
+import { Alert, AppState, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { io, type Socket } from 'socket.io-client';
@@ -188,7 +188,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       });
 
       setPushEnabled(enabled);
-    } catch {
+    } catch (err) {
+      Alert.alert('Notification Debug', String(err));
       setPushEnabled(false);
     }
   }, [isLoggedIn]);
