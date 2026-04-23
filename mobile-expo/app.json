@@ -14,7 +14,9 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.furrcircle.app",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +25,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.furrcircle"
+      "package": "com.furrcircle.app",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -38,14 +41,14 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow FurrCircle to access your photos so you can upload a profile picture.",
-          "cameraPermission": "Allow FurrCircle to access your camera so you can take a profile picture."
+          "photosPermission": "Allow FurrCircle to access your photos so you can upload a profile picture of your pet.",
+          "cameraPermission": "Allow FurrCircle to access your camera so you can take a profile picture of your pet or scan medical documents."
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow FurrCircle to access your location to auto-fill your city."
+          "locationWhenInUsePermission": "Allow FurrCircle to access your location to auto-fill your city and help you find nearby vets."
         }
       ],
       "@react-native-community/datetimepicker"
