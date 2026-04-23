@@ -1,10 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TextInput, Pressable, Image, Modal, ActivityIndicator, RefreshControl, Alert, Linking } from "react-native";
-import { Search, Stethoscope, MapPin, Star, ShieldCheck, Phone, Clock, X, Heart, PawPrint } from "@/components/ui/IconCompat";
+import { View, Text, ScrollView, TextInput, Pressable, Image, Modal, ActivityIndicator, RefreshControl, Alert, Linking, Platform } from "react-native";
+import { Search, Stethoscope, MapPin, Star, ShieldCheck, Phone, Clock, X, Heart, PawPrint, ChevronRight, Sliders } from "@/components/ui/IconCompat";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { userDiscoverApi } from "@/services/users/discoverApi";
+import { LinearGradient } from "expo-linear-gradient";
+import Svg, { G, Path } from "react-native-svg";
+
+const CustomPawPrint = ({ size = 20, color = "currentColor", style }: { size?: number, color?: string, style?: any }) => (
+  <Svg width={size} height={size} viewBox="0 0 40 40" style={style}>
+    <G transform="translate(0 0)">
+      <Path d="M 9.076 0 L 39.965 9.076 L 30.889 39.965 L 0 30.889 Z" fill="transparent" />
+      <Path d="M 23.678 21.861 C 22.096 19.14 18.662 18.131 15.859 19.563 L 9.833 22.637 C 6.409 24.3 6.979 29.569 10.682 30.457 C 12.676 30.986 14.581 30.444 16.708 31.111 C 18.934 31.723 20.318 33.1 22.255 33.858 C 25.817 34.994 29.035 30.895 27.079 27.704 L 23.678 21.86 Z M 33.722 17.691 C 31.985 16.787 29.973 18.425 29.087 20.083 C 26.38 25.228 31.373 27.828 34.172 22.888 C 35.346 20.764 35.148 18.477 33.722 17.691 Z M 25.04 18.349 C 26.874 18.888 28.978 17.241 29.73 14.683 C 31.356 8.471 25.072 6.624 23.084 12.73 C 22.332 15.288 23.211 17.812 25.04 18.349 Z M 12.271 15.142 C 12.428 13.27 11.617 10.803 9.667 10.623 C 5.996 10.483 5.304 18.192 8.638 19.192 C 10.549 19.685 12.067 17.746 12.271 15.142 Z M 16.613 15.873 C 18.443 16.411 20.546 14.764 21.298 12.206 C 22.929 5.995 16.645 4.148 14.652 10.253 C 13.901 12.811 14.779 15.334 16.613 15.873 Z" fill={color} />
+    </G>
+  </Svg>
+);
 
 const categories = ["All", "Vets", "Adoption", "Foster"];
 
@@ -20,9 +31,33 @@ function EmptyPlaceholder({ icon: Icon, title, description, colors }: any) {
   );
 }
 
+import Animated, { FadeInUp, FadeInRight, useAnimatedStyle, withRepeat, withTiming, withSequence, withDelay, withSpring } from 'react-native-reanimated';
+import { BlurView } from "expo-blur";
+
+const AnimatedImage = Animated.createAnimatedComponent(Image);
+
 export default function DiscoverScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  // ... rest of state ...
+
+  const ballStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: withRepeat(withSequence(withTiming(-10, { duration: 1500 }), withTiming(0, { duration: 1500 })), -1, true) }
+    ]
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: withRepeat(withSequence(withTiming(0.4, { duration: 2000 }), withTiming(1, { duration: 2000 })), -1, true)
+  }));
+
+  const pawFloatingStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: withRepeat(withSequence(withTiming(-5, { duration: 2500 }), withTiming(0, { duration: 2500 })), -1, true) }
+    ]
+  }));
+
+  // ... (keeping state and useEffect logic) ...
   const { category } = useLocalSearchParams<{ category?: string }>();
   const [active, setActive] = useState(category && categories.includes(category) ? category : "All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -118,23 +153,66 @@ export default function DiscoverScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView 
-        contentContainerStyle={{ paddingBottom: 80, paddingTop: 16 }}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: Platform.OS === 'ios' ? 120 : 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={{ paddingHorizontal: 20, paddingBottom: 16 }}>
-          <Text style={{ fontSize: 24, fontWeight: '700', color: colors.textPrimary, marginBottom: 16 }}>Discover</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgSubtle, borderRadius: 12, paddingHorizontal: 12, marginBottom: 16 }}>
-            <Search size={18} color={colors.textMuted} />
-            <TextInput
-              placeholder="Search vets and pets..."
-              placeholderTextColor={colors.textMuted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              style={{ flex: 1, height: 48, marginLeft: 8, fontSize: 14, color: colors.textPrimary }}
-            />
+        {/* Dynamic Header with Gradient */}
+        <LinearGradient
+          colors={['#2F5BFF', '#1C3FAA']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ paddingTop: 60, paddingBottom: 40, paddingHorizontal: 20, borderBottomLeftRadius: 22, borderBottomRightRadius: 22 }}
+        >
+          {/* Decorative Paw Prints */}
+          <CustomPawPrint size={100} color="rgba(255,255,255,0.08)" style={{ position: 'absolute', right: -20, top: 10 }} />
+          <CustomPawPrint size={60} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', left: 40, bottom: -10 }} />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View>
+              <Text style={{ fontSize: 28, fontWeight: '700', color: '#fff' }}>👋 Explore</Text>
+              <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>Find vets, pets & friends nearby</Text>
+            </View>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+        </LinearGradient>
+
+
+        <View style={{ paddingHorizontal: 20, marginTop: -28 }}>
+          <View style={{
+            borderRadius: 20,
+            overflow: 'hidden',
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.1,
+            shadowRadius: 15,
+            elevation: 8,
+            borderWidth: 0.3,
+            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.4)',
+          }}>
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 16,
+              height: 58,
+              backgroundColor: isDark ? colors.bgCard : '#fff',
+            }}>
+              <Search size={20} color={isDark ? colors.textSecondary : "#6366F1"} strokeWidth={2.5} />
+              <TextInput
+                placeholder="Search vets, pets, or services..."
+                placeholderTextColor={colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={{ flex: 1, marginLeft: 12, fontSize: 16, color: colors.textPrimary, fontWeight: '600' }}
+              />
+              {/* <View style={{ width: 1, height: 24, backgroundColor: 'rgba(0,0,0,0.05)', marginHorizontal: 12 }} /> */}
+              {/* <Pressable>
+                <Sliders size={20} color="#6366F1" />
+              </Pressable> */}
+            </View>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8, marginTop: 8, }}>
             {categories.map((c) => (
               <Pressable
                 key={c}
@@ -153,8 +231,10 @@ export default function DiscoverScreen() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary }}>Nearby Vets</Text>
               {filteredVets.length > 0 && (
-                <Pressable onPress={() => setActive("Vets")}>
-                  <Text style={{ fontSize: 14, color: colors.brand, fontWeight: '500' }}>View all</Text>
+
+                <Pressable onPress={() => setActive("Vets")} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 14, color: colors.brand, fontWeight: '700' }}>View all</Text>
+                  <ChevronRight size={14} color={colors.brand} style={{ marginLeft: 4 }} />
                 </Pressable>
               )}
             </View>
@@ -169,34 +249,51 @@ export default function DiscoverScreen() {
               <Pressable
                 key={vet.id}
                 onPress={() => router.push(`/vets/${vet.id}` as any)}
-                style={{ backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 16, marginBottom: 12 }}
+                style={{
+                  backgroundColor: colors.bgCard,
+                  borderRadius: 24,
+                  padding: 12,
+                  marginBottom: 16,
+                  elevation: 4,
+                  borderWidth: Platform.OS === 'android' ? 0.1 : 0,
+                  borderColor: colors.border,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 12,
+                }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ width: 52, height: 52, borderRadius: 16, overflow: 'hidden', backgroundColor: colors.infoBg, alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                  <View style={{ width: 80, height: 80, borderRadius: 20, backgroundColor: colors.infoBg, alignItems: 'center', justifyContent: 'center', marginRight: 16, overflow: 'hidden' }}>
                     {vet.avatar_url ? (
                       <Image source={{ uri: vet.avatar_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                     ) : (
-                      <Stethoscope size={22} color="#0ea5e9" />
+                      <Stethoscope size={32} color="#3b82f6" />
                     )}
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '700', color: colors.textPrimary }} numberOfLines={1}>
-                      {vet.clinic_name || vet.name}
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: colors.textPrimary }} numberOfLines={1}>
+                      {vet.clinic_name || vet.name || "Vet Clinic"}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
-                      <MapPin size={13} color={colors.textMuted} />
-                      <Text style={{ fontSize: 13, color: colors.textMuted, marginLeft: 5, marginRight: 14 }} numberOfLines={1}>
+                      <MapPin size={14} color={colors.textMuted} />
+                      <Text style={{ fontSize: 13, color: colors.textMuted, marginLeft: 4 }} numberOfLines={1}>
                         {vet.city || 'Nearby'}
                       </Text>
-                      <Star size={13} color="#f59e0b" fill="#f59e0b" />
-                      <Text style={{ fontSize: 13, color: '#f59e0b', fontWeight: '700', marginLeft: 5 }}>
-                        {Number(vet.rating || 4.5).toFixed(1)}
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+                      <Star size={14} color="#f59e0b" fill="#f59e0b" />
+                      <Text style={{ fontSize: 13, color: colors.textPrimary, fontWeight: '700', marginLeft: 4 }}>
+                        {Number(vet.rating || 0).toFixed(1)}
+                      </Text>
+                      <Text style={{ fontSize: 13, color: colors.textMuted, marginLeft: 4 }}>
+                        ({vet.reviewsCount || 0} reviews)
                       </Text>
                     </View>
                   </View>
-                  <View style={{ backgroundColor: '#e0f2fe', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: '#bae6fd' }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#0369a1' }}>VET</Text>
-                  </View>
+                  <Pressable onPress={() => router.push(`/vets/${vet.id}` as any)} style={{ backgroundColor: colors.brand, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 }}>
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>View</Text>
+                  </Pressable>
                 </View>
               </Pressable>
             ))}

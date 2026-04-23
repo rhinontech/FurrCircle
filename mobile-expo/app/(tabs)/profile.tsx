@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { View, Text, ScrollView, Image, Pressable, Switch } from "react-native";
+import { View, Text, ScrollView, Image, Pressable, Switch, Platform } from "react-native";
 import {
   Settings,
   ChevronRight,
@@ -90,7 +90,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingTop: 16 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: Platform.OS === 'ios' ? 100 : 80, paddingTop: 16 }}>
         <View style={{ paddingHorizontal: 20, paddingBottom: 24 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
             <Text style={{ fontSize: 24, fontWeight: '700', color: colors.textPrimary }}>Profile</Text>

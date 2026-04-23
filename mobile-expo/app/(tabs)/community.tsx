@@ -8,6 +8,17 @@ import EventCard from "../../components/ui/EventCard";
 import { useAuth } from "../../contexts/AuthContext";
 import { userCommunityApi } from "@/services/users/communityApi";
 import { pickAndUploadImage } from "@/services/uploadApi";
+import { LinearGradient } from "expo-linear-gradient";
+import Svg, { G, Path } from "react-native-svg";
+
+const CustomPawPrint = ({ size = 20, color = "currentColor", style }: { size?: number, color?: string, style?: any }) => (
+  <Svg width={size} height={size} viewBox="0 0 40 40" style={style}>
+    <G transform="translate(0 0)">
+      <Path d="M 9.076 0 L 39.965 9.076 L 30.889 39.965 L 0 30.889 Z" fill="transparent" />
+      <Path d="M 23.678 21.861 C 22.096 19.14 18.662 18.131 15.859 19.563 L 9.833 22.637 C 6.409 24.3 6.979 29.569 10.682 30.457 C 12.676 30.986 14.581 30.444 16.708 31.111 C 18.934 31.723 20.318 33.1 22.255 33.858 C 25.817 34.994 29.035 30.895 27.079 27.704 L 23.678 21.86 Z M 33.722 17.691 C 31.985 16.787 29.973 18.425 29.087 20.083 C 26.38 25.228 31.373 27.828 34.172 22.888 C 35.346 20.764 35.148 18.477 33.722 17.691 Z M 25.04 18.349 C 26.874 18.888 28.978 17.241 29.73 14.683 C 31.356 8.471 25.072 6.624 23.084 12.73 C 22.332 15.288 23.211 17.812 25.04 18.349 Z M 12.271 15.142 C 12.428 13.27 11.617 10.803 9.667 10.623 C 5.996 10.483 5.304 18.192 8.638 19.192 C 10.549 19.685 12.067 17.746 12.271 15.142 Z M 16.613 15.873 C 18.443 16.411 20.546 14.764 21.298 12.206 C 22.929 5.995 16.645 4.148 14.652 10.253 C 13.901 12.811 14.779 15.334 16.613 15.873 Z" fill={color} />
+    </G>
+  </Svg>
+);
 
 const postCategories = ["General", "Health", "Adoption", "Training", "Nutrition", "Lost & Found"];
 const feedCategories = ["All", "Events", "Health", "Adoption", "Training", "Nutrition"];
@@ -203,13 +214,31 @@ export default function CommunityScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 100, paddingTop: 16 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 120 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={{ paddingHorizontal: 20, paddingBottom: 8 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <Text style={{ fontSize: 24, fontWeight: "700", color: colors.textPrimary }}>Community</Text>
+        {/* Dynamic Header with Gradient */}
+        <LinearGradient
+          colors={['#2F5BFF', '#1C3FAA']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ paddingTop: 60, paddingBottom: 40, paddingHorizontal: 20, borderBottomLeftRadius: 22, borderBottomRightRadius: 22 }}
+        >
+          {/* Decorative Paw Prints */}
+          <CustomPawPrint size={100} color="rgba(255,255,255,0.08)" style={{ position: 'absolute', right: -20, top: 10 }} />
+          <CustomPawPrint size={60} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', left: 40, bottom: -10 }} />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View>
+              <Text style={{ fontSize: 28, fontWeight: '700', color: '#fff' }}>👋 Community</Text>
+              <Text style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>Connect with other pet owners</Text>
+            </View>
           </View>
+        </LinearGradient>
+
+        <View style={{ paddingHorizontal: 20, marginTop: 24 }}>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24, marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
             {feedCategories.map((category) => (
@@ -319,7 +348,7 @@ export default function CommunityScreen() {
 
       <Pressable
         onPress={() => setIsCreateModalVisible(true)}
-        style={{ position: "absolute", bottom: 20, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: colors.brand, alignItems: "center", justifyContent: "center", shadowColor: colors.brand, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 10 }}
+        style={{ position: "absolute", bottom: Platform.OS === 'ios' ? 100 : 80, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: colors.brand, alignItems: "center", justifyContent: "center", shadowColor: colors.brand, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 10 }}
       >
         <Plus size={24} color="#fff" strokeWidth={3} />
       </Pressable>
