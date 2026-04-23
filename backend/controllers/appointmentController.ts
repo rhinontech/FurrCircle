@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import db from "../models/index.ts";
 import { Op } from "sequelize";
 import { createNotification } from "../services/notificationService.ts";
+import { sendEmail } from "../services/emailService.ts";
 
 const normalizeCity = (value: unknown) => String(value || "").trim();
 
@@ -242,6 +243,32 @@ export const updateAppointmentStatus = async (req: any, res: Response): Promise<
         appointment.id,
         "appointment"
       );
+      // Send email to owner
+      const { users: User, vets: Vet } = db as any;
+      const [owner, vet] = await Promise.all([
+        User.findByPk(appointment.ownerId, { attributes: ["name", "email"] }),
+        Vet.findByPk(appointment.vetId, { attributes: ["name"] }),
+      ]);
+      if (owner?.email) {
+        if (status === "confirmed") {
+          sendEmail(owner.email, "Your appointment is confirmed!", "appointment-confirmed", {
+            ownerName: owner.name || "there",
+            vetName: vet?.name || "your vet",
+            date: appointment.date,
+            time: appointment.time,
+          });
+        } else if (status === "cancelled") {
+          const reasonBlock = appointment.notes
+            ? `<div class="reason-box"><strong>Reason:</strong> ${appointment.notes}</div>`
+            : "";
+          sendEmail(owner.email, "Your appointment has been cancelled", "appointment-cancelled", {
+            recipientName: owner.name || "there",
+            vetName: vet?.name || "your vet",
+            date: appointment.date,
+            reasonBlock,
+          });
+        }
+      }
     } else if (isOwner) {
       // Owner cancelled → notify vet
       await createNotification(
@@ -253,6 +280,16 @@ export const updateAppointmentStatus = async (req: any, res: Response): Promise<
         appointment.id,
         "appointment"
       );
+      const { vets: Vet } = db as any;
+      const vet = await Vet.findByPk(appointment.vetId, { attributes: ["name", "email"] });
+      if (vet?.email) {
+        sendEmail(vet.email, "An appointment has been cancelled", "appointment-cancelled", {
+          recipientName: vet.name || "there",
+          vetName: req.user.name || "the owner",
+          date: appointment.date,
+          reasonBlock: "",
+        });
+      }
     }
 
     res.json(appointment);
@@ -309,6 +346,15 @@ export const requestAppointmentReschedule = async (req: any, res: Response): Pro
         appointment.id,
         "appointment"
       );
+      const { users: User } = db as any;
+      const owner = await User.findByPk(appointment.ownerId, { attributes: ["name", "email"] });
+      if (owner?.email) {
+        sendEmail(owner.email, "Reschedule request for your appointment", "appointment-reschedule", {
+          recipientName: owner.name || "there",
+          proposedDate: date,
+          proposedTime: time,
+        });
+      }
     } else {
       await createNotification(
         appointment.vetId,
@@ -319,6 +365,15 @@ export const requestAppointmentReschedule = async (req: any, res: Response): Pro
         appointment.id,
         "appointment"
       );
+      const { vets: Vet } = db as any;
+      const vet = await Vet.findByPk(appointment.vetId, { attributes: ["name", "email"] });
+      if (vet?.email) {
+        sendEmail(vet.email, "New reschedule suggestion from owner", "appointment-reschedule", {
+          recipientName: vet.name || "there",
+          proposedDate: date,
+          proposedTime: time,
+        });
+      }
     }
 
     res.json(appointment);

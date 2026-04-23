@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import db from "../models/index.ts";
+import { sendEmail } from "../services/emailService.ts";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VALID_STATUSES = new Set(["new", "contacted", "closed"]);
@@ -41,6 +42,7 @@ export const submitContactLead = async (req: Request, res: Response): Promise<vo
       status: "new",
     });
 
+    sendEmail(email, "We received your message!", "contact-confirmation", { name });
     res.status(201).json({
       id: lead.id,
       message: "Thanks for reaching out. We'll get back to you soon.",

@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import db from "../models/index.ts";
 import { createNotification } from "../services/notificationService.ts";
+import { sendEmail } from "../services/emailService.ts";
 
 // @desc    Submit an adoption/foster application
 // @route   POST /api/adoptions/apply
@@ -73,6 +74,14 @@ export const submitApplication = async (req: any, res: Response): Promise<void> 
       application.id,
       "adoption_application"
     );
+    if (pet.owner?.email) {
+      sendEmail(pet.owner.email, `New ${type} application for ${pet.name}`, "adoption-application-received", {
+        ownerName: pet.owner.name || "there",
+        applicantName: req.user.name || "Someone",
+        petName: pet.name,
+        type: type.charAt(0).toUpperCase() + type.slice(1),
+      });
+    }
 
     res.status(201).json(application);
   } catch (error: any) {
@@ -159,6 +168,23 @@ export const reviewApplication = async (req: any, res: Response): Promise<void> 
       application.id,
       "adoption_application"
     );
+    if (application.applicantEmail) {
+      const statusColors: Record<string, string> = {
+        approved: "#27ae60",
+        rejected: "#e74c3c",
+        pending: "#f39c12",
+      };
+      const color = statusColors[status] || "#333";
+      const statusBlock = `<span style="display:inline-block;padding:6px 16px;border-radius:20px;font-weight:700;font-size:14px;background:${color};color:#fff;">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+      const notesBlock = ownerNotes ? `<div class="notes-box">${ownerNotes}</div>` : "";
+      sendEmail(application.applicantEmail, `Your ${application.type} application update`, "adoption-application-status", {
+        applicantName: application.applicantName || "there",
+        petName: application.petId,
+        type: application.type,
+        statusBlock,
+        notesBlock,
+      });
+    }
 
     res.json(application);
   } catch (error: any) {

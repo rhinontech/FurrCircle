@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { margin: 0; padding: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .wrapper { max-width: 600px; margin: 32px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.10); }
+    .header { background: #0F1F3D; padding: 28px 32px; text-align: center; }
+    .header img { height: 44px; }
+    .body { padding: 36px 32px; color: #333333; font-size: 15px; line-height: 1.7; }
+    .body h2 { margin: 0 0 16px; font-size: 22px; color: #0F1F3D; font-weight: 700; }
+    .body p { margin: 0 0 16px; }
+    .notes-box { background: #f0f4f8; border-left: 4px solid #1976D2; border-radius: 4px; padding: 14px 18px; margin: 0 0 20px; color: #555; font-style: italic; }
+    .footer { background: #f8f9fa; border-top: 1px solid #e8ecf0; padding: 20px 32px; text-align: center; font-size: 13px; color: #888888; }
+    .footer a { color: #1976D2; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <img src="{{LOGO_URL}}" alt="FurrCircle" />
+    </div>
+    <div class="body">
+      <h2>Application Update for {{petName}}</h2>
+      <p>Hi {{applicantName}},</p>
+      <p>The status of your {{type}} application has been updated:</p>
+      <p>{{statusBlock}}</p>
+      {{notesBlock}}
+      <p>Open the FurrCircle app for more details.</p>
+      <p>Thank you for caring!<br/><strong>The FurrCircle Team</strong></p>
+    </div>
+    <div class="footer">
+      <p>Need help? Reach us at <a href="mailto:support@furrcircle.com">support@furrcircle.com</a></p>
+      <p>© 2025 FurrCircle. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
