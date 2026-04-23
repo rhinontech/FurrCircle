@@ -1,6 +1,25 @@
 import * as Notifications from 'expo-notifications';
-import messaging from '@react-native-firebase/messaging';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+
+type FirebaseMessagingModule = typeof import('@react-native-firebase/messaging');
+type FirebaseMessaging = ReturnType<NonNullable<FirebaseMessagingModule['default']>>;
+
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
+
+const getFirebaseMessaging = (): FirebaseMessaging | null => {
+  if (isExpoGo || (Platform.OS !== 'ios' && Platform.OS !== 'android')) {
+    return null;
+  }
+
+  try {
+    const module = require('@react-native-firebase/messaging') as FirebaseMessagingModule;
+    return typeof module.default === 'function' ? module.default() : null;
+  } catch (error) {
+    console.warn('Firebase messaging is unavailable in this build.', error);
+    return null;
+  }
+};
 
 export const registerForPushNotificationsAsync = async () => {
   try {
@@ -17,15 +36,20 @@ export const registerForPushNotificationsAsync = async () => {
       return null;
     }
 
+    const firebaseMessaging = getFirebaseMessaging();
+    if (!firebaseMessaging) {
+      return null;
+    }
+
     // 2. Register for remote messages (iOS)
     if (Platform.OS === 'ios') {
-      if (!messaging().isDeviceRegisteredForRemoteMessages) {
-        await messaging().registerDeviceForRemoteMessages();
+      if (!firebaseMessaging.isDeviceRegisteredForRemoteMessages) {
+        await firebaseMessaging.registerDeviceForRemoteMessages();
       }
     }
 
     // 3. Get FCM Token
-    const token = await messaging().getToken();
+    const token = await firebaseMessaging.getToken();
     return token;
   } catch (error) {
     console.error('Error in registerForPushNotificationsAsync:', error);
@@ -35,9 +59,16 @@ export const registerForPushNotificationsAsync = async () => {
 
 export const getFCMToken = async () => {
   try {
-    return await messaging().getToken();
+    const firebaseMessaging = getFirebaseMessaging();
+    if (!firebaseMessaging) {
+      return null;
+    }
+
+    return await firebaseMessaging.getToken();
   } catch (error) {
     console.error('Error getting FCM token:', error);
     return null;
   }
 };
+
+export { getFirebaseMessaging, isExpoGo };

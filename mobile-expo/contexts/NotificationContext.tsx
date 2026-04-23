@@ -8,8 +8,7 @@ import { useRouter } from 'expo-router';
 import { userCommunityApi } from '@/services/users/communityApi';
 import { userNotificationsApi, type NotificationCategory, type NotificationCounts } from '@/services/users/notificationsApi';
 import { navigateFromNotification } from '@/services/users/notificationRouting';
-import messaging from '@react-native-firebase/messaging';
-import { registerForPushNotificationsAsync } from '@/services/fcmService';
+import { getFirebaseMessaging, isExpoGo, registerForPushNotificationsAsync } from '@/services/fcmService';
 import { getApiRootUrl } from '@/services/api';
 import { useAuth } from './AuthContext';
 
@@ -151,6 +150,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const syncPushPreference = useCallback(async () => {
     if (!isLoggedIn || (Platform.OS !== 'ios' && Platform.OS !== 'android')) return;
+    if (isExpoGo) {
+      setPushEnabled(false);
+      return;
+    }
 
     try {
       const settings = await Notifications.getPermissionsAsync();
@@ -163,6 +166,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const registerDevice = useCallback(async (enabled: boolean) => {
     if (!isLoggedIn || (Platform.OS !== 'ios' && Platform.OS !== 'android')) return;
+    if (isExpoGo) {
+      setPushEnabled(false);
+      return;
+    }
 
     try {
       const installationId = await getInstallationId();
@@ -259,20 +266,23 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       });
     });
 
-    const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: remoteMessage.notification?.title || '',
-          body: remoteMessage.notification?.body || '',
-          data: remoteMessage.data || {},
-        },
-        trigger: null,
-      });
-    });
+    const firebaseMessaging = getFirebaseMessaging();
+    const unsubscribeForeground = firebaseMessaging
+      ? firebaseMessaging.onMessage(async (remoteMessage) => {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: remoteMessage.notification?.title || '',
+              body: remoteMessage.notification?.body || '',
+              data: remoteMessage.data || {},
+            },
+            trigger: null,
+          });
+        })
+      : null;
 
     return () => {
       responseListenerRef.current?.remove();
-      unsubscribeForeground();
+      unsubscribeForeground?.();
     };
   }, [router]);
 
