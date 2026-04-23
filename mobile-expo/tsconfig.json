@@ -7,6 +7,12 @@
       "@/*": [
         "./*"
       ]
-    }
-  }
+    },
+    "jsx": "react-native"
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "nativewind-env.d.ts"
+  ]
 }
