@@ -50,6 +50,15 @@
       "expo-router",
       "expo-web-browser",
       "expo-notifications",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "./plugins/withFirebaseAppDelegate",
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
       [
