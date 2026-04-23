@@ -26,27 +26,18 @@ const withFirebaseIOSFixes = (config) => {
     return config;
   });
 
-  // 2. Podfile fixes (Modular headers and Xcode Build Settings)
+  // 2. Podfile fixes
   config = withPodfile(config, (config) => {
     let podfile = config.modResults.contents;
-    
-    // Add use_modular_headers! globally if missing
+
+    // Use modular headers globally - this satisfies Firebase without the strictness of use_frameworks!
     if (!podfile.includes('use_modular_headers!')) {
       podfile = podfile.replace(/platform :ios/, 'use_modular_headers!\nplatform :ios');
     }
 
-    // Fix for the "non-modular header" build error in RNFB modules
-    const postInstallFix = `
-    installer.pods_project.targets.each do |target|
-      if target.name.start_with?('RNFB')
-        target.build_configurations.each do |config|
-          config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-        end
-      end
-    end`;
-
-    if (!podfile.includes('CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES')) {
-      podfile = podfile.replace(/react_native_post_install\(/, `${postInstallFix}\n    react_native_post_install(`);
+    // Ensure Firebase is aware of the configuration
+    if (!podfile.includes('$RNFirebaseAsStaticFramework = true')) {
+      podfile = '$RNFirebaseAsStaticFramework = true\n' + podfile;
     }
 
     config.modResults.contents = podfile;
