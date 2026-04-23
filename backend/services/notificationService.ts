@@ -35,25 +35,12 @@ type CreateNotificationInput = {
   respectMarketingPreference?: boolean;
 };
 
-const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+import { messaging } from "../config/firebase.ts";
 
 const getErrorMessage = (error: unknown, fallback = "Unknown error") => {
   if (error instanceof Error && error.message) return error.message;
   if (typeof error === "string" && error.trim()) return error;
   return fallback;
-};
-
-const summarizeExpoTicketError = (ticket: Record<string, unknown>) => {
-  const details = ticket?.details;
-  if (details && typeof details === "object" && typeof (details as { error?: unknown }).error === "string") {
-    return String((details as { error: string }).error);
-  }
-
-  if (typeof ticket?.message === "string" && ticket.message.trim()) {
-    return ticket.message;
-  }
-
-  return "Expo push rejected the message";
 };
 
 const defaultActionFromRelated = (relatedType?: string, relatedId?: string) => {
@@ -93,89 +80,38 @@ const isMarketingEnabledForActor = async (actorId: string, actorType: ActorType)
   return pref ? Boolean(pref.marketingEnabled) : true;
 };
 
-const sendExpoPush = async (messages: Array<Record<string, unknown>>): Promise<PushSendResult> => {
+const sendFCMPush = async (messages: Array<any>): Promise<PushSendResult> => {
   if (messages.length === 0) {
     return {
       status: "failed",
       deliveredCount: 0,
       failedCount: 0,
-      error: "No Expo push tokens registered for the targeted actor",
+      error: "No FCM tokens registered for the targeted actor",
     };
   }
 
   try {
-    const response = await fetch(EXPO_PUSH_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(messages),
-    });
-
-    const payload = await response.json().catch(() => null);
-    if (!response.ok) {
-      const fallback = `Expo push request failed with status ${response.status}`;
-      const payloadErrors = payload && typeof payload === "object" && Array.isArray((payload as { errors?: unknown[] }).errors)
-        ? (payload as { errors: Array<{ message?: string }> }).errors
-        : [];
-      const message = typeof payloadErrors[0]?.message === "string" && payloadErrors[0].message
-        ? payloadErrors[0].message
-        : fallback;
-
-      return {
-        status: "failed",
-        deliveredCount: 0,
-        failedCount: messages.length,
-        error: message,
-      };
-    }
-
-    const tickets = payload && typeof payload === "object" && Array.isArray((payload as { data?: unknown[] }).data)
-      ? (payload as { data: Array<Record<string, unknown>> }).data
-      : [];
-
-    if (tickets.length === 0) {
-      return {
-        status: "failed",
-        deliveredCount: 0,
-        failedCount: messages.length,
-        error: "Expo push returned no ticket data",
-      };
-    }
-
-    let deliveredCount = 0;
-    let failedCount = 0;
+    const response = await messaging.sendEach(messages);
+    
+    let deliveredCount = response.successCount;
+    let failedCount = response.failureCount;
     const errors: string[] = [];
 
-    for (const ticket of tickets) {
-      if (ticket?.status === "ok") {
-        deliveredCount += 1;
-        continue;
+    response.responses.forEach((res, idx) => {
+      if (!res.success) {
+        errors.push(`Token ${idx}: ${res.error?.message || "Unknown FCM error"}`);
       }
-
-      failedCount += 1;
-      errors.push(summarizeExpoTicketError(ticket));
-    }
-
-    if (deliveredCount > 0) {
-      return {
-        status: "sent",
-        deliveredCount,
-        failedCount,
-        error: errors.length > 0 ? errors.join("; ") : null,
-      };
-    }
+    });
 
     return {
-      status: "failed",
-      deliveredCount: 0,
-      failedCount: failedCount || messages.length,
-      error: errors.join("; ") || "Expo push rejected all messages",
+      status: deliveredCount > 0 ? "sent" : "failed",
+      deliveredCount,
+      failedCount,
+      error: errors.length > 0 ? errors.join("; ") : null,
     };
   } catch (error) {
-    const message = getErrorMessage(error, "Failed to send Expo push notifications");
-    console.error("Failed to send Expo push notifications:", error);
+    const message = getErrorMessage(error, "Failed to send FCM notifications");
+    console.error("Failed to send FCM notifications:", error);
     return {
       status: "failed",
       deliveredCount: 0,
@@ -229,15 +165,29 @@ const sendPushToActor = async (
   const messages = devices
     .map((device: any) => String(device.expoPushToken || "").trim())
     .filter(Boolean)
-    .map((to: string) => ({
-      to,
-      sound: "default",
-      title,
-      body: message,
+    .map((token: string) => ({
+      notification: { title, body: message },
       data: {
         category,
-        actionType,
-        actionPayload,
+        actionType: actionType || "",
+        actionPayload: JSON.stringify(actionPayload || {}),
+        title,
+        body: message,
+      },
+      token: token,
+      android: {
+        priority: 'high' as const,
+        notification: {
+          sound: 'default',
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: 'default',
+            badge: 1,
+          },
+        },
       },
     }));
 
@@ -246,11 +196,11 @@ const sendPushToActor = async (
       status: "failed",
       deliveredCount: 0,
       failedCount: devices.length,
-      error: "No Expo push tokens registered for the targeted actor",
+      error: "No FCM tokens registered for the targeted actor",
     };
   }
 
-  return sendExpoPush(messages);
+  return sendFCMPush(messages);
 };
 
 export const dispatchChatAlert = async (
