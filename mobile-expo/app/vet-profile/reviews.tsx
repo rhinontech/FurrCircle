@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Star } from "lucide-react-native";
+import { ArrowLeft, Star } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { vetProfileApi } from "@/services/vets/profileApi";

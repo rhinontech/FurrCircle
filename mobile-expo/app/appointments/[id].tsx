@@ -23,7 +23,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-} from "lucide-react-native";
+} from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { userAppointmentsApi } from "@/services/users/appointmentsApi";

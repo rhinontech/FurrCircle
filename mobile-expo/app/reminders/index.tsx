@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft, Bell, Calendar, Syringe, ClipboardList, CheckCircle, Plus, Pencil, Trash2 } from "lucide-react-native";
+import { Bell, Calendar, Syringe, ClipboardList, CheckCircle, Pencil, Trash2 } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import StatusChip from "../../components/ui/StatusChip";
 import { userRemindersApi } from "@/services/users/remindersApi";
+import AppIcon from "@/components/ui/AppIcon";
 
 export default function RemindersScreen() {
   const router = useRouter();
@@ -98,14 +99,14 @@ export default function RemindersScreen() {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 }}>
         <Pressable onPress={() => router.back()} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
-          <ChevronLeft size={20} color={colors.textPrimary} />
+          <AppIcon name="back" size={20} color={colors.textPrimary} weight="semibold" />
         </Pressable>
         <Text style={{ flex: 1, fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>Reminders</Text>
         <Pressable
           onPress={() => router.push("/reminders/edit")}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
         >
-          <Plus size={15} color="#fff" />
+          <AppIcon name="add" size={15} color="#fff" weight="bold" />
           <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Add</Text>
         </Pressable>
       </View>

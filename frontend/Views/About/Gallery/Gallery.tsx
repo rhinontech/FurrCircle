@@ -2,15 +2,15 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { FadeInUp } from "@/components/AnimationProvider";
+import { AnimatedHeading, FadeInUp } from "@/components/AnimationProvider";
 
 const galleryImages = [
-  "/gallery/family1.png",
-  "/gallery/family2.png",
-  "/gallery/family3.png",
-  "/gallery/family4.png",
-  "/gallery/family5.png",
-  "/gallery/family6.png",
+  "/gallery/family1.jpeg",
+  "/gallery/family2.jpeg",
+  "/gallery/family3.jpeg",
+  "/gallery/family4.jpeg",
+  "/gallery/family5.jpeg",
+  "/gallery/family6.jpeg",
 ];
 
 // Duplicate for infinite effect to ensure seamless scrolling
@@ -18,14 +18,20 @@ const allImages = [...galleryImages, ...galleryImages];
 
 export function Gallery() {
   return (
-    <section className="py-32 overflow-hidden bg-white">
-      <div className="container mx-auto px-6 max-w-7xl mb-16">
+    <section className="py-32 overflow-hidden">
+      <div className="container relative mx-auto px-6 max-w-7xl mb-16">
+
+
+        <div className="absolute max-md:hidden top-15 right-40 w-34 h-34 pointer-events-none opacity-100">
+          <Image src='/pawprint1.png' alt="Paw Print" fill sizes="136px" className="object-contain" />
+        </div>
+
+
         <div className="flex flex-col items-center text-center">
-          <FadeInUp>
-            <h2 className="text-4xl md:text-7xl font-heading text-foreground mb-6">
-              Our FurrCircle Family in Pictures
-            </h2>
-          </FadeInUp>
+          <AnimatedHeading
+            text="Our FurrCircle Family in Pictures"
+            className="text-5xl md:text-7xl font-black font-heading mb-6 text-[#1A1A1A] uppercase tracking-tight leading-[1.1]"
+          />
           <FadeInUp delay={0.1}>
             <p className="text-muted-foreground text-lg md:text-xl max-w-3xl">
               A Glimpse into the Joyful Moments We Share with Your Beloved Pets
@@ -50,7 +56,7 @@ export function Gallery() {
           {allImages.map((src, index) => (
             <div
               key={index}
-              className="relative w-[200px] h-[280px] md:w-[300px] md:h-[350px] rounded-[1rem] overflow-hidden shrink-0 shadow-lg"
+              className="relative w-50 h-70 md:w-75 md:h-87.5 rounded-[1rem] overflow-hidden shrink-0 shadow-lg"
             >
               <motion.div
                 className="relative w-full h-full cursor-pointer"

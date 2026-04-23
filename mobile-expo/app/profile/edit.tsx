@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
-import { ArrowLeft, Building2, Camera, Check, Clock3, FileText, Mail, MapPin, Navigation, Phone, Stethoscope, Trash2, User } from "lucide-react-native";
+import { ArrowLeft, Building2, Camera, Check, Clock3, FileText, Mail, MapPin, Navigation, Phone, Stethoscope, Trash2, User } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth, type User as AuthUser } from "../../contexts/AuthContext";
 import { pickAndUploadImage } from "@/services/uploadApi";

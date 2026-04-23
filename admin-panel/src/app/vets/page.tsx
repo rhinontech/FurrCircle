@@ -1,7 +1,90 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { Stethoscope, ShieldCheck, Search, CheckCircle2, Trash2, MoreVertical, X } from "lucide-react";
+import { Stethoscope, ShieldCheck, Search, CheckCircle2, Trash2, MoreVertical, X, Mail, Phone, MapPin, Calendar, BadgeCheck } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
+
+function VetDrawer({ vet, onClose, onVerify, onDelete, actionId }: { vet: any; onClose: () => void; onVerify: (id: string) => void; onDelete: (id: string, name: string) => void; actionId: string | null }) {
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
+      <div className="fixed right-0 top-0 h-full w-full max-w-sm bg-white z-50 shadow-2xl flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h2 className="text-base font-bold text-slate-950">Vet Details</h2>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
+            <X size={18} className="text-slate-500" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+          {/* Avatar + Name */}
+          <div className="flex items-center gap-4">
+            {vet.avatar_url ? (
+              <img src={vet.avatar_url} alt={vet.name} className="w-16 h-16 rounded-2xl object-cover" />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center">
+                <Stethoscope size={26} className="text-primary-900" />
+              </div>
+            )}
+            <div>
+              <p className="font-bold text-slate-950 text-lg leading-tight">{vet.name}</p>
+              <p className="text-sm text-slate-400 mt-0.5">{vet.hospital_name || "No clinic name"}</p>
+              <span className={`mt-1.5 inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${vet.isVerified ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>
+                {vet.isVerified ? "Verified" : "Pending Review"}
+              </span>
+            </div>
+          </div>
+
+          {/* Details */}
+          <div className="space-y-4">
+            <DetailRow icon={<Mail size={15} />} label="Email" value={vet.email || "—"} />
+            <DetailRow icon={<Phone size={15} />} label="Phone" value={vet.phone || "—"} />
+            <DetailRow icon={<BadgeCheck size={15} />} label="Specialty" value={vet.profession || "—"} />
+            <DetailRow icon={<MapPin size={15} />} label="City" value={vet.city || "—"} />
+            <DetailRow icon={<Calendar size={15} />} label="Joined" value={new Date(vet.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} />
+            {vet.bio && (
+              <div className="pt-2 border-t border-slate-100">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Bio</p>
+                <p className="text-sm text-slate-600 leading-relaxed">{vet.bio}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="px-6 py-4 border-t border-slate-100 flex flex-col gap-2">
+          {!vet.isVerified && (
+            <button
+              onClick={() => onVerify(vet.id)}
+              disabled={actionId === vet.id}
+              className="w-full py-2.5 bg-primary-900 text-white rounded-xl text-sm font-bold hover:bg-primary-800 transition-colors disabled:opacity-60"
+            >
+              {actionId === vet.id ? "Verifying..." : "Verify Vet"}
+            </button>
+          )}
+          <button
+            onClick={() => onDelete(vet.id, vet.name)}
+            disabled={actionId === vet.id}
+            className="w-full py-2.5 bg-rose-50 text-rose-600 rounded-xl text-sm font-bold hover:bg-rose-100 transition-colors disabled:opacity-60"
+          >
+            Remove Vet
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="mt-0.5 text-slate-400">{icon}</span>
+      <div>
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+        <p className="text-sm text-slate-700 mt-0.5">{value}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function VetsPage() {
   const [vets, setVets] = useState<any[]>([]);
@@ -10,6 +93,7 @@ export default function VetsPage() {
   const [search, setSearch] = useState("");
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [selectedVet, setSelectedVet] = useState<any | null>(null);
 
   const fetchVets = async () => {
     try {
@@ -56,6 +140,15 @@ export default function VetsPage() {
 
   return (
     <div className="space-y-8" onClick={() => setMenuOpenId(null)}>
+      {selectedVet && (
+        <VetDrawer
+          vet={selectedVet}
+          onClose={() => setSelectedVet(null)}
+          onVerify={async (id) => { await handleVerify(id); setSelectedVet((v: any) => v ? { ...v, isVerified: true } : v); }}
+          onDelete={async (id, name) => { await handleDelete(id, name); setSelectedVet(null); }}
+          actionId={actionId}
+        />
+      )}
       <div>
         <h1 className="text-2xl font-bold text-slate-950">Veterinarian Management</h1>
         <p className="text-slate-500 mt-1">Review and verify professional credentials for all clinic accounts.</p>
@@ -129,7 +222,7 @@ export default function VetsPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((vet) => (
-                  <tr key={vet.id} className="hover:bg-slate-50/60 transition-colors">
+                  <tr key={vet.id} className="hover:bg-slate-50/60 transition-colors cursor-pointer" onClick={() => setSelectedVet(vet)}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {vet.avatar_url ? (
@@ -154,7 +247,7 @@ export default function VetsPage() {
                     <td className="px-6 py-4 text-xs text-slate-500">
                       {new Date(vet.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
                         {!vet.isVerified && (
                           <button

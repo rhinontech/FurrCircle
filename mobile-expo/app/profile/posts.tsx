@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import { ChevronLeft, Heart, MessageCircle, Share2, FileText } from "lucide-react-native";
+import { ChevronLeft, Heart, MessageCircle, Share2, FileText } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import StatusChip from "../../components/ui/StatusChip";

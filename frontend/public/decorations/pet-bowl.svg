@@ -1,0 +1,5 @@
+<svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M10 50L20 10H100L110 50C110 55.5228 105.523 60 100 60H20C14.4772 60 10 55.5228 10 50Z" fill="#A4D94F"/>
+  <ellipse cx="60" cy="15" rx="45" ry="10" fill="#86B040"/>
+  <text x="60" y="45" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold" opacity="0.6">FIDO</text>
+</svg>

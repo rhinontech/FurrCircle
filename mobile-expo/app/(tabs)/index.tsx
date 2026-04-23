@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Image, Pressable, Dimensions, FlatList, ActivityIndicator, RefreshControl, Modal, Alert, Share, KeyboardAvoidingView, Platform, TextInput } from "react-native";
-import { Syringe, Stethoscope, Calendar, Heart, PawPrint, MapPin, Star, MessageCircle, Share2, Bookmark, X } from "lucide-react-native";
+import { Syringe, Stethoscope, Calendar, Heart, PawPrint, MapPin, Star, MessageCircle, Share2, Bookmark, X } from "@/components/ui/IconCompat";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";
@@ -314,7 +314,7 @@ export default function HomeScreen() {
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary }}>Nearby Vets</Text>
-            <Pressable onPress={() => router.push("/(tabs)/discover")}>
+            <Pressable onPress={() => router.push("/(tabs)/discover?category=Vets")}>
               <Text style={{ fontSize: 14, color: colors.brand, fontWeight: '500' }}>View all</Text>
             </Pressable>
           </View>

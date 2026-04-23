@@ -55,7 +55,7 @@ export default function PetsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-950">Pet Ecosystem</h1>
-        <p className="text-slate-500 mt-1">All pets registered across the PawsHub network.</p>
+        <p className="text-slate-500 mt-1">All pets registered across the FurrCircle network.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -24,7 +24,13 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: false,
                 defaultValue: "general",
-                // appointment_update | event_booking | post_moderation | chat_message | reminder | general
+                // appointment | event | adoption | vaccine_review | reminder | general
+            },
+            category: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: "activity",
+                // activity | campaign
             },
             title: {
                 type: DataTypes.STRING,
@@ -45,6 +51,18 @@ export default (sequelize: Sequelize) => {
             },
             relatedType: {
                 type: DataTypes.STRING,
+                allowNull: true,
+            },
+            actionType: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            actionPayload: {
+                type: DataTypes.JSON,
+                allowNull: true,
+            },
+            campaignId: {
+                type: DataTypes.UUID,
                 allowNull: true,
             },
         },

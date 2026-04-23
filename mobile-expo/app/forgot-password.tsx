@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft, Mail, CheckCircle } from "lucide-react-native";
+import { ChevronLeft, Mail, CheckCircle } from "@/components/ui/IconCompat";
 import { useTheme } from "../contexts/ThemeContext";
 import { authApi } from "@/services/auth/authApi";
 

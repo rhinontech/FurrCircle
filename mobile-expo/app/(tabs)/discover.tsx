@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, TextInput, Pressable, Image, Modal, ActivityIndicator, RefreshControl, Alert, Linking } from "react-native";
-import { Search, Stethoscope, MapPin, Star, ShieldCheck, Phone, Clock, X, Heart, PawPrint } from "lucide-react-native";
+import { Search, Stethoscope, MapPin, Star, ShieldCheck, Phone, Clock, X, Heart, PawPrint } from "@/components/ui/IconCompat";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { userDiscoverApi } from "@/services/users/discoverApi";
 
 const categories = ["All", "Vets", "Adoption", "Foster"];
@@ -23,7 +23,8 @@ function EmptyPlaceholder({ icon: Icon, title, description, colors }: any) {
 export default function DiscoverScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const [active, setActive] = useState("All");
+  const { category } = useLocalSearchParams<{ category?: string }>();
+  const [active, setActive] = useState(category && categories.includes(category) ? category : "All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [modalType, setModalType] = useState<"vet" | "pet" | null>(null);
@@ -151,7 +152,11 @@ export default function DiscoverScreen() {
           <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary }}>Nearby Vets</Text>
-              <Text style={{ fontSize: 14, color: colors.brand, fontWeight: '500' }}>View all</Text>
+              {filteredVets.length > 0 && (
+                <Pressable onPress={() => setActive("Vets")}>
+                  <Text style={{ fontSize: 14, color: colors.brand, fontWeight: '500' }}>View all</Text>
+                </Pressable>
+              )}
             </View>
             {filteredVets.length === 0 ? (
               <EmptyPlaceholder

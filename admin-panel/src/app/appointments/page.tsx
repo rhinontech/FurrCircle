@@ -93,7 +93,7 @@ export default function AppointmentsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-950">Appointments</h1>
-        <p className="text-slate-500 mt-1">All appointments booked across the PawsHub platform.</p>
+        <p className="text-slate-500 mt-1">All appointments booked across the FurrCircle platform.</p>
       </div>
 
       {/* Stats */}

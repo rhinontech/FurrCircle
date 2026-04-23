@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft, KeyRound, Eye, EyeOff, CheckCircle } from "lucide-react-native";
+import { ChevronLeft, KeyRound, Eye, EyeOff, CheckCircle } from "@/components/ui/IconCompat";
 import { useTheme } from "../contexts/ThemeContext";
 import { authApi } from "@/services/auth/authApi";
 

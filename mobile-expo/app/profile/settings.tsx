@@ -1,15 +1,44 @@
 import React from "react";
-import { View, Text, ScrollView, Pressable, Switch } from "react-native";
+import { View, Text, ScrollView, Pressable, Switch, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft, Globe, Bell, History, Database, Sliders, Smartphone, Info } from "lucide-react-native";
+import { ChevronLeft, Globe, Bell, History, Database, Sliders, Smartphone, Info } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useNotifications } from "../../contexts/NotificationContext";
 
 export default function AppSettingsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  
-  const [isPushEnabled, setIsPushEnabled] = React.useState(true);
-  const [isEmailEnabled, setIsEmailEnabled] = React.useState(false);
+  const {
+    pushEnabled,
+    marketingEnabled,
+    setPushNotificationsEnabled,
+    setMarketingEnabled,
+    refreshPreferences,
+  } = useNotifications();
+  const [loading, setLoading] = React.useState(true);
+  const [busyKey, setBusyKey] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    refreshPreferences().finally(() => setLoading(false));
+  }, [refreshPreferences]);
+
+  const togglePush = async () => {
+    setBusyKey("push");
+    try {
+      await setPushNotificationsEnabled(!pushEnabled);
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const toggleMarketing = async () => {
+    setBusyKey("marketing");
+    try {
+      await setMarketingEnabled(!marketingEnabled);
+    } finally {
+      setBusyKey(null);
+    }
+  };
 
   const settingsSections = [
     {
@@ -17,8 +46,8 @@ export default function AppSettingsScreen() {
       items: [
         { icon: Globe, label: "Language", value: "English (US)", action: () => {} },
         { icon: Sliders, label: "Notification Settings", action: () => {} },
-        { icon: Bell, label: "Push Notifications", action: () => setIsPushEnabled(!isPushEnabled), value: isPushEnabled, toggle: true },
-        { icon: Bell, label: "Email Alerts", action: () => setIsEmailEnabled(!isEmailEnabled), value: isEmailEnabled, toggle: true },
+        { icon: Bell, label: "Push Notifications", action: togglePush, value: pushEnabled, toggle: true, key: "push" },
+        { icon: Bell, label: "Marketing Updates", action: toggleMarketing, value: marketingEnabled, toggle: true, key: "marketing" },
       ]
     },
     {
@@ -46,6 +75,11 @@ export default function AppSettingsScreen() {
         <Text style={{ fontSize: 20, fontWeight: '700', color: colors.textPrimary }}>App Settings</Text>
       </View>
 
+      {loading ? (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator color={colors.brand} />
+        </View>
+      ) : (
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
         {settingsSections.map((section, idx) => (
           <View key={idx} style={{ marginBottom: 24 }}>
@@ -63,7 +97,11 @@ export default function AppSettingsScreen() {
                   </View>
                   <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary }}>{item.label}</Text>
                   {item.toggle ? (
-                    <Switch value={item.value} onValueChange={item.action} trackColor={{ false: colors.border, true: colors.brand }} thumbColor="#fff" />
+                    busyKey === item.key ? (
+                      <ActivityIndicator size="small" color={colors.brand} />
+                    ) : (
+                      <Switch value={item.value} onValueChange={item.action} trackColor={{ false: colors.border, true: colors.brand }} thumbColor="#fff" />
+                    )
                   ) : (
                     <Text style={{ fontSize: 13, color: colors.textMuted }}>{item.value || ""}</Text>
                   )}
@@ -73,6 +111,7 @@ export default function AppSettingsScreen() {
           </View>
         ))}
       </ScrollView>
+      )}
     </View>
   );
 }

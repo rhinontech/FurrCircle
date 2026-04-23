@@ -1,33 +1,18 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter, DM_Serif_Display } from "next/font/google";
+import { Nunito } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Common/Navbar";
 import { Footer } from "@/components/Common/Footer";
+import { Metadata } from "next";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const nunito = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
-
-const dmSerifDisplay = DM_Serif_Display({
-  variable: "--font-dm-serif",
-  weight: "400",
-  subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600", "700", "800", "900", "1000"],
 });
 
 export const metadata: Metadata = {
-  title: "FurrCircle | The Digital Health Passport for Your Pets",
-  description: "Centralize medical records, track vaccinations, and join a global community of pet parents with FurrCircle.",
+  title: "FurrCircle — The Pet Care App for Every Pet Parent",
+  description: "Track your pet's health records, book vet appointments, set reminders, and join a community of pet parents — all in one app.",
 };
 
 export default function RootLayout({
@@ -38,15 +23,18 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${dmSerifDisplay.variable} antialiased`}
+      className={`${nunito.variable} antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col font-nunito bg-[#fffbf5] text-foreground"
+      >
         <Navbar />
         {children}
         <Footer />
 
         <script src="/oneko.js"></script>
-        </body>
+      </body>
     </html>
   );
 }

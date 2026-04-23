@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, Modal, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, Calendar as CalendarIcon, Clock, PawPrint, Plus } from "lucide-react-native";
+import { ChevronLeft, Calendar as CalendarIcon, Clock, PawPrint, Plus } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { userAppointmentsApi } from "@/services/users/appointmentsApi";

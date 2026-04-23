@@ -53,6 +53,7 @@ export function Teams() {
                                     src={mem.image}
                                     alt={mem.name}
                                     fill
+                                    sizes="(max-width: 640px) calc(100vw - 3rem), (max-width: 1024px) calc(50vw - 2rem), 39rem"
                                     className="object-cover"
                                 />
                             </div>

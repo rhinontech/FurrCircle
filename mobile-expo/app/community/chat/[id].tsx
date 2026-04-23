@@ -11,7 +11,7 @@ import {
   Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, PawPrint, Send } from "lucide-react-native";
+import { ArrowLeft, PawPrint, Send } from "@/components/ui/IconCompat";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { userCommunityApi } from "@/services/users/communityApi";

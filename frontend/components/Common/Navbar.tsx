@@ -10,34 +10,49 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
   const navLinks = [
-    { name: "About", href: "/about-us" },
-    { name: "Contact", href: "/contacts" },
+    { name: "Features", href: "#services" },
+    { name: "Patients", href: "#patients" },
+    { name: "Reviews", href: "#reviews" },
   ];
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      const id = href.slice(1);
+      const el = document.getElementById(id);
+      if (el) {
+        const offset = 50;
+        const top = el.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
+      setIsOpen(false);
+    }
+  };
 
   return (
     <>
-      <header className="fixed top-0 w-full z-50 bg-[#F9F8F6]/70 backdrop-blur-md  transition-all duration-300">
+      <header className="fixed top-0 w-full z-50 bg-[#fffbf5]/70 border-1 border-b backdrop-blur-md  transition-all duration-300">
         <nav className="container mx-auto px-6 md:px-10 h-[70px] md:h-[90px] flex items-center justify-between relative">
           {/* Logo */}
           <Link href="/" className="relative z-[60] block">
-            <Image 
-              src="/logo/furrcircle_light_logo.png" 
-              alt="FurrCircle" 
-              width={200} 
-              height={100} 
-              className="h-auto object-contain" 
-              priority 
+            <Image
+              src="/logo/furrcircle_light_logo.png"
+              alt="FurrCircle"
+              width={150}
+              height={100}
+              className="w-auto h-auto object-contain"
+              priority
             />
           </Link>
 
           {/* Desktop Links */}
-          <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-10">
+          <div className="hidden md:flex absolute right-20  items-center gap-10">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
-                className="text-[15px] font-medium text-[#1A1A1A] hover:text-blue-400 transition-colors"
-                onClick={() => setIsOpen(false)}
+                className="text-[15px] font-semibold text-[#1A1A1A] hover:text-blue-400 transition-colors"
+                onClick={(e) => handleNavClick(e, link.href)}
               >
                 {link.name}
               </Link>
@@ -85,7 +100,7 @@ export function Navbar() {
                     <Link
                       href={link.href}
                       className="text-4xl font-heading text-[#1A1A1A] hover:text-[#987D6B] transition-colors"
-                      onClick={() => setIsOpen(false)}
+                      onClick={(e) => handleNavClick(e, link.href)}
                     >
                       {link.name}
                     </Link>

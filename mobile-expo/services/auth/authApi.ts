@@ -10,6 +10,7 @@ export type AuthApiPayload = {
   role: AuthApiRole;
   token?: string;
   isVerified?: boolean;
+  hasCompletedOnboarding?: boolean;
   clinic_name?: string;
   specialty?: string;
   bio?: string;
@@ -35,6 +36,8 @@ export const authApi = {
     api.post<AuthApiPayload>('/auth/register', { name, email, password, role, ...extra }),
   updateProfile: (updatedData: Record<string, unknown>) =>
     api.put<AuthApiPayload>('/auth/profile', updatedData),
+  completeOnboarding: () =>
+    api.post<AuthApiPayload>('/auth/onboarding-complete'),
   forgotPassword: (email: string) =>
     api.post<{ message: string }>('/auth/forgot-password', { email }),
   resetPassword: (token: string, newPassword: string) =>

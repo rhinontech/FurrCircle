@@ -26,6 +26,7 @@ export interface User {
   working_hours?: string;
   clinicStampUrl?: string;
   licenseNumber?: string;
+  hasCompletedOnboarding?: boolean;
 }
 
 type AuthPayload = User & {
@@ -72,6 +73,7 @@ const toAuthPayload = (data: Partial<User>): AuthPayload => ({
   role: data.role || 'owner',
   token: data.token,
   isVerified: data.isVerified,
+  hasCompletedOnboarding: data.hasCompletedOnboarding,
   clinic_name: data.clinic_name,
   specialty: data.specialty,
   bio: data.bio,
@@ -97,6 +99,7 @@ const toUser = (data: AuthPayload): User => ({
   role: data.role,
   token: data.token,
   isVerified: data.isVerified,
+  hasCompletedOnboarding: data.hasCompletedOnboarding,
   // Vet profile: backend sends hospital_name / profession / experience;
   // User profile: backend sends clinic_name / specialty / yearsExp.
   // Map both so the UI always reads from the same User fields.
@@ -148,6 +151,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const updatedUser = toUser({ ...parsedUser, ...freshProfile });
             setUser(updatedUser);
             await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+            if (updatedUser.hasCompletedOnboarding && completed !== 'true') {
+              await AsyncStorage.setItem('onboarding_completed', 'true');
+              setHasCompletedOnboarding(true);
+            }
           } catch (error: any) {
             const message = String(error?.message || '').toLowerCase();
             if (message.includes('not authorized') || message.includes('token failed') || message.includes('jwt')) {
@@ -256,6 +263,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const completeOnboarding = async () => {
     setHasCompletedOnboarding(true);
     await AsyncStorage.setItem('onboarding_completed', 'true');
+    if (user && !user.hasCompletedOnboarding) {
+      try {
+        const data = await authApi.completeOnboarding() as AuthPayload;
+        const updatedUser = toUser({ ...toAuthPayload(user), ...data });
+        setUser(updatedUser);
+        await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+      } catch {
+        // local onboarding state still wins if the network is unavailable
+      }
+    }
   };
 
   const switchUser = async (userData: User) => {
@@ -264,6 +281,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (userData.token) await AsyncStorage.setItem('user_token', userData.token);
     setUser(userData);
   };
+
+  useEffect(() => {
+    if (!user) return;
+
+    if (user.hasCompletedOnboarding && hasCompletedOnboarding !== true) {
+      setHasCompletedOnboarding(true);
+      AsyncStorage.setItem('onboarding_completed', 'true').catch(() => {});
+      return;
+    }
+
+    if (hasCompletedOnboarding && !user.hasCompletedOnboarding) {
+      authApi.completeOnboarding()
+        .then((data) => {
+          const updatedUser = toUser({ ...toAuthPayload(user), ...(data as AuthPayload) });
+          setUser(updatedUser);
+          return AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+        })
+        .catch(() => {});
+    }
+  }, [user?.id, user?.hasCompletedOnboarding, hasCompletedOnboarding]);
 
   return (
     <AuthContext.Provider value={{

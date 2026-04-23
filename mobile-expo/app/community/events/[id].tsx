@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, CalendarDays, Clock3, MapPin, Users, Mail, ShieldCheck } from "lucide-react-native";
+import { ChevronLeft, CalendarDays, Clock3, MapPin, Users, Mail, ShieldCheck } from "@/components/ui/IconCompat";
 import { useTheme } from "../../../contexts/ThemeContext";
 import { userCommunityApi } from "@/services/users/communityApi";
 

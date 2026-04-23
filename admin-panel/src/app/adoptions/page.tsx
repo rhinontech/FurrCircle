@@ -43,7 +43,7 @@ export default function AdoptionsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-950">Adoption Listings</h1>
-        <p className="text-slate-500 mt-1">Pets currently open for adoption or foster across PawsHub.</p>
+        <p className="text-slate-500 mt-1">Pets currently open for adoption or foster across FurrCircle.</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

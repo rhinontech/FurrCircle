@@ -12,7 +12,7 @@ import {
   Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, Clock3, MapPin, Phone, Star, Stethoscope, Bookmark, MessageCircle, MessageSquarePlus } from "lucide-react-native";
+import { ChevronLeft, Clock3, MapPin, Phone, Star, Stethoscope, Bookmark, MessageCircle, MessageSquarePlus } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { userDiscoverApi } from "@/services/users/discoverApi";

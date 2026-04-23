@@ -8,6 +8,7 @@ import {
   Bell,
   TrendingUp,
   ShieldCheck,
+  Mail,
 } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
 
@@ -19,6 +20,8 @@ type AdminStats = {
   pendingPosts: number;
   pendingVets: number;
   totalAppointments: number;
+  totalContactLeads: number;
+  newContactLeads: number;
 };
 
 type PendingVet = {
@@ -51,6 +54,7 @@ export default function DashboardPage() {
         { label: "Total Users", value: stats.totalUsers.toLocaleString(), icon: Users, change: "Live" },
         { label: "Active Pets", value: stats.totalPets.toLocaleString(), icon: PawPrint, change: "Live" },
         { label: "Vets Joined", value: stats.totalVets.toLocaleString(), icon: Stethoscope, change: "Live" },
+        { label: "New Leads", value: stats.newContactLeads.toLocaleString(), icon: Mail, change: "Inbox" },
         { label: "Pending Posts", value: stats.pendingPosts.toLocaleString(), icon: Bell, change: "Queue" },
         { label: "Pending Vets", value: stats.pendingVets.toLocaleString(), icon: ShieldCheck, change: "Queue" },
       ]
@@ -60,14 +64,14 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-950">Dashboard Overview</h1>
-        <p className="text-slate-500 mt-1">Welcome back, here's what's happening with PawsHub today.</p>
+        <p className="text-slate-500 mt-1">Welcome back, here's what's happening with FurrCircle today.</p>
       </div>
 
       {/* Stats Grid */}
       {loading ? (
         <div className="h-32 flex items-center justify-center text-slate-400 font-medium">Loading stats...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
           {statCards.map((stat, i) => (
             <div key={i} className="bg-white p-6 rounded-card border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">

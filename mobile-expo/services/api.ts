@@ -94,3 +94,6 @@ export const api = {
   patch: <T = unknown>(endpoint: string, body?: unknown) => apiCall<T>(endpoint, { method: 'PATCH', body }),
   delete: <T = unknown>(endpoint: string) => apiCall<T>(endpoint, { method: 'DELETE' }),
 };
+
+export const getApiRootUrl = () => baseRoot;
+export const getApiBaseUrl = () => BASE_URL;

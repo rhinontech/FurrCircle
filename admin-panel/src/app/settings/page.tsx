@@ -26,7 +26,7 @@ export default function SettingsPage() {
     { 
       title: "Communication", 
       items: [
-        { label: "Global Announcement Email", value: "support@pawshub.com", icon: Mail, desc: "Default sender for all system-wide announcements." },
+        { label: "Global Announcement Email", value: "support@furrcircle.com", icon: Mail, desc: "Default sender for all system-wide announcements." },
         { label: "Push Notification Alerts", value: "Enabled", icon: Bell, desc: "Enable automated alerts for medical reminders and upcoming events." },
       ]
     },

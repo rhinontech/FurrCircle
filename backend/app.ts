@@ -5,6 +5,8 @@ import cors from 'cors';
 import { sequelize } from './models/index.ts';
 import http from 'http';
 import { Server } from 'socket.io';
+import { setupRealtimeServer } from './services/realtimeService.ts';
+import { startCampaignWorker } from './services/campaignService.ts';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -14,6 +16,7 @@ const io = new Server(httpServer, {
         credentials: true
     }
 });
+setupRealtimeServer(io);
 
 const PORT = process.env.PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV || "development";
@@ -76,6 +79,7 @@ import notificationRoutes from './routes/notificationRoutes.ts';
 import uploadRoutes from './routes/uploadRoutes.ts';
 import adoptionRoutes from './routes/adoptionRoutes.ts';
 import vetReviewRoutes from './routes/vetReviewRoutes.ts';
+import contactLeadRoutes from './routes/contactLeadRoutes.ts';
 
 // Routes
 app.get('/', (req: Request, res: Response) => {
@@ -95,6 +99,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/adoptions', adoptionRoutes);
 app.use('/api/vets/:vetId/reviews', vetReviewRoutes);
+app.use('/api/contact-leads', contactLeadRoutes);
 
 // Test DB Connection and Start Server
 const startServer = async (attempt = 1) => {
@@ -109,6 +114,7 @@ const startServer = async (attempt = 1) => {
         httpServer.listen(Number(PORT), "0.0.0.0", () => {
             console.log(`🚀 FurrCircle API Live on Network -> http://0.0.0.0:${PORT}`);
         });
+        startCampaignWorker();
     } catch (error) {
         console.error('Unable to connect to the database:', error);
         const retryDelayMs = Math.min(30000, 5000 * attempt);

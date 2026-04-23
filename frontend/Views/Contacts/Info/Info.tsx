@@ -1,27 +1,75 @@
+"use client";
+
 import { FadeInUp } from "@/components/AnimationProvider";
-import { div } from "framer-motion/client";
 import { Mail, Map, Phone } from "lucide-react";
+import { type FormEvent, useState } from "react";
+import { submitContactLead } from "@/lib/contactLeads";
 
 
 const contactInfo = [
     {
         icon: Mail,
         title: "Email",
-        description: "info@furrcircle.com"
+        description: "info@rhinontech.com"
     },
     {
         icon: Phone,
         title: "Phone",
-        description: "+1 (123) 456-7890"
+        description: "+91 824 929 1789"
     },
     {
         icon: Map,
         title: "Address",
-        description: "123 Main St, Anytown, USA"
+        description: "Attapur, hyderabad"
     }
 ]
 
 export default function Info() {
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        phone: "",
+        message: "",
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitState, setSubmitState] = useState<"idle" | "success" | "error">("idle");
+    const [submitMessage, setSubmitMessage] = useState("");
+
+    const handleChange = (field: "name" | "email" | "phone" | "message", value: string) => {
+        setFormData((current) => ({
+            ...current,
+            [field]: value,
+        }));
+    };
+
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setIsSubmitting(true);
+        setSubmitState("idle");
+        setSubmitMessage("");
+
+        try {
+            await submitContactLead({
+                ...formData,
+                source: "contact-page",
+                pagePath: typeof window !== "undefined" ? window.location.pathname : "/_contacts",
+            });
+
+            setFormData({
+                name: "",
+                email: "",
+                phone: "",
+                message: "",
+            });
+            setSubmitState("success");
+            setSubmitMessage("Thanks for reaching out. Our team will get back to you soon.");
+        } catch (error) {
+            setSubmitState("error");
+            setSubmitMessage(error instanceof Error ? error.message : "Failed to submit your message.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <div className="py-32 max-md:py-10 relative">
@@ -54,12 +102,50 @@ export default function Info() {
                 </div>
 
                 {/* right side */}
-                <form>
+                <form onSubmit={handleSubmit}>
                     <div className="flex flex-col h-full w-sm max-md:w-full gap-5">
-                        <input type="text" placeholder='Name' className="p-4 outline-none bg-primary/10 rounded-xl" />
-                        <input type="text" placeholder='Email' className="p-4 outline-none bg-primary/10 rounded-xl" />
-                        <textarea placeholder='Message' className="p-4 flex flex-1 outline-none bg-primary/10 rounded-xl" />
-                        <button type="submit" className="p-4 outline-none bg-primary text-white rounded-xl">Sign-up</button>
+                        <input
+                            type="text"
+                            placeholder='Name'
+                            value={formData.name}
+                            onChange={(event) => handleChange("name", event.target.value)}
+                            className="p-4 outline-none bg-primary/10 rounded-xl"
+                            required
+                        />
+                        <input
+                            type="email"
+                            placeholder='Email'
+                            value={formData.email}
+                            onChange={(event) => handleChange("email", event.target.value)}
+                            className="p-4 outline-none bg-primary/10 rounded-xl"
+                            required
+                        />
+                        <input
+                            type="tel"
+                            placeholder='Phone number (optional)'
+                            value={formData.phone}
+                            onChange={(event) => handleChange("phone", event.target.value)}
+                            className="p-4 outline-none bg-primary/10 rounded-xl"
+                        />
+                        <textarea
+                            placeholder='Message'
+                            value={formData.message}
+                            onChange={(event) => handleChange("message", event.target.value)}
+                            className="p-4 flex flex-1 min-h-40 outline-none bg-primary/10 rounded-xl"
+                            required
+                        />
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="p-4 outline-none bg-primary text-white rounded-xl disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                            {isSubmitting ? "Sending..." : "Contact Us"}
+                        </button>
+                        {submitMessage && (
+                            <p className={`text-sm ${submitState === "success" ? "text-emerald-600" : "text-rose-600"}`}>
+                                {submitMessage}
+                            </p>
+                        )}
                     </div>
                 </form>
 

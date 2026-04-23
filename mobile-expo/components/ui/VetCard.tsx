@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Pressable, Image } from "react-native";
-import { Stethoscope, MapPin, Star } from "lucide-react-native";
+import { Stethoscope, MapPin, Star } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import StatusChip from "./StatusChip";
 

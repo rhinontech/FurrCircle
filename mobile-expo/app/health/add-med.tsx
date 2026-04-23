@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Modal, Image } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, Save, Calendar, Camera, X } from "lucide-react-native";
+import { ChevronLeft, Save, Calendar, Camera, X } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userHealthApi } from "@/services/users/healthApi";
 import { captureAndUploadImage } from "@/services/uploadApi";

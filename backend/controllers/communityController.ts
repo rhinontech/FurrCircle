@@ -1,7 +1,7 @@
 import type { Response } from "express";
 import { Op } from "sequelize";
 import db from "../models/index.ts";
-import { createNotification } from "../services/notificationService.ts";
+import { createNotification, createRichNotification } from "../services/notificationService.ts";
 
 const toPlain = (value: any) => (value && typeof value.toJSON === "function" ? value.toJSON() : value);
 
@@ -308,6 +308,20 @@ export const toggleLike = async (req: any, res: Response): Promise<void> => {
 
     await Like.create({ postId: req.params.id, userId: req.user.id, userType: req.userType || "user" });
     res.json({ liked: true, message: "Post liked" });
+
+    // Notify post author (fire and forget, skip self-likes)
+    if (post.userId !== req.user.id || post.userType !== (req.userType || "user")) {
+      createRichNotification({
+        actorId: post.userId,
+        actorType: post.userType === "vet" ? "vet" : "user",
+        type: "like",
+        category: "activity",
+        title: "Someone liked your post",
+        message: post.content ? String(post.content).slice(0, 80) : "Your post got a like",
+        relatedId: post.id,
+        sendPush: true,
+      }).catch(() => {});
+    }
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -393,6 +407,20 @@ export const addComment = async (req: any, res: Response): Promise<void> => {
 
     const resolveProfile = createProfileResolver();
     res.status(201).json({ comment: await serializeComment(comment, resolveProfile) });
+
+    // Notify post author (fire and forget, skip self-comments)
+    if (post.userId !== req.user.id || post.userType !== (req.userType || "user")) {
+      createRichNotification({
+        actorId: post.userId,
+        actorType: post.userType === "vet" ? "vet" : "user",
+        type: "comment",
+        category: "activity",
+        title: "New comment on your post",
+        message: String(text).trim().slice(0, 80),
+        relatedId: post.id,
+        sendPush: true,
+      }).catch(() => {});
+    }
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { Op } from "sequelize";
 import db from "../models/index.ts";
+import { createRichNotification } from "../services/notificationService.ts";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -97,6 +98,44 @@ const toPublicPetPayload = (pet: any, viewerId?: string) => {
   };
 };
 
+const notifyNearbyAdoptionAudience = async (pet: any, ownerName?: string) => {
+  const city = String(pet?.city || "").trim();
+  if (!city) return;
+
+  const { users: User } = db as any;
+  const audience = await User.findAll({
+    where: {
+      id: { [Op.ne]: pet.ownerId },
+      role: { [Op.in]: ["owner", "shelter"] },
+      city: { [Op.iLike]: city },
+    },
+    attributes: ["id"],
+  });
+
+  const isAdoption = Boolean(pet.isAdoptionOpen);
+  const isFoster = Boolean(pet.isFosterOpen);
+  const listingLabel = isAdoption && isFoster
+    ? "adoption or foster"
+    : isAdoption
+      ? "adoption"
+      : "foster";
+
+  await Promise.allSettled(
+    audience.map((user: any) =>
+      createRichNotification({
+        actorId: user.id,
+        actorType: "user",
+        category: "activity",
+        type: "adoption",
+        title: `New ${listingLabel} pet nearby`,
+        message: `${pet.name} is now available for ${listingLabel} in ${city}.${ownerName ? ` Posted by ${ownerName}.` : ""}`,
+        actionType: "notifications",
+        actionPayload: null,
+      })
+    )
+  );
+};
+
 // @desc    Get logged in user's pets
 // @route   GET /api/pets
 export const getMyPets = async (req: any, res: Response): Promise<void> => {
@@ -179,10 +218,16 @@ export const updateListingStatus = async (req: any, res: Response): Promise<void
       return;
     }
 
+    const wasPublic = Boolean(pet.isAdoptionOpen || pet.isFosterOpen);
     if (isAdoptionOpen !== undefined) pet.isAdoptionOpen = isAdoptionOpen;
     if (isFosterOpen !== undefined) pet.isFosterOpen = isFosterOpen;
 
     await pet.save();
+
+    const isPublic = Boolean(pet.isAdoptionOpen || pet.isFosterOpen);
+    if (!wasPublic && isPublic) {
+      await notifyNearbyAdoptionAudience(pet, req.user?.name);
+    }
 
     res.json(normalizePetPayload(pet));
   } catch (error: any) {

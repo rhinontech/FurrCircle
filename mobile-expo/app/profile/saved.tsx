@@ -29,7 +29,7 @@ import {
   Share2,
   X,
   PawPrint,
-} from "lucide-react-native";
+} from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { userDiscoverApi } from "../../services/users/discoverApi";
@@ -319,7 +319,7 @@ export default function SavedScreen() {
                 Save vets from their profile page to find them quickly later.
               </Text>
               <Pressable
-                onPress={() => router.push("/(tabs)/discover")}
+                onPress={() => router.push("/(tabs)/discover?category=Vets")}
                 style={{
                   marginTop: 12,
                   backgroundColor: colors.brand,

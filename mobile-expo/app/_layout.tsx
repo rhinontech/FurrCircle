@@ -3,13 +3,13 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, Pressable, Image } from 'react-native';
-import { Bell, MessageCircle } from 'lucide-react-native';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { NotificationProvider, useNotifications } from '../contexts/NotificationContext';
 import React, { useEffect } from 'react';
 import '@/global.css';
 import AppointmentFeedbackPrompt from '@/components/AppointmentFeedbackPrompt';
+import AppIcon from '@/components/ui/AppIcon';
 
 
 function GlobalHeader() {
@@ -42,7 +42,7 @@ function GlobalHeader() {
             onPress={() => handleNavigate('/community/chats')}
             style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
           >
-            <MessageCircle size={20} color={colors.textPrimary} />
+            <AppIcon name="chat" size={20} color={colors.textPrimary} weight="medium" />
             {chatUnreadCount > 0 && (
               <View style={{ position: 'absolute', top: 8, right: 8, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1, borderColor: colors.bgCard }}>
                 <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{chatUnreadCount > 9 ? '9+' : chatUnreadCount}</Text>
@@ -53,7 +53,7 @@ function GlobalHeader() {
             onPress={() => handleNavigate('/notifications')}
             style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Bell size={20} color={colors.textPrimary} />
+            <AppIcon name="notifications" size={20} color={colors.textPrimary} weight="medium" />
             {notifUnreadCount > 0 && (
               <View style={{ position: 'absolute', top: 8, right: 8, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#f43f5e', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3, borderWidth: 1, borderColor: colors.bgCard }}>
                 <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{notifUnreadCount > 9 ? '9+' : notifUnreadCount}</Text>

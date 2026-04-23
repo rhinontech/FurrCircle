@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Star } from "lucide-react-native";
+import { Star } from "@/components/ui/IconCompat";
 import { feedbackApi } from "@/services/shared/feedbackApi";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
