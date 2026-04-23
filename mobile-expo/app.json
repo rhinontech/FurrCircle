@@ -3,7 +3,7 @@
     "name": "FurrCircle",
     "slug": "furrcircle",
     "scheme": "furrcircle",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/furrcircle_main_light_logo.png",
     "userInterfaceStyle": "light",
@@ -16,7 +16,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.furrcircle.app",
-      "buildNumber": "1"
+      "buildNumber": "2",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
@@ -26,8 +27,8 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.furrcircle.app",
-      "versionCode": 1,
-      "googleServicesFile": "./android/app/google-services.json",
+      "versionCode": 2,
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.ACCESS_COARSE_LOCATION",
@@ -48,6 +49,9 @@
       "expo-font",
       "expo-router",
       "expo-web-browser",
+      "expo-notifications",
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
       [
         "expo-notifications",
         {

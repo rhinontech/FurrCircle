@@ -5,3 +5,6 @@ dist/
 .env
 .env.dev
 .env.prod
+
+
+google-services.json

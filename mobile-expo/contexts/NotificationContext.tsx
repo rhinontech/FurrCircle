@@ -8,8 +8,10 @@ import { useRouter } from 'expo-router';
 import { userCommunityApi } from '@/services/users/communityApi';
 import { userNotificationsApi, type NotificationCategory, type NotificationCounts } from '@/services/users/notificationsApi';
 import { navigateFromNotification } from '@/services/users/notificationRouting';
-import { useAuth } from './AuthContext';
+import messaging from '@react-native-firebase/messaging';
+import { registerForPushNotificationsAsync } from '@/services/fcmService';
 import { getApiRootUrl } from '@/services/api';
+import { useAuth } from './AuthContext';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -174,9 +176,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         enabled = settings.granted;
         if (enabled) {
-          const projectId = getExpoProjectId();
-          const tokenResponse = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
-          expoPushToken = tokenResponse.data;
+          expoPushToken = await registerForPushNotificationsAsync();
+          enabled = !!expoPushToken;
         }
       }
 
@@ -241,15 +242,37 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     responseListenerRef.current = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data || {};
+      
+      let actionPayload = data.actionPayload;
+      if (typeof actionPayload === 'string') {
+        try {
+          actionPayload = JSON.parse(actionPayload);
+        } catch {
+          // fallback to original if not JSON
+        }
+      }
+
       navigateFromNotification(router, {
         actionType: typeof data.actionType === 'string' ? data.actionType : null,
-        actionPayload: typeof data.actionPayload === 'object' && data.actionPayload ? data.actionPayload as Record<string, unknown> : null,
+        actionPayload: typeof actionPayload === 'object' && actionPayload ? actionPayload as Record<string, unknown> : null,
         relatedId: typeof data.relatedId === 'string' ? data.relatedId : undefined,
+      });
+    });
+
+    const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: remoteMessage.notification?.title || '',
+          body: remoteMessage.notification?.body || '',
+          data: remoteMessage.data || {},
+        },
+        trigger: null,
       });
     });
 
     return () => {
       responseListenerRef.current?.remove();
+      unsubscribeForeground();
     };
   }, [router]);
 
