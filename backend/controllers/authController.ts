@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { Op } from "sequelize";
 import db from "../models/index.ts";
+import { sendEmail } from "../services/emailService.ts";
 
 const SELF_SERVICE_USER_ROLES = new Set(["owner", "shelter"]);
 const PROFILE_IMAGE_FIELDS = ["avatar_url", "phone", "bio", "city", "address", "hasCompletedOnboarding"] as const;
@@ -99,6 +100,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
 
       const token = generateToken(vet.id, 'vet');
       res.status(201).json(await buildAuthPayload(vet, 'vet', token));
+      sendEmail(vet.email, "Welcome to FurrCircle!", "welcome", { name: vet.name });
       return;
     }
 
@@ -136,6 +138,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
 
     const token = generateToken(user.id, 'user');
     res.status(201).json(await buildAuthPayload(user, 'user', token));
+    sendEmail(user.email, "Welcome to FurrCircle!", "welcome", { name: user.name });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -318,8 +321,10 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       account.resetTokenExpiry = expiry;
       await account.save();
 
-      // No email provider — log token to console for development
-      console.log(`[PASSWORD RESET] Token for ${email}: ${rawToken}`);
+      sendEmail(email, "FurrCircle Password Reset", "password-reset", {
+        name: account.name || "there",
+        resetToken: rawToken,
+      });
     }
 
     res.json({ message: "If an account with that email exists, a reset code has been sent." });

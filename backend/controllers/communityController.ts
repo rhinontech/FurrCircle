@@ -2,6 +2,7 @@ import type { Response } from "express";
 import { Op } from "sequelize";
 import db from "../models/index.ts";
 import { createNotification, createRichNotification } from "../services/notificationService.ts";
+import { sendEmail } from "../services/emailService.ts";
 
 const toPlain = (value: any) => (value && typeof value.toJSON === "function" ? value.toJSON() : value);
 
@@ -536,6 +537,14 @@ export const bookEvent = async (req: any, res: Response): Promise<void> => {
         event.id,
         "event"
       );
+    }
+    // Send booking confirmation email to the booker
+    if (req.user.email) {
+      sendEmail(req.user.email, `You're booked for ${event.title}!`, "event-booking-confirmation", {
+        name: req.user.name || "there",
+        eventTitle: event.title,
+        eventDate: event.date || event.startDate || "",
+      });
     }
 
     res.json({
