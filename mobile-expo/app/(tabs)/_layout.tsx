@@ -4,7 +4,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, Path } from "react-native-svg";
+import Svg, { Circle, Ellipse, Path } from "react-native-svg";
 import AppIcon, { type AppIconName } from "@/components/ui/AppIcon";
 
 type PremiumTabIconProps = {
@@ -35,7 +35,7 @@ function AndroidTabGlyph({
 }: {
   color: string;
   cutoutColor: string;
-  name: "discover" | "home";
+  name: "discover" | "home" | "user";
   size: number;
 }) {
   if (name === "home") {
@@ -50,6 +50,27 @@ function AndroidTabGlyph({
     );
   }
 
+  if (name === "user") {
+    // Community — person silhouette with paw-print badge in corner
+    return (
+      <Svg width={size} height={size} viewBox="0 0 32 32">
+        {/* Person head */}
+        <Circle cx="15" cy="11" r="6.5" fill={color} />
+        {/* Person shoulders */}
+        <Path d="M3 30C3 22 8 17.5 15 17.5C22 17.5 27 22 27 30Z" fill={color} />
+        {/* Badge disc — cutout ring separates it from the body */}
+        <Circle cx="26" cy="26" r="8" fill={cutoutColor} />
+        {/* Paw — three toe beans */}
+        <Circle cx="24" cy="23.2" r="1.5" fill={color} />
+        <Circle cx="26" cy="22.3" r="1.5" fill={color} />
+        <Circle cx="28" cy="23.2" r="1.5" fill={color} />
+        {/* Paw — heart-shaped main pad */}
+        <Ellipse cx="26" cy="27" rx="2.6" ry="2.2" fill={color} />
+      </Svg>
+    );
+  }
+
+  // discover
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Circle cx="16" cy="16" r="10.5" fill="none" stroke={color} strokeWidth={3.2} />
@@ -77,7 +98,7 @@ function PlatformTabGlyph({
   size: number;
   strokeWidth: number;
 }) {
-  if (Platform.OS !== "ios" && (name === "home" || name === "discover")) {
+  if (Platform.OS !== "ios" && (name === "home" || name === "discover" || name === "user")) {
     return <AndroidTabGlyph color={color} cutoutColor={cutoutColor} name={name} size={size} />;
   }
 
@@ -267,7 +288,7 @@ export default function TabLayout() {
         name="community"
         options={{
           title: "Community",
-          tabBarLabel: ({ focused }) => <PremiumTabLabel focused={focused} label="Social" activeColor={activeColor} inactiveColor={inactiveColor} />,
+          tabBarLabel: ({ focused }) => <PremiumTabLabel focused={focused} label="Community" activeColor={activeColor} inactiveColor={inactiveColor} />,
           tabBarIcon: ({ focused }) => (
             <PremiumTabIcon focused={focused} name="user" badgeName="paw" iconSize={35} activeColor={activeColor} inactiveColor={inactiveColor} surfaceColor={colors.bgCard} borderColor={borderColor} />
           ),
