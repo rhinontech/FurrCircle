@@ -1,44 +1,32 @@
 'use strict';
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('users', {
+    await queryInterface.createTable('notification_preferences', {
       id: {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4
       },
-      name: {
+      userId: {
+        type: Sequelize.UUID,
+        allowNull: false
+      },
+      userType: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        defaultValue: 'user'
+      },
+      type: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      email: {
-        type: Sequelize.STRING,
-        allowNull: true,
-        unique: true
-      },
-      password: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      verified: {
+      enabled: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
-        defaultValue: false
-      },
-      profile_photo: {
-        type: Sequelize.TEXT,
-        allowNull: true
-      },
-      phone_number: {
-        type: Sequelize.STRING,
-        allowNull: true,
-        unique: true
-      },
-      address: {
-        type: Sequelize.STRING,
-        allowNull: true
+        defaultValue: true
       },
       createdAt: {
         allowNull: false,
@@ -52,7 +40,8 @@ module.exports = {
       }
     });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('users');
+    await queryInterface.dropTable('notification_preferences');
   }
 };
