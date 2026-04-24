@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { clearAuthToken, setAuthToken } from "@/services/api";
+import { clearAuthToken, setAuthToken, onUnauthorized } from "@/services/api";
 import { authApi } from "@/services/auth/authApi";
 
 export type UserRole = "owner" | "veterinarian" | "admin" | "shelter";
@@ -131,6 +131,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setHasCompletedOnboarding(completed === 'true');
 
         const storedToken = await AsyncStorage.getItem('user_token');
+        const savedUser = await AsyncStorage.getItem('user_data');
+
         if (storedToken?.startsWith('mock-token:')) {
           clearAuthToken();
           await AsyncStorage.removeItem('user_data');
@@ -139,17 +141,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const savedUser = await AsyncStorage.getItem('user_data');
-        if (savedUser) {
+        if (savedUser && storedToken) {
           const parsedUser = JSON.parse(savedUser) as User;
-          // Seed in-memory token cache BEFORE setting user (avoids race with API calls)
-          if (storedToken) setAuthToken(storedToken);
-          setUser(parsedUser);
-          // Refresh profile from server on startup
+          // Seed in-memory token cache IMMEDIATELY (needed for getMe call)
+          setAuthToken(storedToken);
+          
+          // Validate token before setting user
           try {
             const freshProfile = await authApi.getMe() as AuthPayload;
             const updatedUser = toUser({ ...parsedUser, ...freshProfile });
-            setUser(updatedUser);
+            
+            // Only set user if validation succeeds AND we haven't been logged out since
+            setUser(prev => {
+              // If some other process already set a user or cleared it, respect that
+              // But during loadState, prev is likely null.
+              return updatedUser;
+            });
             await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
             if (updatedUser.hasCompletedOnboarding && completed !== 'true') {
               await AsyncStorage.setItem('onboarding_completed', 'true');
@@ -158,12 +165,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } catch (error: any) {
             const message = String(error?.message || '').toLowerCase();
             if (message.includes('not authorized') || message.includes('token failed') || message.includes('jwt')) {
-              clearAuthToken();
-              await AsyncStorage.removeItem('user_data');
-              await AsyncStorage.removeItem('user_token');
-              setUser(null);
+              await logout();
+            } else {
+              setUser(prev => prev || parsedUser);
             }
           }
+        } else {
+          // If state is inconsistent, ensure we are logged out
+          clearAuthToken();
+          setUser(null);
         }
       } catch (e) {
         console.error("Auth initialization error", e);
@@ -172,6 +182,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
     loadState();
+  }, []);
+
+  // Global unauthorized listener
+  useEffect(() => {
+    return onUnauthorized(() => {
+      logout();
+    });
   }, []);
 
   const login = async (email: string, password: string, selectedRole?: UserRole) => {
@@ -243,21 +260,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshUser = async () => {
+    if (!user) return;
     try {
       const freshProfile = await authApi.getMe() as AuthPayload;
-      const updatedUser = toUser({ ...toAuthPayload(user!), ...freshProfile });
-      setUser(updatedUser);
-      await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+      setUser(prev => {
+        if (!prev) return null;
+        const updatedUser = toUser({ ...toAuthPayload(prev), ...freshProfile });
+        AsyncStorage.setItem('user_data', JSON.stringify(updatedUser)).catch(() => {});
+        return updatedUser;
+      });
     } catch (error) {
       // Silently fail — stale data is acceptable if the network is unavailable
     }
   };
 
   const logout = async () => {
-    clearAuthToken();
-    setUser(null);
-    await AsyncStorage.removeItem('user_data');
-    await AsyncStorage.removeItem('user_token');
+    try {
+      clearAuthToken();
+      setUser(null);
+      await Promise.all([
+        AsyncStorage.removeItem('user_data'),
+        AsyncStorage.removeItem('user_token'),
+      ]);
+    } catch (e) {
+      console.error("Logout error", e);
+    }
   };
 
   const completeOnboarding = async () => {
@@ -266,9 +293,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user && !user.hasCompletedOnboarding) {
       try {
         const data = await authApi.completeOnboarding() as AuthPayload;
-        const updatedUser = toUser({ ...toAuthPayload(user), ...data });
-        setUser(updatedUser);
-        await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+        setUser(prev => {
+          if (!prev) return null;
+          const updatedUser = toUser({ ...toAuthPayload(prev), ...data });
+          AsyncStorage.setItem('user_data', JSON.stringify(updatedUser)).catch(() => {});
+          return updatedUser;
+        });
       } catch {
         // local onboarding state still wins if the network is unavailable
       }
@@ -294,9 +324,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (hasCompletedOnboarding && !user.hasCompletedOnboarding) {
       authApi.completeOnboarding()
         .then((data) => {
-          const updatedUser = toUser({ ...toAuthPayload(user), ...(data as AuthPayload) });
-          setUser(updatedUser);
-          return AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+          setUser(prev => {
+            if (!prev) return null;
+            const updatedUser = toUser({ ...toAuthPayload(prev), ...(data as AuthPayload) });
+            AsyncStorage.setItem('user_data', JSON.stringify(updatedUser)).catch(() => {});
+            return updatedUser;
+          });
         })
         .catch(() => {});
     }

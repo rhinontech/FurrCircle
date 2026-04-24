@@ -266,9 +266,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       });
     });
 
-    const firebaseMessaging = getFirebaseMessaging();
-    const unsubscribeForeground = firebaseMessaging
-      ? firebaseMessaging.onMessage(async (remoteMessage) => {
+    let unsubscribeForeground: (() => void) | undefined;
+    
+    try {
+      const firebaseMessaging = getFirebaseMessaging();
+      if (firebaseMessaging) {
+        unsubscribeForeground = firebaseMessaging.onMessage(async (remoteMessage) => {
           await Notifications.scheduleNotificationAsync({
             content: {
               title: remoteMessage.notification?.title || '',
@@ -277,8 +280,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             },
             trigger: null,
           });
-        })
-      : null;
+        });
+      }
+    } catch (e) {
+      console.warn("Firebase messaging error", e);
+    }
 
     return () => {
       responseListenerRef.current?.remove();

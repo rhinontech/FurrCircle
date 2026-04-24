@@ -1,5 +1,14 @@
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+
+const getMessaging = () => {
+  if (Constants.appOwnership === 'expo') return null;
+  try {
+    return require('@react-native-firebase/messaging').default;
+  } catch {
+    return null;
+  }
+};
 import { Platform } from 'react-native';
 
 type FirebaseMessagingModule = typeof import('@react-native-firebase/messaging');
@@ -42,6 +51,9 @@ export const registerForPushNotificationsAsync = async () => {
     }
 
     // 2. Register for remote messages (iOS)
+    const messaging = getMessaging();
+    if (!messaging) return null;
+
     if (Platform.OS === 'ios') {
       if (!firebaseMessaging.isDeviceRegisteredForRemoteMessages) {
         await firebaseMessaging.registerDeviceForRemoteMessages();
@@ -59,12 +71,9 @@ export const registerForPushNotificationsAsync = async () => {
 
 export const getFCMToken = async () => {
   try {
-    const firebaseMessaging = getFirebaseMessaging();
-    if (!firebaseMessaging) {
-      return null;
-    }
-
-    return await firebaseMessaging.getToken();
+    const messaging = getMessaging();
+    if (!messaging) return null;
+    return await messaging().getToken();
   } catch (error) {
     console.error('Error getting FCM token:', error);
     return null;

@@ -23,6 +23,7 @@ const baseRoot = getBaseUrl();
 const BASE_URL = /\/api$/.test(baseRoot) ? baseRoot : `${baseRoot}/api`;
 
 let authToken: string | null = null;
+const unauthorizedListeners = new Set<() => void>();
 
 export const setAuthToken = (token: string | null) => {
   authToken = token;
@@ -30,6 +31,15 @@ export const setAuthToken = (token: string | null) => {
 
 export const clearAuthToken = () => {
   authToken = null;
+};
+
+export const onUnauthorized = (callback: () => void) => {
+  unauthorizedListeners.add(callback);
+  return () => { unauthorizedListeners.delete(callback); };
+};
+
+const notifyUnauthorized = () => {
+  unauthorizedListeners.forEach(callback => callback());
 };
 
 const getErrorMessage = (data: unknown, status: number) => {
@@ -59,7 +69,9 @@ const parseResponse = async (response: Response) => {
 export const apiCall = async <T = unknown>(endpoint: string, options: RequestOptions = {}): Promise<T> => {
   const { method = 'GET', body, headers: extraHeaders = {} } = options;
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const token = authToken ?? (await AsyncStorage.getItem('user_token'));
+  
+  // Use memory-only token to avoid race conditions with storage
+  const token = authToken;
   const headers: Record<string, string> = {
     ...extraHeaders,
   };
@@ -81,6 +93,9 @@ export const apiCall = async <T = unknown>(endpoint: string, options: RequestOpt
   const data = await parseResponse(response);
 
   if (!response.ok) {
+    if (response.status === 401) {
+      notifyUnauthorized();
+    }
     throw new Error(getErrorMessage(data, response.status));
   }
 
