@@ -242,7 +242,15 @@ export default function CommunityScreen() {
                   <Text style={{ marginTop: 4, color: colors.textMuted, fontSize: 13, textAlign: "center" }}>New community events will appear here soon.</Text>
                 </View>
               ) : (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 14 }}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  snapToInterval={294}
+                  decelerationRate="fast"
+                  snapToAlignment="start"
+                  style={{ marginHorizontal: -20 }}
+                  contentContainerStyle={{ paddingHorizontal: 20, gap: 14 }}
+                >
                   {events.map((event) => (
                     <EventCard key={event.id} {...event} onPress={() => router.push(`/community/events/${event.id}` as any)} />
                   ))}

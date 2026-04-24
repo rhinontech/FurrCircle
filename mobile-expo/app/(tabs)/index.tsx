@@ -340,7 +340,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Reminders section */}
-        {reminders.length > 0 && (
+        {reminders.filter(r => !r.isDone).length > 0 && (
           <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary }}>Upcoming Reminders</Text>
@@ -360,11 +360,11 @@ export default function HomeScreen() {
                   <Pressable
                     key={r.id.toString()}
                     onPress={() => router.push("/reminders")}
-                    style={{ minWidth: 160, backgroundColor: bg, borderRadius: 16, borderWidth: 1, borderColor: isDark ? colors.border : `${color}33`, padding: 14, marginRight: 12 }}
+                    style={{ width: SCREEN_WIDTH - 40, maxWidth: SCREEN_WIDTH - 40, backgroundColor: bg, borderRadius: 16, borderWidth: 1, borderColor: isDark ? colors.border : `${color}33`, padding: 14, marginRight: 12, overflow: "hidden" }}
                   >
                     <Icon size={18} color={color} style={{ marginBottom: 8 }} />
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }} numberOfLines={1}>{r.title}</Text>
-                    <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }} numberOfLines={1}>
+                    <Text style={{ width: "100%", fontSize: 14, fontWeight: '600', color: colors.textPrimary }} numberOfLines={1} ellipsizeMode="tail">{r.title}</Text>
+                    <Text style={{ width: "100%", fontSize: 12, color: colors.textMuted, marginTop: 2 }} numberOfLines={1} ellipsizeMode="tail">
                       {r.pet?.name ? `${r.pet.name} - ` : ''}{r.date ? new Date(r.date).toLocaleDateString() : 'No date'}
                     </Text>
                   </Pressable>
@@ -403,7 +403,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Nearby Vets */}
-        <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
+        {vets.length > 0 && <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary }}>Nearby Vets</Text>
             <Pressable onPress={() => router.push("/(tabs)/discover?category=Vets")}>
@@ -445,7 +445,7 @@ export default function HomeScreen() {
               </View>
             </Pressable>
           ))}
-        </View>
+        </View>}
 
         {/* Community Spotlight */}
         <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>

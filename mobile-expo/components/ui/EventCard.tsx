@@ -12,6 +12,7 @@ interface EventCardProps {
   category: string;
   attendees?: string;
   imageUrl?: string;
+  fullWidth?: boolean;
   onPress?: () => void;
 }
 
@@ -24,6 +25,7 @@ export default function EventCard({
   category,
   attendees,
   imageUrl,
+  fullWidth,
   onPress,
 }: EventCardProps) {
   const { colors } = useTheme();
@@ -32,23 +34,23 @@ export default function EventCard({
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        width: 224,
+        ...(fullWidth ? { alignSelf: "stretch" } : { width: 280 }),
         opacity: pressed ? 0.94 : 1,
       })}
     >
       <View style={{
+        ...(fullWidth ? {} : { width: 280 }),
         borderRadius: 24,
         overflow: "hidden",
         backgroundColor: colors.bgCard,
         borderWidth: 1.5,
         borderColor: colors.border,
-        
       }}>
-        <View style={{ position: "relative" }}>
+        <View style={{ position: "relative", height: 180 }}>
           {imageUrl ? (
-            <Image source={{ uri: imageUrl }} style={{ width: "100%", height: 144 }} resizeMode="cover" />
+            <Image source={{ uri: imageUrl }} style={{ width: "100%", height: 180 }} resizeMode="cover" />
           ) : (
-            <View style={{ width: "100%", height: 144, backgroundColor: colors.infoBg }} />
+            <View style={{ width: "100%", height: 180, backgroundColor: colors.infoBg }} />
           )}
           <View style={{ position: "absolute", top: 14, left: 14, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, minWidth: 58, alignItems: "center" }}>
             <Text style={{ fontSize: 10, fontWeight: "800", color: colors.brand, textTransform: "uppercase" }}>{month}</Text>

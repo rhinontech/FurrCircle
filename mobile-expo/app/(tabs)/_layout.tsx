@@ -4,6 +4,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet, Text, View } from "react-native";
+import Svg, { Circle, Path } from "react-native-svg";
 import AppIcon, { type AppIconName } from "@/components/ui/AppIcon";
 
 type PremiumTabIconProps = {
@@ -25,6 +26,72 @@ type PremiumTabLabelProps = {
   activeColor: string;
   inactiveColor: string;
 };
+
+function AndroidTabGlyph({
+  color,
+  cutoutColor,
+  name,
+  size,
+}: {
+  color: string;
+  cutoutColor: string;
+  name: "discover" | "home";
+  size: number;
+}) {
+  if (name === "home") {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 32 32">
+        <Path
+          d="M4.4 15.5 15 6.1c.6-.5 1.4-.5 2 0l10.6 9.4c.9.8.3 2.3-.9 2.3h-1.1v8.1c0 1.5-1.2 2.7-2.7 2.7h-4.1v-7.4h-5.6v7.4H9.1c-1.5 0-2.7-1.2-2.7-2.7v-8.1H5.3c-1.2 0-1.8-1.5-.9-2.3Z"
+          fill={color}
+        />
+        <Path d="M13.2 28.6v-7.4h5.6v7.4h-5.6Z" fill={cutoutColor} />
+      </Svg>
+    );
+  }
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 32 32">
+      <Circle cx="16" cy="16" r="10.5" fill="none" stroke={color} strokeWidth={3.2} />
+      <Path
+        d="M21.8 9.4 18.6 19c-.1.4-.4.7-.8.8l-9.6 3.2 3.2-9.6c.1-.4.4-.7.8-.8l9.6-3.2Z"
+        fill={color}
+      />
+      <Circle cx="16" cy="16" r="1.6" fill={cutoutColor} />
+    </Svg>
+  );
+}
+
+function PlatformTabGlyph({
+  color,
+  cutoutColor,
+  filled = true,
+  name,
+  size,
+  strokeWidth,
+}: {
+  color: string;
+  cutoutColor: string;
+  filled?: boolean;
+  name: AppIconName;
+  size: number;
+  strokeWidth: number;
+}) {
+  if (Platform.OS !== "ios" && (name === "home" || name === "discover")) {
+    return <AndroidTabGlyph color={color} cutoutColor={cutoutColor} name={name} size={size} />;
+  }
+
+  return (
+    <AppIcon
+      name={name}
+      size={size}
+      color={color}
+      fill={filled ? color : "transparent"}
+      filled={filled}
+      strokeWidth={strokeWidth}
+    />
+  );
+}
 
 function PremiumTabIcon({
   badgeName,
@@ -50,10 +117,11 @@ function PremiumTabIcon({
             },
           ]}
         >
-          <AppIcon
+          <PlatformTabGlyph
             name={name}
             size={31}
             color={focused ? "#fff" : activeColor}
+            cutoutColor={focused ? activeColor : surfaceColor}
             filled
             strokeWidth={2.4}
           />
@@ -68,11 +136,11 @@ function PremiumTabIcon({
 
   return (
     <View style={styles.sideIconSlot}>
-      <AppIcon
+      <PlatformTabGlyph
         name={name}
         size={iconSize ?? 30}
         color={color}
-        fill={color}
+        cutoutColor={surfaceColor}
         filled
         strokeWidth={focused ? 2.5 : 2.1}
       />
