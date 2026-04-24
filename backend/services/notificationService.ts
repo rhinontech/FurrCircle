@@ -234,13 +234,17 @@ export const createNotification = async (
   title: string,
   message: string,
   relatedId?: string,
-  relatedType?: string
+  relatedType?: string,
+  actionType?: string,
+  actionPayload?: Record<string, unknown>,
 ): Promise<NotificationDeliveryResult> => {
   return createRichNotification({
     actorId: userId,
     actorType: (userType === "vet" ? "vet" : "user") as ActorType,
     type,
     title,
+    actionType,
+    actionPayload,
     message,
     relatedId,
     relatedType,

@@ -79,7 +79,7 @@ export default function NotificationsScreen() {
       console.log("activity", activity);
       console.log("campaign", campaign);
       setActivityNotifications(activity);
-      setCampaignNotifications(campaign);
+      setCampaignNotifications([]);
     } catch {
       // silently fail
     } finally {

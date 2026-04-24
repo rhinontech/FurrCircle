@@ -68,7 +68,7 @@ export default function ProfileScreen() {
     {
       icon: Bell,
       label: "Notifications",
-      action: () => router.push("/notifications"),
+      action: () => router.push("/profile/notifications"),
     },
     {
       icon: Shield,

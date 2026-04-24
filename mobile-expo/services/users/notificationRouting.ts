@@ -40,6 +40,12 @@ export const navigateFromNotification = (
       else router.push("/community/posts" as any);
       return;
     }
+    case "vaccine_added": {
+      const petId = getString(payload.petId) || notification.relatedId || null;
+      if (petId) router.push(`/health/vaccines?petId=${petId}` as any);
+      else router.push("/pets" as any);
+      return;
+    }
     case "events_list":
       router.push("/community/events" as any);
       return;
