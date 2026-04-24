@@ -103,9 +103,14 @@ export default function EventDetailScreen() {
         <View style={{ paddingHorizontal: 20, marginTop: -24 }}>
           <View style={{ backgroundColor: colors.bgCard, borderRadius: 28, borderWidth: 1, borderColor: colors.border, padding: 20 }}>
             <Text style={{ fontSize: 24, fontWeight: "800", color: colors.textPrimary, lineHeight: 30 }}>{event.title}</Text>
-            <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 10, lineHeight: 22 }}>
-              {event.description}
-            </Text>
+
+            {event.description && (
+              <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 10, lineHeight: 22 }}>
+                {event.description}
+              </Text>
+
+            )}
+
 
             <View style={{ marginTop: 20, gap: 12 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>

@@ -28,6 +28,18 @@ export const navigateFromNotification = (
       else router.push("/community/events" as any);
       return;
     }
+    case "like": {
+      const postId = getString(payload.postId) || notification.relatedId || null;
+      if (postId) router.push(`/community/posts/${postId}` as any);
+      else router.push("/community/posts" as any);
+      return;
+    }
+    case "comment": {
+      const postId = getString(payload.postId) || notification.relatedId || null;
+      if (postId) router.push(`/community/posts/${postId}` as any);
+      else router.push("/community/posts" as any);
+      return;
+    }
     case "events_list":
       router.push("/community/events" as any);
       return;

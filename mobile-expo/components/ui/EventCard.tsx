@@ -60,11 +60,11 @@ export default function EventCard({
         </View>
 
         <View style={{ padding: 16 }}>
-          <Text numberOfLines={2} style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary, lineHeight: 22, minHeight: 44 }}>
+          <Text numberOfLines={2} style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary, lineHeight: 22, minHeight: 34 }}>
             {title}
           </Text>
 
-          <View style={{ marginTop: 12, gap: 8 }}>
+          <View style={{ marginTop: 0, gap: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <Clock size={14} color={colors.textMuted} />
               <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: "500" }}>{time}</Text>
