@@ -1,35 +1,16 @@
 'use strict';
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('appointments', {
+    await queryInterface.createTable('medical_records', {
       id: {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4
       },
-      vet_id: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        references: {
-          model: 'vets',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
-      user_id: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        references: {
-          model: 'users',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
-      },
-      pet_id: {
+      petId: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
@@ -43,7 +24,7 @@ module.exports = {
         type: Sequelize.DATEONLY,
         allowNull: true
       },
-      time: {
+      type: {
         type: Sequelize.STRING,
         allowNull: true
       },
@@ -51,8 +32,16 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true
       },
-      status: {
+      veterinarian: {
         type: Sequelize.STRING,
+        allowNull: true
+      },
+      notes: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
+      imageUrl: {
+        type: Sequelize.TEXT,
         allowNull: true
       },
       createdAt: {
@@ -67,7 +56,8 @@ module.exports = {
       }
     });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('appointments');
+    await queryInterface.dropTable('medical_records');
   }
 };

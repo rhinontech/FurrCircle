@@ -1,73 +1,49 @@
 'use strict';
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('pets', {
+    await queryInterface.createTable('vitals', {
       id: {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4
       },
-      owner_id: {
+      petId: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'users',
+          model: 'pets',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      name: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      profile_photo: {
-        type: Sequelize.STRING,
+      temperature: {
+        type: Sequelize.FLOAT,
         allowNull: true
       },
-      species: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      breed: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      gender: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      birth_date: {
-        type: Sequelize.DATEONLY,
+      heartRate: {
+        type: Sequelize.INTEGER,
         allowNull: true
       },
       weight: {
+        type: Sequelize.FLOAT,
+        allowNull: true
+      },
+      bloodPressure: {
         type: Sequelize.STRING,
         allowNull: true
       },
-      description: {
+      notes: {
         type: Sequelize.TEXT,
         allowNull: true
       },
-      history: {
-        type: Sequelize.TEXT,
-        allowNull: true
-      },
-      height: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      is_adoption_open: {
-        type: Sequelize.BOOLEAN,
+      timestamp: {
+        type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: false
-      },
-      is_foster_open: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue: false
+        defaultValue: Sequelize.fn('NOW')
       },
       createdAt: {
         allowNull: false,
@@ -81,7 +57,8 @@ module.exports = {
       }
     });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('pets');
+    await queryInterface.dropTable('vitals');
   }
 };

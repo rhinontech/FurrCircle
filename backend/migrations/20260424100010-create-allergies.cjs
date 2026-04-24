@@ -1,58 +1,44 @@
 'use strict';
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('vets', {
+    await queryInterface.createTable('allergies', {
       id: {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4
       },
-      name: {
+      petId: {
+        type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: 'pets',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      allergen: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      email: {
+      severity: {
         type: Sequelize.STRING,
-        allowNull: true,
-        unique: true
-      },
-      password: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      verified: {
-        type: Sequelize.BOOLEAN,
         allowNull: false,
-        defaultValue: false
+        defaultValue: "moderate"
       },
-      hospital_name: {
+      reaction: {
         type: Sequelize.STRING,
         allowNull: true
       },
-      profession: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      experience: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      working_hours: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      profile_photo: {
+      notes: {
         type: Sequelize.TEXT,
         allowNull: true
       },
-      phone_number: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      address: {
-        type: Sequelize.STRING,
+      diagnosedAt: {
+        type: Sequelize.DATEONLY,
         allowNull: true
       },
       createdAt: {
@@ -67,7 +53,8 @@ module.exports = {
       }
     });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('vets');
+    await queryInterface.dropTable('allergies');
   }
 };

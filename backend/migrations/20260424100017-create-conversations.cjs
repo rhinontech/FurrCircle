@@ -1,15 +1,26 @@
 'use strict';
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('vet_reviews', {
+    await queryInterface.createTable('conversations', {
       id: {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4
       },
-      vet_id: {
+      petId: {
+        type: Sequelize.UUID,
+        allowNull: true,
+        references: {
+          model: 'pets',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
+      },
+      vetId: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
@@ -19,7 +30,7 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      user_id: {
+      ownerId: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
@@ -29,16 +40,12 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      rating: {
-        type: Sequelize.INTEGER,
-        allowNull: true
-      },
-      review: {
+      lastMessage: {
         type: Sequelize.TEXT,
         allowNull: true
       },
-      date: {
-        type: Sequelize.DATEONLY,
+      lastMessageAt: {
+        type: Sequelize.DATE,
         allowNull: true
       },
       createdAt: {
@@ -53,7 +60,8 @@ module.exports = {
       }
     });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('vet_reviews');
+    await queryInterface.dropTable('conversations');
   }
 };
