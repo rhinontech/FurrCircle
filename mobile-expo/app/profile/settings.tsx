@@ -45,9 +45,6 @@ export default function AppSettingsScreen() {
       title: "App Settings",
       items: [
         { icon: Globe, label: "Language", value: "English (US)", action: () => {} },
-        { icon: Sliders, label: "Notification Settings", action: () => {} },
-        { icon: Bell, label: "Push Notifications", action: togglePush, value: pushEnabled, toggle: true, key: "push" },
-        { icon: Bell, label: "Marketing Updates", action: toggleMarketing, value: marketingEnabled, toggle: true, key: "marketing" },
       ]
     },
     {
@@ -88,7 +85,7 @@ export default function AppSettingsScreen() {
               {section.items.map((item, i) => (
                 <Pressable
                   key={item.label}
-                  disabled={item.toggle}
+                  disabled={(item as any).toggle}
                   onPress={item.action}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: i < section.items.length - 1 ? 1 : 0, borderBottomColor: colors.border }}
                 >
@@ -96,14 +93,21 @@ export default function AppSettingsScreen() {
                     <item.icon size={18} color={colors.textMuted} />
                   </View>
                   <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary }}>{item.label}</Text>
-                  {item.toggle ? (
-                    busyKey === item.key ? (
+                  {(item as any).toggle ? (
+                    busyKey === (item as any).key ? (
                       <ActivityIndicator size="small" color={colors.brand} />
                     ) : (
-                      <Switch value={item.value} onValueChange={item.action} trackColor={{ false: colors.border, true: colors.brand }} thumbColor="#fff" />
+                      <Switch 
+                        value={!!item.value} 
+                        onValueChange={item.action as any} 
+                        trackColor={{ false: colors.border, true: colors.brand }} 
+                        thumbColor="#fff" 
+                      />
                     )
                   ) : (
-                    <Text style={{ fontSize: 13, color: colors.textMuted }}>{item.value || ""}</Text>
+                    <Text style={{ fontSize: 13, color: colors.textMuted }}>
+                      {typeof item.value === 'string' ? item.value : ""}
+                    </Text>
                   )}
                 </Pressable>
               ))}

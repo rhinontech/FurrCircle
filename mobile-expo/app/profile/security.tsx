@@ -16,15 +16,15 @@ export default function SecurityScreen() {
     {
       title: "Account Security",
       items: [
-        { icon: Lock, label: "Change Password", action: () => {} },
-        { icon: Smartphone, label: "Two-Factor Auth", action: () => setIsTwoFactorEnabled(!isTwoFactorEnabled), value: isTwoFactorEnabled, toggle: true },
-        { icon: Key, label: "Face ID / Fingerprint", action: () => setIsFaceIdEnabled(!isFaceIdEnabled), value: isFaceIdEnabled, toggle: true },
+        { icon: Lock, label: "Change Password", action: () => {}, toggle: false, value: "" },
+        // { icon: Smartphone, label: "Two-Factor Auth", action: () => setIsTwoFactorEnabled(!isTwoFactorEnabled), value: isTwoFactorEnabled, toggle: true },
+        // { icon: Key, label: "Face ID / Fingerprint", action: () => setIsFaceIdEnabled(!isFaceIdEnabled), value: isFaceIdEnabled, toggle: true },
       ]
     },
     {
       title: "Privacy Settings",
       items: [
-        { icon: Eye, label: "Profile Visibility", value: "Public", action: () => {} },
+        // { icon: Eye, label: "Profile Visibility", value: "Public", action: () => {} },
         { icon: Shield, label: "Show My Location", action: () => setShowLocation(!showLocation), value: showLocation, toggle: true },
       ]
     }
@@ -56,9 +56,9 @@ export default function SecurityScreen() {
                   </View>
                   <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary }}>{item.label}</Text>
                   {item.toggle ? (
-                    <Switch value={item.value} onValueChange={item.action} trackColor={{ false: colors.border, true: colors.brand }} thumbColor="#fff" />
+                    <Switch value={!!item.value} onValueChange={item.action} trackColor={{ false: colors.border, true: colors.brand }} thumbColor="#fff" />
                   ) : (
-                    <Text style={{ fontSize: 13, color: colors.textMuted }}>{item.value || ""}</Text>
+                    <Text style={{ fontSize: 13, color: colors.textMuted }}>{item?.value || ""}</Text>
                   )}
                 </Pressable>
               ))}

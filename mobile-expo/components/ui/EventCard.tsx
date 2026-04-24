@@ -33,54 +33,53 @@ export default function EventCard({
       onPress={onPress}
       style={({ pressed }) => ({
         width: 224,
+        opacity: pressed ? 0.94 : 1,
+      })}
+    >
+      <View style={{
         borderRadius: 24,
         overflow: "hidden",
         backgroundColor: colors.bgCard,
         borderWidth: 1.5,
         borderColor: colors.border,
-        opacity: pressed ? 0.94 : 1,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 3,
-      })}
-    >
-      <View style={{ position: "relative" }}>
-        {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={{ width: "100%", height: 144 }} resizeMode="cover" />
-        ) : (
-          <View style={{ width: "100%", height: 144, backgroundColor: colors.infoBg }} />
-        )}
-        <View style={{ position: "absolute", top: 14, left: 14, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, minWidth: 58, alignItems: "center" }}>
-          <Text style={{ fontSize: 10, fontWeight: "800", color: colors.brand, textTransform: "uppercase" }}>{month}</Text>
-          <Text style={{ fontSize: 20, fontWeight: "800", color: "#1e293b" }}>{day}</Text>
-        </View>
-        <View style={{ position: "absolute", right: 14, top: 14, backgroundColor: "rgba(15,23,42,0.72)", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 }}>
-          <Text style={{ fontSize: 10, fontWeight: "700", color: "#fff", textTransform: "uppercase" }}>{category}</Text>
-        </View>
-      </View>
-
-      <View style={{ padding: 16 }}>
-        <Text numberOfLines={2} style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary, lineHeight: 22, minHeight: 44 }}>
-          {title}
-        </Text>
-
-        <View style={{ marginTop: 12, gap: 8 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Clock size={14} color={colors.textMuted} />
-            <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: "500" }}>{time}</Text>
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <MapPin size={14} color={colors.textMuted} />
-            <Text numberOfLines={1} style={{ flex: 1, fontSize: 12, color: colors.textMuted, fontWeight: "500" }}>{location}</Text>
-          </View>
-          {!!attendees && (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Users size={14} color={colors.textMuted} />
-              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: "500" }}>{attendees}</Text>
-            </View>
+        
+      }}>
+        <View style={{ position: "relative" }}>
+          {imageUrl ? (
+            <Image source={{ uri: imageUrl }} style={{ width: "100%", height: 144 }} resizeMode="cover" />
+          ) : (
+            <View style={{ width: "100%", height: 144, backgroundColor: colors.infoBg }} />
           )}
+          <View style={{ position: "absolute", top: 14, left: 14, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, minWidth: 58, alignItems: "center" }}>
+            <Text style={{ fontSize: 10, fontWeight: "800", color: colors.brand, textTransform: "uppercase" }}>{month}</Text>
+            <Text style={{ fontSize: 20, fontWeight: "800", color: "#1e293b" }}>{day}</Text>
+          </View>
+          <View style={{ position: "absolute", right: 14, top: 14, backgroundColor: "rgba(15,23,42,0.72)", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 }}>
+            <Text style={{ fontSize: 10, fontWeight: "700", color: "#fff", textTransform: "uppercase" }}>{category}</Text>
+          </View>
+        </View>
+
+        <View style={{ padding: 16 }}>
+          <Text numberOfLines={2} style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary, lineHeight: 22, minHeight: 34 }}>
+            {title}
+          </Text>
+
+          <View style={{ marginTop: 0, gap: 8 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Clock size={14} color={colors.textMuted} />
+              <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: "500" }}>{time}</Text>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <MapPin size={14} color={colors.textMuted} />
+              <Text numberOfLines={1} style={{ flex: 1, fontSize: 12, color: colors.textMuted, fontWeight: "500" }}>{location}</Text>
+            </View>
+            {!!attendees && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Users size={14} color={colors.textMuted} />
+                <Text style={{ fontSize: 12, color: colors.textMuted, fontWeight: "500" }}>{attendees}</Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
     </Pressable>
