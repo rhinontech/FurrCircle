@@ -21,7 +21,7 @@ function formatTime(date: string) {
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const [event, setEvent] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,7 +88,7 @@ export default function EventDetailScreen() {
 
           <Pressable
             onPress={() => router.back()}
-            style={{ position: "absolute", top: 18, left: 20, width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(255,255,255,0.92)", alignItems: "center", justifyContent: "center" }}
+            style={{ position: "absolute", top: 18, left: 20, width: 42, height: 42, borderRadius: 21, backgroundColor: isDark ? "rgba(30,41,59,0.92)" : "rgba(255,255,255,0.92)", alignItems: "center", justifyContent: "center" }}
           >
             <ChevronLeft size={20} color={colors.textPrimary} />
           </Pressable>
