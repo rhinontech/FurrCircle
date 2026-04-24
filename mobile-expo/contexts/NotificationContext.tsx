@@ -8,7 +8,14 @@ import { useRouter } from 'expo-router';
 import { userCommunityApi } from '@/services/users/communityApi';
 import { userNotificationsApi, type NotificationCategory, type NotificationCounts } from '@/services/users/notificationsApi';
 import { navigateFromNotification } from '@/services/users/notificationRouting';
-import messaging from '@react-native-firebase/messaging';
+const getMessaging = () => {
+  if (Constants.appOwnership === 'expo') return null;
+  try {
+    return require('@react-native-firebase/messaging').default;
+  } catch {
+    return null;
+  }
+};
 import { registerForPushNotificationsAsync } from '@/services/fcmService';
 import { getApiRootUrl } from '@/services/api';
 import { useAuth } from './AuthContext';
@@ -259,16 +266,26 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       });
     });
 
-    const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: remoteMessage.notification?.title || '',
-          body: remoteMessage.notification?.body || '',
-          data: remoteMessage.data || {},
-        },
-        trigger: null,
-      });
-    });
+    const messaging = getMessaging();
+    
+    let unsubscribeForeground: () => void = () => {};
+    
+    if (messaging) {
+      try {
+        unsubscribeForeground = messaging().onMessage(async (remoteMessage: any) => {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: remoteMessage.notification?.title || '',
+              body: remoteMessage.notification?.body || '',
+              data: remoteMessage.data || {},
+            },
+            trigger: null,
+          });
+        });
+      } catch (e) {
+        console.warn("Firebase messaging error", e);
+      }
+    }
 
     return () => {
       responseListenerRef.current?.remove();
