@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, ScrollView, Image, Pressable, Dimensions, FlatList, ActivityIndicator, RefreshControl, Modal, Alert, Share, KeyboardAvoidingView, Platform, TextInput } from "react-native";
+import { View, Text, ScrollView, Image, Pressable, FlatList, ActivityIndicator, RefreshControl, Modal, Alert, Share, KeyboardAvoidingView, Platform, TextInput } from "react-native";
 import { Syringe, Stethoscope, Calendar, Heart, PawPrint, MapPin, Star, MessageCircle, Share2, Bookmark, X, Camera } from "@/components/ui/IconCompat";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -11,8 +11,7 @@ import { userCommunityApi } from "@/services/users/communityApi";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { G, Path } from "react-native-svg";
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedScrollHandler, interpolate, Extrapolation } from 'react-native-reanimated';
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+import { useResponsive, MAX_CONTENT_WIDTH } from "@/hooks/useResponsive";
 
 function timeAgo(date?: string) {
   if (!date) return "";
@@ -40,9 +39,9 @@ export const CustomPawPrint = ({ size = 20, color = "currentColor", style }: { s
   </Svg>
 );
 
-const PaginationDot = ({ index, scrollX }: { index: number, scrollX: any }) => {
+const PaginationDot = ({ index, scrollX, cardWidth }: { index: number, scrollX: any, cardWidth: number }) => {
   const animatedStyle = useAnimatedStyle(() => {
-    const inputRange = [(index - 1) * (SCREEN_WIDTH - 40), index * (SCREEN_WIDTH - 40), (index + 1) * (SCREEN_WIDTH - 40)];
+    const inputRange = [(index - 1) * cardWidth, index * cardWidth, (index + 1) * cardWidth];
     const width = interpolate(scrollX.value, inputRange, [6, 18, 6], Extrapolation.CLAMP);
     const opacity = interpolate(scrollX.value, inputRange, [0.4, 1, 0.4], Extrapolation.CLAMP);
     return { width, opacity };
@@ -55,6 +54,9 @@ export default function HomeScreen() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
   const { user } = useAuth();
+  const { screenWidth, hp } = useResponsive();
+  const cardWidth = Math.min(screenWidth - hp * 2, MAX_CONTENT_WIDTH - hp * 2);
+  const reminderCardWidth = Math.min(screenWidth - hp * 2, 340);
 
   const [pets, setPets] = useState<any[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
@@ -193,7 +195,7 @@ export default function HomeScreen() {
   const renderPetInfoContent = ({ item }: { item: any }) => (
     <Pressable
       onPress={() => router.push(`/pets/${item.id}`)}
-      style={{ width: SCREEN_WIDTH - 40, padding: 24 }}
+      style={{ width: cardWidth, padding: 24 }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#fff', padding: 3 }}>
@@ -280,9 +282,10 @@ export default function HomeScreen() {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 40, alignItems: "center" }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
       >
+        <View style={{ width: "100%", maxWidth: MAX_CONTENT_WIDTH, alignSelf: "center" }}>
         {/* Greeting */}
         <View style={{ paddingTop: 20, paddingHorizontal: 20, paddingBottom: 10 }}>
           <Text style={{ fontSize: 13, color: colors.textMuted }}>{(() => { const h = new Date().getHours(); return h < 12 ? 'Good morning 👋' : h < 18 ? 'Good afternoon 👋' : 'Good evening 👋'; })()}</Text>
@@ -319,7 +322,7 @@ export default function HomeScreen() {
                   pagingEnabled
                   scrollEnabled={pets.length > 1}
                   showsHorizontalScrollIndicator={false}
-                  snapToInterval={SCREEN_WIDTH - 40}
+                  snapToInterval={cardWidth}
                   decelerationRate="fast"
                   keyExtractor={(item) => item.id.toString()}
                   onScroll={onScroll}
@@ -330,7 +333,7 @@ export default function HomeScreen() {
                 {pets.length > 1 && (
                   <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, paddingBottom: 16 }}>
                     {pets.map((_, index) => (
-                      <PaginationDot key={index} index={index} scrollX={scrollX} />
+                      <PaginationDot key={index} index={index} scrollX={scrollX} cardWidth={cardWidth} />
                     ))}
                   </View>
                 )}
@@ -360,7 +363,7 @@ export default function HomeScreen() {
                   <Pressable
                     key={r.id.toString()}
                     onPress={() => router.push("/reminders")}
-                    style={{ width: SCREEN_WIDTH - 40, maxWidth: SCREEN_WIDTH - 40, backgroundColor: bg, borderRadius: 16, borderWidth: 1, borderColor: isDark ? colors.border : `${color}33`, padding: 14, marginRight: 12, overflow: "hidden" }}
+                    style={{ width: reminderCardWidth, maxWidth: reminderCardWidth, backgroundColor: bg, borderRadius: 16, borderWidth: 1, borderColor: isDark ? colors.border : `${color}33`, padding: 14, marginRight: 12, overflow: "hidden" }}
                   >
                     <Icon size={18} color={color} style={{ marginBottom: 8 }} />
                     <Text style={{ width: "100%", fontSize: 14, fontWeight: '600', color: colors.textPrimary }} numberOfLines={1} ellipsizeMode="tail">{r.title}</Text>
@@ -512,6 +515,7 @@ export default function HomeScreen() {
               <Text style={{ color: colors.textMuted, fontSize: 14 }}>No community posts yet.</Text>
             </View>
           )}
+        </View>
         </View>
       </ScrollView>
 

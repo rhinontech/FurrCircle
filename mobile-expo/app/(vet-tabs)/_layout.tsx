@@ -6,6 +6,8 @@ import { BlurView } from "expo-blur";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Ellipse, Path, Rect } from "react-native-svg";
 import AppIcon, { type AppIconName } from "@/components/ui/AppIcon";
+import TabletSidebar from "@/components/ui/TabletSidebar";
+import { useResponsive } from "@/hooks/useResponsive";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type PremiumTabIconProps = {
@@ -260,27 +262,37 @@ function PremiumTabLabel({
   );
 }
 
+// ─── Vet sidebar tabs config ──────────────────────────────────────────────────
+const VET_SIDEBAR_TABS = [
+  { route: "/dashboard", label: "Dashboard", icon: "dashboard" as const },
+  { route: "/appointments", label: "Schedule", icon: "appointments" as const },
+  { route: "/patients", label: "Patients", icon: "vet" as const, isCenter: true },
+  { route: "/community", label: "Community", icon: "user" as const },
+  { route: "/profile", label: "Profile", icon: "profile" as const },
+];
+
 // ─── Vet tab layout ───────────────────────────────────────────────────────────
 export default function VetTabLayout() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const { isTablet } = useResponsive();
 
   const bottomInset = Math.max(insets.bottom, 10);
   const tabBarHeight = 76 + bottomInset;
-  const sceneBottomPadding = tabBarHeight;
+  const sceneBottomPadding = isTablet ? 0 : tabBarHeight;
   const activeColor = colors.brand;
   const inactiveColor = isDark ? "#8a94a6" : "#687083";
   const tabSurface = isDark ? "rgba(15,23,42,0.92)" : "rgba(255,255,255,0.9)";
   const borderColor = isDark ? "rgba(255,255,255,0.12)" : "rgba(15,23,42,0.08)";
 
-  return (
+  const tabs = (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: activeColor,
         tabBarInactiveTintColor: inactiveColor,
         tabBarShowLabel: true,
-        tabBarStyle: {
+        tabBarStyle: isTablet ? { display: "none" } : {
           position: "absolute",
           overflow: "visible",
           backgroundColor: Platform.OS === "ios" ? "transparent" : tabSurface,
@@ -375,6 +387,17 @@ export default function VetTabLayout() {
       />
     </Tabs>
   );
+
+  if (isTablet) {
+    return (
+      <View style={{ flex: 1, flexDirection: "row" }}>
+        <TabletSidebar tabs={VET_SIDEBAR_TABS} brandLabel="Vet Portal" />
+        <View style={{ flex: 1 }}>{tabs}</View>
+      </View>
+    );
+  }
+
+  return tabs;
 }
 
 // ─── Styles (mirrors user tab layout exactly) ─────────────────────────────────
