@@ -286,6 +286,20 @@ export const getPostById = async (req: any, res: Response): Promise<void> => {
   }
 };
 
+export const getPublicPostById = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { posts: Post } = db as any;
+    const post = await Post.findOne({ where: { id: req.params.id, status: "approved" } });
+    if (!post) {
+      res.status(404).json({ message: "Post not found" });
+      return;
+    }
+    res.json(toPlain(post));
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Toggle like on a post
 // @route   POST /api/community/posts/:id/like
 export const toggleLike = async (req: any, res: Response): Promise<void> => {
@@ -502,6 +516,20 @@ export const getEventById = async (req: any, res: Response): Promise<void> => {
   }
 };
 
+export const getPublicEventById = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { events: Event } = db as any;
+    const event = await Event.findByPk(req.params.id);
+    if (!event) {
+      res.status(404).json({ message: "Event not found" });
+      return;
+    }
+    res.json(toPlain(event));
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Book an event
 // @route   POST /api/community/events/:id/book
 export const bookEvent = async (req: any, res: Response): Promise<void> => {
@@ -565,6 +593,26 @@ export const bookEvent = async (req: any, res: Response): Promise<void> => {
   }
 };
 
+// @desc    Increment share count on an event
+// @route   POST /api/community/events/:id/share
+export const shareEvent = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { events: Event } = db as any;
+    const event = await Event.findByPk(req.params.id);
+
+    if (!event) {
+      res.status(404).json({ message: "Event not found" });
+      return;
+    }
+
+    event.shareCount = Number(event.shareCount || 0) + 1;
+    await event.save();
+
+    res.json({ shareCount: event.shareCount });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
 // @desc    Get community chats
 // @route   GET /api/community/chats
 export const getChats = async (req: any, res: Response): Promise<void> => {

@@ -4,6 +4,7 @@ import {
   getCommunityFeed,
   getMyPosts,
   getPostById,
+  getPublicPostById,
   toggleLike,
   toggleSave,
   sharePost,
@@ -11,7 +12,9 @@ import {
   deleteComment,
   getEvents,
   getEventById,
+  getPublicEventById,
   bookEvent,
+  shareEvent,
   getChats,
   getChatById,
   sendMessage,
@@ -21,9 +24,13 @@ import { protect } from "../middleware/authMiddleware.ts";
 
 const router = express.Router();
 
+router.get("/public/events/:id", getPublicEventById);
+router.get("/public/posts/:id", getPublicPostById);
+
 router.get("/events", protect, getEvents);
 router.get("/events/:id", protect, getEventById);
 router.post("/events/:id/book", protect, bookEvent);
+router.post("/events/:id/share", protect, shareEvent);
 
 router.get("/chats", protect, getChats);
 router.get("/chats/:id", protect, getChatById);
