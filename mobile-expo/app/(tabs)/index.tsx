@@ -292,14 +292,14 @@ export default function HomeScreen() {
           <Text style={{ fontSize: 24, fontWeight: '700', color: colors.textPrimary }}>Hello, {user?.name?.split(' ')[0] || 'Guest'}</Text>
         </View>
 
-        <Image
-            source={require("@/assets/melon.png")}
-            style={{ position: 'absolute', right: 30, top: 0, width: 140, height: 140, zIndex: 1 }}
-            resizeMode="contain"
-          />
 
         {/* Pet Cards Slider */}
         <View style={{ marginTop: 20, marginBottom: 20 }}>
+        <Image
+            source={require("@/assets/melon.png")}
+            style={{ position: 'absolute', right: 30, top: -95, width: 140, height: 140, zIndex: 1 }}
+            resizeMode="contain"
+          />
           {pets.length === 0 ? (
             <View style={{ padding: 20, marginHorizontal: 20, backgroundColor: colors.bgCard, borderRadius: 16, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
               <PawPrint size={32} color={colors.textMuted} style={{ marginBottom: 8 }} />
