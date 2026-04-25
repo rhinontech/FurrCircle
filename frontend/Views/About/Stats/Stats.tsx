@@ -48,7 +48,7 @@ const Stats = () => {
 
                 {/* Left side */}
                 <div className='flex items-center max-md:justify-center'>
-                    <Image src={'/about-us/aboutStats.png'} alt='aboutStats' width={400} height={400} className='max-md:w-[300px] h-auto' />
+                    <Image src={'/about-us/aboutStats.webp'} alt='aboutStats' width={400} height={400} className='max-md:w-[300px] h-auto' />
                 </div>
 
                 {/* Right side */}

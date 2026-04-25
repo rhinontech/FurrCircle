@@ -41,7 +41,7 @@ export function Footer() {
           <StaggerItem className="lg:col-span-1">
             <Link href="/" className="mb-8 inline-block">
               <Image
-                src="/logo/furrcircle_light_logo.png"
+                src="/logo/furrcircle_light_logo.webp"
                 alt="FurrCircle"
                 width={185}
                 height={60}

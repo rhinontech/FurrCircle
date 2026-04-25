@@ -167,14 +167,14 @@ export function Hero() {
       <motion.div
         className="absolute bottom-0 left-0 max-xl:-left-10 max-md:-left-20 w-[600px] h-[600px] max-xl:w-[450px] max-xl:h-[450px] max-lg:w-[350px] max-lg:h-[350px] max-md:w-64 max-md:h-64  z-10 pointer-events-none"
       >
-        <Image src="/heroCat (3).png" loading="eager" alt="Cat" fill className="object-contain object-left drop-shadow-2xl" sizes="(max-width: 768px) 100vw, 33vw" />
+        <Image src="/heroCat3.webp" loading="eager" alt="Cat" fill className="object-contain object-left drop-shadow-2xl" sizes="(max-width: 768px) 100vw, 33vw" />
       </motion.div>
 
       {/* Dog on Right */}
       <motion.div
         className="absolute top-1/2 -translate-y-1/2 max-md:top-[60%] -right-[23%] max-sm:-right-[53%] w-[700px] h-[700px] max-xl:w-[450px] max-xl:h-[450px] max-lg:w-[350px] max-lg:h-[350px] max-md:w-64 max-md:h-64 z-10 pointer-events-none"
       >
-        <Image src="/heroDog (2).png" alt="Dog" fill className="object-contain object-right drop-shadow-2xl" sizes="(max-width: 768px) 100vw, 33vw" />
+        <Image src="/heroDog2.webp" alt="Dog" fill className="object-contain object-right drop-shadow-2xl" sizes="(max-width: 768px) 100vw, 33vw" />
       </motion.div>
     </section>
   );

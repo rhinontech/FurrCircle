@@ -36,7 +36,7 @@ const Info = () => {
             <div className=' w-1/2 h-[450px] max-md:hidden max-sm:block max-md:h-[300px] max-md:w-auto flex items-center justify-center'>
                 <FadeInUp>
                     <Image
-                        src="/about-us/aboutInfo.png"
+                        src="/about-us/aboutInfo.webp"
                         alt="Pet Care"
                         width={450}
                         height={450}
