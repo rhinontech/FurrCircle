@@ -29,7 +29,10 @@ const buildCertificateHtml = (data: {
   vaccineName: string; batchNo: string; dateAdministered: string; nextDueDate: string;
   vetName: string; clinicName: string; licenseNumber: string; clinicAddress: string;
   clinicLogoUrl: string | null;
-}) => `
+}) => {
+  const appLogoUri = Image.resolveAssetSource(require('../../assets/adaptive-icon.png')).uri;
+  
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -47,34 +50,34 @@ const buildCertificateHtml = (data: {
   .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
   .logo-box { width: 52px; height: 52px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .logo-box img { width: 100%; height: 100%; object-fit: contain; }
-  .logo-text { font-size: 11px; font-weight: 800; color: #0f2557; text-align: center; line-height: 1.2; }
+  .logo-text { font-size: 15px; font-weight: 800; color: #0f2557; text-align: center; line-height: 1.2; }
   .title-center { text-align: center; flex: 1; margin: 0 12px; }
-  .cert-title { font-size: 18px; font-weight: 800; color: #0f2557; letter-spacing: 1px; }
-  .cert-subtitle { font-size: 9px; color: #64748b; letter-spacing: 2px; margin-top: 3px; }
+  .cert-title { font-size: 26px; font-weight: 800; color: #0f2557; letter-spacing: 1px; }
+  .cert-subtitle { font-size: 13px; font-weight: 700; color: #64748b; letter-spacing: 2px; margin-top: 4px; }
   .divider { height: 3px; background: linear-gradient(90deg, #0f2557, #3b82f6, #0f2557); border-radius: 2px; margin-bottom: 16px; }
   .clinic-block { background: #f0f4ff; border-radius: 10px; padding: 12px; text-align: center; margin-bottom: 16px; }
-  .clinic-name { font-size: 15px; font-weight: 700; color: #0f2557; }
-  .clinic-sub { font-size: 10px; color: #64748b; margin-top: 3px; }
+  .clinic-name { font-size: 22px; font-weight: 800; color: #0f2557; }
+  .clinic-sub { font-size: 14px; font-weight: 700; color: #64748b; margin-top: 4px; }
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
   .info-box { background: #f8fafc; border-radius: 10px; padding: 12px; }
-  .info-title { font-size: 9px; font-weight: 700; color: #0f2557; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .info-title { font-size: 13px; font-weight: 800; color: #0f2557; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
   .field { margin-bottom: 6px; }
-  .field-label { font-size: 8px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-  .field-value { font-size: 12px; font-weight: 600; color: #1e293b; margin-top: 1px; }
+  .field-label { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+  .field-value { font-size: 16px; font-weight: 800; color: #1e293b; margin-top: 2px; }
   .vaccine-block { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 14px; margin-bottom: 18px; }
-  .vaccine-title { font-size: 10px; font-weight: 700; color: #059669; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .vaccine-title { font-size: 14px; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
   .vaccine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .signature-row { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 16px; border-top: 1px dashed #cbd5e1; margin-top: 4px; }
-  .sig-label { font-size: 9px; color: #94a3b8; }
-  .sig-name { font-size: 13px; font-weight: 700; color: #0f2557; font-style: italic; margin-top: 4px; }
-  .sig-line { width: 140px; border-bottom: 1px solid #0f2557; margin-top: 22px; }
-  .sig-hint { font-size: 8px; color: #94a3b8; margin-top: 3px; }
+  .sig-label { font-size: 13px; font-weight: 700; color: #94a3b8; }
+  .sig-name { font-size: 18px; font-weight: 800; color: #0f2557; font-style: italic; margin-top: 4px; }
+  .sig-line { width: 140px; border-bottom: 1.5px solid #0f2557; margin-top: 22px; }
+  .sig-hint { font-size: 12px; font-weight: 700; color: #94a3b8; margin-top: 3px; }
   .brand-right { text-align: right; }
-  .brand-issued { font-size: 8px; color: #94a3b8; }
-  .brand-name { font-size: 13px; font-weight: 700; color: #0f2557; margin-top: 2px; }
-  .brand-sub { font-size: 9px; color: #64748b; margin-top: 2px; }
-  .brand-rn { font-size: 8px; color: #94a3b8; margin-top: 1px; }
-  .disclaimer { margin-top: 16px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 8px; color: #94a3b8; text-align: center; line-height: 1.5; }
+  .brand-issued { font-size: 12px; font-weight: 700; color: #94a3b8; }
+  .brand-name { font-size: 18px; font-weight: 800; color: #0f2557; margin-top: 2px; }
+  .brand-sub { font-size: 13px; font-weight: 700; color: #64748b; margin-top: 2px; }
+  .brand-rn { font-size: 12px; font-weight: 700; color: #94a3b8; margin-top: 1px; }
+  .disclaimer { margin-top: 16px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 11px; font-weight: 700; color: #94a3b8; text-align: center; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -87,8 +90,8 @@ const buildCertificateHtml = (data: {
 
     <div class="header-row">
       <!-- FurrCircle logo (left) -->
-      <div class="logo-box" style="background:#eff6ff;">
-        <span class="logo-text">Furr<br/>Circle</span>
+      <div class="logo-box" style="background:transparent;">
+        <img src="${appLogoUri}" alt="FurrCircle Logo" style="width: 100%; height: 100%; object-fit: contain;" />
       </div>
       <div class="title-center">
         <div class="cert-title">VACCINATION CERTIFICATE</div>
@@ -97,8 +100,8 @@ const buildCertificateHtml = (data: {
       <!-- Clinic logo (right) -->
       <div class="logo-box" style="background:#f1f5f9;">
         ${data.clinicLogoUrl
-          ? `<img src="${data.clinicLogoUrl}" alt="Clinic Logo" />`
-          : `<span style="font-size:10px;color:#64748b;text-align:center;">Clinic<br/>Logo</span>`}
+    ? `<img src="${data.clinicLogoUrl}" alt="Clinic Logo" />`
+    : `<span style="font-size:10px;color:#64748b;text-align:center;">Clinic<br/>Logo</span>`}
       </div>
     </div>
 
@@ -116,11 +119,11 @@ const buildCertificateHtml = (data: {
       <div class="info-box">
         <div class="info-title">Pet Information</div>
         ${[
-          ["Name", data.petName],
-          ["Species", data.species],
-          ["Breed", data.breed],
-          ["Age", data.age],
-        ].filter(([, v]) => v).map(([l, v]) => `
+    ["Name", data.petName],
+    ["Species", data.species],
+    ["Breed", data.breed],
+    ["Age", data.age],
+  ].filter(([, v]) => v).map(([l, v]) => `
           <div class="field">
             <div class="field-label">${l}</div>
             <div class="field-value">${v}</div>
@@ -140,11 +143,11 @@ const buildCertificateHtml = (data: {
       <div class="vaccine-title">💉 Vaccine Record</div>
       <div class="vaccine-grid">
         ${[
-          ["Vaccine Name", data.vaccineName],
-          ["Batch No.", data.batchNo],
-          ["Date Administered", data.dateAdministered],
-          ["Next Due Date", data.nextDueDate],
-        ].map(([l, v]) => `
+    ["Vaccine Name", data.vaccineName],
+    ["Batch No.", data.batchNo],
+    ["Date Administered", data.dateAdministered],
+    ["Next Due Date", data.nextDueDate],
+  ].map(([l, v]) => `
           <div class="field">
             <div class="field-label">${l}</div>
             <div class="field-value">${v || "—"}</div>
@@ -178,6 +181,7 @@ const buildCertificateHtml = (data: {
 </body>
 </html>
 `;
+};
 
 // ─── Main Screen ────────────────────────────────────────────────────────────
 export default function VaccineCertificateScreen() {
@@ -241,8 +245,21 @@ export default function VaccineCertificateScreen() {
   const generatePdf = async (): Promise<string | null> => {
     setPdfLoading(true);
     try {
-      const html = buildCertificateHtml(buildPdfData());
-      const { uri } = await Print.printToFileAsync({ html, base64: false });
+      let html = buildCertificateHtml(buildPdfData());
+      
+      // Inject CSS to force the card to stretch to the bottom of the page
+      html = html.replace(
+        '</style>', 
+        '  html, body { height: 100vh; margin: 0; padding: 0; }\n  .page { height: 100vh; max-width: 100%; display: flex; flex-direction: column; }\n  .card { flex: 1; display: flex; flex-direction: column; }\n  .signature-row { margin-top: auto; }\n</style>'
+      );
+
+      const { uri } = await Print.printToFileAsync({ 
+        html, 
+        base64: false,
+        width: 794, // A4 width at 96 DPI
+        height: 1123, // A4 height at 96 DPI
+        margins: { top: 0, right: 0, bottom: 0, left: 0 } // Remove native printer margins
+      });
       return uri;
     } catch (e) {
       Alert.alert("Error", "Failed to generate PDF.");
@@ -331,8 +348,8 @@ export default function VaccineCertificateScreen() {
           {/* Header row */}
           <View style={s.headerRow}>
             {/* FurrCircle logo — left */}
-            <View style={[s.logoBubble, { backgroundColor: "#eff6ff" }]}>
-              <Text style={s.fcLogoText}>Furr{"\n"}Circle</Text>
+            <View style={[s.logoBubble, { backgroundColor: "transparent" }]}>
+              <Image source={require('../../assets/adaptive-icon.png')} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
             </View>
 
             <View style={{ flex: 1, alignItems: "center", marginHorizontal: 8 }}>

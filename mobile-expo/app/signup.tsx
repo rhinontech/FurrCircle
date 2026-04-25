@@ -53,6 +53,7 @@ export default function SignupScreen() {
     }
     setRole(key);
   };
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Shared fields
@@ -61,49 +62,46 @@ export default function SignupScreen() {
   const [password, setPassword] = useState("");
 
   // Shelter-specific
-  const [shelterPhone, setShelterPhone] = useState("");
   const [shelterCity, setShelterCity] = useState("");
 
   // Vet-specific
   const [vetHospital, setVetHospital] = useState("");
   const [vetProfession, setVetProfession] = useState("");
-  const [vetPhone, setVetPhone] = useState("");
   const [vetCity, setVetCity] = useState("");
 
   const handleSignup = async () => {
-    if (!name.trim() || !email.trim() || !password) {
-      Alert.alert("Error", "Please fill in all required fields");
+    if (!name.trim() || !email.trim() || !password || !phone.trim()) {
+      Alert.alert("Error", "Please fill in all required fields including phone number");
+      return;
+    }
+
+    // Basic phone validation (must start with + and country code)
+    if (!phone.startsWith("+") || phone.length < 10) {
+      Alert.alert("Invalid Phone", "Please enter your phone number with country code (e.g. +91XXXXXXXXXX)");
       return;
     }
 
     const extra: Record<string, string> = {};
     if (role === "shelter") {
-      if (shelterPhone.trim()) extra.phone_number = shelterPhone.trim();
       if (shelterCity.trim()) extra.city = shelterCity.trim();
     } else if (role === "veterinarian") {
       if (vetHospital.trim()) extra.hospital_name = vetHospital.trim();
       if (vetProfession.trim()) extra.profession = vetProfession.trim();
-      if (vetPhone.trim()) extra.phone = vetPhone.trim();
       if (vetCity.trim()) extra.city = vetCity.trim();
     }
 
-    setLoading(true);
-    try {
-      await register(
-        name.trim(),
-        email.trim(),
+    // Navigate to OTP verification instead of calling register directly
+    router.push({
+      pathname: "/otp-verify",
+      params: {
+        name: name.trim(),
+        email: email.trim(),
         password,
-        role as UserRole,
-        Object.keys(extra).length ? extra : undefined,
-      );
-    } catch (error: any) {
-      Alert.alert(
-        "Registration Failed",
-        error.message || "Something went wrong",
-      );
-    } finally {
-      setLoading(false);
-    }
+        role,
+        phone: phone.trim(),
+        extraData: JSON.stringify(extra)
+      }
+    });
   };
 
   const inputRow = (icon: React.ReactNode, input: React.ReactNode) => (
@@ -286,18 +284,20 @@ export default function SignupScreen() {
               }),
             )}
 
+            {/* Phone Number */}
+            {inputRow(
+              <Phone size={18} color={colors.textMuted} />,
+              textInput({
+                placeholder: "Phone number (e.g. +91XXXXXXXXXX)",
+                value: phone,
+                onChangeText: setPhone,
+                keyboardType: "phone-pad",
+              }),
+            )}
+
             {/* Shelter-specific fields */}
             {role === "shelter" && (
               <>
-                {inputRow(
-                  <Phone size={18} color={colors.textMuted} />,
-                  textInput({
-                    placeholder: "Phone number (optional)",
-                    value: shelterPhone,
-                    onChangeText: setShelterPhone,
-                    keyboardType: "phone-pad",
-                  }),
-                )}
                 {inputRow(
                   <MapPin size={18} color={colors.textMuted} />,
                   textInput({
@@ -326,15 +326,6 @@ export default function SignupScreen() {
                     placeholder: "Specialty (optional)",
                     value: vetProfession,
                     onChangeText: setVetProfession,
-                  }),
-                )}
-                {inputRow(
-                  <Phone size={18} color={colors.textMuted} />,
-                  textInput({
-                    placeholder: "Phone number (optional)",
-                    value: vetPhone,
-                    onChangeText: setVetPhone,
-                    keyboardType: "phone-pad",
                   }),
                 )}
                 {inputRow(

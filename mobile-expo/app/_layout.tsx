@@ -77,7 +77,7 @@ function AppShell() {
     if (hasCompletedOnboarding === null) return;
 
     const inAuthGroup = segments[0] === '(tabs)' || segments[0] === '(vet-tabs)';
-    const inPublicGroup = segments[0] === 'login' || segments[0] === 'signup' || segments[0] === 'onboarding';
+    const inPublicGroup = ['login', 'signup', 'onboarding', 'otp-verify', 'forgot-password', 'reset-password'].includes(segments[0]);
     
     if (!hasCompletedOnboarding && segments[0] !== 'onboarding') {
       // Redirect to onboarding if not completed
@@ -119,6 +119,7 @@ function AppShell() {
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
+        <Stack.Screen name="otp-verify" />
         <Stack.Screen name="forgot-password" />
         <Stack.Screen name="reset-password" />
         <Stack.Screen name="verification-pending" />
