@@ -246,25 +246,39 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setMarketingEnabledState(enabled);
   }, []);
 
-  useEffect(() => {
-    responseListenerRef.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data || {};
-      
-      let actionPayload = data.actionPayload;
-      if (typeof actionPayload === 'string') {
-        try {
-          actionPayload = JSON.parse(actionPayload);
-        } catch {
-          // fallback to original if not JSON
-        }
-      }
+  const handleResponse = useCallback((response: Notifications.NotificationResponse) => {
+    const data = response.notification.request.content.data || {};
+    
+    // Log for debugging
+    console.log('[NotificationContext] Handling response data:', JSON.stringify(data, null, 2));
 
-      navigateFromNotification(router, {
-        actionType: typeof data.actionType === 'string' ? data.actionType : null,
-        actionPayload: typeof actionPayload === 'object' && actionPayload ? actionPayload as Record<string, unknown> : null,
-        relatedId: typeof data.relatedId === 'string' ? data.relatedId : undefined,
-      });
+    let actionPayload = data.actionPayload;
+    if (typeof actionPayload === 'string' && actionPayload.startsWith('{')) {
+      try {
+        actionPayload = JSON.parse(actionPayload);
+      } catch (e) {
+        console.warn('[NotificationContext] Failed to parse actionPayload string', e);
+      }
+    }
+
+    navigateFromNotification(router, {
+      actionType: typeof data.actionType === 'string' ? data.actionType : null,
+      actionPayload: typeof actionPayload === 'object' && actionPayload ? actionPayload as Record<string, unknown> : null,
+      relatedId: typeof data.relatedId === 'string' ? data.relatedId : undefined,
     });
+  }, [router]);
+
+  useEffect(() => {
+    // 1. Handle notification that opened the app (Cold Start)
+    Notifications.getLastNotificationResponseAsync().then(response => {
+      if (response) {
+        console.log('[NotificationContext] Cold start notification detected');
+        handleResponse(response);
+      }
+    });
+
+    // 2. Listen for clicks while the app is in foreground/background
+    responseListenerRef.current = Notifications.addNotificationResponseReceivedListener(handleResponse);
 
     const messaging = getMessaging();
     
