@@ -76,8 +76,6 @@ export default function NotificationsScreen() {
         userNotificationsApi.list("campaign"),
       ]);
 
-      console.log("activity", activity);
-      console.log("campaign", campaign);
       setActivityNotifications(activity);
       setCampaignNotifications([]);
     } catch {

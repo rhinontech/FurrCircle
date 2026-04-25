@@ -312,10 +312,10 @@ export default function CommunityScreen() {
                     <MessageCircle size={18} color={colors.textMuted} />
                     <Text style={{ fontSize: 12, fontWeight: "500", color: colors.textMuted }}>{post.comments?.length || 0}</Text>
                   </Pressable>
-                  <Pressable onPress={(event) => { event.stopPropagation(); handleShare(post); }} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  {/* <Pressable onPress={(event) => { event.stopPropagation(); handleShare(post); }} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                     <Share2 size={18} color={colors.textMuted} />
                     <Text style={{ fontSize: 12, fontWeight: "500", color: colors.textMuted }}>{post.shareCount || 0}</Text>
-                  </Pressable>
+                  </Pressable> */}
                   <Pressable onPress={(event) => { event.stopPropagation(); handleSave(post.id); }} style={{ marginLeft: "auto" }}>
                     <Bookmark size={18} color={isPostSaved(post.savedBy) ? colors.brand : colors.textMuted} fill={isPostSaved(post.savedBy) ? colors.brand : "transparent"} />
                   </Pressable>
