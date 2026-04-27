@@ -1,7 +1,15 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
+// Dynamically require to prevent crash on Line 4 in Expo Go
+const getNotifications = () => {
+  try {
+    return require('expo-notifications');
+  } catch {
+    return null;
+  }
+};
+const Notifications = getNotifications();
 import Constants from 'expo-constants';
 import { io, type Socket } from 'socket.io-client';
 import { useRouter } from 'expo-router';
@@ -20,14 +28,17 @@ import { registerForPushNotificationsAsync } from '@/services/fcmService';
 import { getApiRootUrl } from '@/services/api';
 import { useAuth } from './AuthContext';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Only set the handler if we are not in Expo Go or if explicitly supported
+if (Constants.appOwnership !== 'expo' && Notifications) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 const SEEN_KEY = 'chat_last_seen';
 const INSTALLATION_KEY = 'notification_installation_id';
@@ -95,7 +106,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const appState = useRef(AppState.currentState);
   const socketRef = useRef<Socket | null>(null);
-  const responseListenerRef = useRef<Notifications.EventSubscription | null>(null);
+  const responseListenerRef = useRef<any>(null);
 
   const getSeenMap = async (): Promise<Record<string, string>> => {
     try {
@@ -160,8 +171,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (!isLoggedIn || (Platform.OS !== 'ios' && Platform.OS !== 'android')) return;
 
     try {
+      if (!Notifications) return;
       const settings = await Notifications.getPermissionsAsync();
-      const enabled = settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
+      const enabled = settings.granted || settings.ios?.status === 3; // 3 is PROVISIONAL
       setPushEnabled(enabled);
     } catch {
       setPushEnabled(false);
@@ -175,7 +187,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const installationId = await getInstallationId();
       let expoPushToken: string | null = null;
 
-      if (enabled) {
+      if (enabled && Notifications) {
         let settings = await Notifications.getPermissionsAsync();
         if (!settings.granted) {
           settings = await Notifications.requestPermissionsAsync();
@@ -246,7 +258,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setMarketingEnabledState(enabled);
   }, []);
 
-  const handleResponse = useCallback((response: Notifications.NotificationResponse) => {
+  const handleResponse = useCallback((response: any) => {
     const data = response.notification.request.content.data || {};
     
     // Log for debugging
@@ -270,15 +282,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     // 1. Handle notification that opened the app (Cold Start)
-    Notifications.getLastNotificationResponseAsync().then(response => {
-      if (response) {
-        console.log('[NotificationContext] Cold start notification detected');
-        handleResponse(response);
-      }
-    });
+    if (Notifications) {
+      Notifications.getLastNotificationResponseAsync().then((response: any) => {
+        if (response) {
+          console.log('[NotificationContext] Cold start notification detected');
+          handleResponse(response);
+        }
+      });
 
-    // 2. Listen for clicks while the app is in foreground/background
-    responseListenerRef.current = Notifications.addNotificationResponseReceivedListener(handleResponse);
+      // 2. Listen for clicks while the app is in foreground/background
+      responseListenerRef.current = Notifications.addNotificationResponseReceivedListener(handleResponse);
+    }
 
     const messaging = getMessaging();
     
@@ -287,14 +301,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (messaging) {
       try {
         unsubscribeForeground = messaging().onMessage(async (remoteMessage: any) => {
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: remoteMessage.notification?.title || '',
-              body: remoteMessage.notification?.body || '',
-              data: remoteMessage.data || {},
-            },
-            trigger: null,
-          });
+          if (Notifications) {
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: remoteMessage.notification?.title || '',
+                body: remoteMessage.notification?.body || '',
+                data: remoteMessage.data || {},
+              },
+              trigger: null,
+            });
+          }
         });
       } catch (e) {
         console.warn("Firebase messaging error", e);

@@ -12,10 +12,20 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import Constants from "expo-constants";
 import { ChevronLeft, ShieldCheck, Clock } from "@/components/ui/IconCompat";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth, type UserRole } from "../contexts/AuthContext";
+
+// Safe Firebase Auth Loader
+const getFirebaseAuth = () => {
+  if (Constants.appOwnership === 'expo' || Platform.OS === 'web') return null;
+  try {
+    return require("@react-native-firebase/auth").default;
+  } catch {
+    return null;
+  }
+};
 
 export default function OtpVerifyScreen() {
   const router = useRouter();
@@ -29,7 +39,7 @@ export default function OtpVerifyScreen() {
 
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [confirm, setConfirm] = useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
+  const [confirm, setConfirm] = useState<any>(null);
   const [timer, setTimer] = useState(60);
   const [isResending, setIsResending] = useState(false);
 
@@ -48,6 +58,12 @@ export default function OtpVerifyScreen() {
   }, [timer]);
 
   const sendOtp = async () => {
+    const auth = getFirebaseAuth();
+    if (!auth) {
+      Alert.alert("Warning", "Phone verification is not available in Expo Go. Please use a Development Build.");
+      return;
+    }
+
     try {
       setLoading(true);
       const confirmation = await auth().signInWithPhoneNumber(phone as string);
