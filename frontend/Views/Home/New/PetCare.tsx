@@ -48,7 +48,7 @@ export function PetCare() {
           >
             <div className="relative w-full max-w-xl aspect-[3/4.5] rounded-full overflow-hidden bg-[#87CEEB] shadow-2xl">
               <Image
-                src="/contact/contactHero.png"
+                src="/contact/contactHero.webp"
                 alt="Happy Dog and Cat"
                 fill
                 sizes="(max-width: 1024px) 90vw, 36rem"

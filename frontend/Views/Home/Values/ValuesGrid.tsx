@@ -23,7 +23,7 @@ export function ValuesGrid() {
           {/* Compassion - Tall Vertical */}
           <FadeInUp
             delay={0.2}
-            className="md:col-span-1 group md:row-span-2 bg-[url('/values1.png')] bg-cover bg-center bg-no-repeat rounded-3xl py-5 px-10 flex flex-col justify-between transition-transform hover:-translate-y-2 hover:shadow-xl group text-white relative overflow-hidden"
+            className="md:col-span-1 group md:row-span-2 bg-[url('/values1.webp')] bg-cover bg-center bg-no-repeat rounded-3xl py-5 px-10 flex flex-col justify-between transition-transform hover:-translate-y-2 hover:shadow-xl group text-white relative overflow-hidden"
           >
             <div className=" w-fit px-8 py-3 rounded-full border-1 group-hover:bg-white transition-all duration-300 border-white  flex items-center justify-center mb-10">
                <h3 className="text-xl group-hover:text-black transition-colors duration-300 font-heading text-white">Compassion</h3>

@@ -65,7 +65,7 @@ export default function CommunityEventsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
       >
         {events.map((event) => (
-          <EventCard key={event.id} {...event} onPress={() => router.push(`/community/events/${event.id}` as any)} />
+          <EventCard key={event.id} {...event} fullWidth onPress={() => router.push(`/community/events/${event.id}` as any)} />
         ))}
       </ScrollView>
     </View>

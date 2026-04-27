@@ -14,7 +14,7 @@ const frames = [
     rotate: -12,
     delay: 0,
     margin: "mr-[-40px] md:mr-[-40px] mt-20",
-    image: "/CTADog1.png",
+    image: "/CTADog1.webp",
     imageClass: "!top-[20%] !h-[80%]"
   },
   {
@@ -25,7 +25,7 @@ const frames = [
     rotate: 0,
     delay: 0.2,
     margin: "z-10",
-    image: "/about-us/aboutInfo.png",
+    image: "/about-us/aboutInfo.webp",
     imageClass: "!top-[20%] !h-[80%]"
   },
   {

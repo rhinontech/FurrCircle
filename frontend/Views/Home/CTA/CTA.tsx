@@ -39,13 +39,13 @@ const CTA = () => {
 
             <div className='absolute max-xl:hidden right-30 top-16'>
                 <FadeInUp>
-                    <Image src="/CTADog1.png" alt="Pet Care" width={700} height={700} />
+                    <Image src="/CTADog1.webp" alt="Pet Care" width={700} height={700} />
                 </FadeInUp>
             </div>
 
             <div className="hidden max-xl:block  text-center">
                 <Image
-                    src="/CTADog1.png"
+                    src="/CTADog1.webp"
                     alt="Pet Care"
                     width={700}
                     height={700}

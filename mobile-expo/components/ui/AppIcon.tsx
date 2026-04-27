@@ -249,7 +249,7 @@ const ICONS: Record<AppIconName, AppIconConfig> = {
   thermometer: { ios: "thermometer.medium", fallback: Thermometer, scale: "medium", weight: "medium" },
   trash: { ios: "trash", iosFilled: "trash.fill", fallback: Trash2, scale: "medium", weight: "medium" },
   trendingUp: { ios: "chart.line.uptrend.xyaxis", fallback: TrendingUp, scale: "medium", weight: "medium" },
-  user: { ios: "person.crop.circle", iosFilled: "person.crop.circle.fill", fallback: User, scale: "medium", weight: "regular" },
+  user: { ios: "person", iosFilled: "person.fill", fallback: User, scale: "medium", weight: "regular" },
   userCheck: { ios: "person.badge.shield.checkmark", fallback: UserCheck, scale: "medium", weight: "medium" },
   users: { ios: "person.2", iosFilled: "person.2.fill", fallback: Users, scale: "medium", weight: "medium" },
   vet: { ios: "stethoscope", fallback: Stethoscope, scale: "medium", weight: "medium" },

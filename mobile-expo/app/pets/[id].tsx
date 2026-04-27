@@ -6,6 +6,8 @@ import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
 import { userPetsApi } from "@/services/users/petsApi";
 import { useAuth } from "../../contexts/AuthContext";
+import { LinearGradient } from "expo-linear-gradient";
+import { CustomPawPrint } from "../(tabs)";
 
 const statusVariant = (s: string) => {
   const status = s?.toLowerCase() || '';
@@ -91,8 +93,8 @@ export default function PetDetailScreen() {
   }
 
   return (
-    <ScrollView 
-      style={{ flex: 1, backgroundColor: colors.bg }} 
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={{ paddingBottom: 80 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
     >
@@ -115,7 +117,7 @@ export default function PetDetailScreen() {
       </View>
 
       {/* Hero */}
-      <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+      {/* <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
         <View style={{ backgroundColor: colors.heroBg, borderRadius: 28, padding: 20, overflow: 'hidden' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             {pet.avatar_url ? (
@@ -148,6 +150,73 @@ export default function PetDetailScreen() {
             </View>
           </View>
         </View>
+      </View> */}
+      <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
+        <LinearGradient
+          colors={['#3b82f6', '#1e3a8a']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ borderRadius: 32, padding: 24, overflow: 'hidden', elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20 }}
+        >
+          {/* Background Paw Prints */}
+          <CustomPawPrint size={120} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', right: -20, top: -20 }} />
+          <CustomPawPrint size={80} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', right: 40, bottom: 40 }} />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 90, height: 90, borderRadius: 45, backgroundColor: '#fff', padding: 3 }}>
+              <View style={{ flex: 1, borderRadius: 42, overflow: 'hidden', backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}>
+                {pet.avatar_url ? (
+                  <Image source={{ uri: pet.avatar_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                ) : (
+                  <CustomPawPrint size={40} color={colors.textMuted} />
+                )}
+              </View>
+              {/* <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#fff', borderRadius: 12, padding: 2 }}>
+                  <View style={{ backgroundColor: '#3b82f6', borderRadius: 10, padding: 4 }}>
+                    <Camera size={12} color="#fff" />
+                  </View>
+                </View> */}
+            </View>
+
+            <View style={{ flex: 1, marginLeft: 20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ fontSize: 26, fontWeight: '700', color: '#fff' }} numberOfLines={1}>{pet.name}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
+                  <Text style={{ fontSize: 13, color: '#fff', fontWeight: '500' }}>Age: {pet.age || 'N/A'}</Text>
+                </View>
+                <View style={{ marginLeft: 8 }}>
+                  <StatusChip label={pet.healthStatus || 'Healthy'} variant={statusVariant(pet.healthStatus) as any} />
+                </View>
+              </View>
+              <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 8, fontWeight: '400' }}>{pet.breed} · {pet.species}</Text>
+            </View>
+          </View>
+
+          <View style={{ height: 1, marginVertical: 20 }} />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '500', marginBottom: 4 }}>Weight</Text>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>{pet.weight || '--'}</Text>
+            </View>
+
+            <View style={{ width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+
+            <View style={{ flex: 1.2, alignItems: 'center' }}>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '500', marginBottom: 4 }}>Gender</Text>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>{pet.gender || '--'}</Text>
+            </View>
+
+            <View style={{ width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '500', marginBottom: 4 }}>Health Score</Text>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>95/100</Text>
+            </View>
+          </View>
+        </LinearGradient>
       </View>
 
       {/* Public Status Toggles — hidden for vets */}
@@ -164,10 +233,10 @@ export default function PetDetailScreen() {
                 <Text style={{ fontSize: 11, color: colors.textMuted }}>Make pet profile public for permanent adoption</Text>
               </View>
             </View>
-            <Switch 
-              value={isAdoptionOpen} 
+            <Switch
+              value={isAdoptionOpen}
               disabled={!canManagePet}
-              onValueChange={(val) => handleToggleListing("adoption", val)} 
+              onValueChange={(val) => handleToggleListing("adoption", val)}
               trackColor={{ false: colors.border, true: colors.brand }}
               thumbColor="#fff"
             />
@@ -185,10 +254,10 @@ export default function PetDetailScreen() {
                 <Text style={{ fontSize: 11, color: colors.textMuted }}>Looking for temporary caregivers in your city</Text>
               </View>
             </View>
-            <Switch 
-              value={isFosterOpen} 
+            <Switch
+              value={isFosterOpen}
               disabled={!canManagePet}
-              onValueChange={(val) => handleToggleListing("foster", val)} 
+              onValueChange={(val) => handleToggleListing("foster", val)}
               trackColor={{ false: colors.border, true: colors.brand }}
               thumbColor="#fff"
             />
@@ -206,23 +275,23 @@ export default function PetDetailScreen() {
 
       {/* Quick Actions */}
       {canAddClinicalRecord ? (
-      <View style={{ paddingHorizontal: 20, flexDirection: 'row', gap: 12, marginBottom: 24 }}>
-        {[
-          { icon: Syringe, label: "Vaccines", color: "#10b981", bg: colors.successBg, path: `/health/vaccines?petId=${id}` },
-          { icon: Pill, label: "Meds", color: "#0ea5e9", bg: colors.infoBg, path: `/health/meds?petId=${id}` },
-          { icon: Heart, label: "Vitals", color: "#ec4899", bg: colors.warningBg, path: `/health/vitals?petId=${id}` },
-          { icon: FileText, label: "Records", color: "#8b5cf6", bg: colors.bgSubtle, path: `/health/records?petId=${id}` },
-        ].map(({ icon: Icon, label, color, bg, path }) => (
-          <Pressable 
-            key={label} 
-            onPress={() => path && router.push(path as any)}
-            style={{ flex: 1, backgroundColor: bg, borderRadius: 16, borderWidth: 1, borderColor: colors.border, alignItems: 'center', paddingVertical: 12, gap: 6 }}
-          >
-            <Icon size={20} color={color} />
-            <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary }}>{label}</Text>
-          </Pressable>
-        ))}
-      </View>
+        <View style={{ paddingHorizontal: 20, flexDirection: 'row', gap: 12, marginBottom: 24 }}>
+          {[
+            { icon: Syringe, label: "Vaccines", color: "#10b981", bg: colors.successBg, path: `/health/vaccines?petId=${id}` },
+            { icon: Pill, label: "Meds", color: "#0ea5e9", bg: colors.infoBg, path: `/health/meds?petId=${id}` },
+            { icon: Heart, label: "Vitals", color: "#ec4899", bg: colors.warningBg, path: `/health/vitals?petId=${id}` },
+            { icon: FileText, label: "Records", color: "#8b5cf6", bg: colors.bgSubtle, path: `/health/records?petId=${id}` },
+          ].map(({ icon: Icon, label, color, bg, path }) => (
+            <Pressable
+              key={label}
+              onPress={() => path && router.push(path as any)}
+              style={{ flex: 1, backgroundColor: bg, borderRadius: 16, borderWidth: 1, borderColor: colors.border, alignItems: 'center', paddingVertical: 12, gap: 6 }}
+            >
+              <Icon size={20} color={color} />
+              <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary }}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
       ) : null}
 
       {/* Vaccines */}

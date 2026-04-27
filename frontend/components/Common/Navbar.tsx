@@ -36,11 +36,11 @@ export function Navbar() {
           {/* Logo */}
           <Link href="/" className="relative z-[60] block">
             <Image
-              src="/logo/furrcircle_light_logo.png"
+              src="/logo/furrcircle_light_logo.webp"
               alt="FurrCircle"
-              width={150}
+              width={200}
               height={100}
-              className="w-auto h-auto object-contain"
+              className="object-contain"
               priority
             />
           </Link>

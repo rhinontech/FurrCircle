@@ -175,7 +175,13 @@ export const addVaccine = async (req: any, res: Response): Promise<void> => {
             "Vaccine Record Added",
             `${pet?.name || "A pet"}'s owner added a vaccine record (${vaccine.name}). Review and approve a certificate if needed.`,
             vaccine.id,
-            "vaccine"
+            "vaccine",
+            "vaccine_added",
+            {
+              petId: pet?.id,
+              vaccineId: vaccine.id,
+            }
+
           );
         }
       } catch {

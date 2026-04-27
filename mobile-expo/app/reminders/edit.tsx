@@ -104,26 +104,30 @@ export default function EditReminderScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}>
-          <Pressable onPress={() => router.back()} style={{ padding: 4 }}>
-            <ArrowLeft size={22} color={colors.textPrimary} />
-          </Pressable>
-          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary, flex: 1 }}>
-            {isEditing ? "Edit Reminder" : "New Reminder"}
-          </Text>
-          <Pressable
-            onPress={handleSave}
-            disabled={loading}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.brand, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, opacity: loading ? 0.7 : 1 }}
-          >
-            {loading ? <ActivityIndicator size="small" color="#fff" /> : <Check size={15} color="#fff" />}
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>{isEditing ? "Update" : "Save"}</Text>
-          </Pressable>
-        </View>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/* Header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}>
+        <Pressable onPress={() => router.back()} style={{ padding: 4 }}>
+          <ArrowLeft size={22} color={colors.textPrimary} />
+        </Pressable>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary, flex: 1 }}>
+          {isEditing ? "Edit Reminder" : "New Reminder"}
+        </Text>
+        <Pressable
+          onPress={handleSave}
+          disabled={loading}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.brand, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, opacity: loading ? 0.7 : 1 }}
+        >
+          {loading ? <ActivityIndicator size="small" color="#fff" /> : <Check size={15} color="#fff" />}
+          <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>{isEditing ? "Update" : "Save"}</Text>
+        </Pressable>
+      </View>
 
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : undefined} 
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 110 : 0}
+      >
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 20 }}>
 
           {/* Title */}
@@ -235,6 +239,6 @@ export default function EditReminderScreen() {
 
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }

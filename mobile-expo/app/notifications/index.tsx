@@ -75,8 +75,9 @@ export default function NotificationsScreen() {
         userNotificationsApi.list("activity"),
         userNotificationsApi.list("campaign"),
       ]);
+
       setActivityNotifications(activity);
-      setCampaignNotifications(campaign);
+      setCampaignNotifications([]);
     } catch {
       // silently fail
     } finally {
@@ -125,13 +126,13 @@ export default function NotificationsScreen() {
   const emptyCopy = useMemo(() => (
     activeTab === "activity"
       ? {
-          title: "No activity yet",
-          body: "Appointments, adoptions, reminders, and other product updates will appear here.",
-        }
+        title: "No activity yet",
+        body: "Appointments, adoptions, reminders, and other product updates will appear here.",
+      }
       : {
-          title: "No campaigns yet",
-          body: "Feature launches, event promotions, and company updates will appear here.",
-        }
+        title: "No campaigns yet",
+        body: "Feature launches, event promotions, and company updates will appear here.",
+      }
   ), [activeTab]);
 
   return (
@@ -166,7 +167,7 @@ export default function NotificationsScreen() {
         </Text>
       </View>
 
-      <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
+      {/* <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
         <View style={{ flexDirection: "row", backgroundColor: colors.bgSubtle, borderRadius: 14, padding: 4 }}>
           {TABS.map((tab) => {
             const selected = activeTab === tab.key;
@@ -198,7 +199,7 @@ export default function NotificationsScreen() {
             );
           })}
         </View>
-      </View>
+      </View> */}
 
       {hasUnread && (
         <View style={{ paddingHorizontal: 20, paddingBottom: 8, alignItems: "flex-end" }}>

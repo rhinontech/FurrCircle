@@ -70,6 +70,13 @@ export default function AddPetScreen() {
     }
   };
 
+  const handleNumericInput = (text: string, setter: (val: string) => void) => {
+    const cleaned = text.replace(/[^0-9.]/g, '');
+    const parts = cleaned.split('.');
+    if (parts.length > 2) return;
+    setter(cleaned);
+  };
+
   const handleSubmit = async () => {
     if (!name.trim() || !species) {
       Alert.alert("Error", "Please fill in at least name and species.");
@@ -112,8 +119,8 @@ export default function AddPetScreen() {
       `Are you sure you want to remove ${name}? This action cannot be undone.`,
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Remove", 
+        {
+          text: "Remove",
           style: "destructive",
           onPress: async () => {
             try {
@@ -137,7 +144,7 @@ export default function AddPetScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, backgroundColor: colors.bg }}>
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 110 : 0} style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingTop: 16 }}>
         <View style={{ paddingHorizontal: 20, paddingBottom: 24, flexDirection: 'row', alignItems: 'center' }}>
           <Pressable onPress={() => router.back()} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
@@ -233,25 +240,25 @@ export default function AddPetScreen() {
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
             <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Age (Label)</Text>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Age</Text>
               <TextInput
-                placeholder="e.g. 3 yrs"
+                placeholder="e.g. 3"
                 placeholderTextColor={colors.textMuted}
                 value={age}
-                onChangeText={setAge}
+                onChangeText={(text) => handleNumericInput(text, setAge)}
+                keyboardType="decimal-pad"
                 style={{ backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 16, height: 48, fontSize: 16, color: colors.textPrimary }}
-                maxLength={20}
               />
             </View>
             <View style={{ flex: 1, marginLeft: 8 }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Weight</Text>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Weight (kg)</Text>
               <TextInput
-                placeholder="e.g. 28 kg"
+                placeholder="e.g. 28.5"
                 placeholderTextColor={colors.textMuted}
                 value={weight}
-                onChangeText={setWeight}
+                onChangeText={(text) => handleNumericInput(text, setWeight)}
+                keyboardType="decimal-pad"
                 style={{ backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 16, height: 48, fontSize: 16, color: colors.textPrimary }}
-                maxLength={20}
               />
             </View>
           </View>
@@ -328,8 +335,8 @@ export default function AddPetScreen() {
             />
           </View>
 
-          <Pressable 
-            onPress={handleSubmit} 
+          <Pressable
+            onPress={handleSubmit}
             disabled={saving}
             style={{ width: '100%', height: 56, backgroundColor: colors.brand, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', opacity: saving ? 0.7 : 1 }}
           >

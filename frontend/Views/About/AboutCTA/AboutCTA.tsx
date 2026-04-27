@@ -12,7 +12,7 @@ export function AboutCTA() {
             {/* image */}
             <div className='absolute max-xl:hidden max-md:block max-md:w-[250px] max-md:h-fit max-md:top-[58%] max-md:left-1/2 max-md:-translate-x-1/2 left-20 top-26'>
                 <FadeInUp>
-                    <Image src="/about-us/aboutCTA1.png" alt="Pet Care" width={450} height={450} className="w-full h-auto" />
+                    <Image src="/about-us/aboutCTA1.webp" alt="Pet Care" width={450} height={450} className="w-full h-auto" />
                 </FadeInUp>
             </div>
 

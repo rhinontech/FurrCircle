@@ -242,7 +242,15 @@ export default function CommunityScreen() {
                   <Text style={{ marginTop: 4, color: colors.textMuted, fontSize: 13, textAlign: "center" }}>New community events will appear here soon.</Text>
                 </View>
               ) : (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 14 }}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  snapToInterval={294}
+                  decelerationRate="fast"
+                  snapToAlignment="start"
+                  style={{ marginHorizontal: -20 }}
+                  contentContainerStyle={{ paddingHorizontal: 20, gap: 14 }}
+                >
                   {events.map((event) => (
                     <EventCard key={event.id} {...event} onPress={() => router.push(`/community/events/${event.id}` as any)} />
                   ))}
@@ -304,10 +312,10 @@ export default function CommunityScreen() {
                     <MessageCircle size={18} color={colors.textMuted} />
                     <Text style={{ fontSize: 12, fontWeight: "500", color: colors.textMuted }}>{post.comments?.length || 0}</Text>
                   </Pressable>
-                  <Pressable onPress={(event) => { event.stopPropagation(); handleShare(post); }} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  {/* <Pressable onPress={(event) => { event.stopPropagation(); handleShare(post); }} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                     <Share2 size={18} color={colors.textMuted} />
                     <Text style={{ fontSize: 12, fontWeight: "500", color: colors.textMuted }}>{post.shareCount || 0}</Text>
-                  </Pressable>
+                  </Pressable> */}
                   <Pressable onPress={(event) => { event.stopPropagation(); handleSave(post.id); }} style={{ marginLeft: "auto" }}>
                     <Bookmark size={18} color={isPostSaved(post.savedBy) ? colors.brand : colors.textMuted} fill={isPostSaved(post.savedBy) ? colors.brand : "transparent"} />
                   </Pressable>
@@ -319,7 +327,7 @@ export default function CommunityScreen() {
 
       <Pressable
         onPress={() => setIsCreateModalVisible(true)}
-        style={{ position: "absolute", bottom: 20, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: colors.brand, alignItems: "center", justifyContent: "center", shadowColor: colors.brand, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 10 }}
+        style={{ position: "absolute", bottom: 20, right: 20, zIndex: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: colors.brand, alignItems: "center", justifyContent: "center", shadowColor: colors.brand, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 10 }}
       >
         <Plus size={24} color="#fff" strokeWidth={3} />
       </Pressable>

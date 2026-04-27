@@ -6,7 +6,7 @@ const Hero = () => {
     return (
         <div className="flex overflow-hidden relative mt-[95px] max-md:mt-[65px] bg-primary/70 items-center px-24 justify-between max-md:justify-center max-md:py-30 max-md:px-10 max-md:text-center">
             <h1 className="text-5xl md:text-8xl text-white font-heading ">Contact FurrCircle!</h1>
-            <Image src="/contact/contactHero.png" alt="aboutHero" width={500} height={500} className="z-10 max-md:hidden" />
+            <Image src="/contact/contactHero.webp" alt="aboutHero" width={500} height={500} className="z-10 max-md:hidden" />
 
             <BouncingElement
                 axis="rotate"
