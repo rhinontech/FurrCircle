@@ -48,6 +48,7 @@ interface AuthContextType {
   updateProfile: (updatedData: Partial<User>) => Promise<void>;
   refreshUser: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
+  deleteAccount: (reason?: string) => Promise<void>;
   isLoading: boolean;
   switchUser: (user: User) => Promise<void>;
 }
@@ -62,6 +63,7 @@ const AuthContext = createContext<AuthContextType>({
   updateProfile: async () => {},
   refreshUser: async () => {},
   completeOnboarding: async () => {},
+  deleteAccount: async () => {},
   isLoading: true,
   switchUser: async () => {},
 });
@@ -287,6 +289,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deleteAccount = async (reason?: string) => {
+    await authApi.deleteAccount(reason);
+    await logout();
+  };
+
   const completeOnboarding = async () => {
     setHasCompletedOnboarding(true);
     await AsyncStorage.setItem('onboarding_completed', 'true');
@@ -343,6 +350,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
+      deleteAccount,
       updateProfile,
       refreshUser,
       completeOnboarding,

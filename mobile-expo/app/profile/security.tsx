@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, ScrollView, Pressable, Switch } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft, Lock, Shield, Eye, Bell, Smartphone, Key } from "@/components/ui/IconCompat";
+import { ChevronLeft, Lock, Shield, Trash2 } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 
 export default function SecurityScreen() {
@@ -28,15 +28,24 @@ export default function SecurityScreen() {
     {
       title: "Privacy Settings",
       items: [
-        { 
-          icon: Shield, 
-          label: "Show My Location", 
-          action: () => setShowLocation(!showLocation), 
-          value: showLocation, 
-          toggle: true 
+        {
+          icon: Shield,
+          label: "Show My Location",
+          action: () => setShowLocation(!showLocation),
+          value: showLocation,
+          toggle: true
         },
       ]
     }
+  ];
+
+  const dangerItems = [
+    {
+      icon: Trash2,
+      label: "Delete Account",
+      action: () => router.push("/profile/delete-account"),
+      danger: true,
+    },
   ];
 
   return (
@@ -74,6 +83,24 @@ export default function SecurityScreen() {
             </View>
           </View>
         ))}
+
+        <View style={{ marginBottom: 24 }}>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: '#D9534F', textTransform: 'uppercase', marginBottom: 12 }}>Danger Zone</Text>
+          <View style={{ backgroundColor: colors.bgCard, borderRadius: 24, borderWidth: 1, borderColor: '#FFD0D0', overflow: 'hidden' }}>
+            {dangerItems.map((item) => (
+              <Pressable
+                key={item.label}
+                onPress={item.action}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingVertical: 16 }}
+              >
+                <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center' }}>
+                  <item.icon size={18} color="#D9534F" />
+                </View>
+                <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: '#D9534F' }}>{item.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
       </ScrollView>
     </View>
   );

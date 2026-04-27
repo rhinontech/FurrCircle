@@ -46,6 +46,8 @@ export const authApi = {
     api.post<{ message: string }>('/auth/reset-password-direct', { email, newPassword }),
   changePassword: (currentPassword: string, newPassword: string) =>
     api.post<{ message: string }>('/auth/change-password', { currentPassword, newPassword }),
+  deleteAccount: (reason?: string) =>
+    api.delete<{ message: string }>('/auth/delete-account'),
   listShelters: async () => {
     const shelters = await api.get<any[]>('/auth/users/shelter');
     return (shelters || []).map(normalizeProfile).filter(Boolean);
