@@ -8,18 +8,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, KeyRound, Eye, EyeOff, CheckCircle } from "@/components/ui/IconCompat";
-import { useTheme } from "../contexts/ThemeContext";
+import { useRouter } from "expo-router";
+import { ChevronLeft, Lock, Eye, EyeOff, CheckCircle } from "@/components/ui/IconCompat";
+import { useTheme } from "../../contexts/ThemeContext";
 import { authApi } from "@/services/auth/authApi";
 
-export default function ResetPasswordScreen() {
+export default function ChangePasswordScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
   const { colors } = useTheme();
 
-  const [token, setToken] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -27,19 +27,14 @@ export default function ResetPasswordScreen() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
 
-  const emailParam = params.email as string | undefined;
-
   const handleSubmit = async () => {
     setError("");
-    
-    // If we have an emailParam, we skip token validation
-    const trimToken = token.trim();
-    if (!emailParam && !trimToken) {
-      setError("Please enter the reset code from your email.");
+    if (!currentPassword) {
+      setError("Please enter your current password.");
       return;
     }
     if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError("New password must be at least 6 characters.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -49,14 +44,10 @@ export default function ResetPasswordScreen() {
 
     setLoading(true);
     try {
-      if (emailParam) {
-        await authApi.resetPasswordDirect(emailParam, newPassword);
-      } else {
-        await authApi.resetPassword(trimToken, newPassword);
-      }
+      await authApi.changePassword(currentPassword, newPassword);
       setDone(true);
     } catch (e: any) {
-      setError(e.message || "Reset failed. Please try again.");
+      setError(e.message || "Failed to change password. Please check your current password.");
     } finally {
       setLoading(false);
     }
@@ -116,39 +107,34 @@ export default function ResetPasswordScreen() {
                   marginBottom: 16,
                 }}
               >
-                <KeyRound size={30} color={colors.brand} />
+                <Lock size={30} color={colors.brand} />
               </View>
               <Text
                 style={{ fontSize: 26, fontWeight: "800", color: colors.textPrimary, marginBottom: 8 }}
               >
-                {emailParam ? "Create New Password" : "Reset Password"}
+                Change Password
               </Text>
               <Text style={{ fontSize: 15, color: colors.textSecondary, lineHeight: 22 }}>
-                {emailParam 
-                  ? `Choose a secure password for your account (${emailParam})`
-                  : "Enter the code from your email and choose a new password."}
+                Update your password to keep your account secure.
               </Text>
             </View>
 
-            {/* Reset code - only show if no email param */}
-            {!emailParam && (
-              <View style={{ marginBottom: 16 }}>
-                <Text
-                  style={{ fontSize: 13, fontWeight: "600", color: colors.textSecondary, marginBottom: 6 }}
-                >
-                  Reset Code
-                </Text>
-                <TextInput
-                  value={token}
-                  onChangeText={setToken}
-                  placeholder="Paste your reset code"
-                  placeholderTextColor={colors.textMuted}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  style={inputStyle()}
-                />
-              </View>
-            )}
+            {/* Current password */}
+            <View style={{ marginBottom: 16 }}>
+              <Text
+                style={{ fontSize: 13, fontWeight: "600", color: colors.textSecondary, marginBottom: 6 }}
+              >
+                Current Password
+              </Text>
+              <TextInput
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                placeholder="Enter current password"
+                placeholderTextColor={colors.textMuted}
+                secureTextEntry={!showPassword}
+                style={inputStyle()}
+              />
+            </View>
 
             {/* New password */}
             <View style={{ marginBottom: 16 }}>
@@ -190,7 +176,7 @@ export default function ResetPasswordScreen() {
               <Text
                 style={{ fontSize: 13, fontWeight: "600", color: colors.textSecondary, marginBottom: 6 }}
               >
-                Confirm Password
+                Confirm New Password
               </Text>
               <TextInput
                 value={confirmPassword}
@@ -231,7 +217,7 @@ export default function ResetPasswordScreen() {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}>
-                  {emailParam ? "Update Password" : "Reset Password"}
+                  Update Password
                 </Text>
               )}
             </Pressable>
@@ -265,10 +251,10 @@ export default function ResetPasswordScreen() {
                 maxWidth: 280,
               }}
             >
-              Your password has been reset successfully. You can now log in with your new password.
+              Your password has been changed successfully.
             </Text>
             <Pressable
-              onPress={() => router.replace("/login")}
+              onPress={() => router.back()}
               style={{
                 marginTop: 8,
                 backgroundColor: colors.brand,
@@ -278,7 +264,7 @@ export default function ResetPasswordScreen() {
               }}
             >
               <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>
-                Go to Login
+                Back to Profile
               </Text>
             </Pressable>
           </View>

@@ -47,7 +47,7 @@ const allowedOrigins = NODE_ENV === "production"
     ? Array.from(new Set([
         ...(process.env.CORS_ORIGINS || "").split(",").map(o => o.trim()).filter(Boolean),
         ...productionDefaultOrigins,
-      ]))
+    ]))
     : ["*"];
 
 const corsOptions = {
@@ -58,7 +58,7 @@ const corsOptions = {
             } else {
                 cb(new Error(`CORS: Origin '${origin}' not allowed`));
             }
-          }
+        }
         : "*",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -106,10 +106,10 @@ const startServer = async (attempt = 1) => {
     try {
         await sequelize.authenticate();
         console.log('Database connected successfully.');
-        
+
         // Auto-create/sync tables based on models - Safe mode (Persistence enabled)
-        await sequelize.sync(); 
-        console.log('Database schema synchronized.');
+        // await sequelize.sync(); 
+        // console.log('Database schema synchronized.');
 
         httpServer.listen(Number(PORT), "0.0.0.0", () => {
             console.log(`🚀 FurrCircle API Live on Network -> http://0.0.0.0:${PORT}`);

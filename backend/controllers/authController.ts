@@ -226,10 +226,7 @@ export const updateUserProfile = async (req: any, res: Response): Promise<void> 
         if (req.body[field] !== undefined) vet[field] = req.body[field];
       });
 
-      if (req.body.password) {
-        const salt = await bcrypt.genSalt(10);
-        vet.password = await bcrypt.hash(req.body.password, salt);
-      }
+      // removed password update from profile - use /change-password instead
 
       await vet.save();
       const token = generateToken(vet.id, 'vet');
@@ -248,10 +245,7 @@ export const updateUserProfile = async (req: any, res: Response): Promise<void> 
       if (req.body[field] !== undefined) user[field] = req.body[field];
     });
 
-    if (req.body.password) {
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(req.body.password, salt);
-    }
+    // removed password update from profile - use /change-password instead
 
     await user.save();
     const token = generateToken(user.id, 'user');
@@ -307,27 +301,52 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Always return 200 to avoid user enumeration
     const account =
       await User.findOne({ where: { email: { [Op.iLike]: email } } }) ||
       await Vet.findOne({ where: { email: { [Op.iLike]: email } } });
 
     if (account) {
-      const rawToken = crypto.randomBytes(32).toString("hex");
-      const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
-      const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-
-      account.resetToken = hashedToken;
-      account.resetTokenExpiry = expiry;
-      await account.save();
-
-      sendEmail(email, "FurrCircle Password Reset", "password-reset", {
-        name: account.name || "there",
-        resetToken: rawToken,
-      });
+      return res.json({ success: true, message: "Email verified." }) as any;
     }
 
-    res.json({ message: "If an account with that email exists, a reset code has been sent." });
+    res.status(404).json({ success: false, message: "No account found with this email." });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Reset password using email directly (Insecure - as requested)
+// @route   POST /api/auth/reset-password-direct
+export const resetPasswordByEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { users: User, vets: Vet } = db as any;
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      res.status(400).json({ message: "Email and new password are required" });
+      return;
+    }
+
+    if (String(newPassword).length < 6) {
+      res.status(400).json({ message: "Password must be at least 6 characters" });
+      return;
+    }
+
+    const account =
+      await User.findOne({ where: { email: { [Op.iLike]: email.trim().toLowerCase() } } }) ||
+      await Vet.findOne({ where: { email: { [Op.iLike]: email.trim().toLowerCase() } } });
+
+    if (!account) {
+      res.status(404).json({ message: "Account not found" });
+      return;
+    }
+
+    account.password = await bcrypt.hash(String(newPassword), 10);
+    account.resetToken = null;
+    account.resetTokenExpiry = null;
+    await account.save();
+
+    res.json({ message: "Password has been reset successfully" });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -368,6 +387,47 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     await account.save();
 
     res.json({ message: "Password has been reset successfully" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Change password (authenticated)
+// @route   POST /api/auth/change-password
+export const changePassword = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { users: User, vets: Vet } = db as any;
+    const { currentPassword, newPassword } = req.body;
+    const isVet = req.userType === 'vet';
+    const Model = isVet ? Vet : User;
+
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ message: "Current and new password are required" });
+      return;
+    }
+
+    const actor = await Model.findByPk(req.user.id);
+    if (!actor) {
+      res.status(404).json({ message: "Account not found" });
+      return;
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, actor.password);
+    if (!isMatch) {
+      res.status(400).json({ message: "Incorrect current password" });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      res.status(400).json({ message: "New password must be at least 6 characters" });
+      return;
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    actor.password = await bcrypt.hash(newPassword, salt);
+    await actor.save();
+
+    res.json({ message: "Password changed successfully" });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

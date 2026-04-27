@@ -77,7 +77,7 @@ function AppShell() {
     if (hasCompletedOnboarding === null) return;
 
     const inAuthGroup = segments[0] === '(tabs)' || segments[0] === '(vet-tabs)';
-    const inPublicGroup = segments[0] === 'login' || segments[0] === 'signup' || segments[0] === 'onboarding';
+    const inPublicGroup = segments[0] === 'login' || segments[0] === 'signup' || segments[0] === 'onboarding' || segments[0] === 'forgot-password' || segments[0] === 'reset-password';
     
     if (!hasCompletedOnboarding && segments[0] !== 'onboarding') {
       // Redirect to onboarding if not completed

@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { View, Text, ScrollView, Image, Pressable, Switch } from "react-native";
-import { ChevronRight, CalendarDays, Users, Star, Clock, LogOut, Moon, Sun, UserCheck, Stethoscope, MapPin, Phone, Pencil } from "@/components/ui/IconCompat";
+import { ChevronRight, CalendarDays, Users, Star, Clock, LogOut, Moon, Sun, UserCheck, Stethoscope, MapPin, Phone, Pencil, Shield } from "@/components/ui/IconCompat";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -25,6 +25,7 @@ export default function VetProfileScreen() {
     { icon: Star, label: "My Reviews", action: () => router.push("/vet-profile/reviews") },
     { icon: Clock, label: "Working Hours", action: () => router.push("/vet-profile/working-hours") },
     { icon: UserCheck, label: "Verification Status", action: () => router.push("/vet-profile/verification") },
+    { icon: Shield, label: "Privacy & Security", action: () => router.push("/profile/security") },
   ];
 
   return (

@@ -33,7 +33,11 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
     try {
       await authApi.forgotPassword(trimmed);
-      setSent(true);
+      // Instead of showing "sent", navigate directly to reset screen
+      router.push({
+        pathname: "/reset-password",
+        params: { email: trimmed }
+      });
     } catch (e: any) {
       setError(e.message || "Something went wrong. Please try again.");
     } finally {
@@ -92,7 +96,7 @@ export default function ForgotPasswordScreen() {
                 Forgot Password?
               </Text>
               <Text style={{ fontSize: 15, color: colors.textSecondary, lineHeight: 22 }}>
-                Enter the email linked to your account and we'll send you a reset code.
+                Enter the email linked to your account to verify and create a new password.
               </Text>
             </View>
 
@@ -143,18 +147,18 @@ export default function ForgotPasswordScreen() {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}>
-                  Send Reset Code
+                  Verify & Continue
                 </Text>
               )}
             </Pressable>
 
-            {/* Link to reset page */}
+            {/* Link to manual reset page */}
             <Pressable
               onPress={() => router.push("/reset-password")}
-              style={{ marginTop: 20, alignItems: "center" }}
+              style={{ marginTop: 24, alignItems: "center" }}
             >
-              <Text style={{ fontSize: 14, color: colors.brand, fontWeight: "600" }}>
-                Already have a code? Enter it here
+              <Text style={{ fontSize: 14, color: colors.textMuted, fontWeight: "500" }}>
+                Need to reset using a code? <Text style={{ color: colors.brand, fontWeight: "700" }}>Click here</Text>
               </Text>
             </Pressable>
           </>

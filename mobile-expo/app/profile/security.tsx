@@ -16,7 +16,7 @@ export default function SecurityScreen() {
     {
       title: "Account Security",
       items: [
-        { icon: Lock, label: "Change Password", action: () => {} },
+        { icon: Lock, label: "Change Password", action: () => router.push("/profile/change-password") },
         { icon: Smartphone, label: "Two-Factor Auth", action: () => setIsTwoFactorEnabled(!isTwoFactorEnabled), value: isTwoFactorEnabled, toggle: true },
         { icon: Key, label: "Face ID / Fingerprint", action: () => setIsFaceIdEnabled(!isFaceIdEnabled), value: isFaceIdEnabled, toggle: true },
       ]
