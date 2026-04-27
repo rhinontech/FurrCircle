@@ -22,6 +22,17 @@ const withFirebaseIOSFixes = (config) => {
         );
       }
     }
+
+    // 1.1 OpenURL fix for Firebase Phone Auth (reCAPTCHA)
+    if (!appDelegate.includes('url.host?.caseInsensitiveCompare("firebaseauth")')) {
+      const openUrlPattern = /func\s+application\(\s*_\s*app:\s*UIApplication,\s*open\s*url:\s*URL,\s*options:\s*\[UIApplication\.OpenURLOptionsKey:\s*Any\]\s*=\s*\[:\]\s*\)\s*->\s*Bool\s*\{/;
+      if (openUrlPattern.test(appDelegate)) {
+        appDelegate = appDelegate.replace(openUrlPattern, (match) => 
+          `${match}\n    if url.host?.caseInsensitiveCompare("firebaseauth") == .orderedSame {\n        return false\n    }`
+        );
+      }
+    }
+
     config.modResults.contents = appDelegate;
     return config;
   });

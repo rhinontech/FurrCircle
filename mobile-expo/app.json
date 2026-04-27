@@ -60,7 +60,14 @@
       ],
       "./plugins/withFirebaseAppDelegate",
       "@react-native-firebase/app",
-      "@react-native-firebase/auth",
+      [
+        "@react-native-firebase/auth",
+        {
+          "ios": {
+            "captchaOpenUrlFix": false
+          }
+        }
+      ],
       "@react-native-firebase/messaging",
       [
         "expo-notifications",
