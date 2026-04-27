@@ -16,16 +16,25 @@ export default function SecurityScreen() {
     {
       title: "Account Security",
       items: [
-        { icon: Lock, label: "Change Password", action: () => router.push("/profile/change-password") },
-        // { icon: Smartphone, label: "Two-Factor Auth", action: () => setIsTwoFactorEnabled(!isTwoFactorEnabled), value: isTwoFactorEnabled, toggle: true },
-        // { icon: Key, label: "Face ID / Fingerprint", action: () => setIsFaceIdEnabled(!isFaceIdEnabled), value: isFaceIdEnabled, toggle: true },
+        { 
+          icon: Lock, 
+          label: "Change Password", 
+          action: () => router.push("/profile/change-password"),
+          toggle: false,
+          value: undefined
+        },
       ]
     },
     {
       title: "Privacy Settings",
       items: [
-        // { icon: Eye, label: "Profile Visibility", value: "Public", action: () => {} },
-        { icon: Shield, label: "Show My Location", action: () => setShowLocation(!showLocation), value: showLocation, toggle: true },
+        { 
+          icon: Shield, 
+          label: "Show My Location", 
+          action: () => setShowLocation(!showLocation), 
+          value: showLocation, 
+          toggle: true 
+        },
       ]
     }
   ];
