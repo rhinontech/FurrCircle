@@ -10,7 +10,7 @@ const config = {
   development: {
     username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'password',
-    database: process.env.DB_NAME || 'pawshub_dev',
+    database: process.env.DB_NAME || 'furrcircle_dev',
     host: process.env.DB_HOST || 'db',
     port: process.env.DB_PORT || 5432,
     dialect: "postgres",

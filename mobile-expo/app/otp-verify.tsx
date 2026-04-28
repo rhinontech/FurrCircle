@@ -50,7 +50,7 @@ export default function OtpVerifyScreen() {
 
   // 2. Timer logic
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: number;
     if (timer > 0) {
       interval = setInterval(() => setTimer((t) => t - 1), 1000);
     }
@@ -92,17 +92,29 @@ export default function OtpVerifyScreen() {
       await confirm.confirm(code);
 
       // B. Verification Success! Now register in our backend
-      await register(
-        name as string,
-        email as string,
-        password as string,
-        role as UserRole,
-        { ...extra, phone: phone as string, phone_number: phone as string }
-      );
-
+      try {
+        await register(
+          name as string,
+          email as string,
+          password as string,
+          role as UserRole,
+          { ...extra, phone: phone as string, phone_number: phone as string }
+        );
+      } catch (regError: any) {
+        Alert.alert("Registration Failed", regError.message || "Could not create your account. Please try again.");
+      }
       // Navigation is handled by AuthContext (redirects on login success)
     } catch (error: any) {
-      Alert.alert("Verification Failed", "The code you entered is invalid or has expired.");
+      const code = error?.code || "";
+      if (code.includes("invalid-verification-code")) {
+        Alert.alert("Wrong Code", "The code you entered is incorrect. Please try again.");
+      } else if (code.includes("code-expired") || code.includes("session-expired")) {
+        Alert.alert("Code Expired", "This code has expired. Please request a new one.");
+      } else if (code.includes("too-many-requests")) {
+        Alert.alert("Too Many Attempts", "Too many failed attempts. Please wait a few minutes before trying again.");
+      } else {
+        Alert.alert("Verification Failed", "The code you entered is invalid or has expired.");
+      }
     } finally {
       setLoading(false);
     }
