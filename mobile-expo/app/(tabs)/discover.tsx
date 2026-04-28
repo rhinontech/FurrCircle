@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TextInput, Pressable, Image, Modal, ActivityIndicator, RefreshControl, Alert, Linking } from "react-native";
+import { View, ScrollView, TextInput, Pressable, Image, Modal, ActivityIndicator, RefreshControl, Alert, Linking } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { Search, Stethoscope, MapPin, Star, ShieldCheck, Phone, Clock, X, Heart, PawPrint } from "@/components/ui/IconCompat";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";

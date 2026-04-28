@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   View,
-  Text,
   ScrollView,
   TextInput,
   Pressable,
@@ -10,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, PawPrint, Send } from "@/components/ui/IconCompat";

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, ScrollView, Image, Pressable, TextInput, Modal, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, RefreshControl, Share } from "react-native";
+import { View, ScrollView, Image, Pressable, TextInput, Modal, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, RefreshControl, Share } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { Heart, MessageCircle, Share2, Bookmark, Calendar, Plus, X, ArrowRight, PawPrint, ImagePlus } from "@/components/ui/IconCompat";
 import { useRouter } from "expo-router";
 import StatusChip from "../../components/ui/StatusChip";

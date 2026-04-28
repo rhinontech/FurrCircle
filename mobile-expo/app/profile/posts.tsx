@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, RefreshControl } from "react-native";
+import { View, ScrollView, Pressable, Image, ActivityIndicator, RefreshControl } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { ChevronLeft, Heart, MessageCircle, Share2, FileText } from "@/components/ui/IconCompat";

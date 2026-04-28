@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { View, Text, ScrollView, Image, Pressable, Switch } from "react-native";
+import { View, ScrollView, Image, Pressable, Switch } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import {
   Settings,
   ChevronRight,

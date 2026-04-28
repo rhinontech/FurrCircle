@@ -3,7 +3,8 @@ import { Tabs } from "expo-router";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import Svg, { Circle, Ellipse, Path } from "react-native-svg";
 import AppIcon, { type AppIconName } from "@/components/ui/AppIcon";
 import TabletSidebar from "@/components/ui/TabletSidebar";
@@ -342,7 +343,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 10,
     borderWidth: 1.5,
-    bottom: 1,
+    bottom: Platform.OS === "android" ? -3 : 1,
     height: 20,
     justifyContent: "center",
     position: "absolute",

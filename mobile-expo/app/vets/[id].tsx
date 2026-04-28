@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
-  Text,
   Pressable,
   Image,
   ScrollView,
@@ -11,6 +10,7 @@ import {
   TextInput,
   Modal,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, Clock3, MapPin, Phone, Star, Stethoscope, Bookmark, MessageCircle, MessageSquarePlus } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";

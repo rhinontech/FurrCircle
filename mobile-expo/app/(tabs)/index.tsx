@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, ScrollView, Image, Pressable, FlatList, ActivityIndicator, RefreshControl, Modal, Alert, Share, KeyboardAvoidingView, Platform, TextInput } from "react-native";
+import { View, ScrollView, Image, Pressable, FlatList, ActivityIndicator, RefreshControl, Modal, Alert, Share, KeyboardAvoidingView, Platform, TextInput } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { Syringe, Stethoscope, Calendar, Heart, PawPrint, MapPin, Star, MessageCircle, Share2, Bookmark, X, Camera } from "@/components/ui/IconCompat";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";

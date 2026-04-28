@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from "react";
 import {
   View,
-  Text,
   ScrollView,
   Pressable,
   Image,
@@ -15,6 +14,7 @@ import {
   Platform,
   Share,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import {

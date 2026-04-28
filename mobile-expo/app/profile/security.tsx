@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, ScrollView, Pressable, Switch } from "react-native";
+import { View, ScrollView, Pressable, Switch } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import { ChevronLeft, Lock, Shield, Trash2 } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";

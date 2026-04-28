@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, ScrollView, Image, Pressable, TextInput, ActivityIndicator, RefreshControl } from "react-native";
+import { View, ScrollView, Image, Pressable, TextInput, ActivityIndicator, RefreshControl } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { Search, PawPrint } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";

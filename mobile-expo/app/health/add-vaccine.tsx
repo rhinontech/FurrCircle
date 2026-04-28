@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Modal, Switch } from "react-native";
+import { View, TextInput, Pressable, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Modal, Switch } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Save, Calendar, Award } from "@/components/ui/IconCompat";

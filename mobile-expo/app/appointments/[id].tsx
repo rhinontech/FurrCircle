@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from "react";
 import {
   View,
-  Text,
   ScrollView,
   Pressable,
   ActivityIndicator,
@@ -10,6 +9,7 @@ import {
   Modal,
   TextInput,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {

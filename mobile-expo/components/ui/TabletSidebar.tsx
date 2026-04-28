@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Pressable, Image, StyleSheet, Platform } from "react-native";
+import { View, Pressable, Image, StyleSheet, Platform } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePathname, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";

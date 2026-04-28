@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
-  Text,
   ScrollView,
   Pressable,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import {

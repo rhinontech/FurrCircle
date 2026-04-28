@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
-  Text,
   ScrollView,
   Image,
   Pressable,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import {
   CalendarDays,
   PawPrint,

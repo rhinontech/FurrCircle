@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
-  Text,
   TextInput,
   Pressable,
   ActivityIndicator,
@@ -11,6 +10,7 @@ import {
   ScrollView,
   Keyboard,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Constants from "expo-constants";

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Animated, Pressable, StyleSheet, Dimensions } from "react-native";
+import { View, Animated, Pressable, StyleSheet, Dimensions } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import { Bell, X } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";

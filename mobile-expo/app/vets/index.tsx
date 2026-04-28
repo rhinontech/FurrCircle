@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, Image, ActivityIndicator } from "react-native";
+import { View, ScrollView, Pressable, TextInput, Image, ActivityIndicator } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import { ChevronLeft, Search, Stethoscope, MapPin, Star, ChevronRight, Check } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
