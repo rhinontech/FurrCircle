@@ -26,7 +26,7 @@ docker-compose up -d --build
 Public registration no longer allows creating `admin` users. Bootstrap or rotate an admin account with:
 
 ```bash
-docker exec pawshub-backend npm run bootstrap-admin -- --email alex@rhinonlabs.com --name Alex
+docker exec furrcircle-backend npm run bootstrap-admin -- --email alex@rhinonlabs.com --name Alex
 ```
 
 Optional flags:

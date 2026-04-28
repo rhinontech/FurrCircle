@@ -1,11 +1,11 @@
-name: pawshub
+name: furrcircle
 services:
   db:
     image: postgres:16-alpine
-    container_name: pawshub-db
+    container_name: furrcircle-db
     restart: always
     environment:
-      POSTGRES_DB: ${DB_NAME:-pawshub_dev}
+      POSTGRES_DB: ${DB_NAME:-furrcircle_dev}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     ports:
@@ -17,7 +17,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: pawshub-backend
+    container_name: furrcircle-backend
     restart: always
     depends_on:
       - db
