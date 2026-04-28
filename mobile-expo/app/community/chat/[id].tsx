@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, PawPrint, Send } from "@/components/ui/IconCompat";
 import { useTheme } from "../../../contexts/ThemeContext";
@@ -25,6 +26,7 @@ export default function CommunityChatScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [conversation, setConversation] = useState<any | null>(null);
   const [message, setMessage] = useState("");
@@ -137,8 +139,8 @@ export default function CommunityChatScreen() {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "padding"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 180 : 0}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
         style={{ flex: 1 }}
       >
 
@@ -203,7 +205,7 @@ export default function CommunityChatScreen() {
         style={{
           paddingHorizontal: 20,
           paddingTop: 12,
-          paddingBottom: 20,
+          paddingBottom: Math.max(insets.bottom, 16),
           borderTopWidth: 1,
           borderTopColor: colors.border,
           backgroundColor: colors.bgCard,

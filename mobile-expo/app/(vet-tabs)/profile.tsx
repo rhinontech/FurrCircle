@@ -3,8 +3,11 @@ import { useFocusEffect } from "@react-navigation/native";
 import { View, Text, ScrollView, Image, Pressable, Switch } from "react-native";
 import { ChevronRight, CalendarDays, Users, Star, Clock, LogOut, Moon, Sun, UserCheck, Stethoscope, MapPin, Phone, Pencil, Shield } from "@/components/ui/IconCompat";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { CustomPawPrint } from "../(tabs)/index";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
+import { PawPrint, Heart } from "@/components/ui/IconCompat";
 
 export default function VetProfileScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
@@ -43,52 +46,94 @@ export default function VetProfileScreen() {
             </Pressable>
           </View>
 
-          {/* Vet Hero Card */}
-          <View style={{ backgroundColor: colors.heroBg, borderRadius: 28, padding: 24, marginBottom: 24 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-              {user?.avatar ? (
-                 <Image source={{ uri: user.avatar }} style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)' }} resizeMode="cover" />
-              ) : (
-                <View style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
-                    <Stethoscope size={28} color="#fff" />
-                </View>
-              )}
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#fff' }}>{user?.name || "Dr. Anonymous"}</Text>
-                <Text style={{ fontSize: 14, color: colors.heroSub, marginTop: 2 }}>{user?.clinic_name || "Pet Clinic"}</Text>
-                <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{user?.specialty || "Veterinarian"}</Text>
-                <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', marginTop: 8, lineHeight: 18 }}>
-                  {user?.bio || "Add your clinic details, working hours, and a stronger introduction so pet parents know what kind of care you provide."}
-                </Text>
-              </View>
-            </View>
+          {/* Vet Hero Card - Modernized */}
+          <View style={{ borderRadius: 28, overflow: 'hidden', marginBottom: 24 }}>
+            <LinearGradient
+              colors={['#3b82f6', '#1e3a8a']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ padding: 24 }}
+            >
+              {/* Background Paw Prints */}
+              <CustomPawPrint size={100} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', right: -10, top: -10 }} />
+              <CustomPawPrint size={60} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', right: 40, bottom: 60 }} />
 
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
-              {profilePills.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-                    <Icon size={14} color="#fff" />
-                    <Text style={{ fontSize: 12, color: '#fff', maxWidth: 190 }} numberOfLines={1}>{item.label}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#fff', padding: 3 }}>
+                  <View style={{ flex: 1, borderRadius: 41, overflow: 'hidden', backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}>
+                    {user?.avatar ? (
+                      <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                    ) : (
+                      <Stethoscope size={36} color={colors.textMuted} />
+                    )}
                   </View>
-                );
-              })}
-            </View>
+                </View>
 
-            <View style={{ flexDirection: 'row', gap: 32, marginTop: 20 }}>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>{ratingLabel}</Text>
-                <Text style={{ fontSize: 12, color: colors.heroSub, marginTop: 2 }}>Rating</Text>
+                <View style={{ flex: 1, marginLeft: 20 }}>
+                  <Text style={{ fontSize: 22, fontWeight: '800', color: '#fff' }}>
+                    {user?.name || "Dr. Anonymous"}
+                  </Text>
+                  <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 4, fontWeight: '500' }}>
+                    {user?.clinic_name || "Pet Clinic"} · {user?.specialty || "Veterinarian"}
+                  </Text>
+                </View>
               </View>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>{experienceLabel}</Text>
-                <Text style={{ fontSize: 12, color: colors.heroSub, marginTop: 2 }}>Experience</Text>
+
+              <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', marginTop: 16, lineHeight: 19 }}>
+                {user?.bio || "Add your clinic details, working hours, and a stronger introduction so pet parents know what kind of care you provide."}
+              </Text>
+
+              {/* Profile Pills */}
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+                {profilePills.map((item, idx) => {
+                  const Icon = item.icon;
+                  return (
+                    <View
+                      key={idx}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 12,
+                        backgroundColor: "rgba(255,255,255,0.1)",
+                        borderWidth: 1,
+                        borderColor: "rgba(255,255,255,0.05)",
+                      }}
+                    >
+                      <Icon size={12} color="#fff" />
+                      <Text style={{ fontSize: 11, color: "#fff", fontWeight: '500' }}>
+                        {item.label}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>{user?.isVerified ? "Verified" : "Pending"}</Text>
-                <Text style={{ fontSize: 12, color: colors.heroSub, marginTop: 2 }}>Status</Text>
+
+              <View style={{ height: 1, marginVertical: 18, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {[
+                  { n: ratingLabel, l: "Rating", icon: Star },
+                  { n: experienceLabel, l: "Experience", icon: Clock },
+                  { n: user?.isVerified ? "Verified" : "Pending", l: "Status", icon: Shield },
+                ].map((s, idx, arr) => (
+                  <React.Fragment key={s.l}>
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <View style={{ width: 20, height: 20, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                          <s.icon size={12} color="#fff" />
+                        </View>
+                        <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '600' }}>{s.l}</Text>
+                      </View>
+                      <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>{s.n}</Text>
+                    </View>
+                    {idx < arr.length - 1 && <View style={{ width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.1)' }} />}
+                  </React.Fragment>
+                ))}
               </View>
-            </View>
+            </LinearGradient>
           </View>
 
           {/* Dark Mode */}

@@ -48,13 +48,13 @@ const ROLES: {
     heading: "Vet Sign In",
     hint: "Sign in to manage appointments and patient records",
   },
-  {
-    key: "shelter",
-    label: "Shelter",
-    icon: Building2,
-    heading: "Shelter Sign In",
-    hint: "Sign in to manage your rescue listings and adoption requests",
-  },
+  // {
+  //   key: "shelter",
+  //   label: "Shelter",
+  //   icon: Building2,
+  //   heading: "Shelter Sign In",
+  //   hint: "Sign in to manage your rescue listings and adoption requests",
+  // },
 ];
 
 export default function LoginScreen() {

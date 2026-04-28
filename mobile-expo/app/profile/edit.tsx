@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
-import { ArrowLeft, Building2, Camera, Check, Clock3, FileText, Mail, MapPin, Navigation, Phone, Stethoscope, Trash2, User } from "@/components/ui/IconCompat";
+import { ArrowLeft, Building2, Camera, Check, Clock3, FileText, Lock, Mail, MapPin, Navigation, Phone, Stethoscope, Trash2, User } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth, type User as AuthUser } from "../../contexts/AuthContext";
 import { pickAndUploadImage } from "@/services/uploadApi";
@@ -234,8 +234,15 @@ export default function EditProfileScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 56, paddingTop: 16 }}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === "ios" ? "padding" : "padding"} 
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 100}
+      style={{ flex: 1, backgroundColor: colors.bg }}
+    >
+      <ScrollView 
+        contentContainerStyle={{ paddingBottom: 80, paddingTop: 16 }}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Header */}
         <View style={{ paddingHorizontal: 20, flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
           <Pressable onPress={() => router.back()} style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center", marginRight: 12 }}>
@@ -280,23 +287,34 @@ export default function EditProfileScreen() {
             <InputField label="Full Name" value={form.name} onChangeText={(v) => setField("name", v)} placeholder={isVet ? "Dr. Avery Morgan" : "Alex Johnson"} />
             <InputField label="Email" value={form.email} onChangeText={(v) => setField("email", v)} placeholder="you@example.com" keyboardType="email-address" />
 
-            {/* Phone — +91 fixed prefix */}
+            {/* Phone — +91 fixed prefix (Read-only, requires OTP change flow) */}
             <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textSecondary, marginBottom: 6 }}>Phone</Text>
-              <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: 14, height: 52, overflow: "hidden" }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textSecondary }}>Phone</Text>
+                <Pressable onPress={() => router.push("/profile/change-phone")}>
+                  <View style={{ backgroundColor: colors.brand + "15", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.brand }}>Change Number</Text>
+                  </View>
+                </Pressable>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: 14, height: 52, overflow: "hidden", opacity: 0.7 }}>
                 <View style={{ paddingHorizontal: 14, borderRightWidth: 1, borderRightColor: colors.border, height: "100%", justifyContent: "center", backgroundColor: colors.bgSubtle }}>
                   <Text style={{ fontSize: 15, fontWeight: "600", color: colors.textPrimary }}>+91</Text>
                 </View>
                 <TextInput
                   value={form.phoneDigits}
-                  onChangeText={(v) => setField("phoneDigits", v.replace(/\D/g, "").slice(0, 10))}
+                  editable={false}
                   placeholder="98765 43210"
                   placeholderTextColor={colors.textMuted}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  style={{ flex: 1, paddingHorizontal: 14, fontSize: 15, color: colors.textPrimary }}
+                  style={{ flex: 1, paddingHorizontal: 14, fontSize: 15, color: colors.textMuted }}
                 />
+                <View style={{ paddingRight: 16 }}>
+                  <Lock size={16} color={colors.textMuted} />
+                </View>
               </View>
+              <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 6, marginLeft: 2 }}>
+                Phone number verification is required for changes.
+              </Text>
             </View>
 
             {/* City — with GPS button */}
