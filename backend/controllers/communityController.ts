@@ -183,6 +183,63 @@ const fetchConversation = async (conversationId: string) => {
   });
 };
 
+// @desc    Get the community spotlight post for the home screen
+// @route   GET /api/community/spotlight
+export const getSpotlightPost = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { posts: Post, comments: Comment, likes: Like, saved_posts: SavedPost } = db as any;
+    const userCity = (req.user?.city || "").trim().toLowerCase();
+
+    const posts = await Post.findAll({
+      where: { status: "approved" },
+      include: [
+        { model: Comment, as: "comments", attributes: ["id"] },
+        { model: Like, as: "likes", attributes: ["userId", "userType"] },
+        { model: SavedPost, as: "savedPosts", attributes: ["userId"] },
+      ],
+    });
+
+    if (posts.length === 0) {
+      res.json(null);
+      return;
+    }
+
+    const resolveProfile = createProfileResolver();
+
+    const scored = await Promise.all(
+      posts.map(async (post: any) => {
+        const payload = toPlain(post);
+        const likesCount = (payload.likes || []).length;
+        const commentsCount = (payload.comments || []).length;
+        const sharesCount = payload.shareCount || 0;
+        const engagementScore = likesCount + commentsCount * 2 + sharesCount * 3;
+        const authorType = payload.userType === "vet" ? "vet" : "user";
+        const author = await resolveProfile(payload.userId, authorType);
+        const authorCity = (author?.city || "").trim().toLowerCase();
+        return { post, engagementScore, authorCity };
+      })
+    );
+
+    // Filter by city when possible, fall back to global pool
+    let pool = userCity ? scored.filter((item) => item.authorCity === userCity) : scored;
+    if (pool.length === 0) pool = scored;
+
+    // Sort by engagement score descending
+    pool.sort((a, b) => b.engagementScore - a.engagementScore);
+
+    // Deterministic daily rotation: day 0 = today (feature launch), advances at midnight UTC
+    // 20571 = days since Unix epoch for Apr 28, 2026 (the launch day)
+    const SPOTLIGHT_LAUNCH_DAY = 20571;
+    const dayOffset = Math.max(0, Math.floor(Date.now() / 86400000) - SPOTLIGHT_LAUNCH_DAY);
+    const pick = pool[dayOffset % pool.length];
+
+    const serialized = await serializePost(pick.post, resolveProfile);
+    res.json({ ...serialized, engagementScore: pick.engagementScore });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Submit a new post for moderation
 // @route   POST /api/community/posts
 export const createCommunityPost = async (req: any, res: Response): Promise<void> => {

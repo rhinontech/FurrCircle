@@ -5,6 +5,7 @@ import {
   getMyPosts,
   getPostById,
   getPublicPostById,
+  getSpotlightPost,
   toggleLike,
   toggleSave,
   sharePost,
@@ -37,6 +38,7 @@ router.get("/chats/:id", protect, getChatById);
 router.post("/chats/start", protect, startChat);
 router.post("/chats/:id/messages", protect, sendMessage);
 
+router.get("/spotlight", protect, getSpotlightPost);
 router.get("/feed", protect, getCommunityFeed);
 router.post("/posts", protect, createCommunityPost);
 router.get("/posts/me", protect, getMyPosts);
