@@ -33,7 +33,7 @@ type SignupRole = "owner" | "shelter" | "veterinarian";
 const ROLES: { key: SignupRole; label: string; icon: typeof PawPrint }[] = [
   { key: "owner", label: "Pet Owner", icon: PawPrint },
   { key: "veterinarian", label: "Veterinarian", icon: Stethoscope },
-  { key: "shelter", label: "Shelter", icon: Building2 },
+  // { key: "shelter", label: "Shelter", icon: Building2 },
 ];
 
 export default function SignupScreen() {
@@ -75,9 +75,9 @@ export default function SignupScreen() {
       return;
     }
 
-    // Basic phone validation (must start with + and country code)
-    if (!phone.startsWith("+") || phone.length < 10) {
-      Alert.alert("Invalid Phone", "Please enter your phone number with country code (e.g. +91XXXXXXXXXX)");
+    // Basic phone validation (must be 10 digits)
+    if (phone.length !== 10) {
+      Alert.alert("Invalid Phone", "Please enter a valid 10-digit phone number");
       return;
     }
 
@@ -98,7 +98,7 @@ export default function SignupScreen() {
         email: email.trim(),
         password,
         role,
-        phone: phone.trim(),
+        phone: `+91${phone.trim()}`,
         extraData: JSON.stringify(extra)
       }
     });
@@ -285,15 +285,59 @@ export default function SignupScreen() {
             )}
 
             {/* Phone Number */}
-            {inputRow(
-              <Phone size={18} color={colors.textMuted} />,
-              textInput({
-                placeholder: "Phone number (e.g. +91XXXXXXXXXX)",
-                value: phone,
-                onChangeText: setPhone,
-                keyboardType: "phone-pad",
-              }),
-            )}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: colors.bgCard,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 14,
+                overflow: "hidden",
+              }}
+            >
+              <View
+                style={{
+                  paddingHorizontal: 16,
+                  height: 52,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  borderRightWidth: 1,
+                  borderRightColor: colors.border,
+                  backgroundColor: colors.bgCard,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                  }}
+                >
+                  +91
+                </Text>
+              </View>
+              <TextInput
+                placeholder="98765 43210"
+                placeholderTextColor={colors.textMuted}
+                value={phone}
+                onChangeText={(text) => {
+                  const cleaned = text.replace(/[^0-9]/g, "");
+                  if (cleaned.length <= 10) {
+                    setPhone(cleaned);
+                  }
+                }}
+                keyboardType="number-pad"
+                maxLength={10}
+                style={{
+                  flex: 1,
+                  height: 52,
+                  paddingHorizontal: 12,
+                  fontSize: 15,
+                  color: colors.textPrimary,
+                }}
+              />
+            </View>
 
             {/* Shelter-specific fields */}
             {role === "shelter" && (

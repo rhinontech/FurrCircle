@@ -15,8 +15,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import { ChevronLeft, ShieldCheck, Clock, PawPrint } from "@/components/ui/IconCompat";
-import { useTheme } from "../contexts/ThemeContext";
-import { useAuth, type UserRole } from "../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Safe Firebase Auth Loader
 const getFirebaseAuth = () => {
@@ -28,16 +28,15 @@ const getFirebaseAuth = () => {
   }
 };
 
-export default function OtpVerifyScreen() {
+export default function VerifyOtpPhoneScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { register } = useAuth();
+  const { updateProfile } = useAuth();
   const params = useLocalSearchParams();
   const inputRef = useRef<TextInput>(null);
 
-  // Extract user data from params
-  const { name, email, password, role, phone, extraData } = params as any;
-  const extra = extraData ? JSON.parse(extraData) : {};
+  // Extract phone from params
+  const { phone } = params as { phone: string };
 
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -69,7 +68,7 @@ export default function OtpVerifyScreen() {
     try {
       setLoading(true);
       setIsResending(true);
-      const confirmation = await auth().signInWithPhoneNumber(phone as string);
+      const confirmation = await auth().signInWithPhoneNumber(phone);
       setConfirm(confirmation);
       setTimer(60);
       setCode("");
@@ -99,16 +98,12 @@ export default function OtpVerifyScreen() {
       // A. Verify Firebase Code
       await confirm.confirm(code);
 
-      // B. Verification Success! Now register in our backend
-      await register(
-        name as string,
-        email as string,
-        password as string,
-        role as UserRole,
-        { ...extra, phone: phone as string, phone_number: phone as string }
-      );
-
-      // Navigation is handled by AuthContext (redirects on login success)
+      // B. Verification Success! Update profile
+      await updateProfile({ phone });
+      
+      Alert.alert("Success", "Phone number updated successfully!", [
+        { text: "Great!", onPress: () => router.back() }
+      ]);
     } catch (error: any) {
       console.error("Verification Error:", error);
       Alert.alert("Verification Failed", "The code you entered is invalid or has expired.");
@@ -242,7 +237,7 @@ export default function OtpVerifyScreen() {
               color: colors.textPrimary,
               textAlign: 'center'
             }}>
-              Verify Account
+              Verify Number
             </Text>
             
             <View style={{ marginTop: 12, alignItems: 'center' }}>
@@ -252,7 +247,7 @@ export default function OtpVerifyScreen() {
                 textAlign: "center",
                 lineHeight: 22
               }}>
-                We've sent a code to your phone
+                Enter the code sent to
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                 <Text style={{ fontWeight: "700", color: colors.textPrimary, fontSize: 16 }}>{phone}</Text>
@@ -303,7 +298,7 @@ export default function OtpVerifyScreen() {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={{ color: "#fff", fontWeight: "800", fontSize: 17 }}>
-                  Continue
+                  Verify & Update
                 </Text>
               )}
             </Pressable>
@@ -347,4 +342,3 @@ export default function OtpVerifyScreen() {
     </SafeAreaView>
   );
 }
-

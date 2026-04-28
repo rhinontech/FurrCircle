@@ -5,13 +5,17 @@
     "scheme": "furrcircle",
     "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/furrcircle_main_light_logo.png",
+    "icon": "./assets/furrCircle_Android_logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-furrcircle-rhinon.png",
+      "image": "./assets/furrCircle_splash_screen.png",
       "resizeMode": "cover",
       "backgroundColor": "#ffffff"
+    },
+    "androidStatusBar": {
+      "translucent": true,
+      "backgroundColor": "#00000000"
     },
     "ios": {
       "supportsTablet": true,
@@ -20,8 +24,13 @@
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
+      "splash": {
+        "image": "./assets/furrCircle_splash_screen.png",
+        "resizeMode": "cover",
+        "backgroundColor": "#ffffff"
+      },
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/furrCircle_Android_logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,

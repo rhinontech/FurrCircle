@@ -131,7 +131,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       password: hashedPassword,
       role: requestedRole,
       isVerified: true,
-      ...(phone_number && { phone_number }),
+      phone: phone_number,
       ...(city && { city }),
       ...(address && { address }),
     });
@@ -210,6 +210,9 @@ export const completeOnboarding = async (req: any, res: Response): Promise<void>
 // @desc    Update profile (user or vet)
 // @route   PUT /api/auth/profile
 export const updateUserProfile = async (req: any, res: Response): Promise<void> => {
+
+
+  console.log("update body->", req.body);
   try {
     const { users: User, vets: Vet } = db as any;
     const isVet = req.userType === 'vet';
