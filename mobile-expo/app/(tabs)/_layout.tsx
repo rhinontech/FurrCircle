@@ -287,7 +287,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="discover"
         options={{
-          title: "Discover",
+          title: "Explore",
           tabBarItemStyle: styles.centerTabItem,
           tabBarLabel: ({ focused }) => <PremiumTabLabel focused={focused} isCenter label="Explore" activeColor={activeColor} inactiveColor={inactiveColor} />,
           tabBarIcon: ({ focused }) => (

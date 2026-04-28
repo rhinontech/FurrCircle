@@ -27,6 +27,9 @@ export default function PetDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isAdoptionOpen, setIsAdoptionOpen] = useState(false);
   const [isFosterOpen, setIsFosterOpen] = useState(false);
+  const [fosterProvides, setFosterProvides] = useState<string[]>([]);
+  const [fosterPanelOpen, setFosterPanelOpen] = useState(false);
+  const [listingDetailBusy, setListingDetailBusy] = useState(false);
   const isVet = user?.role === 'veterinarian';
   const canManagePet = !!pet?.canManage || !!pet?.isViewerOwner || (!!user?.id && pet?.ownerId === user.id);
   const canEditPetProfile = canManagePet;
@@ -39,6 +42,7 @@ export default function PetDetailScreen() {
       setPet(data);
       setIsAdoptionOpen(data.isAdoptionOpen || false);
       setIsFosterOpen(data.isFosterOpen || false);
+      setFosterProvides(data.fosterProvides || []);
     } catch (error) {
       console.error("Error fetching pet details", error);
       Alert.alert("Error", "Could not load pet details.");
@@ -63,13 +67,34 @@ export default function PetDetailScreen() {
     try {
       const payload = type === "adoption" ? { isAdoptionOpen: value } : { isFosterOpen: value };
       const updatedPet = await userPetsApi.updateListing(String(id), payload);
-      if (type === "adoption") setIsAdoptionOpen(updatedPet.isAdoptionOpen);
-      else setIsFosterOpen(updatedPet.isFosterOpen);
+      if (type === "adoption") {
+        setIsAdoptionOpen(updatedPet.isAdoptionOpen);
+      } else {
+        setIsFosterOpen(updatedPet.isFosterOpen);
+        setFosterPanelOpen(value);
+      }
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to update listing status.");
-      // Revert local state
       if (type === "adoption") setIsAdoptionOpen(!value);
       else setIsFosterOpen(!value);
+    }
+  };
+
+  const FOSTER_PROVIDES_OPTIONS = ["Food", "Toys", "Bedding", "Leash & Collar", "Treats"];
+
+  const toggleFosterProvide = (item: string) => {
+    setFosterProvides(prev => prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item]);
+  };
+
+  const handleSaveFosterProvides = async () => {
+    setListingDetailBusy(true);
+    try {
+      await userPetsApi.updateListing(String(id), { fosterProvides });
+      setFosterPanelOpen(false);
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to save foster details.");
+    } finally {
+      setListingDetailBusy(false);
     }
   };
 
@@ -222,49 +247,85 @@ export default function PetDetailScreen() {
       {/* Public Status Toggles — hidden for vets */}
       {!isVet && <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
         <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 }}>{canManagePet ? "Public Listings" : "Listing Status"}</Text>
-        <View style={{ backgroundColor: colors.bgCard, borderRadius: 24, borderWidth: 1, borderColor: colors.border, padding: 20, gap: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, paddingRight: 12 }}>
-              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}>
-                <Heart size={20} color={isAdoptionOpen ? colors.brand : colors.textMuted} fill={isAdoptionOpen ? colors.brand : 'transparent'} />
+        <View style={{ backgroundColor: colors.bgCard, borderRadius: 24, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
+
+          {/* Adoption Row */}
+          <View style={{ padding: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, paddingRight: 12 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}>
+                  <Heart size={20} color={isAdoptionOpen ? colors.brand : colors.textMuted} fill={isAdoptionOpen ? colors.brand : 'transparent'} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary }}>Open for Adoption</Text>
+                  <Text style={{ fontSize: 11, color: colors.textMuted }}>Make pet profile public for permanent adoption</Text>
+                </View>
               </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary }}>Open for Adoption</Text>
-                <Text style={{ fontSize: 11, color: colors.textMuted }}>Make pet profile public for permanent adoption</Text>
-              </View>
+              <Switch
+                value={isAdoptionOpen}
+                disabled={!canManagePet}
+                onValueChange={(val) => handleToggleListing("adoption", val)}
+                trackColor={{ false: colors.border, true: colors.brand }}
+                thumbColor="#fff"
+              />
             </View>
-            <Switch
-              value={isAdoptionOpen}
-              disabled={!canManagePet}
-              onValueChange={(val) => handleToggleListing("adoption", val)}
-              trackColor={{ false: colors.border, true: colors.brand }}
-              thumbColor="#fff"
-            />
-          </View>
+
+            </View>
 
           <View style={{ height: 1, backgroundColor: colors.border }} />
 
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, paddingRight: 12 }}>
-              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}>
-                <Home size={20} color={isFosterOpen ? colors.brand : colors.textMuted} />
+          {/* Foster Row */}
+          <View style={{ padding: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, paddingRight: 12 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}>
+                  <Home size={20} color={isFosterOpen ? colors.brand : colors.textMuted} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary }}>Open for Foster</Text>
+                  <Text style={{ fontSize: 11, color: colors.textMuted }}>Temporary care while you're away</Text>
+                </View>
               </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary }}>Open for Foster</Text>
-                <Text style={{ fontSize: 11, color: colors.textMuted }}>Looking for temporary caregivers in your city</Text>
-              </View>
+              <Switch
+                value={isFosterOpen}
+                disabled={!canManagePet}
+                onValueChange={(val) => handleToggleListing("foster", val)}
+                trackColor={{ false: colors.border, true: colors.brand }}
+                thumbColor="#fff"
+              />
             </View>
-            <Switch
-              value={isFosterOpen}
-              disabled={!canManagePet}
-              onValueChange={(val) => handleToggleListing("foster", val)}
-              trackColor={{ false: colors.border, true: colors.brand }}
-              thumbColor="#fff"
-            />
+
+            {/* Foster provisions panel */}
+            {fosterPanelOpen && canManagePet && (
+              <View style={{ marginTop: 16, backgroundColor: colors.bgSubtle, borderRadius: 16, padding: 16, gap: 12 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textPrimary }}>What will you provide?</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {FOSTER_PROVIDES_OPTIONS.map((item) => {
+                    const checked = fosterProvides.includes(item);
+                    return (
+                      <Pressable
+                        key={item}
+                        onPress={() => toggleFosterProvide(item)}
+                        style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1.5, borderColor: checked ? colors.brand : colors.border, backgroundColor: checked ? colors.brand + '15' : colors.bgCard }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: '600', color: checked ? colors.brand : colors.textMuted }}>{item}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <Pressable
+                  onPress={handleSaveFosterProvides}
+                  disabled={listingDetailBusy}
+                  style={{ backgroundColor: colors.brand, borderRadius: 12, paddingVertical: 12, alignItems: 'center', opacity: listingDetailBusy ? 0.6 : 1 }}
+                >
+                  {listingDetailBusy ? <ActivityIndicator color="#fff" size="small" /> : <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Save</Text>}
+                </Pressable>
+              </View>
+            )}
           </View>
 
           {(isAdoptionOpen || isFosterOpen) && (
-            <View style={{ marginTop: 8, padding: 12, backgroundColor: colors.infoBg + '40', borderRadius: 12, borderLeftWidth: 3, borderLeftColor: colors.brand }}>
+            <View style={{ marginHorizontal: 20, marginBottom: 16, padding: 12, backgroundColor: colors.infoBg + '40', borderRadius: 12, borderLeftWidth: 3, borderLeftColor: colors.brand }}>
               <Text style={{ fontSize: 11, color: colors.textPrimary, fontWeight: '500' }}>
                 {canManagePet ? "Your pet is now listed in the Discover feed. Potential caretakers can contact you through the app." : `${pet.name} is listed publicly for ${isFosterOpen && !isAdoptionOpen ? "foster care" : "adoption"}.`}
               </Text>

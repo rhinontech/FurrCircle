@@ -123,7 +123,7 @@ export default function DiscoverScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
       >
         <View style={{ paddingHorizontal: 20, paddingBottom: 16 }}>
-          <Text style={{ fontSize: 24, fontWeight: '700', color: colors.textPrimary, marginBottom: 16 }}>Discover</Text>
+          <Text style={{ fontSize: 24, fontWeight: '700', color: colors.textPrimary, marginBottom: 16 }}>Explore</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgSubtle, borderRadius: 12, paddingHorizontal: 12, marginBottom: 16 }}>
             <Search size={18} color={colors.textMuted} />
             <TextInput
@@ -153,7 +153,7 @@ export default function DiscoverScreen() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary }}>Nearby Vets</Text>
               {filteredVets.length > 0 && (
-                <Pressable onPress={() => setActive("Vets")}>
+                <Pressable onPress={() => router.push("/vets" as any)}>
                   <Text style={{ fontSize: 14, color: colors.brand, fontWeight: '500' }}>View all</Text>
                 </Pressable>
               )}
@@ -234,15 +234,29 @@ export default function DiscoverScreen() {
                         <ShieldCheck size={12} color="#fff" />
                       </View>
                     )}
-                    {pet.isFosterOpen && (
-                      <View style={{ position: 'absolute', bottom: 8, left: 8, backgroundColor: colors.infoBg, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: colors.border }}>
-                        <Text style={{ fontSize: 9, fontWeight: '700', color: colors.brand }}>FOSTER</Text>
-                      </View>
-                    )}
+                    {/* Listing type + price badge */}
+                    <View style={{ position: 'absolute', bottom: 8, left: 8, flexDirection: 'row', gap: 4 }}>
+                      {pet.isFosterOpen && (
+                        <View style={{ backgroundColor: colors.infoBg, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: colors.border }}>
+                          <Text style={{ fontSize: 9, fontWeight: '700', color: colors.brand }}>FOSTER</Text>
+                        </View>
+                      )}
+                      {pet.isAdoptionOpen && (
+                        <View style={{ backgroundColor: '#fdf4ff', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#e9d5ff' }}>
+                          <Text style={{ fontSize: 9, fontWeight: '700', color: '#7c3aed' }}>ADOPT</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
                   <View style={{ padding: 12 }}>
                     <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>{pet.name} <Text style={{ fontWeight: '400', color: colors.textMuted }}> - {pet.species}</Text></Text>
                     <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }} numberOfLines={1}>{pet.breed || pet.city}</Text>
+                    {/* Foster provides preview */}
+                    {pet.isFosterOpen && pet.fosterProvides?.length > 0 && (
+                      <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 4 }} numberOfLines={1}>
+                        Provides: {pet.fosterProvides.join(', ')}
+                      </Text>
+                    )}
                   </View>
                 </Pressable>
               ))}
@@ -333,6 +347,24 @@ export default function DiscoverScreen() {
                       {selectedItem.owner?.isVerified ? <StatusChip label="VERIFIED OWNER" variant="success" /> : null}
                     </View>
                   </View>
+
+                  {/* Foster provisions */}
+                  {selectedItem.isFosterOpen && (
+                    <View style={{ backgroundColor: colors.bgSubtle, borderRadius: 16, padding: 14, marginBottom: 14 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 }}>What you'll receive from the owner</Text>
+                      {selectedItem.fosterProvides?.length > 0 ? (
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                          {selectedItem.fosterProvides.map((item: string) => (
+                            <View key={item} style={{ backgroundColor: '#f0fdf4', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: '#bbf7d0' }}>
+                              <Text style={{ fontSize: 11, fontWeight: '600', color: '#16a34a' }}>{item}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      ) : (
+                        <Text style={{ fontSize: 12, color: colors.textMuted, fontStyle: 'italic' }}>Nothing specified by the owner</Text>
+                      )}
+                    </View>
+                  )}
                   <View style={{ backgroundColor: colors.bgSubtle, borderRadius: 16, padding: 14, marginBottom: 14 }}>
                     <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 }}>Health Snapshot</Text>
                     <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>Status: {selectedItem.healthStatus || 'Healthy'}</Text>

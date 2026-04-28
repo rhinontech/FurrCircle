@@ -85,6 +85,7 @@ const toPublicPetPayload = (pet: any, viewerId?: string) => {
     healthStatus: payload.healthStatus,
     isAdoptionOpen: payload.isAdoptionOpen,
     isFosterOpen: payload.isFosterOpen,
+    fosterProvides: payload.fosterProvides ?? [],
     owner: payload.owner,
     isViewerOwner: !!viewerOwnsPet,
     canManage: !!viewerOwnsPet,
@@ -210,7 +211,7 @@ export const createPet = async (req: any, res: Response): Promise<void> => {
 export const updateListingStatus = async (req: any, res: Response): Promise<void> => {
   try {
     const { pets: Pet } = db as any;
-    const { isAdoptionOpen, isFosterOpen } = req.body;
+    const { isAdoptionOpen, isFosterOpen, fosterProvides } = req.body;
 
     const pet = await Pet.findOne({ where: { id: req.params.id, ownerId: req.user.id } });
     if (!pet) {
@@ -221,6 +222,7 @@ export const updateListingStatus = async (req: any, res: Response): Promise<void
     const wasPublic = Boolean(pet.isAdoptionOpen || pet.isFosterOpen);
     if (isAdoptionOpen !== undefined) pet.isAdoptionOpen = isAdoptionOpen;
     if (isFosterOpen !== undefined) pet.isFosterOpen = isFosterOpen;
+    if (fosterProvides !== undefined) pet.fosterProvides = Array.isArray(fosterProvides) ? fosterProvides : [];
 
     await pet.save();
 

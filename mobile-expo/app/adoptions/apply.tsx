@@ -303,7 +303,7 @@ export default function ApplyScreen() {
               }}
             >
               <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>
-                Back to Discover
+                Back to Explore
               </Text>
             </Pressable>
             <Pressable onPress={() => router.back()}>

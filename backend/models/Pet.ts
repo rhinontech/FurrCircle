@@ -87,6 +87,24 @@ export default (sequelize: Sequelize) => {
                 allowNull: true,
                 defaultValue: 'Healthy',
             },
+            adoptionFee: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: true,
+                defaultValue: 0,
+                field: 'adoption_fee',
+            },
+            fosterFeePerDay: {
+                type: DataTypes.DECIMAL(10, 2),
+                allowNull: true,
+                defaultValue: 0,
+                field: 'foster_fee_per_day',
+            },
+            fosterProvides: {
+                type: DataTypes.JSON,
+                allowNull: true,
+                defaultValue: [],
+                field: 'foster_provides',
+            },
         },
         {
             tableName: "pets",
