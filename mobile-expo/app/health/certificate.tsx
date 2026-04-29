@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from "react";
 import {
   View,
-  Text,
   ScrollView,
   Pressable,
   ActivityIndicator,
@@ -9,6 +8,7 @@ import {
   Alert,
   Image,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { ChevronLeft, Share2, Download, ShieldCheck, PawPrint, Syringe, Building2 } from "@/components/ui/IconCompat";
 import { LinearGradient } from "expo-linear-gradient";

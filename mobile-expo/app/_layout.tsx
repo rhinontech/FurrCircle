@@ -2,7 +2,17 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, Pressable, Image } from 'react-native';
+import { View, Pressable, Image } from 'react-native';
+import { AppText as Text } from '../components/ui/AppText';
+import { useFonts } from 'expo-font';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+  Inter_900Black,
+} from '@expo-google-fonts/inter';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { NotificationProvider, useNotifications } from '../contexts/NotificationContext';
@@ -162,6 +172,17 @@ function AppShell() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+    Inter_900Black,
+  });
+
+  if (!fontsLoaded) return null;
+
   return (
     <ThemeProvider>
       <AuthProvider>

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Modal, Platform, Pressable, Text, View } from "react-native";
+import { Modal, Platform, Pressable, View } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Calendar as CalendarIcon, Clock } from "@/components/ui/IconCompat";
 import { useTheme } from "@/contexts/ThemeContext";

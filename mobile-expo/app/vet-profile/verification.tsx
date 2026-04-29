@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import { ArrowLeft, CheckCircle, Clock, FileText, ShieldCheck } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";

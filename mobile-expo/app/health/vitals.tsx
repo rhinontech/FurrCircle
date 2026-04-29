@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, ScrollView, Pressable, Dimensions, ActivityIndicator, RefreshControl, Alert } from "react-native";
+import { View, ScrollView, Pressable, Dimensions, ActivityIndicator, RefreshControl, Alert } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { ChevronLeft, TrendingUp, Activity, Weight, Heart, Thermometer, Plus } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";

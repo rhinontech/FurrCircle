@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable, Image, ActivityIndicator, Alert } from "react-native";
+import { View, ScrollView, Pressable, Image, ActivityIndicator, Alert } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, CalendarDays, Clock3, MapPin, Users, Mail, ShieldCheck } from "@/components/ui/IconCompat";
 import { useTheme } from "../../../contexts/ThemeContext";

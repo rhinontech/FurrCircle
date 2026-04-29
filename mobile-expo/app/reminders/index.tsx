@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert } from "react-native";
+import { View, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import { Bell, Calendar, Syringe, ClipboardList, CheckCircle, Pencil, Trash2 } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";

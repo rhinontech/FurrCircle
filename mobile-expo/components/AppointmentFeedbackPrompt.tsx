@@ -6,10 +6,10 @@ import {
   Modal,
   Platform,
   Pressable,
-  Text,
   TextInput,
   View,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { Star } from "@/components/ui/IconCompat";
 import { feedbackApi } from "@/services/shared/feedbackApi";
 import { useAuth } from "@/contexts/AuthContext";

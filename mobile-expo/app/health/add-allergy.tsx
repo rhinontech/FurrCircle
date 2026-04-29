@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { View, TextInput, Pressable, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Save } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";

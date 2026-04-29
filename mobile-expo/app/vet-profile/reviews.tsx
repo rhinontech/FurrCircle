@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, View } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import { ArrowLeft, Star } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";

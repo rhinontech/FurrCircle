@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from "react";
 import {
   View,
-  Text,
   FlatList,
   Image,
   Pressable,
@@ -9,6 +8,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Plus, PawPrint } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";

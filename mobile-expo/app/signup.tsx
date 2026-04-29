@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   TextInput,
   Pressable,
   ScrollView,
@@ -11,6 +10,7 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import {
   Heart,
   Mail,

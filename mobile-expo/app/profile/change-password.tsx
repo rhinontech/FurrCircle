@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   TextInput,
   Pressable,
   ActivityIndicator,
@@ -10,6 +9,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import { ChevronLeft, Lock, Eye, EyeOff, CheckCircle } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";

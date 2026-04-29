@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Pressable, Image } from "react-native";
+import { View, Pressable, Image } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { Stethoscope, MapPin, Star } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import StatusChip from "./StatusChip";

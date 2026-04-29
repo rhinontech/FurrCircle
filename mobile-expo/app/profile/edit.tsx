@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
-  Text,
   ScrollView,
   Pressable,
   TextInput,
@@ -11,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
 import { ArrowLeft, Building2, Camera, Check, Clock3, FileText, Lock, Mail, MapPin, Navigation, Phone, Stethoscope, Trash2, User } from "@/components/ui/IconCompat";

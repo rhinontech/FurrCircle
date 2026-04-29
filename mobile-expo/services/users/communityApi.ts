@@ -13,6 +13,10 @@ export const userCommunityApi = {
       events: (events || []).map(normalizeEvent).filter(Boolean),
     };
   },
+  getSpotlight: async () => {
+    const post = await api.get<any>('/community/spotlight');
+    return post ? normalizePost(post) : null;
+  },
   listFeed: async () => {
     const feed = await api.get<any[]>('/community/feed');
     return (feed || []).map(normalizePost).filter(Boolean);

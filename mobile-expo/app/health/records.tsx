@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert, Image, Modal, Dimensions, Platform } from "react-native";
+import { View, ScrollView, Pressable, ActivityIndicator, RefreshControl, Alert, Image, Modal, Dimensions, Platform } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { ChevronLeft, FileText, Calendar, ShieldAlert, X } from "@/components/ui/IconCompat";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';

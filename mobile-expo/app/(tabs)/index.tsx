@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, ScrollView, Image, Pressable, FlatList, ActivityIndicator, RefreshControl, Modal, Alert, Share, KeyboardAvoidingView, Platform, TextInput } from "react-native";
+import { View, ScrollView, Image, Pressable, FlatList, ActivityIndicator, RefreshControl, Modal, Alert, Share, KeyboardAvoidingView, Platform, TextInput } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { Syringe, Stethoscope, Calendar, Heart, PawPrint, MapPin, Star, MessageCircle, Share2, Bookmark, X, Camera } from "@/components/ui/IconCompat";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -395,7 +396,7 @@ export default function HomeScreen() {
               <Text style={{ fontSize: 12, fontWeight: '500', color: '#10b981', textAlign: 'center' }}>Log Vaccine</Text>
             </Pressable>
             <Pressable
-              onPress={() => router.push("/(tabs)/discover")}
+              onPress={() => router.push("/vets" as any)}
               style={{ flex: 1, backgroundColor: colors.infoBg, borderRadius: 16, padding: 16, alignItems: 'center', gap: 8 }}
             >
               <Stethoscope size={22} color="#0ea5e9" />
@@ -415,7 +416,7 @@ export default function HomeScreen() {
         {vets.length > 0 && <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary }}>Nearby Vets</Text>
-            <Pressable onPress={() => router.push("/(tabs)/discover?category=Vets")}>
+            <Pressable onPress={() => router.push("/vets" as any)}>
               <Text style={{ fontSize: 14, color: colors.brand, fontWeight: '500' }}>View all</Text>
             </Pressable>
           </View>

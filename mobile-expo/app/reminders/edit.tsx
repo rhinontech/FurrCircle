@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, TextInput, Pressable, ScrollView,
-  KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  View,
+  TextInput,
+  Pressable,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
+import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Bell, Syringe, ClipboardList, Calendar, Check } from "@/components/ui/IconCompat";
