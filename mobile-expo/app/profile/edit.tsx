@@ -9,7 +9,9 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Modal,
 } from "react-native";
+import MapView, { Marker } from "react-native-maps";
 import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
@@ -39,6 +41,8 @@ type FormState = {
   yearsExp: string;
   clinicStampUrl: string;
   licenseNumber: string;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 const createInitialForm = (user: AuthUser | null): FormState => ({
@@ -54,6 +58,8 @@ const createInitialForm = (user: AuthUser | null): FormState => ({
   yearsExp: user?.yearsExp ? String(user.yearsExp) : "",
   clinicStampUrl: user?.clinicStampUrl || "",
   licenseNumber: user?.licenseNumber || "",
+  latitude: user?.latitude || null,
+  longitude: user?.longitude || null,
 });
 
 function InputField({
@@ -124,6 +130,8 @@ export default function EditProfileScreen() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingStamp, setUploadingStamp] = useState(false);
   const [fetchingLocation, setFetchingLocation] = useState(false);
+  const [isMapVisible, setIsMapVisible] = useState(false);
+  const [tempLocation, setTempLocation] = useState<{lat: number, lng: number} | null>(null);
   const isVet = user?.role === "veterinarian";
 
   useEffect(() => {
@@ -212,6 +220,8 @@ export default function EditProfileScreen() {
         yearsExp: isVet ? form.yearsExp.trim() : undefined,
         clinicStampUrl: isVet ? form.clinicStampUrl : undefined,
         licenseNumber: isVet ? form.licenseNumber.trim() : undefined,
+        latitude: form.latitude !== null ? form.latitude : undefined,
+        longitude: form.longitude !== null ? form.longitude : undefined,
       });
       Alert.alert(
         "Profile updated",
@@ -339,6 +349,14 @@ export default function EditProfileScreen() {
             </View>
 
             <InputField label="Address" value={form.address} onChangeText={(v) => setField("address", v)} placeholder={isVet ? "Clinic address" : "Home or preferred address"} />
+
+            <Pressable
+              onPress={() => setIsMapVisible(true)}
+              style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}
+            >
+              <MapPin size={16} color={colors.brand} />
+              <Text style={{ fontSize: 14, fontWeight: "600", color: colors.brand }}>Set Location on Map</Text>
+            </Pressable>
           </View>
 
           {/* Bio */}
@@ -422,6 +440,65 @@ export default function EditProfileScreen() {
           </Pressable>
         </View>
       </ScrollView>
+
+      <Modal visible={isMapVisible} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: Platform.OS === 'ios' ? 40 : 0 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: colors.bgCard }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>Pin Location</Text>
+            <Pressable onPress={() => setIsMapVisible(false)}>
+              <Text style={{ fontSize: 16, color: colors.brand, fontWeight: '600' }}>Cancel</Text>
+            </Pressable>
+          </View>
+          <View style={{ flex: 1 }}>
+            {isMapVisible && (
+              <MapView
+                style={{ flex: 1 }}
+                initialRegion={{
+                  latitude: tempLocation?.lat || form.latitude || 20.5937,
+                  longitude: tempLocation?.lng || form.longitude || 78.9629,
+                  latitudeDelta: 0.05,
+                  longitudeDelta: 0.05,
+                }}
+                onPress={(e) => setTempLocation({ lat: e.nativeEvent.coordinate.latitude, lng: e.nativeEvent.coordinate.longitude })}
+              >
+                {(tempLocation || form.latitude) && (
+                  <Marker
+                    coordinate={{
+                      latitude: tempLocation?.lat || form.latitude!,
+                      longitude: tempLocation?.lng || form.longitude!,
+                    }}
+                  />
+                )}
+              </MapView>
+            )}
+          </View>
+          <View style={{ padding: 20, backgroundColor: colors.bgCard, borderTopWidth: 1, borderTopColor: colors.border }}>
+            <Pressable
+              onPress={async () => {
+                if (!tempLocation) return;
+                setField("latitude", tempLocation.lat as any);
+                setField("longitude", tempLocation.lng as any);
+                setIsMapVisible(false);
+                
+                // Reverse geocode
+                try {
+                  const [place] = await Location.reverseGeocodeAsync({ latitude: tempLocation.lat, longitude: tempLocation.lng });
+                  if (place) {
+                    const addr = [place.name, place.street, place.city].filter(Boolean).join(", ");
+                    if (addr) setField("address", addr);
+                    if (place.city || place.subregion) setField("city", place.city || place.subregion || "");
+                  }
+                } catch (e) {
+                  console.log("Geocode error", e);
+                }
+              }}
+              style={{ backgroundColor: colors.brand, paddingVertical: 16, borderRadius: 14, alignItems: 'center' }}
+            >
+              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Confirm Location</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }

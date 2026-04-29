@@ -2,8 +2,12 @@ import { api } from '../api';
 import { normalizeAppointment, normalizeProfile } from '../shared/normalizers';
 
 export const userAppointmentsApi = {
-  listVets: async () => {
-    const vets = await api.get<any[]>('/appointments/vets');
+  listVets: async (lat?: number, lng?: number) => {
+    const params: Record<string, any> = {};
+    if (lat) params.lat = lat;
+    if (lng) params.lng = lng;
+    
+    const vets = await api.get<any[]>('/appointments/vets', params);
     return (vets || []).map(normalizeProfile).filter(Boolean);
   },
   listOwnerAppointments: async () => {
