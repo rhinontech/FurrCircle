@@ -5,7 +5,7 @@
     "scheme": "furrcircle",
     "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/furrCircle_Android_logo.png",
+    "icon": "./assets/adaptive-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -25,7 +25,7 @@
     },
     "android": {
       "splash": {
-        "image": "./assets/furrCircle_splash_screen1.png",
+        "image": "./assets/adaptive-icon.png",
         "resizeMode": "cover",
         "backgroundColor": "#ffffff"
       },
