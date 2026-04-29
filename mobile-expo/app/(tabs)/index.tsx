@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { G, Path } from "react-native-svg";
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedScrollHandler, interpolate, Extrapolation } from 'react-native-reanimated';
 import { useResponsive, MAX_CONTENT_WIDTH } from "@/hooks/useResponsive";
+import { useLocation } from "@/contexts/LocationContext";
 
 function timeAgo(date?: string) {
   if (!date) return "";
@@ -56,6 +57,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { screenWidth, hp } = useResponsive();
+  const { location } = useLocation();
   const cardWidth = Math.min(screenWidth - hp * 2, MAX_CONTENT_WIDTH - hp * 2);
   const reminderCardWidth = Math.min(screenWidth - hp * 2, 340);
 
@@ -96,7 +98,7 @@ export default function HomeScreen() {
 
   const fetchData = useCallback(async () => {
     try {
-      const data = await userHomeApi.getHomeData();
+      const data = await userHomeApi.getHomeData(location.latitude || undefined, location.longitude || undefined);
       setPets(data.pets);
       setReminders(data.reminders);
       setVets(data.vets);
@@ -107,7 +109,7 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [location.latitude, location.longitude]);
 
   useFocusEffect(
     useCallback(() => {
@@ -439,14 +441,25 @@ export default function HomeScreen() {
                     {vet.clinic_name || vet.name || "Vet Clinic"}
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
-                    <MapPin size={13} color={colors.textMuted} />
-                    <Text style={{ fontSize: 13, color: colors.textMuted, marginLeft: 4, marginRight: 12 }} numberOfLines={1}>
-                      {vet.distance || vet.city || "Nearby"}
-                    </Text>
-                    <Star size={13} color="#f59e0b" fill="#f59e0b" />
-                    <Text style={{ fontSize: 13, color: "#f59e0b", fontWeight: '700', marginLeft: 4 }}>
-                      {Number(vet.rating || 4.8).toFixed(1)}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
+                      <MapPin size={13} color={colors.textMuted} />
+                      <Text style={{ fontSize: 13, color: colors.textMuted, marginLeft: 4 }} numberOfLines={1}>
+                        {vet.city || "Nearby"}
+                      </Text>
+                    </View>
+                    
+                    {vet.distance && (
+                      <View style={{ backgroundColor: colors.brand + '15', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 12 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: colors.brand }}>{vet.distance}</Text>
+                      </View>
+                    )}
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Star size={13} color="#f59e0b" fill="#f59e0b" />
+                      <Text style={{ fontSize: 13, color: "#f59e0b", fontWeight: '700', marginLeft: 4 }}>
+                        {Number(vet.rating || 4.8).toFixed(1)}
+                      </Text>
+                    </View>
                   </View>
                 </View>
                 <View style={{ backgroundColor: '#e0f2fe', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: '#bae6fd' }}>

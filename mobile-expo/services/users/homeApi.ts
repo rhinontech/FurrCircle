@@ -4,11 +4,11 @@ import { userPetsApi } from './petsApi';
 import { userRemindersApi } from './remindersApi';
 
 export const userHomeApi = {
-  getHomeData: async () => {
+  getHomeData: async (lat?: number, lng?: number) => {
     const [pets, reminders, vets, spotlightPost] = await Promise.all([
       userPetsApi.listPets(),
       userRemindersApi.listReminders(),
-      userAppointmentsApi.listVets(),
+      userAppointmentsApi.listVets(lat, lng),
       userCommunityApi.getSpotlight().catch(() => null),
     ]);
 

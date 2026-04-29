@@ -23,6 +23,8 @@ export interface User {
   city?: string;
   phone?: string;
   address?: string;
+  latitude?: number;
+  longitude?: number;
   working_hours?: string;
   clinicStampUrl?: string;
   licenseNumber?: string;
@@ -35,7 +37,10 @@ type AuthPayload = User & {
   hospital_name?: string;
   profession?: string;
   experience?: string | number;
+  experience?: string | number;
   working_hours?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 interface AuthContextType {
@@ -82,6 +87,8 @@ const toAuthPayload = (data: Partial<User>): AuthPayload => ({
   city: data.city,
   phone: data.phone,
   address: data.address,
+  latitude: data.latitude,
+  longitude: data.longitude,
   working_hours: data.working_hours,
   memberSince: data.memberSince,
   petCount: data.petCount,
@@ -112,6 +119,8 @@ const toUser = (data: AuthPayload): User => ({
   city: data.city,
   phone: data.phone,
   address: data.address,
+  latitude: data.latitude,
+  longitude: data.longitude,
   working_hours: data.working_hours,
   clinicStampUrl: (data as any).clinicStampUrl,
   licenseNumber: (data as any).licenseNumber,

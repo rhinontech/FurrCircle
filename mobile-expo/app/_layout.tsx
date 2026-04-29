@@ -16,14 +16,17 @@ import {
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { NotificationProvider, useNotifications } from '../contexts/NotificationContext';
+import { LocationProvider } from '../contexts/LocationContext';
 import React, { useEffect } from 'react';
 import '@/global.css';
 import AppointmentFeedbackPrompt from '@/components/AppointmentFeedbackPrompt';
 import AppIcon from '@/components/ui/AppIcon';
+import LocationHeader from '@/components/LocationHeader';
 
 
 function GlobalHeader() {
   const { colors, isDark } = useTheme();
+  const { user } = useAuth();
   const router = useRouter();
   const segments = useSegments();
   const { chatUnreadCount, notifUnreadCount } = useNotifications();
@@ -42,11 +45,17 @@ function GlobalHeader() {
   return (
     <SafeAreaView edges={['top']} style={{ backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.border }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 10 }}>
-        <Image
-          source={isDark ? require("../assets/furrcircle_dark_logo.png") : require("../assets/furrcircle_light_logo.png")}
-          style={{ width: 150, height: 45 }}
-          resizeMode="contain"
-        />
+        {user?.role === 'veterinarian' ? (
+          <Image
+            source={isDark ? require("../assets/furrcircle_dark_logo.png") : require("../assets/furrcircle_light_logo.png")}
+            style={{ width: 150, height: 45 }}
+            resizeMode="contain"
+          />
+        ) : (
+          <View style={{ flex: 1, marginRight: 10 }}>
+            <LocationHeader />
+          </View>
+        )}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Pressable
             onPress={() => handleNavigate('/community/chats')}
@@ -187,7 +196,9 @@ export default function RootLayout() {
     <ThemeProvider>
       <AuthProvider>
         <NotificationProvider>
-          <AppShell />
+          <LocationProvider>
+            <AppShell />
+          </LocationProvider>
         </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>

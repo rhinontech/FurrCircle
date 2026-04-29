@@ -54,22 +54,63 @@ const parseReschedulePayload = (body: any) => {
 // @route   GET /api/vets
 export const getVets = async (req: any, res: Response): Promise<void> => {
   try {
-    const { vets: Vet } = db as any;
+    const { vets: Vet, sequelize } = db as any;
     const requestedCity = normalizeCity(req.query?.city);
     const viewerCity = normalizeCity(req.user?.city);
-    const cityFilter = requestedCity || viewerCity;
+    const lat = req.query?.lat ? parseFloat(req.query.lat) : null;
+    const lng = req.query?.lng ? parseFloat(req.query.lng) : null;
 
     const where: Record<string, any> = { isVerified: true };
-    if (cityFilter) {
-      where.city = { [Op.iLike]: cityFilter };
+    const attributes: any = { exclude: ['password'] };
+    const order: any[] = [];
+
+    if (lat && lng) {
+      // Only include vets who have coordinates set
+      where.latitude = { [Op.ne]: null };
+      where.longitude = { [Op.ne]: null };
+
+      attributes.include = [
+        [
+          sequelize.literal(`(
+            6371 * acos(
+              LEAST(1.0, GREATEST(-1.0, 
+                cos(radians(${lat})) *
+                cos(radians(latitude)) *
+                cos(radians(longitude) - radians(${lng})) +
+                sin(radians(${lat})) *
+                sin(radians(latitude))
+              ))
+            )
+          )`),
+          'distance'
+        ]
+      ];
+      order.push([sequelize.literal('distance'), 'ASC']);
+    } else {
+      const cityFilter = requestedCity || viewerCity;
+      if (cityFilter) {
+        where.city = { [Op.iLike]: cityFilter };
+      }
     }
+
+    order.push(["rating", "DESC"], ["name", "ASC"]);
 
     const vets = await Vet.findAll({
       where,
-      attributes: { exclude: ['password'] },
-      order: [["rating", "DESC"], ["name", "ASC"]],
+      attributes,
+      order,
     });
-    res.json(vets);
+    
+    // Format distance if present
+    const formattedVets = vets.map((v: any) => {
+      const vetData = v.toJSON();
+      if (vetData.distance !== undefined && vetData.distance !== null) {
+        vetData.distance = `${vetData.distance.toFixed(1)} km away`;
+      }
+      return vetData;
+    });
+
+    res.json(formattedVets);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

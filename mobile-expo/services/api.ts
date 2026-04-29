@@ -103,7 +103,19 @@ export const apiCall = async <T = unknown>(endpoint: string, options: RequestOpt
 };
 
 export const api = {
-  get: <T = unknown>(endpoint: string) => apiCall<T>(endpoint, { method: 'GET' }),
+  get: <T = unknown>(endpoint: string, params?: Record<string, any>) => {
+    let finalEndpoint = endpoint;
+    if (params) {
+      const queryString = Object.keys(params)
+        .filter(key => params[key] !== undefined && params[key] !== null)
+        .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+        .join('&');
+      if (queryString) {
+        finalEndpoint += (endpoint.includes('?') ? '&' : '?') + queryString;
+      }
+    }
+    return apiCall<T>(finalEndpoint, { method: 'GET' });
+  },
   post: <T = unknown>(endpoint: string, body?: unknown) => apiCall<T>(endpoint, { method: 'POST', body }),
   put: <T = unknown>(endpoint: string, body?: unknown) => apiCall<T>(endpoint, { method: 'PUT', body }),
   patch: <T = unknown>(endpoint: string, body?: unknown) => apiCall<T>(endpoint, { method: 'PATCH', body }),

@@ -68,6 +68,14 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
+            latitude: {
+                type: DataTypes.FLOAT,
+                allowNull: true,
+            },
+            longitude: {
+                type: DataTypes.FLOAT,
+                allowNull: true,
+            },
             hasCompletedOnboarding: {
                 type: DataTypes.BOOLEAN,
                 allowNull: false,
