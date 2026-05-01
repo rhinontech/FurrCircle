@@ -9,6 +9,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useFocusEffect } from "expo-router";
 import { userHomeApi } from "@/services/users/homeApi";
 import { userCommunityApi } from "@/services/users/communityApi";
+import { placesVetsApi } from "@/services/users/placesVetsApi";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { G, Path } from "react-native-svg";
 import Animated, { useSharedValue, useAnimatedStyle, useAnimatedScrollHandler, interpolate, Extrapolation } from 'react-native-reanimated';
@@ -79,6 +80,32 @@ export default function HomeScreen() {
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commentSubmitting, setCommentSubmitting] = useState(false);
+
+  const handleFindVetPress = useCallback(async () => {
+    const city = String(location.city || user?.city || "").trim();
+    if (!city) {
+      Alert.alert("Select your city", "Please allow location access or set your city in profile first.");
+      router.push("/vets" as any);
+      return;
+    }
+
+    try {
+      const cached = await placesVetsApi.getCachedByCity(city);
+      if (!cached?.items?.length) {
+        await placesVetsApi.refreshByCity({
+          city,
+          lat: location.latitude ?? undefined,
+          lng: location.longitude ?? undefined,
+          radiusMeters: 20000,
+          query: `vets in ${city}`,
+        });
+      }
+    } catch (e: any) {
+      Alert.alert("Couldn't fetch vets", e.message || "Please try again.");
+    }
+
+    router.push("/vets" as any);
+  }, [location.city, location.latitude, location.longitude, router, user?.city]);
 
   const reminderBgDark: Record<string, string> = {
     warning: "#2d1e00",
@@ -398,7 +425,7 @@ export default function HomeScreen() {
               <Text style={{ fontSize: 12, fontWeight: '500', color: '#10b981', textAlign: 'center' }}>Log Vaccine</Text>
             </Pressable>
             <Pressable
-              onPress={() => router.push("/vets" as any)}
+              onPress={handleFindVetPress}
               style={{ flex: 1, backgroundColor: colors.infoBg, borderRadius: 16, padding: 16, alignItems: 'center', gap: 8 }}
             >
               <Stethoscope size={22} color="#0ea5e9" />

@@ -11,8 +11,8 @@ import {
   Alert,
   Modal,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
 import { AppText as Text } from "@/components/ui/AppText";
+import LocationPickerMap from "@/components/LocationPickerMap";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
 import { ArrowLeft, Building2, Camera, Check, Clock3, FileText, Lock, Mail, MapPin, Navigation, Phone, Stethoscope, Trash2, User, Clock, Star, Shield } from "@/components/ui/IconCompat";
@@ -142,9 +142,7 @@ export default function EditProfileScreen() {
 
   const avatarSource = useMemo(() => (form.avatar ? { uri: form.avatar } : FALLBACK_AVATAR), [form.avatar]);
 
-  const setField = (field: keyof FormState, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }));
-  };
+  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) => setForm((current) => ({ ...current, [field]: value }));
 
   const pickAvatar = async () => {
     try {
@@ -502,33 +500,21 @@ export default function EditProfileScreen() {
           </View>
           <View style={{ flex: 1 }}>
             {isMapVisible && (
-              <MapView
-                style={{ flex: 1 }}
-                initialRegion={{
-                  latitude: tempLocation?.lat || form.latitude || 20.5937,
-                  longitude: tempLocation?.lng || form.longitude || 78.9629,
-                  latitudeDelta: 0.05,
-                  longitudeDelta: 0.05,
-                }}
-                onPress={(e) => setTempLocation({ lat: e.nativeEvent.coordinate.latitude, lng: e.nativeEvent.coordinate.longitude })}
-              >
-                {(tempLocation || form.latitude) && (
-                  <Marker
-                    coordinate={{
-                      latitude: tempLocation?.lat || form.latitude!,
-                      longitude: tempLocation?.lng || form.longitude!,
-                    }}
-                  />
-                )}
-              </MapView>
+              <LocationPickerMap
+                initialLatitude={tempLocation?.lat || form.latitude || 20.5937}
+                initialLongitude={tempLocation?.lng || form.longitude || 78.9629}
+                markerLatitude={tempLocation?.lat ?? form.latitude ?? undefined}
+                markerLongitude={tempLocation?.lng ?? form.longitude ?? undefined}
+                onPick={(lat, lng) => setTempLocation({ lat, lng })}
+              />
             )}
           </View>
           <View style={{ padding: 20, backgroundColor: colors.bgCard, borderTopWidth: 1, borderTopColor: colors.border }}>
             <Pressable
               onPress={async () => {
                 if (!tempLocation) return;
-                setField("latitude", tempLocation.lat as any);
-                setField("longitude", tempLocation.lng as any);
+                setField("latitude", tempLocation.lat);
+                setField("longitude", tempLocation.lng);
                 setIsMapVisible(false);
                 
                 // Reverse geocode
