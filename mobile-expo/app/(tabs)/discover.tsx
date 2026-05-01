@@ -6,6 +6,9 @@ import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { userDiscoverApi } from "@/services/users/discoverApi";
+import { placesVetsApi } from "@/services/users/placesVetsApi";
+import { useLocation } from "@/contexts/LocationContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const categories = ["All", "Vets", "Adoption", "Foster"];
 
@@ -24,6 +27,8 @@ function EmptyPlaceholder({ icon: Icon, title, description, colors }: any) {
 export default function DiscoverScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { user } = useAuth();
+  const { location } = useLocation();
   const { category } = useLocalSearchParams<{ category?: string }>();
   const [active, setActive] = useState(category && categories.includes(category) ? category : "All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,9 +42,22 @@ export default function DiscoverScreen() {
 
   const fetchData = async () => {
     try {
-      const data = await userDiscoverApi.getDiscoverData();
-      setVets(data.vets);
-      setPets(data.pets);
+      const city = String(location.city || user?.city || "").trim();
+      const [discoverData, placesData] = await Promise.allSettled([
+        userDiscoverApi.getDiscoverData(),
+        city ? placesVetsApi.getCachedByCity(city) : Promise.resolve({ items: [] }),
+      ]);
+
+      const onboardedVets = discoverData.status === "fulfilled" ? (discoverData.value.vets || []) : [];
+      const placesVets = placesData.status === "fulfilled" ? ((placesData.value as any).items || []) : [];
+
+      // Merge: prefer onboarded vets first, then places vets (dedupe by id)
+      const onboardedIds = new Set(onboardedVets.map((v: any) => v.id));
+      const merged = [...onboardedVets, ...placesVets.filter((v: any) => !onboardedIds.has(v.id))];
+      setVets(merged);
+
+      const pets = discoverData.status === "fulfilled" ? (discoverData.value.pets || []) : [];
+      setPets(pets);
     } catch (error) {
       console.error("Error fetching discover data", error);
     } finally {
@@ -50,7 +68,7 @@ export default function DiscoverScreen() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [location.city, user?.city]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -100,7 +118,10 @@ export default function DiscoverScreen() {
     }
   };
 
-  const filteredVets = vets.filter(v => (v.clinic_name || v.name || "").toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredVets = vets
+    .filter(v => (v.clinic_name || v.name || "").toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
+    .slice(0, 3);
   const filteredPets = pets.filter(p => (p.name || "").toLowerCase().includes(searchQuery.toLowerCase()));
 
   const displayPets = filteredPets.filter(p => {
@@ -163,7 +184,7 @@ export default function DiscoverScreen() {
               <EmptyPlaceholder
                 icon={Stethoscope}
                 title="No clinics found"
-                description={searchQuery ? `We couldn't find any vets matching "${searchQuery}".` : "New veterinary clinics will be added to your area soon."}
+                description={searchQuery ? `We couldn't find any vets matching "${searchQuery}".` : "Tap \"Find Vet\" on the Home tab to load vets for your city."}
                 colors={colors}
               />
             ) : filteredVets.map((vet) => (
@@ -172,8 +193,8 @@ export default function DiscoverScreen() {
                 onPress={() => router.push(`/vets/${vet.id}` as any)}
                 style={{ backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 16, marginBottom: 12 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ width: 52, height: 52, borderRadius: 16, overflow: 'hidden', backgroundColor: colors.infoBg, alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  <View style={{ width: 52, height: 52, borderRadius: 16, overflow: 'hidden', backgroundColor: colors.infoBg, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {vet.avatar_url ? (
                       <Image source={{ uri: vet.avatar_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                     ) : (
@@ -184,19 +205,24 @@ export default function DiscoverScreen() {
                     <Text style={{ fontSize: 15, fontWeight: '700', color: colors.textPrimary }} numberOfLines={1}>
                       {vet.clinic_name || vet.name}
                     </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
-                      <MapPin size={13} color={colors.textMuted} />
-                      <Text style={{ fontSize: 13, color: colors.textMuted, marginLeft: 5, marginRight: 14 }} numberOfLines={1}>
-                        {vet.city || 'Nearby'}
-                      </Text>
-                      <Star size={13} color="#f59e0b" fill="#f59e0b" />
-                      <Text style={{ fontSize: 13, color: '#f59e0b', fontWeight: '700', marginLeft: 5 }}>
-                        {Number(vet.rating || 4.5).toFixed(1)}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
+                      <MapPin size={12} color={colors.textMuted} />
+                      <Text style={{ fontSize: 12, color: colors.textMuted, flex: 1 }} numberOfLines={1}>
+                        {vet.address || vet.city || 'Nearby'}
                       </Text>
                     </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
+                      <Star size={12} color="#f59e0b" fill="#f59e0b" />
+                      <Text style={{ fontSize: 12, color: '#f59e0b', fontWeight: '700' }}>
+                        {Number(vet.rating || 4.5).toFixed(1)}
+                      </Text>
+                      {vet.userRatingCount ? (
+                        <Text style={{ fontSize: 11, color: colors.textMuted }}>({vet.userRatingCount})</Text>
+                      ) : null}
+                    </View>
                   </View>
-                  <View style={{ backgroundColor: '#e0f2fe', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: '#bae6fd' }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#0369a1' }}>VET</Text>
+                  <View style={{ backgroundColor: '#e0f2fe', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: '#bae6fd', flexShrink: 0 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#0369a1' }}>VET</Text>
                   </View>
                 </View>
               </Pressable>

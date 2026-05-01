@@ -8,6 +8,7 @@ type LocationState = {
   longitude: number | null;
   address: string | null;
   city: string | null;
+  region: string | null;
 };
 
 interface LocationContextData {
@@ -15,7 +16,7 @@ interface LocationContextData {
   isLoading: boolean;
   errorMsg: string | null;
   fetchCurrentLocation: () => Promise<void>;
-  setManualLocation: (lat: number, lng: number, address: string, city?: string) => void;
+  setManualLocation: (lat: number, lng: number, address: string, city?: string, region?: string) => void;
   recentLocations: LocationState[];
 }
 
@@ -27,6 +28,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     longitude: null,
     address: null,
     city: null,
+    region: null,
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -54,7 +56,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
 
       let addressStr = 'Unknown Location';
-      let cityStr = null;
+      let cityStr: string | null = null;
+      let regionStr: string | null = null;
       if (geocode.length > 0) {
         const place = geocode[0];
         // e.g., "123 Main St, New York"
@@ -66,6 +69,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             addressStr = place.name || 'Unknown Location';
         }
         cityStr = place.city || null;
+        regionStr = place.region || null;
       }
 
       setLocation({
@@ -73,6 +77,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         longitude: lng,
         address: addressStr,
         city: cityStr,
+        region: regionStr,
       });
 
       // Save to local storage for next time
@@ -81,6 +86,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         longitude: lng,
         address: addressStr,
         city: cityStr,
+        region: regionStr,
       })).catch(() => {});
       
       if (isLoggedIn) {
@@ -100,12 +106,13 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const setManualLocation = (lat: number, lng: number, address: string, city?: string) => {
+  const setManualLocation = (lat: number, lng: number, address: string, city?: string, region?: string) => {
     const newLocation = {
       latitude: lat,
       longitude: lng,
       address,
       city: city || null,
+      region: region || null,
     };
     setLocation(newLocation);
     AsyncStorage.setItem('last_known_location', JSON.stringify(newLocation)).catch(() => {});

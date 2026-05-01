@@ -259,8 +259,22 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const handleResponse = useCallback((response: any) => {
-    const data = response.notification.request.content.data || {};
+    const rawData = response.notification?.request?.content?.data || {};
     
+    // Robust data extraction: iOS/FCM sometimes nests data under a 'data' or 'body' key
+    // or stringifies the entire payload.
+    let data = { ...rawData };
+    if (rawData.data && typeof rawData.data === 'object') {
+      data = { ...data, ...rawData.data };
+    } else if (rawData.body && typeof rawData.body === 'object') {
+      data = { ...data, ...rawData.body };
+    }
+
+    // Handle case where the entire data object is stringified (rare but happens in some FCM configs)
+    if (typeof rawData.data === 'string' && rawData.data.startsWith('{')) {
+      try { data = { ...data, ...JSON.parse(rawData.data) }; } catch {}
+    }
+
     // Log for debugging
     console.log('[NotificationContext] Handling response data:', JSON.stringify(data, null, 2));
 
@@ -273,11 +287,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     }
 
-    navigateFromNotification(router, {
-      actionType: typeof data.actionType === 'string' ? data.actionType : null,
-      actionPayload: typeof actionPayload === 'object' && actionPayload ? actionPayload as Record<string, unknown> : null,
-      relatedId: typeof data.relatedId === 'string' ? data.relatedId : undefined,
-    });
+    // On iOS, sometimes the navigation needs a tiny delay to ensure the router is fully ready 
+    // during a cold start, though usually handled by the provider mount timing.
+    const navigate = () => {
+      navigateFromNotification(router, {
+        actionType: typeof data.actionType === 'string' ? data.actionType : null,
+        actionPayload: typeof actionPayload === 'object' && actionPayload ? actionPayload as Record<string, unknown> : null,
+        relatedId: typeof data.relatedId === 'string' ? data.relatedId : (data.id ? String(data.id) : undefined),
+      });
+    };
+
+    if (Platform.OS === 'ios') {
+      setTimeout(navigate, 100);
+    } else {
+      navigate();
+    }
   }, [router]);
 
   useEffect(() => {

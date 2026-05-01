@@ -9,13 +9,20 @@ import {
   Linking,
   TextInput,
   Modal,
+  Platform,
 } from "react-native";
 import { AppText as Text } from "@/components/ui/AppText";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, Clock3, MapPin, Phone, Star, Stethoscope, Bookmark, MessageCircle, MessageSquarePlus } from "@/components/ui/IconCompat";
+import { ChevronLeft, Clock3, MapPin, Phone, Star, Stethoscope, Bell, Globe } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { userDiscoverApi } from "@/services/users/discoverApi";
+import { placesVetsApi } from "@/services/users/placesVetsApi";
+import { userRemindersApi } from "@/services/users/remindersApi";
+import { userPetsApi } from "@/services/users/petsApi";
+import { LinearGradient } from "expo-linear-gradient";
+import { PawPrint } from "@/components/ui/IconCompat";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Vet = {
   id: string;
@@ -23,197 +30,162 @@ type Vet = {
   clinic_name?: string;
   bio?: string;
   city?: string;
+  address?: string;
   phone?: string;
   rating?: number | string;
+  userRatingCount?: number;
   specialty?: string;
   avatar_url?: string;
   hours?: string;
+  googleMapsUri?: string;
 };
-
-type VetReview = {
-  id: string;
-  userId: string;
-  rating: number;
-  review?: string;
-  date?: string;
-  user?: { id: string; name?: string; avatar_url?: string };
-};
-
-const StarRating = ({
-  value,
-  onSelect,
-  size = 24,
-}: {
-  value: number;
-  onSelect?: (v: number) => void;
-  size?: number;
-}) => (
-  <View style={{ flexDirection: "row", gap: 4 }}>
-    {[1, 2, 3, 4, 5].map((star) => (
-      <Pressable key={star} onPress={() => onSelect?.(star)} disabled={!onSelect}>
-        <Star
-          size={size}
-          color="#f59e0b"
-          fill={star <= value ? "#f59e0b" : "transparent"}
-        />
-      </Pressable>
-    ))}
-  </View>
-);
 
 export default function VetDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { colors, isDark } = useTheme();
-  const { user } = useAuth();
-  const isOwner = user?.role !== "veterinarian";
+  const insets = useSafeAreaInsets();
+  useAuth();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(id || ""));
+  const isPlacesVet = Boolean(id) && !isUuid;
 
   const [vet, setVet] = useState<Vet | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saved, setSaved] = useState(false);
-  const [savingToggle, setSavingToggle] = useState(false);
-  const [startingChat, setStartingChat] = useState(false);
 
-  const [reviews, setReviews] = useState<VetReview[]>([]);
-  const [reviewsLoading, setReviewsLoading] = useState(true);
+  // Reminder modal state
+  const [reminderModal, setReminderModal] = useState(false);
+  const [reminderTitle, setReminderTitle] = useState("");
+  const [reminderDate, setReminderDate] = useState("");
+  const [reminderTime, setReminderTime] = useState("");
+  const [reminderReason, setReminderReason] = useState("");
+  const [reminderNote, setReminderNote] = useState("");
+  const [savingReminder, setSavingReminder] = useState(false);
 
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewRating, setReviewRating] = useState(0);
-  const [reviewText, setReviewText] = useState("");
-  const [submittingReview, setSubmittingReview] = useState(false);
+  // Pet selection
+  const [pets, setPets] = useState<any[]>([]);
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const [petsLoading, setPetsLoading] = useState(false);
+
+  const clinicName = vet?.clinic_name || vet?.name || "Vet Clinic";
 
   const handleCall = useCallback(async () => {
     if (!vet?.phone) {
-      Alert.alert("Phone unavailable", "This clinic does not have a phone number yet.");
+      Alert.alert("Phone unavailable", "This clinic does not have a phone number listed.");
       return;
     }
     const phoneNumber = vet.phone.replace(/[^\d+]/g, "");
-    const phoneUrls = [`telprompt:${phoneNumber}`, `tel:${phoneNumber}`];
     try {
-      for (const phoneUrl of phoneUrls) {
-        const supported = await Linking.canOpenURL(phoneUrl);
-        if (supported) {
-          await Linking.openURL(phoneUrl);
+      for (const url of [`telprompt:${phoneNumber}`, `tel:${phoneNumber}`]) {
+        if (await Linking.canOpenURL(url)) {
+          await Linking.openURL(url);
           return;
         }
       }
-
-      Alert.alert("Call Clinic", `Call ${vet.clinic_name || vet.name || "this clinic"} at ${vet.phone}.`);
+      Alert.alert("Call Clinic", `Call ${clinicName} at ${vet.phone}.`);
     } catch {
-      Alert.alert("Call Clinic", `Call ${vet.clinic_name || vet.name || "this clinic"} at ${vet.phone}.`);
+      Alert.alert("Call Clinic", `Call ${clinicName} at ${vet.phone}.`);
     }
-  }, [vet?.clinic_name, vet?.name, vet?.phone]);
+  }, [vet?.phone, clinicName]);
 
-  const handleBookVisit = () => {
-    if (!vet) return;
+  const handleOpenMaps = useCallback(async () => {
+    if (!vet?.googleMapsUri) return;
+    try {
+      await Linking.openURL(vet.googleMapsUri);
+    } catch {
+      Alert.alert("Could not open maps");
+    }
+  }, [vet?.googleMapsUri]);
 
-    router.push({
-      pathname: "/appointments/book",
-      params: {
-        vetId: vet.id,
-        vetName: vet.clinic_name || vet.name || "Vet Clinic",
-      },
-    } as any);
+  const openReminderModal = async () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setReminderTitle(`Vet visit at ${clinicName}`);
+    setReminderDate(tomorrow.toISOString().split("T")[0]);
+    setReminderTime("10:00");
+    setReminderReason("");
+    setReminderNote(vet?.address ? `📍 ${vet.address}` : "");
+    setSelectedPetId(null);
+    setReminderModal(true);
+
+    setPetsLoading(true);
+    try {
+      const data = await userPetsApi.listPets();
+      setPets(data || []);
+    } catch {
+      setPets([]);
+    } finally {
+      setPetsLoading(false);
+    }
   };
 
-  const handleMessageVet = async () => {
-    if (!vet || startingChat) return;
-
-    setStartingChat(true);
+  const handleSaveReminder = async () => {
+    if (!reminderTitle.trim()) {
+      Alert.alert("Title required", "Please enter a title for your reminder.");
+      return;
+    }
+    if (!reminderDate.trim()) {
+      Alert.alert("Date required", "Please enter a date (YYYY-MM-DD).");
+      return;
+    }
+    setSavingReminder(true);
     try {
-      const conversation = await userDiscoverApi.startPetInterestChat({
-        recipientId: vet.id,
-        recipientType: "vet",
-        title: vet.clinic_name || vet.name || "Vet Clinic",
+      const dateObj = new Date(`${reminderDate}T${reminderTime || "10:00"}:00`);
+      if (isNaN(dateObj.getTime())) {
+        Alert.alert("Invalid date", "Please enter a valid date in YYYY-MM-DD format.");
+        return;
+      }
+      const notes = [
+        reminderReason.trim() ? `Reason: ${reminderReason.trim()}` : "",
+        reminderNote.trim(),
+      ].filter(Boolean).join("\n");
+
+      await userRemindersApi.createReminder({
+        title: reminderTitle.trim(),
+        type: "appointment",
+        date: dateObj.toISOString(),
+        petId: selectedPetId || undefined,
+        notes: notes || undefined,
       });
-      router.push(`/community/chat/${conversation.id}` as any);
+
+      setReminderModal(false);
+      Alert.alert("Reminder Set! 🐾", `We'll remind you: "${reminderTitle.trim()}" on ${reminderDate}.`);
     } catch (e: any) {
-      Alert.alert("Unable to start chat", e.message || "Please try again in a moment.");
+      Alert.alert("Failed", e.message || "Could not save reminder. Try again.");
     } finally {
-      setStartingChat(false);
+      setSavingReminder(false);
     }
   };
 
   const fetchVet = useCallback(async () => {
     try {
-      const [match, status] = await Promise.all([
-        userDiscoverApi.getVetById(String(id)),
-        userDiscoverApi.getSaveStatus(String(id)).catch(() => false),
-      ]);
+      if (isPlacesVet) {
+        const details = await placesVetsApi.getPlaceDetails(String(id));
+        const phone = details.nationalPhoneNumber || details.internationalPhoneNumber || null;
+        const weekday = details.regularOpeningHours?.weekdayDescriptions;
+        const hours = Array.isArray(weekday) ? weekday.join("\n") : null;
+        setVet({
+          id: details.placeId,
+          name: details.name || undefined,
+          clinic_name: details.name || undefined,
+          address: details.address || undefined,
+          phone: phone || undefined,
+          rating: details.rating ?? undefined,
+          userRatingCount: details.userRatingCount ?? undefined,
+          hours: hours || undefined,
+          googleMapsUri: details.googleMapsUri || undefined,
+        });
+        return;
+      }
+      const match = await userDiscoverApi.getVetById(String(id));
       setVet(match || null);
-      setSaved(status);
     } catch {
       setVet(null);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, isPlacesVet]);
 
-  const fetchReviews = useCallback(async () => {
-    try {
-      const data = await userDiscoverApi.getVetReviews(String(id));
-      setReviews(data || []);
-    } catch {
-      // silently fail
-    } finally {
-      setReviewsLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    fetchVet();
-    fetchReviews();
-  }, [fetchVet, fetchReviews]);
-
-  const handleToggleSave = async () => {
-    if (!vet) return;
-    setSavingToggle(true);
-    try {
-      if (saved) {
-        await userDiscoverApi.unsaveVet(String(id));
-        setSaved(false);
-      } else {
-        await userDiscoverApi.saveVet(String(id));
-        setSaved(true);
-      }
-    } catch (e: any) {
-      Alert.alert("Error", e.message || "Could not update saved status.");
-    } finally {
-      setSavingToggle(false);
-    }
-  };
-
-  const handleSubmitReview = async () => {
-    if (reviewRating === 0) {
-      Alert.alert("Select a rating", "Please select 1–5 stars before submitting.");
-      return;
-    }
-    setSubmittingReview(true);
-    try {
-      const newReview = await userDiscoverApi.submitVetReview(
-        String(id),
-        reviewRating,
-        reviewText.trim()
-      );
-      setReviews((prev) => {
-        const without = prev.filter((r) => r.userId !== user?.id);
-        return [{ ...newReview, user: { id: user?.id || "", name: user?.name, avatar_url: user?.avatar } }, ...without];
-      });
-      setShowReviewModal(false);
-      setReviewRating(0);
-      setReviewText("");
-      // Update displayed vet rating
-      const allRatings = [...reviews.filter((r) => r.userId !== user?.id), newReview].map((r) => r.rating);
-      const avg = allRatings.reduce((s, v) => s + v, 0) / allRatings.length;
-      setVet((prev) => prev ? { ...prev, rating: Math.round(avg * 10) / 10 } : prev);
-    } catch (e: any) {
-      Alert.alert("Error", e.message || "Failed to submit review.");
-    } finally {
-      setSubmittingReview(false);
-    }
-  };
-
-  const myReview = reviews.find((r) => r.userId === user?.id);
+  useEffect(() => { fetchVet(); }, [fetchVet]);
 
   if (loading) {
     return (
@@ -233,234 +205,308 @@ export default function VetDetailsScreen() {
           <ChevronLeft size={22} color={colors.textPrimary} />
         </Pressable>
         <View style={{ backgroundColor: colors.bgCard, borderRadius: 24, borderWidth: 1, borderColor: colors.border, padding: 20 }}>
-          <Text style={{ fontSize: 20, fontWeight: "700", color: colors.textPrimary }}>Vet not found</Text>
+          <Text style={{ fontSize: 20, fontWeight: "700", color: colors.textPrimary }}>Clinic not found</Text>
           <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 8 }}>This clinic profile could not be loaded.</Text>
         </View>
       </View>
     );
   }
 
+  const rating = vet.rating ? Number(vet.rating) : null;
+  const hoursLines = vet.hours ? vet.hours.split("\n") : [];
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-        {/* Header */}
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
-          <Pressable
-            onPress={() => router.back()}
-            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center", marginRight: 14 }}
-          >
-            <ChevronLeft size={22} color={colors.textPrimary} />
-          </Pressable>
-          <Text style={{ fontSize: 22, fontWeight: "700", color: colors.textPrimary, flex: 1 }}>Vet Details</Text>
-          {isOwner && (
+      <View>
+
+        {/* Hero gradient header */}
+        <LinearGradient
+          colors={isDark ? ["#0f172a", "#1e3a8a"] : ["#dbeafe", "#eff6ff"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 24 }}
+        >
+          {/* Back button + clinic name in one row */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
             <Pressable
-              onPress={handleToggleSave}
-              disabled={savingToggle}
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
+              onPress={() => router.back()}
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.7)", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
             >
-              {savingToggle
-                ? <ActivityIndicator size="small" color={colors.brand} />
-                : <Bookmark size={20} color={colors.brand} fill={saved ? colors.brand : "transparent"} />
-              }
+              <ChevronLeft size={20} color={isDark ? "#fff" : colors.textPrimary} />
+            </Pressable>
+
+            {/* <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.8)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.9)", flexShrink: 0 }}>
+              {vet.avatar_url ? (
+                <Image source={{ uri: vet.avatar_url }} style={{ width: 56, height: 56, borderRadius: 18 }} resizeMode="cover" />
+              ) : (
+                <Stethoscope size={24} color={isDark ? "#60a5fa" : "#1d4ed8"} />
+              )}
+            </View> */}
+
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 18, fontWeight: "800", color: isDark ? "#fff" : "#1e3a8a", lineHeight: 24 }} numberOfLines={2}>
+                {clinicName}
+              </Text>
+              <Text style={{ fontSize: 12, color: isDark ? "#93c5fd" : "#3b82f6", marginTop: 2, fontWeight: "500" }}>
+                {vet.specialty || "General Veterinary Care"}
+              </Text>
+              {rating && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+                  <Star size={13} color="#f59e0b" fill="#f59e0b" />
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#f59e0b" }}>{rating.toFixed(1)}</Text>
+                  {vet.userRatingCount ? (
+                    <Text style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.5)" : "#64748b" }}>({vet.userRatingCount} reviews)</Text>
+                  ) : null}
+                </View>
+              )}
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* Info card */}
+        <View style={{ marginHorizontal: 20, marginTop: -16, backgroundColor: colors.bgCard, borderRadius: 24, borderWidth: 1, borderColor: colors.border, padding: 20, gap: 16 }}>
+
+          {/* Address */}
+          {(vet.address || vet.city) && (
+            <Pressable
+              onPress={vet.googleMapsUri ? handleOpenMaps : undefined}
+              style={{ flexDirection: "row", alignItems: "flex-start", gap: 14 }}
+            >
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#fef3c7", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <MapPin size={16} color="#d97706" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.textMuted, textTransform: "uppercase", marginBottom: 2 }}>Address</Text>
+                <Text style={{ fontSize: 14, color: colors.textPrimary, lineHeight: 20 }}>{vet.address || vet.city}</Text>
+                {vet.googleMapsUri && (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+                    <Globe size={12} color={colors.brand} />
+                    <Text style={{ fontSize: 12, color: colors.brand, fontWeight: "600" }}>Open in Maps</Text>
+                  </View>
+                )}
+              </View>
+            </Pressable>
+          )}
+
+          {/* Divider */}
+          {(vet.address || vet.city) && (vet.hours || vet.phone) && (
+            <View style={{ height: 1, backgroundColor: colors.border }} />
+          )}
+
+          {/* Hours */}
+          {vet.hours && (
+            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 14 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#f0fdf4", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Clock3 size={16} color="#16a34a" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.textMuted, textTransform: "uppercase", marginBottom: 4 }}>Hours</Text>
+                {hoursLines.map((line, i) => {
+                  const [day, ...rest] = line.split(":");
+                  const time = rest.join(":").trim();
+                  const isClosed = line.toLowerCase().includes("closed");
+                  const isToday = new Date().toLocaleDateString("en-US", { weekday: "long" }) === day.trim();
+                  return (
+                    <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 2 }}>
+                      <Text style={{ fontSize: 13, color: isToday ? colors.brand : colors.textSecondary, fontWeight: isToday ? "700" : "400" }}>
+                        {day}
+                      </Text>
+                      <Text style={{ fontSize: 13, color: isClosed ? colors.textMuted : (isToday ? colors.brand : colors.textSecondary), fontWeight: isToday ? "700" : "400" }}>
+                        {time || (isClosed ? "Closed" : "")}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* Divider */}
+          {vet.hours && vet.phone && <View style={{ height: 1, backgroundColor: colors.border }} />}
+
+          {/* Phone */}
+          {vet.phone && (
+            <Pressable onPress={handleCall} style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#eff6ff", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Phone size={16} color="#2563eb" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: colors.textMuted, textTransform: "uppercase", marginBottom: 2 }}>Phone</Text>
+                <Text style={{ fontSize: 14, color: colors.brand, fontWeight: "600" }}>{vet.phone}</Text>
+              </View>
             </Pressable>
           )}
         </View>
 
-        {/* Vet Profile Card */}
-        <View style={{ backgroundColor: colors.bgCard, borderRadius: 28, borderWidth: 1, borderColor: colors.border, padding: 20, marginBottom: 16 }}>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            {vet.avatar_url ? (
-              <Image source={{ uri: vet.avatar_url }} style={{ width: 72, height: 72, borderRadius: 20 }} resizeMode="cover" />
+        {/* Action buttons */}
+        <View style={{ marginHorizontal: 20, marginTop: 16, gap: 12 }}>
+          <Pressable
+            onPress={openReminderModal}
+            style={{ backgroundColor: colors.brand, borderRadius: 16, paddingVertical: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}
+          >
+            <Bell size={18} color="#fff" />
+            <Text style={{ fontSize: 15, fontWeight: "700", color: "#fff" }}>Set Appointment Reminder</Text>
+          </Pressable>
+
+          {vet.phone && (
+            <Pressable
+              onPress={handleCall}
+              style={{ backgroundColor: colors.bgCard, borderRadius: 16, paddingVertical: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderWidth: 1, borderColor: colors.border }}
+            >
+              <Phone size={18} color={colors.textPrimary} />
+              <Text style={{ fontSize: 15, fontWeight: "600", color: colors.textPrimary }}>Call Clinic</Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      {/* Set Reminder Bottom Sheet */}
+      <Modal visible={reminderModal} transparent animationType="slide" onRequestClose={() => setReminderModal(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }} onPress={() => setReminderModal(false)} />
+        <View style={{
+          position: "absolute", bottom: 0, left: 0, right: 0,
+          backgroundColor: colors.bgCard,
+          borderTopLeftRadius: 28, borderTopRightRadius: 28,
+          paddingBottom: Platform.OS === "ios" ? 40 : 28,
+          maxHeight: "90%",
+        }}>
+          {/* Handle */}
+          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: "center", marginTop: 12, marginBottom: 4 }} />
+
+          <ScrollView
+            contentContainerStyle={{ padding: 24, paddingTop: 16 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Header */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.brand + "15", alignItems: "center", justifyContent: "center" }}>
+                <Bell size={18} color={colors.brand} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 17, fontWeight: "700", color: colors.textPrimary }}>Set Appointment Reminder</Text>
+                <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>{clinicName}</Text>
+              </View>
+            </View>
+
+            {/* Pet selection */}
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 8 }}>For which pet?</Text>
+            {petsLoading ? (
+              <ActivityIndicator size="small" color={colors.brand} style={{ alignSelf: "flex-start", marginBottom: 14 }} />
+            ) : pets.length === 0 ? (
+              <View style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, padding: 12, marginBottom: 14, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <PawPrint size={16} color={colors.textMuted} />
+                <Text style={{ fontSize: 13, color: colors.textMuted }}>No pets found — reminder will be saved without a pet.</Text>
+              </View>
             ) : (
-              <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: colors.infoBg, alignItems: "center", justifyContent: "center" }}>
-                <Stethoscope size={28} color="#0ea5e9" />
-              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 10, paddingRight: 4 }}>
+                {pets.map((pet) => {
+                  const selected = selectedPetId === pet.id;
+                  return (
+                    <Pressable
+                      key={pet.id}
+                      onPress={() => setSelectedPetId(selected ? null : pet.id)}
+                      style={{
+                        flexDirection: "row", alignItems: "center", gap: 8,
+                        paddingHorizontal: 14, paddingVertical: 10,
+                        borderRadius: 14, borderWidth: 1.5,
+                        borderColor: selected ? colors.brand : colors.border,
+                        backgroundColor: selected ? colors.brand + "12" : colors.bgSubtle,
+                      }}
+                    >
+                      {pet.avatar_url ? (
+                        <Image source={{ uri: pet.avatar_url }} style={{ width: 28, height: 28, borderRadius: 8 }} resizeMode="cover" />
+                      ) : (
+                        <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: colors.bgCard, alignItems: "center", justifyContent: "center" }}>
+                          <PawPrint size={14} color={selected ? colors.brand : colors.textMuted} />
+                        </View>
+                      )}
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: selected ? colors.brand : colors.textPrimary }}>{pet.name}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
             )}
-            <View style={{ flex: 1, marginLeft: 16 }}>
-              <Text style={{ fontSize: 20, fontWeight: "700", color: colors.textPrimary }}>{vet.clinic_name || vet.name}</Text>
-              <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 4 }}>{vet.specialty || "General Veterinary Care"}</Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 }}>
-                <Star size={14} color="#f59e0b" fill="#f59e0b" />
-                <Text style={{ fontSize: 13, fontWeight: "600", color: "#f59e0b" }}>
-                  {vet.rating ? Number(vet.rating).toFixed(1) : "New"}
-                </Text>
-                <Text style={{ fontSize: 12, color: colors.textMuted }}>({reviews.length} reviews)</Text>
-              </View>
-            </View>
-          </View>
 
-          <Text style={{ fontSize: 14, lineHeight: 22, color: colors.textSecondary, marginTop: 18 }}>
-            {vet.bio || "A trusted local clinic focused on preventive care, checkups, and compassionate support for pets and families."}
-          </Text>
-
-          <View style={{ gap: 12, marginTop: 18 }}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MapPin size={16} color={colors.textMuted} />
-              <Text style={{ fontSize: 14, color: colors.textSecondary, marginLeft: 10 }}>{vet.city || "Nearby clinic"}</Text>
-            </View>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Clock3 size={16} color={colors.textMuted} />
-              <Text style={{ fontSize: 14, color: colors.textSecondary, marginLeft: 10 }}>{vet.hours || "8:00 AM - 6:00 PM"}</Text>
-            </View>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Phone size={16} color={colors.textMuted} />
-              <Text style={{ fontSize: 14, color: colors.textSecondary, marginLeft: 10 }}>{vet.phone || "Phone unavailable"}</Text>
-            </View>
-          </View>
-
-          {isOwner && (
-            <View style={{ gap: 12, marginTop: 24 }}>
-              <Pressable
-                onPress={handleBookVisit}
-                style={{ flex: 1, backgroundColor: colors.brand, borderRadius: 14, paddingVertical: 14, alignItems: "center" }}
-              >
-                <Text style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}>Book Visit</Text>
-              </Pressable>
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <Pressable
-                  onPress={handleMessageVet}
-                  disabled={startingChat}
-                  style={{ flex: 1, backgroundColor: colors.bgSubtle, borderRadius: 14, paddingVertical: 14, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, opacity: startingChat ? 0.65 : 1 }}
-                >
-                  {startingChat ? <ActivityIndicator size="small" color={colors.brand} /> : <MessageCircle size={16} color={colors.textPrimary} />}
-                  <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "700" }}>Message</Text>
-                </Pressable>
-                <Pressable
-                  onPress={handleCall}
-                  style={{ flex: 1, backgroundColor: colors.bgSubtle, borderRadius: 14, paddingVertical: 14, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8 }}
-                >
-                  <Phone size={16} color={colors.textPrimary} />
-                  <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "700" }}>Call</Text>
-                </Pressable>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Reviews Section */}
-        <View style={{ marginTop: 8 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <Text style={{ fontSize: 17, fontWeight: "700", color: colors.textPrimary }}>
-              Reviews
-            </Text>
-            {isOwner && (
-              <Pressable
-                onPress={() => setShowReviewModal(true)}
-                style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.brand + "15", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 }}
-              >
-                <MessageSquarePlus size={14} color={colors.brand} />
-                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.brand }}>
-                  {myReview ? "Edit Review" : "Write Review"}
-                </Text>
-              </Pressable>
-            )}
-          </View>
-
-          {reviewsLoading ? (
-            <ActivityIndicator size="small" color={colors.brand} />
-          ) : reviews.length === 0 ? (
-            <View style={{ padding: 24, borderRadius: 16, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, alignItems: "center", gap: 8 }}>
-              <Star size={28} color={colors.textMuted} />
-              <Text style={{ fontSize: 14, color: colors.textMuted, textAlign: "center" }}>
-                No reviews yet. Be the first to share your experience!
-              </Text>
-            </View>
-          ) : (
-            <View style={{ gap: 12 }}>
-              {reviews.map((r) => (
-                <View
-                  key={r.id}
-                  style={{ backgroundColor: colors.bgCard, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 16 }}
-                >
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                    {r.user?.avatar_url ? (
-                      <Image source={{ uri: r.user.avatar_url }} style={{ width: 36, height: 36, borderRadius: 10 }} resizeMode="cover" />
-                    ) : (
-                      <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center" }}>
-                        <Text style={{ fontSize: 14, fontWeight: "700", color: colors.textMuted }}>
-                          {r.user?.name?.[0]?.toUpperCase() || "?"}
-                        </Text>
-                      </View>
-                    )}
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: "700", color: colors.textPrimary }}>
-                        {r.user?.name || "Anonymous"}
-                        {r.userId === user?.id && (
-                          <Text style={{ fontSize: 12, color: colors.brand }}> (You)</Text>
-                        )}
-                      </Text>
-                      <StarRating value={r.rating} size={13} />
-                    </View>
-                    {r.date && (
-                      <Text style={{ fontSize: 12, color: colors.textMuted }}>{r.date}</Text>
-                    )}
-                  </View>
-                  {r.review ? (
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 20 }}>
-                      {r.review}
-                    </Text>
-                  ) : null}
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-      </ScrollView>
-
-      {/* Review Modal */}
-      <Modal visible={showReviewModal} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: "#00000070", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 40 }}>
-            <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary, marginBottom: 20 }}>
-              {myReview ? "Update Your Review" : "Write a Review"}
-            </Text>
-
-            <Text style={{ fontSize: 13, fontWeight: "600", color: colors.textSecondary, marginBottom: 10 }}>Your Rating</Text>
-            <View style={{ marginBottom: 20 }}>
-              <StarRating value={reviewRating} onSelect={setReviewRating} size={32} />
-            </View>
-
-            <Text style={{ fontSize: 13, fontWeight: "600", color: colors.textSecondary, marginBottom: 8 }}>Comments (optional)</Text>
+            {/* Title */}
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Title</Text>
             <TextInput
-              value={reviewText}
-              onChangeText={setReviewText}
-              placeholder="Share your experience with this vet..."
+              value={reminderTitle}
+              onChangeText={setReminderTitle}
+              placeholder="e.g. Vet visit at Sunrise Clinic"
               placeholderTextColor={colors.textMuted}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              style={{
-                backgroundColor: colors.bg,
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 14,
-                padding: 14,
-                fontSize: 14,
-                color: colors.textPrimary,
-                minHeight: 100,
-                marginBottom: 20,
-              }}
+              style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.textPrimary, marginBottom: 14 }}
             />
 
+            {/* Reason */}
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Reason for visit</Text>
+            <TextInput
+              value={reminderReason}
+              onChangeText={setReminderReason}
+              placeholder="e.g. Annual checkup, vaccination, injury..."
+              placeholderTextColor={colors.textMuted}
+              style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.textPrimary, marginBottom: 14 }}
+            />
+
+            {/* Date + Time */}
+            <View style={{ flexDirection: "row", gap: 12, marginBottom: 14 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Date</Text>
+                <TextInput
+                  value={reminderDate}
+                  onChangeText={setReminderDate}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="numeric"
+                  style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.textPrimary }}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Time</Text>
+                <TextInput
+                  value={reminderTime}
+                  onChangeText={setReminderTime}
+                  placeholder="HH:MM"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="numeric"
+                  style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.textPrimary }}
+                />
+              </View>
+            </View>
+
+            {/* Note */}
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Note (optional)</Text>
+            <TextInput
+              value={reminderNote}
+              onChangeText={setReminderNote}
+              placeholder="Any extra notes..."
+              placeholderTextColor={colors.textMuted}
+              multiline
+              numberOfLines={2}
+              textAlignVertical="top"
+              style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.textPrimary, minHeight: 60, marginBottom: 20 }}
+            />
+
+            {/* Buttons */}
             <View style={{ flexDirection: "row", gap: 12 }}>
               <Pressable
-                onPress={() => setShowReviewModal(false)}
+                onPress={() => setReminderModal(false)}
                 style={{ flex: 1, backgroundColor: colors.bgSubtle, borderRadius: 14, paddingVertical: 14, alignItems: "center" }}
               >
-                <Text style={{ fontSize: 14, fontWeight: "700", color: colors.textSecondary }}>Cancel</Text>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textSecondary }}>Cancel</Text>
               </Pressable>
               <Pressable
-                onPress={handleSubmitReview}
-                disabled={submittingReview || reviewRating === 0}
-                style={{ flex: 2, backgroundColor: colors.brand, borderRadius: 14, paddingVertical: 14, alignItems: "center", opacity: submittingReview || reviewRating === 0 ? 0.6 : 1 }}
+                onPress={handleSaveReminder}
+                disabled={savingReminder}
+                style={{ flex: 2, backgroundColor: colors.brand, borderRadius: 14, paddingVertical: 14, alignItems: "center", opacity: savingReminder ? 0.7 : 1 }}
               >
-                {submittingReview
+                {savingReminder
                   ? <ActivityIndicator color="#fff" />
-                  : <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Submit Review</Text>
+                  : <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Save Reminder</Text>
                 }
               </Pressable>
             </View>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </View>

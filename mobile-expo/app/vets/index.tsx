@@ -4,7 +4,9 @@ import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import { ChevronLeft, Search, Stethoscope, MapPin, Star, ChevronRight, Check } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
-import { userDiscoverApi } from "@/services/users/discoverApi";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "@/contexts/LocationContext";
+import { placesVetsApi, type PlacesVetLite } from "@/services/users/placesVetsApi";
 
 type SortKey = "default" | "alpha_asc" | "alpha_desc" | "rating" | "distance";
 
@@ -19,23 +21,33 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 export default function AllVetsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const [vets, setVets] = useState<any[]>([]);
+  const { user } = useAuth();
+  const { location } = useLocation();
+  const [vets, setVets] = useState<PlacesVetLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("default");
   const [sortOpen, setSortOpen] = useState(false);
 
+  const cityLabel = String(location.city || user?.city || "").trim();
   useEffect(() => {
-    userDiscoverApi.getDiscoverData()
-      .then(data => setVets(data.vets || []))
+    if (!cityLabel) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    placesVetsApi.getCachedByCity(cityLabel)
+      .then((data) => setVets(data.items || []))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [cityLabel]);
 
   const sorted = useMemo(() => {
     const filtered = vets.filter(v =>
       (v.clinic_name || v.name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (v.city || "").toLowerCase().includes(search.toLowerCase())
+      (v.city || "").toLowerCase().includes(search.toLowerCase()) ||
+      (v.address || "").toLowerCase().includes(search.toLowerCase())
     );
     switch (sortKey) {
       case "alpha_asc":
@@ -119,10 +131,10 @@ export default function AllVetsScreen() {
               onPress={() => router.push(`/vets/${vet.id}` as any)}
               style={{ backgroundColor: colors.bgCard, borderRadius: 20, borderWidth: 1, borderColor: colors.border, padding: 16, marginBottom: 12 }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <View style={{ width: 52, height: 52, borderRadius: 16, overflow: "hidden", backgroundColor: colors.infoBg, alignItems: "center", justifyContent: "center", marginRight: 14 }}>
-                  {vet.avatar_url ? (
-                    <Image source={{ uri: vet.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+                <View style={{ width: 52, height: 52, borderRadius: 16, overflow: "hidden", backgroundColor: colors.infoBg, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {(vet as any).avatar_url ? (
+                    <Image source={{ uri: (vet as any).avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
                   ) : (
                     <Stethoscope size={22} color="#0ea5e9" />
                   )}
@@ -131,21 +143,22 @@ export default function AllVetsScreen() {
                   <Text style={{ fontSize: 15, fontWeight: "700", color: colors.textPrimary }} numberOfLines={1}>
                     {vet.clinic_name || vet.name}
                   </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, gap: 12 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                      <MapPin size={12} color={colors.textMuted} />
-                      <Text style={{ fontSize: 12, color: colors.textMuted }} numberOfLines={1}>{vet.city || "Nearby"}</Text>
-                    </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                      <Star size={12} color="#f59e0b" fill="#f59e0b" />
-                      <Text style={{ fontSize: 12, color: "#f59e0b", fontWeight: "700" }}>{Number(vet.rating || 4.5).toFixed(1)}</Text>
-                    </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4, gap: 4 }}>
+                    <MapPin size={12} color={colors.textMuted} />
+                    <Text style={{ fontSize: 12, color: colors.textMuted, flex: 1 }} numberOfLines={1}>{vet.address || vet.city || "Nearby"}</Text>
                   </View>
-                  {vet.specialty && (
-                    <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 3 }} numberOfLines={1}>{vet.specialty}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4, gap: 4 }}>
+                    <Star size={12} color="#f59e0b" fill="#f59e0b" />
+                    <Text style={{ fontSize: 12, color: "#f59e0b", fontWeight: "700" }}>{Number(vet.rating || 4.5).toFixed(1)}</Text>
+                    {vet.userRatingCount ? (
+                      <Text style={{ fontSize: 11, color: colors.textMuted }}>({vet.userRatingCount})</Text>
+                    ) : null}
+                  </View>
+                  {!!(vet as any).specialty && (
+                    <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 3 }} numberOfLines={1}>{(vet as any).specialty}</Text>
                   )}
                 </View>
-                <View style={{ backgroundColor: "#e0f2fe", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "#bae6fd" }}>
+                <View style={{ backgroundColor: "#e0f2fe", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "#bae6fd", flexShrink: 0 }}>
                   <Text style={{ fontSize: 11, fontWeight: "700", color: "#0369a1" }}>VET</Text>
                 </View>
               </View>

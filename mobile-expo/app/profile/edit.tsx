@@ -11,11 +11,13 @@ import {
   Alert,
   Modal,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
 import { AppText as Text } from "@/components/ui/AppText";
+import LocationPickerMap from "@/components/LocationPickerMap";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
-import { ArrowLeft, Building2, Camera, Check, Clock3, FileText, Lock, Mail, MapPin, Navigation, Phone, Stethoscope, Trash2, User } from "@/components/ui/IconCompat";
+import { ArrowLeft, Building2, Camera, Check, Clock3, FileText, Lock, Mail, MapPin, Navigation, Phone, Stethoscope, Trash2, User, Clock, Star, Shield } from "@/components/ui/IconCompat";
+import { LinearGradient } from "expo-linear-gradient";
+import { CustomPawPrint } from "../(tabs)/index";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth, type User as AuthUser } from "../../contexts/AuthContext";
 import { pickAndUploadImage } from "@/services/uploadApi";
@@ -140,9 +142,7 @@ export default function EditProfileScreen() {
 
   const avatarSource = useMemo(() => (form.avatar ? { uri: form.avatar } : FALLBACK_AVATAR), [form.avatar]);
 
-  const setField = (field: keyof FormState, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }));
-  };
+  const setField = <K extends keyof FormState>(field: K, value: FormState[K]) => setForm((current) => ({ ...current, [field]: value }));
 
   const pickAvatar = async () => {
     try {
@@ -267,27 +267,76 @@ export default function EditProfileScreen() {
         </View>
 
         <View style={{ paddingHorizontal: 20 }}>
-          {/* Avatar hero */}
-          <View style={{ backgroundColor: colors.heroBg, borderRadius: 28, padding: 24, marginBottom: 24 }}>
-            <View style={{ alignItems: "center" }}>
-              <Image source={avatarSource} style={{ width: 112, height: 112, borderRadius: 56, borderWidth: 3, borderColor: "rgba(255,255,255,0.18)" }} resizeMode="cover" />
-              <Text style={{ fontSize: 18, fontWeight: "700", color: "#fff", marginTop: 14 }}>{form.name || (isVet ? "Doctor profile" : "Your profile")}</Text>
-              <Text style={{ fontSize: 13, color: colors.heroSub, textAlign: "center", marginTop: 4 }}>
-                {isVet ? "A polished profile helps pet parents trust your practice faster." : "Add a photo and a few details so your profile feels complete."}
-              </Text>
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 18 }}>
-                <Pressable onPress={pickAvatar} disabled={uploadingAvatar} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, height: 42, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.14)", borderWidth: 1, borderColor: "rgba(255,255,255,0.16)", opacity: uploadingAvatar ? 0.7 : 1 }}>
-                  {uploadingAvatar ? <ActivityIndicator size="small" color="#fff" /> : <Camera size={18} color="#fff" />}
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#fff" }}>{uploadingAvatar ? "Uploading..." : "Choose Photo"}</Text>
-                </Pressable>
-                {!!form.avatar && (
-                  <Pressable onPress={removeAvatar} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, height: 42, borderRadius: 14, backgroundColor: "rgba(15,23,42,0.18)", borderWidth: 1, borderColor: "rgba(255,255,255,0.16)" }}>
-                    <Trash2 size={18} color="#fff" />
-                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#fff" }}>Remove</Text>
+          {/* Avatar hero - Modernized */}
+          <View style={{ borderRadius: 28, overflow: 'hidden', marginBottom: 24 }}>
+            <LinearGradient
+              colors={['#3b82f6', '#1e3a8a']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ padding: 24 }}
+            >
+              {/* Background Paw Prints */}
+              <CustomPawPrint size={100} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', right: -10, top: -10 }} />
+              <CustomPawPrint size={60} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', right: 40, bottom: 60 }} />
+
+              <View style={{ alignItems: "center" }}>
+                <View style={{ width: 112, height: 112, borderRadius: 56, backgroundColor: '#fff', padding: 3 }}>
+                  <View style={{ flex: 1, borderRadius: 53, overflow: 'hidden', backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}>
+                    <Image source={avatarSource} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  </View>
+                </View>
+
+                <Text style={{ fontSize: 20, fontWeight: "800", color: "#fff", marginTop: 14 }}>
+                  {form.name || (isVet ? "Doctor profile" : "Your profile")}
+                </Text>
+                
+                <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', textAlign: "center", marginTop: 6, lineHeight: 18, paddingHorizontal: 10 }}>
+                  {isVet ? "A polished profile helps pet parents trust your practice faster." : "Add a photo and a few details so your profile feels complete."}
+                </Text>
+
+                <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
+                  <Pressable 
+                    onPress={pickAvatar} 
+                    disabled={uploadingAvatar} 
+                    style={{ 
+                      flexDirection: "row", 
+                      alignItems: "center", 
+                      gap: 8, 
+                      paddingHorizontal: 18, 
+                      height: 44, 
+                      borderRadius: 14, 
+                      backgroundColor: "rgba(255,255,255,0.18)", 
+                      borderWidth: 1, 
+                      borderColor: "rgba(255,255,255,0.2)",
+                      opacity: uploadingAvatar ? 0.7 : 1 
+                    }}
+                  >
+                    {uploadingAvatar ? <ActivityIndicator size="small" color="#fff" /> : <Camera size={18} color="#fff" />}
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#fff" }}>{uploadingAvatar ? "Uploading..." : "Choose Photo"}</Text>
                   </Pressable>
-                )}
+                  
+                  {!!form.avatar && (
+                    <Pressable 
+                      onPress={removeAvatar} 
+                      style={{ 
+                        flexDirection: "row", 
+                        alignItems: "center", 
+                        gap: 8, 
+                        paddingHorizontal: 18, 
+                        height: 44, 
+                        borderRadius: 14, 
+                        backgroundColor: "rgba(15,23,42,0.25)", 
+                        borderWidth: 1, 
+                        borderColor: "rgba(255,255,255,0.2)" 
+                      }}
+                    >
+                      <Trash2 size={18} color="#fff" />
+                      <Text style={{ fontSize: 13, fontWeight: "700", color: "#fff" }}>Remove</Text>
+                    </Pressable>
+                  )}
+                </View>
               </View>
-            </View>
+            </LinearGradient>
           </View>
 
           {/* Basic details */}
@@ -451,33 +500,21 @@ export default function EditProfileScreen() {
           </View>
           <View style={{ flex: 1 }}>
             {isMapVisible && (
-              <MapView
-                style={{ flex: 1 }}
-                initialRegion={{
-                  latitude: tempLocation?.lat || form.latitude || 20.5937,
-                  longitude: tempLocation?.lng || form.longitude || 78.9629,
-                  latitudeDelta: 0.05,
-                  longitudeDelta: 0.05,
-                }}
-                onPress={(e) => setTempLocation({ lat: e.nativeEvent.coordinate.latitude, lng: e.nativeEvent.coordinate.longitude })}
-              >
-                {(tempLocation || form.latitude) && (
-                  <Marker
-                    coordinate={{
-                      latitude: tempLocation?.lat || form.latitude!,
-                      longitude: tempLocation?.lng || form.longitude!,
-                    }}
-                  />
-                )}
-              </MapView>
+              <LocationPickerMap
+                initialLatitude={tempLocation?.lat || form.latitude || 20.5937}
+                initialLongitude={tempLocation?.lng || form.longitude || 78.9629}
+                markerLatitude={tempLocation?.lat ?? form.latitude ?? undefined}
+                markerLongitude={tempLocation?.lng ?? form.longitude ?? undefined}
+                onPick={(lat, lng) => setTempLocation({ lat, lng })}
+              />
             )}
           </View>
           <View style={{ padding: 20, backgroundColor: colors.bgCard, borderTopWidth: 1, borderTopColor: colors.border }}>
             <Pressable
               onPress={async () => {
                 if (!tempLocation) return;
-                setField("latitude", tempLocation.lat as any);
-                setField("longitude", tempLocation.lng as any);
+                setField("latitude", tempLocation.lat);
+                setField("longitude", tempLocation.lng);
                 setIsMapVisible(false);
                 
                 // Reverse geocode
