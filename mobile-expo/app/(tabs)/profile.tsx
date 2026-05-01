@@ -18,6 +18,7 @@ import {
   Phone,
   Pencil,
   CalendarDays,
+  Instagram,
 } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -285,6 +286,91 @@ export default function ProfileScreen() {
                 trackColor={{ false: colors.border, true: colors.brand }}
                 thumbColor="#fff"
               />
+          </View>
+
+          {/* Linked Accounts Section */}
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: "700",
+              color: colors.textMuted,
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+              marginBottom: 16,
+            }}
+          >
+            Linked Accounts
+          </Text>
+          <View
+            style={{
+              backgroundColor: colors.bgCard,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: colors.border,
+              overflow: "hidden",
+              marginBottom: 24,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+              }}
+            >
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
+              >
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 12,
+                    backgroundColor: "#E1306C15",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Instagram size={20} color="#E1306C" />
+                </View>
+                <View>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color: colors.textPrimary,
+                    }}
+                  >
+                    Instagram
+                  </Text>
+                  <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                    {user?.instagramUserId 
+                      ? "Account synced and ready" 
+                      : "Sync for automatic posting"}
+                  </Text>
+                </View>
+              </View>
+              <Pressable
+                onPress={async () => {
+                  if (user?.instagramUserId) {
+                    // Show status or disconnect option
+                  } else {
+                    router.push("/(tabs)/community");
+                  }
+                }}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                  backgroundColor: user?.instagramUserId ? colors.bgSubtle : colors.brand,
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: "600", color: user?.instagramUserId ? colors.textSecondary : "#fff" }}>
+                  {user?.instagramUserId ? "Synced" : "Connect"}
+                </Text>
+              </Pressable>
             </View>
           </View>
 

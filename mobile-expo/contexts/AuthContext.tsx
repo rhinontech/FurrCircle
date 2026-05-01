@@ -29,6 +29,8 @@ export interface User {
   clinicStampUrl?: string;
   licenseNumber?: string;
   hasCompletedOnboarding?: boolean;
+  instagramSyncEnabled?: boolean;
+  avatar_url?: string;
 }
 
 type AuthPayload = User & {
@@ -36,7 +38,6 @@ type AuthPayload = User & {
   // Vet-specific API field names (backend uses these, we map → User fields)
   hospital_name?: string;
   profession?: string;
-  experience?: string | number;
   experience?: string | number;
   working_hours?: string;
   latitude?: number;

@@ -83,6 +83,19 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.DATE,
                 allowNull: true,
             },
+            instagramAccessToken: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            instagramUserId: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            instagramSyncEnabled: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
         },
         {
             tableName: "users",

@@ -3,6 +3,7 @@ import { Op } from "sequelize";
 import db from "../models/index.ts";
 import { createNotification, createRichNotification } from "../services/notificationService.ts";
 import { sendEmail } from "../services/emailService.ts";
+import { instagramService } from "../services/instagramService.ts";
 
 const toPlain = (value: any) => (value && typeof value.toJSON === "function" ? value.toJSON() : value);
 
@@ -262,9 +263,37 @@ export const createCommunityPost = async (req: any, res: Response): Promise<void
     });
 
     const resolveProfile = createProfileResolver();
+    const serializedPost = await serializePost(post, resolveProfile);
+
+    // Cross-post to Instagram if enabled
+    const { users: User } = db as any;
+    const user = await User.findByPk(req.user.id);
+    
+    if (user && user.instagramSyncEnabled && user.instagramAccessToken && user.instagramUserId) {
+      // Fire and forget so community post isn't delayed
+      (async () => {
+        try {
+          if (imageUrl) {
+            const signature = "\n\n@furrcircle #furrcircle\nCreated by FurrCircle";
+            await instagramService.publishPhoto(
+              user.instagramUserId,
+              user.instagramAccessToken,
+              imageUrl,
+              `${content}${signature}`
+            );
+          } else {
+            // Text only posts can be shared to stories as a simple visual or skipped
+            // For now, let's skip or handle via different logic if needed
+          }
+        } catch (error) {
+          console.error("Background Instagram cross-post failed:", error);
+        }
+      })();
+    }
+
     res.status(201).json({
       message: "Post published",
-      post: await serializePost(post, resolveProfile),
+      post: serializedPost,
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });

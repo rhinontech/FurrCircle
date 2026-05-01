@@ -66,4 +66,6 @@ export const userCommunityApi = {
     const chats = await api.get<any[]>('/community/chats');
     return (chats || []).map(normalizeConversation).filter(Boolean);
   },
+  connectInstagram: (accessToken: string) => api.post('/auth/instagram/connect', { accessToken }),
+  toggleInstagramSync: () => api.post('/auth/instagram/toggle-sync'),
 };

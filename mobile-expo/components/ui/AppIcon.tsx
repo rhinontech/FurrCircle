@@ -72,6 +72,7 @@ import {
   X,
   XCircle,
 } from "lucide-react-native";
+import { Instagram } from "./InstagramIcon";
 
 type AppIconName =
   | "activity"
@@ -110,6 +111,7 @@ type AppIconName =
   | "home"
   | "imagePlus"
   | "info"
+  | "instagram"
   | "key"
   | "lock"
   | "location"
@@ -216,6 +218,7 @@ const ICONS: Record<AppIconName, AppIconConfig> = {
   home: { ios: "house.fill", fallback: Home, scale: "medium", weight: "medium" },
   imagePlus: { ios: "photo.badge.plus", fallback: ImagePlus, scale: "medium", weight: "medium" },
   info: { ios: "info.circle", iosFilled: "info.circle.fill", fallback: Info, scale: "medium", weight: "medium" },
+  instagram: { ios: "camera", fallback: Instagram, scale: "medium", weight: "medium" },
   key: { ios: "key", iosFilled: "key.fill", fallback: Key, scale: "medium", weight: "medium" },
   lock: { ios: "lock", iosFilled: "lock.fill", fallback: Lock, scale: "medium", weight: "medium" },
   location: { ios: "mappin", iosFilled: "mappin.circle.fill", fallback: MapPin, scale: "medium", weight: "medium" },

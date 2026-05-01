@@ -67,6 +67,7 @@ export const History = makeCompatIcon("history");
 export const Home = makeCompatIcon("home");
 export const ImagePlus = makeCompatIcon("imagePlus");
 export const Info = makeCompatIcon("info");
+export const Instagram = makeCompatIcon("instagram");
 export const Key = makeCompatIcon("key");
 export const KeyRound = makeCompatIcon("key");
 export const LayoutDashboard = makeCompatIcon("dashboard");

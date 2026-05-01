@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { Op } from "sequelize";
 import db from "../models/index.ts";
 import { sendEmail } from "../services/emailService.ts";
+import { instagramService } from "../services/instagramService.ts";
 
 const SELF_SERVICE_USER_ROLES = new Set(["owner", "shelter"]);
 const PROFILE_IMAGE_FIELDS = ["avatar_url", "phone", "bio", "city", "address", "hasCompletedOnboarding"] as const;
@@ -431,6 +432,71 @@ export const changePassword = async (req: any, res: Response): Promise<void> => 
     await actor.save();
 
     res.json({ message: "Password changed successfully" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Connect Instagram account
+// @route   POST /api/auth/instagram/connect
+export const connectInstagram = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { users: User } = db as any;
+    const { accessToken: shortLivedToken } = req.body;
+
+    if (!shortLivedToken) {
+      res.status(400).json({ message: "Short-lived access token is required" });
+      return;
+    }
+
+    // 1. Exchange for long-lived token
+    const longLivedToken = await instagramService.getLongLivedToken(shortLivedToken);
+
+    // 2. Get Instagram Business Account ID
+    const igUserId = await instagramService.getInstagramBusinessAccountId(longLivedToken);
+
+    // 3. Save to user
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    user.instagramAccessToken = longLivedToken;
+    user.instagramUserId = igUserId;
+    user.instagramSyncEnabled = true;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Instagram connected successfully",
+      instagramSyncEnabled: user.instagramSyncEnabled
+    });
+  } catch (error: any) {
+    console.error('Instagram connection error:', error);
+    res.status(500).json({ message: error.message || "Failed to connect Instagram" });
+  }
+};
+
+// @desc    Toggle Instagram auto-sync
+// @route   POST /api/auth/instagram/toggle-sync
+export const toggleInstagramSync = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { users: User } = db as any;
+    const user = await User.findByPk(req.user.id);
+
+    if (!user || !user.instagramAccessToken) {
+      res.status(400).json({ message: "Instagram account not connected" });
+      return;
+    }
+
+    user.instagramSyncEnabled = !user.instagramSyncEnabled;
+    await user.save();
+
+    res.json({
+      success: true,
+      instagramSyncEnabled: user.instagramSyncEnabled
+    });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
