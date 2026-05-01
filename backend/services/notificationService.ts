@@ -186,7 +186,12 @@ const sendPushToActor = async (
           aps: {
             sound: 'default',
             badge: 1,
+            'mutable-content': 1,
           },
+          // Explicitly include data in APNs payload root for iOS reliability
+          category,
+          actionType: actionType || "",
+          actionPayload: JSON.stringify(actionPayload || {}),
         },
       },
     }));
@@ -297,16 +302,16 @@ export const createRichNotification = async ({
 
     let push: PushSendResult | null = null;
     if (sendPush) {
-      push = await sendPushToActor(
-        actorId,
-        actorType,
-        title,
-        message,
-        (actionType ?? fallbackAction.actionType) || null,
-        actionPayload ?? fallbackAction.actionPayload,
-        category,
+        push = await sendPushToActor(
+          actorId,
+          actorType,
+          title,
+          message,
+          (actionType ?? fallbackAction.actionType) || null,
+          actionPayload ?? fallbackAction.actionPayload,
+          category,
         respectMarketingPreference
-      );
+        );
     }
 
     return {

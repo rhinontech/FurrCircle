@@ -46,8 +46,12 @@ export default function OtpVerifyScreen() {
   const [isResending, setIsResending] = useState(false);
 
   // 1. Send OTP on mount
+  const hasSentInitialOtp = useRef(false);
   useEffect(() => {
-    sendOtp();
+    if (!hasSentInitialOtp.current) {
+      sendOtp();
+      hasSentInitialOtp.current = true;
+    }
   }, []);
 
   // 2. Timer logic
@@ -59,7 +63,13 @@ export default function OtpVerifyScreen() {
     return () => clearInterval(interval);
   }, [timer]);
 
+  const isSendingRef = useRef(false);
   const sendOtp = async () => {
+    if (isSendingRef.current) {
+      console.log("OTP send already in progress, skipping...");
+      return;
+    }
+
     const auth = getFirebaseAuth();
     if (!auth) {
       Alert.alert("Warning", "Phone verification is not available in Expo Go. Please use a Development Build.");
@@ -67,9 +77,14 @@ export default function OtpVerifyScreen() {
     }
 
     try {
+      console.log(`Requesting OTP for: ${phone}`);
       setLoading(true);
       setIsResending(true);
+      isSendingRef.current = true;
+      
       const confirmation = await auth().signInWithPhoneNumber(phone as string);
+      
+      console.log("OTP sent successfully, session created.");
       setConfirm(confirmation);
       setTimer(60);
       setCode("");
@@ -80,10 +95,14 @@ export default function OtpVerifyScreen() {
     } finally {
       setLoading(false);
       setIsResending(false);
+      isSendingRef.current = false;
     }
   };
 
+  const isVerifyingRef = useRef(false);
   const handleVerify = async () => {
+    if (isVerifyingRef.current) return;
+    
     if (code.length !== 6) {
       Alert.alert("Error", "Please enter the 6-digit code");
       return;
@@ -95,9 +114,12 @@ export default function OtpVerifyScreen() {
     }
 
     setLoading(true);
+    isVerifyingRef.current = true;
     try {
+      console.log("Attempting to verify code...");
       // A. Verify Firebase Code
       await confirm.confirm(code);
+      console.log("Firebase verification successful!");
 
       // B. Verification Success! Now register in our backend
       try {
@@ -109,22 +131,24 @@ export default function OtpVerifyScreen() {
           { ...extra, phone: phone as string, phone_number: phone as string }
         );
       } catch (regError: any) {
+        console.error("Backend Registration Error:", regError);
         Alert.alert("Registration Failed", regError.message || "Could not create your account. Please try again.");
       }
-      // Navigation is handled by AuthContext (redirects on login success)
     } catch (error: any) {
-      const code = error?.code || "";
-      if (code.includes("invalid-verification-code")) {
+      console.error("Verification Error:", error);
+      const errorCode = error?.code || "";
+      if (errorCode.includes("invalid-verification-code")) {
         Alert.alert("Wrong Code", "The code you entered is incorrect. Please try again.");
-      } else if (code.includes("code-expired") || code.includes("session-expired")) {
+      } else if (errorCode.includes("code-expired") || errorCode.includes("session-expired")) {
         Alert.alert("Code Expired", "This code has expired. Please request a new one.");
-      } else if (code.includes("too-many-requests")) {
+      } else if (errorCode.includes("too-many-requests")) {
         Alert.alert("Too Many Attempts", "Too many failed attempts. Please wait a few minutes before trying again.");
       } else {
         Alert.alert("Verification Failed", "The code you entered is invalid or has expired.");
       }
     } finally {
       setLoading(false);
+      isVerifyingRef.current = false;
     }
   };
 
