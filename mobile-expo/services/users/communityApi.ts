@@ -68,4 +68,5 @@ export const userCommunityApi = {
   },
   connectInstagram: (accessToken: string) => api.post('/auth/instagram/connect', { accessToken }),
   toggleInstagramSync: () => api.post('/auth/instagram/toggle-sync'),
+  disconnectInstagram: () => api.delete('/auth/instagram/disconnect'),
 };

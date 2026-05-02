@@ -30,6 +30,7 @@ export interface User {
   licenseNumber?: string;
   hasCompletedOnboarding?: boolean;
   instagramSyncEnabled?: boolean;
+  instagramUserId?: string;
   avatar_url?: string;
 }
 
@@ -129,6 +130,8 @@ const toUser = (data: AuthPayload): User => ({
   petCount: data.petCount,
   rating: data.rating,
   avatar: data.avatar_url ?? data.avatar,
+  instagramUserId: (data as any).instagramUserId,
+  instagramSyncEnabled: (data as any).instagramSyncEnabled,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {

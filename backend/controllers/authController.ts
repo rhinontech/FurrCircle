@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import axios from "axios";
 import { Op } from "sequelize";
 import db from "../models/index.ts";
 import { sendEmail } from "../services/emailService.ts";
@@ -497,6 +498,79 @@ export const toggleInstagramSync = async (req: any, res: Response): Promise<void
       success: true,
       instagramSyncEnabled: user.instagramSyncEnabled
     });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Handle Facebook OAuth callback, exchange code → tokens, save to user
+// @route   GET /api/auth/instagram/callback
+export const instagramOAuthCallback = async (req: Request, res: Response): Promise<void> => {
+  const { code, state: jwtToken, error: oauthError } = req.query as Record<string, string>;
+  const deepLink = 'furrcircle://instagram-callback';
+
+  if (oauthError || !code) {
+    const msg = encodeURIComponent(oauthError || 'Access denied');
+    res.redirect(`${deepLink}?success=false&error=${msg}`);
+    return;
+  }
+
+  try {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) throw new Error('JWT_SECRET not configured');
+
+    const decoded = jwt.verify(jwtToken, secret) as { id: string };
+    const { users: User } = db as any;
+    const user = await User.findByPk(decoded.id);
+    if (!user) throw new Error('User not found');
+
+    // Exchange authorization code for short-lived user token
+    const tokenRes = await axios.get('https://graph.facebook.com/v17.0/oauth/access_token', {
+      params: {
+        client_id: process.env.INSTAGRAM_APP_ID,
+        client_secret: process.env.INSTAGRAM_APP_SECRET,
+        redirect_uri: process.env.INSTAGRAM_REDIRECT_URI,
+        code,
+      },
+    });
+    const shortLivedToken: string = tokenRes.data.access_token;
+
+    // Exchange for 60-day long-lived token
+    const longLivedToken = await instagramService.getLongLivedToken(shortLivedToken);
+
+    // Resolve linked Instagram Business Account ID
+    const igUserId = await instagramService.getInstagramBusinessAccountId(longLivedToken);
+
+    user.instagramAccessToken = longLivedToken;
+    user.instagramUserId = igUserId;
+    user.instagramSyncEnabled = true;
+    await user.save();
+
+    res.redirect(`${deepLink}?success=true`);
+  } catch (err: any) {
+    console.error('Instagram OAuth callback error:', err.response?.data || err.message);
+    const msg = encodeURIComponent(err.message || 'Connection failed');
+    res.redirect(`${deepLink}?success=false&error=${msg}`);
+  }
+};
+
+// @desc    Disconnect Instagram account
+// @route   DELETE /api/auth/instagram/disconnect
+export const disconnectInstagram = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { users: User } = db as any;
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    user.instagramAccessToken = null;
+    user.instagramUserId = null;
+    user.instagramSyncEnabled = false;
+    await user.save();
+
+    res.json({ success: true, message: 'Instagram disconnected' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

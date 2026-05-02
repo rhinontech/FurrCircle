@@ -8,6 +8,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import EventCard from "../../components/ui/EventCard";
 import { useAuth } from "../../contexts/AuthContext";
 import { userCommunityApi } from "@/services/users/communityApi";
+import { useInstagramOAuth } from "../../hooks/useInstagramOAuth";
 import { pickAndUploadImage } from "@/services/uploadApi";
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
@@ -44,8 +45,9 @@ const formatEvents = (eventsData: any[]) =>
 
 export default function CommunityScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { colors } = useTheme();
+  const { connectInstagram } = useInstagramOAuth();
 
   const [activeCategory, setActiveCategory] = useState("All");
   const [posts, setPosts] = useState<any[]>([]);
@@ -200,15 +202,8 @@ export default function CommunityScreen() {
   const handleConfirmSync = async () => {
     try {
       setSubmitting(true);
-      // NOTE: In a real app, you would use Facebook SDK here to get the short-lived token
-      const mockShortLivedToken = "EAAbwZA..."; 
-      
-      await userCommunityApi.connectInstagram(mockShortLivedToken);
-      await refreshUser(); // Refresh user state from backend
       setShowSharePrompt(false);
-      Alert.alert("Success", "Instagram account synced! Your posts will now be shared automatically.");
-    } catch (error: any) {
-      Alert.alert("Connection Failed", error.message || "Could not link Instagram account.");
+      await connectInstagram();
     } finally {
       setSubmitting(false);
     }
