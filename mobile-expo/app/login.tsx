@@ -30,9 +30,27 @@ export default function LoginScreen() {
   const selectedRole = "owner" as UserRole;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  // OTP is only for development builds / production, not Expo Go
+  const [isOtpMode, setIsOtpMode] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (isOtpMode) {
+      if (!phone || phone.length !== 10) {
+        Alert.alert("Error", "Please enter a valid 10-digit phone number");
+        return;
+      }
+      router.push({
+        pathname: "/otp-verify",
+        params: {
+          phone: `+91${phone.trim()}`,
+          type: 'login',
+        },
+      });
+      return;
+    }
+
     if (!email || !password) {
       Alert.alert("Error", "Please fill in all fields");
       return;
@@ -113,58 +131,106 @@ export default function LoginScreen() {
             }}
           >
             {/* Section label */}
-            <Text style={{ fontSize: 13, fontWeight: "700", color: colors.textMuted, marginBottom: 20, textTransform: "uppercase", letterSpacing: 0.8 }}>
-              Sign In
-            </Text>
-
-            {/* Email */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: colors.bgCard,
-                borderWidth: 1.5,
-                borderColor: colors.border,
-                borderRadius: 16,
-                paddingHorizontal: 16,
-                marginBottom: 12,
-              }}
-            >
-              <Mail size={18} color={colors.textMuted} />
-              <TextInput
-                placeholder="Email address"
-                placeholderTextColor={colors.textMuted}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={{ flex: 1, height: 54, marginLeft: 12, fontSize: 15, color: colors.textPrimary }}
-              />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ fontSize: 13, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                Sign In
+              </Text>
             </View>
 
-            {/* Password */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: colors.bgCard,
-                borderWidth: 1.5,
-                borderColor: colors.border,
-                borderRadius: 16,
-                paddingHorizontal: 16,
-                marginBottom: 10,
-              }}
-            >
-              <Lock size={18} color={colors.textMuted} />
-              <TextInput
-                placeholder="Password"
-                placeholderTextColor={colors.textMuted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                style={{ flex: 1, height: 54, marginLeft: 12, fontSize: 15, color: colors.textPrimary }}
-              />
-            </View>
+            {isOtpMode ? (
+              /* Phone Number Input for OTP Mode */
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: colors.bgCard,
+                  borderWidth: 1.5,
+                  borderColor: colors.border,
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  marginBottom: 20,
+                }}
+              >
+                <View
+                  style={{
+                    paddingHorizontal: 16,
+                    height: 54,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    borderRightWidth: 1,
+                    borderRightColor: colors.border,
+                    backgroundColor: colors.bgSubtle,
+                  }}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.textPrimary }}>
+                    +91
+                  </Text>
+                </View>
+                <TextInput
+                  placeholder="98765 43210"
+                  placeholderTextColor={colors.textMuted}
+                  value={phone}
+                  onChangeText={(text) => {
+                    const cleaned = text.replace(/[^0-9]/g, "");
+                    if (cleaned.length <= 10) setPhone(cleaned);
+                  }}
+                  keyboardType="number-pad"
+                  maxLength={10}
+                  style={{ flex: 1, height: 54, paddingHorizontal: 14, fontSize: 15, color: colors.textPrimary }}
+                />
+              </View>
+            ) : (
+              <>
+                {/* Email */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: colors.bgCard,
+                    borderWidth: 1.5,
+                    borderColor: colors.border,
+                    borderRadius: 16,
+                    paddingHorizontal: 16,
+                    marginBottom: 12,
+                  }}
+                >
+                  <Mail size={18} color={colors.textMuted} />
+                  <TextInput
+                    placeholder="Email address"
+                    placeholderTextColor={colors.textMuted}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    style={{ flex: 1, height: 54, marginLeft: 12, fontSize: 15, color: colors.textPrimary }}
+                  />
+                </View>
+
+                {/* Password */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: colors.bgCard,
+                    borderWidth: 1.5,
+                    borderColor: colors.border,
+                    borderRadius: 16,
+                    paddingHorizontal: 16,
+                    marginBottom: 10,
+                  }}
+                >
+                  <Lock size={18} color={colors.textMuted} />
+                  <TextInput
+                    placeholder="Password"
+                    placeholderTextColor={colors.textMuted}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    style={{ flex: 1, height: 54, marginLeft: 12, fontSize: 15, color: colors.textPrimary }}
+                  />
+                </View>
+              </>
+            )}
 
             {/* Forgot password */}
             <Pressable
@@ -207,7 +273,9 @@ export default function LoginScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <>
-                    <Text style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}>Sign In</Text>
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: "#fff" }}>
+                      {isOtpMode ? "Get OTP" : "Sign In"}
+                    </Text>
                     <ChevronRight size={18} color="#fff" />
                   </>
                 )}

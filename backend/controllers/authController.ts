@@ -122,7 +122,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = password ? await bcrypt.hash(password, salt) : await bcrypt.hash(crypto.randomBytes(16).toString('hex'), salt);
 
     const { phone_number, city, address } = req.body;
     const user = await User.create({
@@ -139,6 +139,40 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     const token = generateToken(user.id, 'user');
     res.status(201).json(await buildAuthPayload(user, 'user', token));
     sendEmail(user.email, "Welcome to FurrCircle!", "welcome", { name: user.name });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Login via OTP (Phone number already verified on frontend)
+// @route   POST /api/auth/login-otp
+export const loginOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { users: User, vets: Vet } = db as any;
+    const { phone } = req.body;
+
+    if (!phone) {
+      res.status(400).json({ message: "Phone number is required" });
+      return;
+    }
+
+    // Try User table first
+    const user = await User.findOne({ where: { phone } });
+    if (user) {
+      const token = generateToken(user.id, 'user');
+      res.json(await buildAuthPayload(user, 'user', token));
+      return;
+    }
+
+    // Try Vet table
+    const vet = await Vet.findOne({ where: { phone } });
+    if (vet) {
+      const token = generateToken(vet.id, 'vet');
+      res.json(await buildAuthPayload(vet, 'vet', token));
+      return;
+    }
+
+    res.status(404).json({ message: "No account found with this phone number. Please sign up." });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

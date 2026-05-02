@@ -31,12 +31,12 @@ const getFirebaseAuth = () => {
 export default function OtpVerifyScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { register } = useAuth();
+  const { register, loginOtp } = useAuth();
   const params = useLocalSearchParams();
   const inputRef = useRef<TextInput>(null);
 
   // Extract user data from params
-  const { name, email, password, role, phone, extraData } = params as any;
+  const { name, email, password, role, phone, extraData, type } = params as any;
   const extra = extraData ? JSON.parse(extraData) : {};
 
   const [code, setCode] = useState("");
@@ -135,18 +135,21 @@ export default function OtpVerifyScreen() {
       
       console.log("Firebase verification successful!");
 
-      // B. Verification Success! Now register in our backend
       try {
-        await register(
-          name as string,
-          email as string,
-          password as string,
-          role as UserRole,
-          { ...extra, phone: phone as string, phone_number: phone as string }
-        );
-      } catch (regError: any) {
-        console.error("Backend Registration Error:", regError);
-        Alert.alert("Registration Failed", regError.message || "Could not create your account. Please try again.");
+        if (type === 'login') {
+          await loginOtp(phone as string);
+        } else {
+          await register(
+            name as string,
+            email as string,
+            password as string,
+            role as UserRole,
+            { ...extra, phone: phone as string, phone_number: phone as string }
+          );
+        }
+      } catch (backendError: any) {
+        console.error("Backend Error:", backendError);
+        Alert.alert("Action Failed", backendError.message || "Could not complete the process. Please try again.");
       }
     } catch (error: any) {
       console.error("Verification Error:", error);

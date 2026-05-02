@@ -70,6 +70,8 @@ export default function SignupScreen() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // OTP is only for development builds / production, not Expo Go
+  const [isOtpMode, setIsOtpMode] = useState(true);
 
   // Shelter-specific
   // const [shelterCity, setShelterCity] = useState("");
@@ -80,8 +82,8 @@ export default function SignupScreen() {
   // const [vetCity, setVetCity] = useState("");
 
   const handleSignup = async () => {
-    if (!name.trim() || !email.trim() || !password || !phone.trim()) {
-      Alert.alert("Error", "Please fill in all required fields including phone number");
+    if (!name.trim() || !email.trim() || (isOtpMode ? false : !password) || !phone.trim()) {
+      Alert.alert("Error", `Please fill in all required fields${!isOtpMode ? " including password" : ""}`);
       return;
     }
 
@@ -114,11 +116,12 @@ export default function SignupScreen() {
           params: {
             name: name.trim(),
             email: email.trim(),
-            password,
+            password: isOtpMode ? "" : password,
             role,
             phone: phoneNumber,
             extraData: JSON.stringify(extra),
             initialVerificationId: confirmation.verificationId, // Pass the ID
+            type: 'signup',
           },
         });
       } else {
@@ -129,10 +132,11 @@ export default function SignupScreen() {
           params: {
             name: name.trim(),
             email: email.trim(),
-            password,
+            password: isOtpMode ? "" : password,
             role,
             phone: phoneNumber,
             extraData: JSON.stringify(extra),
+            type: 'signup',
           },
         });
       }
@@ -241,9 +245,11 @@ export default function SignupScreen() {
             }}
           >
             {/* Section label */}
-            <Text style={{ fontSize: 13, fontWeight: "700", color: colors.textMuted, marginBottom: 20, textTransform: "uppercase", letterSpacing: 0.8 }}>
-              Your Details
-            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ fontSize: 13, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                Your Details
+              </Text>
+            </View>
 
             {/* Role Toggles — commented out: pet owners only */}
             {/* <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, marginBottom: 8, textTransform: "uppercase" }}>
@@ -294,7 +300,7 @@ export default function SignupScreen() {
               )}
 
               {/* Password */}
-              {inputRow(
+              {!isOtpMode && inputRow(
                 <Lock size={18} color={colors.textMuted} />,
                 textInput({ placeholder: "Password", value: password, onChangeText: setPassword, secureTextEntry: true }),
               )}
