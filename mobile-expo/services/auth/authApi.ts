@@ -32,6 +32,7 @@ export type AuthApiPayload = {
 export const authApi = {
   getMe: () => api.get<AuthApiPayload>('/auth/me'),
   login: (email: string, password: string) => api.post<AuthApiPayload>('/auth/login', { email, password }),
+  loginOtp: (phone: string) => api.post<AuthApiPayload>('/auth/login-otp', { phone }),
   register: (name: string, email: string, password: string, role: AuthApiRole, extra?: Record<string, string>) =>
     api.post<AuthApiPayload>('/auth/register', { name, email, password, role, ...extra }),
   updateProfile: (updatedData: Record<string, unknown>) =>

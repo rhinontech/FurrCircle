@@ -37,7 +37,6 @@ type AuthPayload = User & {
   hospital_name?: string;
   profession?: string;
   experience?: string | number;
-  experience?: string | number;
   working_hours?: string;
   latitude?: number;
   longitude?: number;
@@ -48,6 +47,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   hasCompletedOnboarding: boolean | null;
   login: (email: string, password: string, selectedRole?: UserRole) => Promise<void>;
+  loginOtp: (phone: string) => Promise<void>;
   register: (name: string, email: string, password: string, role: UserRole, extra?: Record<string, string>) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updatedData: Partial<User>) => Promise<void>;
@@ -63,6 +63,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   hasCompletedOnboarding: null,
   login: async () => {},
+  loginOtp: async () => {},
   register: async () => {},
   logout: async () => {},
   updateProfile: async () => {},
@@ -228,6 +229,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   };
 
+  const loginOtp = async (phone: string) => {
+    const data = await authApi.loginOtp(phone) as AuthPayload;
+    const userData = toUser(data);
+
+    if (userData.token) setAuthToken(userData.token);
+    await AsyncStorage.setItem('user_data', JSON.stringify(userData));
+    if (userData.token) await AsyncStorage.setItem('user_token', userData.token);
+    setUser(userData);
+  };
+
   const register = async (name: string, email: string, password: string, role: UserRole, extra?: Record<string, string>) => {
     const data = await authApi.register(name, email, password, role, extra) as AuthPayload;
     const userData = toUser({
@@ -357,6 +368,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoggedIn: !!user,
       hasCompletedOnboarding,
       login,
+      loginOtp,
       register,
       logout,
       deleteAccount,

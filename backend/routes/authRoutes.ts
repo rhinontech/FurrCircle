@@ -1,11 +1,12 @@
 import express from "express";
-import { registerUser, loginUser, getUserProfile, updateUserProfile, forgotPassword, resetPassword, resetPasswordByEmail, changePassword, getUsersByRole, completeOnboarding } from "../controllers/authController.ts";
+import { registerUser, loginUser, loginOtp, getUserProfile, updateUserProfile, forgotPassword, resetPassword, resetPasswordByEmail, changePassword, getUsersByRole, completeOnboarding } from "../controllers/authController.ts";
 import { protect } from "../middleware/authMiddleware.ts";
 
 const router = express.Router();
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
+router.post("/login-otp", loginOtp);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.post("/reset-password-direct", resetPasswordByEmail);
