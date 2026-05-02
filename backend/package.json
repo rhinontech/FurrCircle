@@ -8,7 +8,8 @@
     "dev": "node --experimental-strip-types --watch app.ts",
     "start": "node --experimental-strip-types app.ts",
     "bootstrap-admin": "node --experimental-strip-types scripts/bootstrapAdmin.ts",
-    "seed-demo": "node --experimental-strip-types scripts/seedDemoAccounts.ts"
+    "seed-demo": "node --experimental-strip-types scripts/seedDemoAccounts.ts",
+    "signup-owner": "node --experimental-strip-types scripts/signupOwner.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1028.0",

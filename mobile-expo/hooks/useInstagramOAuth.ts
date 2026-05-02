@@ -11,8 +11,8 @@ const IG_SCOPES = [
 ].join(',');
 
 // This must exactly match what's whitelisted in Meta App → Facebook Login → Valid OAuth Redirect URIs
-const INSTAGRAM_REDIRECT_URI = 'https://api.furrcircle.com/api/auth/instagram/callback';
-const REDIRECT_DEEP_LINK = 'furrcircle://instagram-callback';
+const INSTAGRAM_REDIRECT_URI = process.env.EXPO_PUBLIC_INSTAGRAM_REDIRECT_URI || 'https://api.furrcircle.com/api/auth/instagram/callback';
+const REDIRECT_DEEP_LINK = process.env.EXPO_PUBLIC_REDIRECT_DEEP_LINK || 'furrcircle://instagram-callback';
 
 export function useInstagramOAuth() {
   const { user, refreshUser } = useAuth();
@@ -41,8 +41,9 @@ export function useInstagramOAuth() {
     }
 
     // Parse query params from the deep link
-    const url = result.url;
-    const params = new URLSearchParams(url.split('?')[1] ?? '');
+    const [baseUrl, queryWithFragment] = result.url.split('?');
+    const [queryString] = (queryWithFragment || '').split('#');
+    const params = new URLSearchParams(queryString);
     const success = params.get('success');
     const error = params.get('error');
 

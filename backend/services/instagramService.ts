@@ -45,7 +45,7 @@ export class InstagramService {
 
       const pages = pagesRes.data.data;
       if (!pages || pages.length === 0) {
-        throw new Error('No Facebook Pages found associated with this account');
+        throw new Error('No Facebook Pages found. To sync Instagram, you must have a Facebook Page linked to your Instagram Professional account.');
       }
 
       // 2. Get Instagram account for the first page (as a default strategy)
@@ -62,10 +62,15 @@ export class InstagramService {
         }
       }
 
-      throw new Error('No Instagram Business Account linked to your Facebook Pages');
+      throw new Error('No Instagram Professional Account found. Please ensure your Instagram is set to "Business" or "Creator" and is linked to your Facebook Page.');
     } catch (error: any) {
+      const msg = error.response?.data?.error?.message || error.message;
       console.error('Error getting IG Business ID:', error.response?.data || error.message);
-      throw error;
+      
+      if (msg.includes('instagram_business_account')) {
+        throw new Error('Could not access Instagram data. Ensure your Facebook Page is linked to an Instagram Professional account.');
+      }
+      throw new Error(msg);
     }
   }
 
