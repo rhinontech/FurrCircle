@@ -26,6 +26,7 @@ import Svg, {
   RadialGradient,
   Stop,
 } from "react-native-svg";
+const SafeDefs = Defs as React.ComponentType<{ children?: React.ReactNode }>;
 import Reanimated, {
   useSharedValue,
   useAnimatedStyle,
@@ -129,12 +130,12 @@ function Star({ cx, cy, R = 8, r = 4, color, opacity = 1 }: { cx: number; cy: nu
 function DogIllustration({ c }: { c: C }) {
   return (
     <Svg width={270} height={270} viewBox="0 0 280 280">
-      <Defs>
+      <SafeDefs>
         <RadialGradient id="dog_glow" cx="50%" cy="50%" r="50%">
           <Stop offset="0%" stopColor={c.illGlowStart} stopOpacity={c.illGlowOpacity} />
           <Stop offset="100%" stopColor={c.bg} stopOpacity="0" />
         </RadialGradient>
-      </Defs>
+      </SafeDefs>
       <Circle cx="140" cy="140" r="130" fill="url(#dog_glow)" />
       <Circle cx="140" cy="140" r="120" stroke={c.illRing} strokeWidth="1.2" fill="none" opacity={0.8} />
       <Circle cx="140" cy="140" r="100" stroke={c.illRingOuter} strokeWidth="0.8" fill="none" opacity={0.5} />
@@ -200,12 +201,12 @@ function DogIllustration({ c }: { c: C }) {
 function HealthIllustration({ c }: { c: C }) {
   return (
     <Svg width={270} height={270} viewBox="0 0 280 280">
-      <Defs>
+      <SafeDefs>
         <RadialGradient id="health_glow" cx="50%" cy="50%" r="50%">
           <Stop offset="0%" stopColor={c.illGlowStart} stopOpacity={c.illGlowOpacity} />
           <Stop offset="100%" stopColor={c.bg} stopOpacity="0" />
         </RadialGradient>
-      </Defs>
+      </SafeDefs>
       <Circle cx="140" cy="140" r="130" fill="url(#health_glow)" />
       <Circle cx="140" cy="140" r="120" stroke={c.illRing} strokeWidth="1.2" fill="none" opacity={0.8} />
       <Circle cx="140" cy="140" r="100" stroke={c.illRingOuter} strokeWidth="0.8" fill="none" opacity={0.5} />
@@ -239,12 +240,12 @@ function HealthIllustration({ c }: { c: C }) {
 function VetIllustration({ c }: { c: C }) {
   return (
     <Svg width={270} height={270} viewBox="0 0 280 280">
-      <Defs>
+      <SafeDefs>
         <RadialGradient id="vet_glow" cx="50%" cy="50%" r="50%">
           <Stop offset="0%" stopColor={c.illGlowStart} stopOpacity={c.illGlowOpacity} />
           <Stop offset="100%" stopColor={c.bg} stopOpacity="0" />
         </RadialGradient>
-      </Defs>
+      </SafeDefs>
       <Circle cx="140" cy="140" r="130" fill="url(#vet_glow)" />
       <Circle cx="140" cy="140" r="120" stroke={c.illRing} strokeWidth="1.2" fill="none" opacity={0.8} />
       <Circle cx="140" cy="140" r="100" stroke={c.illRingOuter} strokeWidth="0.8" fill="none" opacity={0.5} />
@@ -290,12 +291,12 @@ function VetIllustration({ c }: { c: C }) {
 function CommunityIllustration({ c }: { c: C }) {
   return (
     <Svg width={270} height={270} viewBox="0 0 280 280">
-      <Defs>
+      <SafeDefs>
         <RadialGradient id="comm_glow" cx="50%" cy="50%" r="50%">
           <Stop offset="0%" stopColor={c.illGlowStart} stopOpacity={c.illGlowOpacity} />
           <Stop offset="100%" stopColor={c.bg} stopOpacity="0" />
         </RadialGradient>
-      </Defs>
+      </SafeDefs>
       <Circle cx="140" cy="140" r="130" fill="url(#comm_glow)" />
       <Circle cx="140" cy="140" r="120" stroke={c.illRing} strokeWidth="1.2" fill="none" opacity={0.8} />
       <Circle cx="140" cy="140" r="100" stroke={c.illRingOuter} strokeWidth="0.8" fill="none" opacity={0.5} />

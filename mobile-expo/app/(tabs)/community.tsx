@@ -1,14 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View, ScrollView, Image, Pressable, TextInput, Modal, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, RefreshControl, Share } from "react-native";
 import { AppText as Text } from "@/components/ui/AppText";
-import { Heart, MessageCircle, Share2, Bookmark, Calendar, Plus, X, ArrowRight, PawPrint, ImagePlus } from "@/components/ui/IconCompat";
+import { Heart, MessageCircle, Share2, Bookmark, Calendar, Plus, X, ArrowRight, PawPrint, ImagePlus, Instagram, CheckCircle, Shield, Users } from "@/components/ui/IconCompat";
 import { useRouter } from "expo-router";
 import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
 import EventCard from "../../components/ui/EventCard";
 import { useAuth } from "../../contexts/AuthContext";
 import { userCommunityApi } from "@/services/users/communityApi";
+import { useInstagramOAuth } from "../../hooks/useInstagramOAuth";
 import { pickAndUploadImage } from "@/services/uploadApi";
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const postCategories = ["General", "Health", "Adoption", "Training", "Nutrition", "Lost & Found"];
 const feedCategories = ["All", "Events", "Health", "Adoption", "Training", "Nutrition"];
@@ -41,8 +45,9 @@ const formatEvents = (eventsData: any[]) =>
 
 export default function CommunityScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { colors } = useTheme();
+  const { connectInstagram } = useInstagramOAuth();
 
   const [activeCategory, setActiveCategory] = useState("All");
   const [posts, setPosts] = useState<any[]>([]);
@@ -59,6 +64,8 @@ export default function CommunityScreen() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [showSharePrompt, setShowSharePrompt] = useState(false);
+  const [createdPostData, setCreatedPostData] = useState<any>(null);
 
   const fetchCommunity = async () => {
     try {
@@ -107,6 +114,20 @@ export default function CommunityScreen() {
       setNewPostText("");
       setSelectedImage(null);
       await fetchCommunity();
+      
+      // If auto-sync is NOT enabled on backend, we could still show the prompt
+      // but if it IS enabled, the backend will handle it automatically.
+      if (!user?.instagramSyncEnabled) {
+        setCreatedPostData({ 
+          content: newPostText.trim(), 
+          category: selectedCategory, 
+          imageUrl: selectedImage 
+        });
+        setShowSharePrompt(true);
+      } else {
+        // Success feedback already provided by post creation
+        Alert.alert("Success", "Post created and shared to Instagram!");
+      }
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to submit post");
     } finally {
@@ -161,6 +182,30 @@ export default function CommunityScreen() {
       setPosts((prev) => prev.map((item) => (item.id === post.id ? { ...item, shareCount: res.shareCount } : item)));
     } catch (error) {
       console.error("Error sharing post", error);
+    }
+  };
+
+  const handleToggleSync = async () => {
+    if (!user?.instagramUserId) {
+      setShowSharePrompt(true);
+      return;
+    }
+    
+    try {
+      await userCommunityApi.toggleInstagramSync();
+      await refreshUser();
+    } catch (error: any) {
+      Alert.alert("Sync Failed", error.message || "Could not update preference.");
+    }
+  };
+
+  const handleConfirmSync = async () => {
+    try {
+      setSubmitting(true);
+      setShowSharePrompt(false);
+      await connectInstagram();
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -399,6 +444,25 @@ export default function CommunityScreen() {
                 )}
               </View>
 
+              {/* Social Sync Toggle */}
+              <View style={{ marginTop: 12, backgroundColor: colors.bgSubtle, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#E1306C15", alignItems: "center", justifyContent: "center" }}>
+                    <Instagram size={20} color="#E1306C" />
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: 15, fontWeight: "700", color: colors.textPrimary }}>Post to Instagram</Text>
+                    <Text style={{ fontSize: 12, color: colors.textMuted }}>Automatically sync this post</Text>
+                  </View>
+                </View>
+                <Pressable 
+                  onPress={handleToggleSync}
+                  style={{ width: 44, height: 24, borderRadius: 12, backgroundColor: user?.instagramSyncEnabled ? colors.brand : colors.border, padding: 2 }}
+                >
+                  <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#fff", alignSelf: user?.instagramSyncEnabled ? "flex-end" : "flex-start" }} />
+                </Pressable>
+              </View>
+
               <TextInput
                 placeholder="What's on your mind? Share tips, ask questions, or post updates..."
                 placeholderTextColor={colors.textMuted}
@@ -482,6 +546,120 @@ export default function CommunityScreen() {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Instagram Share Prompt Modal - Premium Meta-style Design */}
+      <Modal visible={showSharePrompt} animationType="slide" transparent onRequestClose={() => setShowSharePrompt(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.9)" }}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, justifyContent: "flex-end" }}>
+            <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingBottom: 40, maxHeight: "92%" }}>
+              <View style={{ padding: 24 }}>
+                <Pressable onPress={() => setShowSharePrompt(false)} style={{ alignSelf: "flex-start", padding: 8, marginLeft: -8 }}>
+                  <X size={24} color={colors.textPrimary} />
+                </Pressable>
+                
+                <View style={{ alignItems: "center", marginTop: 10 }}>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Cross-Platform Sharing</Text>
+                  <Text style={{ fontSize: 26, fontWeight: "800", color: colors.textPrimary, textAlign: "center", marginBottom: 32 }}>Unlock sharing to Instagram</Text>
+                  
+                  {/* Accounts Center Visual */}
+                  <View style={{ backgroundColor: colors.bgSubtle, borderRadius: 24, padding: 32, width: "100%", alignItems: "center", marginBottom: 40, borderWidth: 1, borderColor: colors.border }}>
+                    <Text style={{ fontSize: 14, fontWeight: "700", color: colors.textMuted, marginBottom: 20 }}>FurrCircle Sync</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+                      <View style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 3, borderColor: colors.brand, padding: 2, backgroundColor: colors.bg }}>
+                        {user?.avatar_url ? (
+                          <Image source={{ uri: user.avatar_url }} style={{ width: "100%", height: "100%", borderRadius: 30 }} />
+                        ) : (
+                          <View style={{ width: "100%", height: "100%", borderRadius: 30, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center" }}>
+                            <PawPrint size={24} color={colors.brand} />
+                          </View>
+                        )}
+                        <View style={{ position: "absolute", bottom: -4, right: -4, backgroundColor: colors.brand, width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: colors.bgCard }}>
+                          <PawPrint size={10} color="#fff" />
+                        </View>
+                      </View>
+                      
+                      <View style={{ width: 30, height: 2, backgroundColor: colors.border, borderRadius: 1 }} />
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.border }} />
+                      <View style={{ width: 30, height: 2, backgroundColor: colors.border, borderRadius: 1 }} />
+
+                      <View style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 3, borderColor: "#E1306C", padding: 2, backgroundColor: colors.bg }}>
+                        <LinearGradient
+                          colors={['#833ab4', '#fd1d1d', '#fcb045']}
+                          style={{ width: "100%", height: "100%", borderRadius: 30, alignItems: "center", justifyContent: "center" }}
+                        >
+                          <Instagram size={32} color="#fff" />
+                        </LinearGradient>
+                        <View style={{ position: "absolute", bottom: -4, right: -4, backgroundColor: "#E1306C", width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: colors.bgCard }}>
+                          <Instagram size={10} color="#fff" />
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Feature List */}
+                  <View style={{ width: "100%", gap: 24, paddingHorizontal: 4 }}>
+                    <View style={{ flexDirection: "row", gap: 16 }}>
+                      <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center" }}>
+                        <ImagePlus size={22} color={colors.brand} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary }}>Share your pet moments</Text>
+                        <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 2, lineHeight: 20 }}>Easily share your community posts and photos to Instagram Stories with one tap.</Text>
+                      </View>
+                    </View>
+
+                    <View style={{ flexDirection: "row", gap: 16 }}>
+                      <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center" }}>
+                        <Shield size={22} color={colors.brand} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary }}>You're in control</Text>
+                        <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 2, lineHeight: 20 }}>Choose what to share and when. Your FurrCircle data is never shared without permission.</Text>
+                      </View>
+                    </View>
+
+                    <View style={{ flexDirection: "row", gap: 16 }}>
+                      <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.bgSubtle, alignItems: "center", justifyContent: "center" }}>
+                        <Users size={22} color={colors.brand} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary }}>Grow your pack</Text>
+                        <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 2, lineHeight: 20 }}>Reach more pet lovers across platforms and grow the community together.</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={{ width: "100%", marginTop: 40, gap: 12 }}>
+                    <Pressable 
+                      onPress={handleConfirmSync} 
+                      disabled={submitting}
+                      style={{ width: "100%", borderRadius: 18, overflow: "hidden" }}
+                    >
+                      <LinearGradient
+                        colors={['#0064e0', '#0064e0']} // Meta-style blue button
+                        style={{ paddingVertical: 18, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8 }}
+                      >
+                        {submitting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>Confirm & Sync Instagram</Text>}
+                      </LinearGradient>
+                    </Pressable>
+
+                    <Pressable 
+                      onPress={() => setShowSharePrompt(false)}
+                      style={{ width: "100%", paddingVertical: 18, alignItems: "center", borderRadius: 18, backgroundColor: colors.bgSubtle }}
+                    >
+                      <Text style={{ color: colors.textPrimary, fontWeight: "700", fontSize: 16 }}>Not Now</Text>
+                    </Pressable>
+                  </View>
+
+                  <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center", marginTop: 20, paddingHorizontal: 20, lineHeight: 18 }}>
+                    By confirming, you agree to share your content from FurrCircle to Instagram. See our <Text style={{ color: colors.brand, fontWeight: "600" }}>Privacy Policy</Text> for more info.
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
     </View>
   );

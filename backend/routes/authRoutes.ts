@@ -1,5 +1,5 @@
 import express from "express";
-import { registerUser, loginUser, getUserProfile, updateUserProfile, forgotPassword, resetPassword, resetPasswordByEmail, changePassword, getUsersByRole, completeOnboarding } from "../controllers/authController.ts";
+import { registerUser, loginUser, getUserProfile, updateUserProfile, forgotPassword, resetPassword, resetPasswordByEmail, changePassword, getUsersByRole, completeOnboarding, connectInstagram, toggleInstagramSync, instagramOAuthCallback, disconnectInstagram } from "../controllers/authController.ts";
 import { protect } from "../middleware/authMiddleware.ts";
 
 const router = express.Router();
@@ -18,6 +18,10 @@ router.route("/profile")
 router.post("/onboarding-complete", protect, completeOnboarding);
 
 router.get("/users/:role", protect, getUsersByRole);
+router.post("/instagram/connect", protect, connectInstagram);
+router.post("/instagram/toggle-sync", protect, toggleInstagramSync);
+router.get("/instagram/callback", instagramOAuthCallback);
+router.delete("/instagram/disconnect", protect, disconnectInstagram);
 
 // For backwards compatibility with original specification
 router.get("/me", protect, getUserProfile);

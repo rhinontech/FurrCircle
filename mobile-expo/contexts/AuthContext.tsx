@@ -29,6 +29,9 @@ export interface User {
   clinicStampUrl?: string;
   licenseNumber?: string;
   hasCompletedOnboarding?: boolean;
+  instagramSyncEnabled?: boolean;
+  instagramUserId?: string;
+  avatar_url?: string;
 }
 
 type AuthPayload = User & {
@@ -36,7 +39,6 @@ type AuthPayload = User & {
   // Vet-specific API field names (backend uses these, we map → User fields)
   hospital_name?: string;
   profession?: string;
-  experience?: string | number;
   experience?: string | number;
   working_hours?: string;
   latitude?: number;
@@ -128,6 +130,8 @@ const toUser = (data: AuthPayload): User => ({
   petCount: data.petCount,
   rating: data.rating,
   avatar: data.avatar_url ?? data.avatar,
+  instagramUserId: (data as any).instagramUserId,
+  instagramSyncEnabled: (data as any).instagramSyncEnabled,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
