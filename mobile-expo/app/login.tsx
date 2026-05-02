@@ -21,6 +21,17 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import Constants from "expo-constants";
+
+// Safe Firebase Auth Loader
+const getFirebaseAuth = () => {
+  if (Constants.appOwnership === 'expo' || Platform.OS === 'web') return null;
+  try {
+    return require("@react-native-firebase/auth").default;
+  } catch {
+    return null;
+  }
+};
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -41,13 +52,41 @@ export default function LoginScreen() {
         Alert.alert("Error", "Please enter a valid 10-digit phone number");
         return;
       }
-      router.push({
-        pathname: "/otp-verify",
-        params: {
-          phone: `+91${phone.trim()}`,
-          type: 'login',
-        },
-      });
+      
+      setLoading(true);
+      try {
+        const auth = getFirebaseAuth();
+        const phoneNumber = `+91${phone.trim()}`;
+
+        if (auth) {
+          console.log(`Requesting Login OTP for: ${phoneNumber}`);
+          const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
+          
+          router.push({
+            pathname: "/otp-verify",
+            params: {
+              phone: phoneNumber,
+              type: 'login',
+              initialVerificationId: confirmation.verificationId,
+            },
+          });
+        } else {
+          // Fallback for Expo Go (development only)
+          Alert.alert("Warning", "Phone verification is not available in Expo Go.");
+          router.push({
+            pathname: "/otp-verify",
+            params: {
+              phone: phoneNumber,
+              type: 'login',
+            },
+          });
+        }
+      } catch (error: any) {
+        console.error("Login OTP Error:", error);
+        Alert.alert("Error", "Failed to send verification code. Please try again.");
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
