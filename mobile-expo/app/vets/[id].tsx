@@ -10,7 +10,9 @@ import {
   TextInput,
   Modal,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { AppText as Text } from "@/components/ui/AppText";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, Clock3, MapPin, Phone, Star, Stethoscope, Bell, Globe } from "@/components/ui/IconCompat";
@@ -60,6 +62,9 @@ export default function VetDetailsScreen() {
   const [reminderReason, setReminderReason] = useState("");
   const [reminderNote, setReminderNote] = useState("");
   const [savingReminder, setSavingReminder] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
 
   // Pet selection
   const [pets, setPets] = useState<any[]>([]);
@@ -99,9 +104,11 @@ export default function VetDetailsScreen() {
   const openReminderModal = async () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
     setReminderTitle(`Vet visit at ${clinicName}`);
     setReminderDate(tomorrow.toISOString().split("T")[0]);
     setReminderTime("10:00");
+    setTempDate(tomorrow);
     setReminderReason("");
     setReminderNote(vet?.address ? `📍 ${vet.address}` : "");
     setSelectedPetId(null);
@@ -119,6 +126,7 @@ export default function VetDetailsScreen() {
   };
 
   const handleSaveReminder = async () => {
+
     if (!reminderTitle.trim()) {
       Alert.alert("Title required", "Please enter a title for your reminder.");
       return;
@@ -129,9 +137,13 @@ export default function VetDetailsScreen() {
     }
     setSavingReminder(true);
     try {
-      const dateObj = new Date(`${reminderDate}T${reminderTime || "10:00"}:00`);
+      const dateObj = tempDate;
       if (isNaN(dateObj.getTime())) {
-        Alert.alert("Invalid date", "Please enter a valid date in YYYY-MM-DD format.");
+        Alert.alert("Invalid date", "Please select a valid date.");
+        return;
+      }
+      if (dateObj < new Date()) {
+        Alert.alert("Invalid Date", "You cannot set a reminder for a time that has already passed.");
         return;
       }
       const notes = [
@@ -139,12 +151,14 @@ export default function VetDetailsScreen() {
         reminderNote.trim(),
       ].filter(Boolean).join("\n");
 
+
       await userRemindersApi.createReminder({
         title: reminderTitle.trim(),
         type: "appointment",
         date: dateObj.toISOString(),
         petId: selectedPetId || undefined,
         notes: notes || undefined,
+        time: reminderTime
       });
 
       setReminderModal(false);
@@ -363,6 +377,7 @@ export default function VetDetailsScreen() {
       {/* Set Reminder Bottom Sheet */}
       <Modal visible={reminderModal} transparent animationType="slide" onRequestClose={() => setReminderModal(false)}>
         <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }} onPress={() => setReminderModal(false)} />
+
         <View style={{
           position: "absolute", bottom: 0, left: 0, right: 0,
           backgroundColor: colors.bgCard,
@@ -370,143 +385,252 @@ export default function VetDetailsScreen() {
           paddingBottom: Platform.OS === "ios" ? 40 : 28,
           maxHeight: "90%",
         }}>
+
           {/* Handle */}
           <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: "center", marginTop: 12, marginBottom: 4 }} />
-
-          <ScrollView
-            contentContainerStyle={{ padding: 24, paddingTop: 16 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
           >
-            {/* Header */}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 }}>
-              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.brand + "15", alignItems: "center", justifyContent: "center" }}>
-                <Bell size={18} color={colors.brand} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 17, fontWeight: "700", color: colors.textPrimary }}>Set Appointment Reminder</Text>
-                <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>{clinicName}</Text>
-              </View>
-            </View>
+            <ScrollView
+              contentContainerStyle={{ padding: 24, paddingTop: 16 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
 
-            {/* Pet selection */}
-            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 8 }}>For which pet?</Text>
-            {petsLoading ? (
-              <ActivityIndicator size="small" color={colors.brand} style={{ alignSelf: "flex-start", marginBottom: 14 }} />
-            ) : pets.length === 0 ? (
-              <View style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, padding: 12, marginBottom: 14, flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <PawPrint size={16} color={colors.textMuted} />
-                <Text style={{ fontSize: 13, color: colors.textMuted }}>No pets found — reminder will be saved without a pet.</Text>
+              {/* Header */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.brand + "15", alignItems: "center", justifyContent: "center" }}>
+                  <Bell size={18} color={colors.brand} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 17, fontWeight: "700", color: colors.textPrimary }}>Set Appointment Reminder</Text>
+                  <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>{clinicName}</Text>
+                </View>
               </View>
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 10, paddingRight: 4 }}>
-                {pets.map((pet) => {
-                  const selected = selectedPetId === pet.id;
-                  return (
-                    <Pressable
-                      key={pet.id}
-                      onPress={() => setSelectedPetId(selected ? null : pet.id)}
-                      style={{
-                        flexDirection: "row", alignItems: "center", gap: 8,
-                        paddingHorizontal: 14, paddingVertical: 10,
-                        borderRadius: 14, borderWidth: 1.5,
-                        borderColor: selected ? colors.brand : colors.border,
-                        backgroundColor: selected ? colors.brand + "12" : colors.bgSubtle,
-                      }}
-                    >
-                      {pet.avatar_url ? (
-                        <Image source={{ uri: pet.avatar_url }} style={{ width: 28, height: 28, borderRadius: 8 }} resizeMode="cover" />
-                      ) : (
-                        <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: colors.bgCard, alignItems: "center", justifyContent: "center" }}>
-                          <PawPrint size={14} color={selected ? colors.brand : colors.textMuted} />
+
+              {/* Pet selection */}
+              <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 8 }}>For which pet?</Text>
+              {petsLoading ? (
+                <ActivityIndicator size="small" color={colors.brand} style={{ alignSelf: "flex-start", marginBottom: 14 }} />
+              ) : pets.length === 0 ? (
+                <View style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, padding: 12, marginBottom: 14, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <PawPrint size={16} color={colors.textMuted} />
+                  <Text style={{ fontSize: 13, color: colors.textMuted }}>No pets found — reminder will be saved without a pet.</Text>
+                </View>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 10, paddingRight: 4 }}>
+                  {pets.map((pet) => {
+                    const selected = selectedPetId === pet.id;
+                    return (
+                      <Pressable
+                        key={pet.id}
+                        onPress={() => setSelectedPetId(selected ? null : pet.id)}
+                        style={{
+                          flexDirection: "row", alignItems: "center", gap: 8,
+                          paddingHorizontal: 14, paddingVertical: 10,
+                          borderRadius: 14, borderWidth: 1.5,
+                          borderColor: selected ? colors.brand : colors.border,
+                          backgroundColor: selected ? colors.brand + "12" : colors.bgSubtle,
+                        }}
+                      >
+                        {pet.avatar_url ? (
+                          <Image source={{ uri: pet.avatar_url }} style={{ width: 28, height: 28, borderRadius: 8 }} resizeMode="cover" />
+                        ) : (
+                          <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: colors.bgCard, alignItems: "center", justifyContent: "center" }}>
+                            <PawPrint size={14} color={selected ? colors.brand : colors.textMuted} />
+                          </View>
+                        )}
+                        <Text style={{ fontSize: 13, fontWeight: "600", color: selected ? colors.brand : colors.textPrimary }}>{pet.name}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              )}
+
+              {/* Title */}
+              <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Title</Text>
+              <TextInput
+                value={reminderTitle}
+                onChangeText={setReminderTitle}
+                placeholder="e.g. Vet visit at Sunrise Clinic"
+                placeholderTextColor={colors.textMuted}
+                style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.textPrimary, marginBottom: 14 }}
+              />
+
+              {/* Reason */}
+              <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Reason for visit</Text>
+              <TextInput
+                value={reminderReason}
+                onChangeText={setReminderReason}
+                placeholder="e.g. Annual checkup, vaccination, injury..."
+                placeholderTextColor={colors.textMuted}
+                style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.textPrimary, marginBottom: 14 }}
+              />
+
+              {/* Date + Time */}
+              <View style={{ flexDirection: "row", gap: 12, marginBottom: 14 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Date</Text>
+                  <Pressable
+                    onPress={() => setShowDatePicker(true)}
+                    style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, height: 48, justifyContent: "center" }}
+                  >
+                    <Text style={{ fontSize: 14, color: colors.textPrimary }}>
+                      {tempDate.toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </Text>
+                  </Pressable>
+                  {showDatePicker && (
+                    Platform.OS === "ios" ? (
+                      <Modal transparent animationType="fade" visible={showDatePicker}>
+                        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" }}>
+                          <View style={{ backgroundColor: colors.bgCard, borderRadius: 20, padding: 20, width: "90%", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 5 }}>
+                            <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary, marginBottom: 20 }}>Select Date</Text>
+                            <DateTimePicker
+                              value={tempDate}
+                              mode="date"
+                              display="spinner"
+                              textColor={colors.textPrimary}
+                              minimumDate={new Date()}
+                              onChange={(event, selectedDate) => {
+                                if (selectedDate) {
+                                  const newDate = new Date(tempDate);
+                                  newDate.setFullYear(selectedDate.getFullYear());
+                                  newDate.setMonth(selectedDate.getMonth());
+                                  newDate.setDate(selectedDate.getDate());
+                                  setTempDate(newDate);
+                                  setReminderDate(newDate.toISOString().split("T")[0]);
+                                }
+                              }}
+                            />
+                            <Pressable
+                              onPress={() => setShowDatePicker(false)}
+                              style={{ marginTop: 20, backgroundColor: colors.brand, paddingHorizontal: 40, paddingVertical: 12, borderRadius: 12 }}
+                            >
+                              <Text style={{ color: "#fff", fontWeight: "700" }}>Done</Text>
+                            </Pressable>
+                          </View>
                         </View>
-                      )}
-                      <Text style={{ fontSize: 13, fontWeight: "600", color: selected ? colors.brand : colors.textPrimary }}>{pet.name}</Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            )}
-
-            {/* Title */}
-            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Title</Text>
-            <TextInput
-              value={reminderTitle}
-              onChangeText={setReminderTitle}
-              placeholder="e.g. Vet visit at Sunrise Clinic"
-              placeholderTextColor={colors.textMuted}
-              style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.textPrimary, marginBottom: 14 }}
-            />
-
-            {/* Reason */}
-            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Reason for visit</Text>
-            <TextInput
-              value={reminderReason}
-              onChangeText={setReminderReason}
-              placeholder="e.g. Annual checkup, vaccination, injury..."
-              placeholderTextColor={colors.textMuted}
-              style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.textPrimary, marginBottom: 14 }}
-            />
-
-            {/* Date + Time */}
-            <View style={{ flexDirection: "row", gap: 12, marginBottom: 14 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Date</Text>
-                <TextInput
-                  value={reminderDate}
-                  onChangeText={setReminderDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={colors.textMuted}
-                  keyboardType="numeric"
-                  style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.textPrimary }}
-                />
+                      </Modal>
+                    ) : (
+                      <DateTimePicker
+                        value={tempDate}
+                        mode="date"
+                        display="default"
+                        minimumDate={new Date()}
+                        onChange={(event, selectedDate) => {
+                          setShowDatePicker(false);
+                          if (selectedDate) {
+                            const newDate = new Date(tempDate);
+                            newDate.setFullYear(selectedDate.getFullYear());
+                            newDate.setMonth(selectedDate.getMonth());
+                            newDate.setDate(selectedDate.getDate());
+                            setTempDate(newDate);
+                            setReminderDate(newDate.toISOString().split("T")[0]);
+                          }
+                        }}
+                      />
+                    )
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Time</Text>
+                  <Pressable
+                    onPress={() => setShowTimePicker(true)}
+                    style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, height: 48, justifyContent: "center" }}
+                  >
+                    <Text style={{ fontSize: 14, color: colors.textPrimary }}>
+                      {tempDate.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true })}
+                    </Text>
+                  </Pressable>
+                  {showTimePicker && (
+                    Platform.OS === "ios" ? (
+                      <Modal transparent animationType="fade" visible={showTimePicker}>
+                        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" }}>
+                          <View style={{ backgroundColor: colors.bgCard, borderRadius: 20, padding: 20, width: "90%", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 5 }}>
+                            <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary, marginBottom: 20 }}>Select Time</Text>
+                            <DateTimePicker
+                              value={tempDate}
+                              mode="time"
+                              display="spinner"
+                              textColor={colors.textPrimary}
+                              minimumDate={new Date()}
+                              onChange={(event, selectedDate) => {
+                                if (selectedDate) {
+                                  const newDate = new Date(tempDate);
+                                  newDate.setHours(selectedDate.getHours());
+                                  newDate.setMinutes(selectedDate.getMinutes());
+                                  setTempDate(newDate);
+                                  setReminderTime(newDate.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: false }));
+                                }
+                              }}
+                            />
+                            <Pressable
+                              onPress={() => setShowTimePicker(false)}
+                              style={{ marginTop: 20, backgroundColor: colors.brand, paddingHorizontal: 40, paddingVertical: 12, borderRadius: 12 }}
+                            >
+                              <Text style={{ color: "#fff", fontWeight: "700" }}>Done</Text>
+                            </Pressable>
+                          </View>
+                        </View>
+                      </Modal>
+                    ) : (
+                      <DateTimePicker
+                        value={tempDate}
+                        mode="time"
+                        display="default"
+                        minimumDate={new Date()}
+                        onChange={(event, selectedDate) => {
+                          setShowTimePicker(false);
+                          if (selectedDate) {
+                            const newDate = new Date(tempDate);
+                            newDate.setHours(selectedDate.getHours());
+                            newDate.setMinutes(selectedDate.getMinutes());
+                            setTempDate(newDate);
+                            setReminderTime(newDate.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: false }));
+                          }
+                        }}
+                      />
+                    )
+                  )}
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Time</Text>
-                <TextInput
-                  value={reminderTime}
-                  onChangeText={setReminderTime}
-                  placeholder="HH:MM"
-                  placeholderTextColor={colors.textMuted}
-                  keyboardType="numeric"
-                  style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.textPrimary }}
-                />
+
+              {/* Note */}
+              <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Note (optional)</Text>
+              <TextInput
+                value={reminderNote}
+                onChangeText={setReminderNote}
+                placeholder="Any extra notes..."
+                placeholderTextColor={colors.textMuted}
+                multiline
+                numberOfLines={2}
+                textAlignVertical="top"
+                style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.textPrimary, minHeight: 60, marginBottom: 20 }}
+              />
+
+              {/* Buttons */}
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <Pressable
+                  onPress={() => setReminderModal(false)}
+                  style={{ flex: 1, backgroundColor: colors.bgSubtle, borderRadius: 14, paddingVertical: 14, alignItems: "center" }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textSecondary }}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleSaveReminder}
+                  disabled={savingReminder}
+                  style={{ flex: 2, backgroundColor: colors.brand, borderRadius: 14, paddingVertical: 14, alignItems: "center", opacity: savingReminder ? 0.7 : 1 }}
+                >
+                  {savingReminder
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Save Reminder</Text>
+                  }
+                </Pressable>
               </View>
-            </View>
 
-            {/* Note */}
-            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.textMuted, textTransform: "uppercase", marginBottom: 6 }}>Note (optional)</Text>
-            <TextInput
-              value={reminderNote}
-              onChangeText={setReminderNote}
-              placeholder="Any extra notes..."
-              placeholderTextColor={colors.textMuted}
-              multiline
-              numberOfLines={2}
-              textAlignVertical="top"
-              style={{ backgroundColor: colors.bgSubtle, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.textPrimary, minHeight: 60, marginBottom: 20 }}
-            />
-
-            {/* Buttons */}
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <Pressable
-                onPress={() => setReminderModal(false)}
-                style={{ flex: 1, backgroundColor: colors.bgSubtle, borderRadius: 14, paddingVertical: 14, alignItems: "center" }}
-              >
-                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textSecondary }}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleSaveReminder}
-                disabled={savingReminder}
-                style={{ flex: 2, backgroundColor: colors.brand, borderRadius: 14, paddingVertical: 14, alignItems: "center", opacity: savingReminder ? 0.7 : 1 }}
-              >
-                {savingReminder
-                  ? <ActivityIndicator color="#fff" />
-                  : <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Save Reminder</Text>
-                }
-              </Pressable>
-            </View>
-          </ScrollView>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </View>

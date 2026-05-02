@@ -129,7 +129,7 @@ export default function CommunityPostDetailScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.bg }}>
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.bg }} keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}>
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, flexDirection: "row", alignItems: "center" }}>
           <Pressable
@@ -179,10 +179,10 @@ export default function CommunityPostDetailScreen() {
                 <MessageCircle size={18} color={colors.textMuted} />
                 <Text style={{ fontSize: 12, fontWeight: "600", color: colors.textMuted }}>{post.comments?.length || 0}</Text>
               </View>
-              <Pressable onPress={handleShare} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              {/* <Pressable onPress={handleShare} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <Share2 size={18} color={colors.textMuted} />
                 <Text style={{ fontSize: 12, fontWeight: "600", color: colors.textMuted }}>{post.shareCount || 0}</Text>
-              </Pressable>
+              </Pressable> */}
               <Pressable onPress={handleSave} style={{ marginLeft: "auto" }}>
                 <Bookmark size={18} color={isPostSaved(post.savedBy) ? colors.brand : colors.textMuted} fill={isPostSaved(post.savedBy) ? colors.brand : "transparent"} />
               </Pressable>

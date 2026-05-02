@@ -45,14 +45,11 @@ export default function OtpVerifyScreen() {
   const [timer, setTimer] = useState(60);
   const [isResending, setIsResending] = useState(false);
 
-  // 1. Send OTP on mount
-  const hasSentInitialOtp = useRef(false);
-  useEffect(() => {
-    if (!hasSentInitialOtp.current) {
-      sendOtp();
-      hasSentInitialOtp.current = true;
-    }
-  }, []);
+  // 1. Initial setup (Auto-send moved to signup button)
+  // useEffect(() => {
+  //   // If we came from signup, the SMS is already on its way.
+  //   // We just need to wait for the user to enter the code.
+  // }, []);
 
   // 2. Timer logic
   useEffect(() => {
@@ -108,8 +105,17 @@ export default function OtpVerifyScreen() {
       return;
     }
 
-    if (!confirm) {
-      Alert.alert("Error", "OTP session not found. Please try resending.");
+    const auth = getFirebaseAuth();
+    if (!auth) {
+      Alert.alert("Error", "Auth service unavailable.");
+      return;
+    }
+
+    // Check if we have an active session (either from resend or from signup)
+    const verificationId = confirm?.verificationId || params.initialVerificationId as string;
+
+    if (!verificationId && !confirm) {
+      Alert.alert("Error", "Verification session not found. Please try resending the code.");
       return;
     }
 
@@ -117,8 +123,16 @@ export default function OtpVerifyScreen() {
     isVerifyingRef.current = true;
     try {
       console.log("Attempting to verify code...");
-      // A. Verify Firebase Code
-      await confirm.confirm(code);
+      
+      if (confirm) {
+        // Use the confirmation result object if available (e.g. from a Resend)
+        await confirm.confirm(code);
+      } else {
+        // Use the verification ID from the signup screen
+        const credential = auth.PhoneAuthProvider.credential(verificationId, code);
+        await auth().signInWithCredential(credential);
+      }
+      
       console.log("Firebase verification successful!");
 
       try {

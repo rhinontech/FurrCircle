@@ -28,6 +28,17 @@ import { useTheme } from "../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import Constants from "expo-constants";
+
+// Safe Firebase Auth Loader
+const getFirebaseAuth = () => {
+  if (Constants.appOwnership === 'expo' || Platform.OS === 'web') return null;
+  try {
+    return require("@react-native-firebase/auth").default;
+  } catch {
+    return null;
+  }
+};
 
 // type SignupRole = "owner" | "shelter" | "veterinarian";
 
@@ -91,18 +102,50 @@ export default function SignupScreen() {
     //   if (vetCity.trim()) extra.city = vetCity.trim();
     // }
 
-    router.push({
-      pathname: "/otp-verify",
-      params: {
-        name: name.trim(),
-        email: email.trim(),
-        password: isOtpMode ? "" : password,
-        role,
-        phone: `+91${phone.trim()}`,
-        extraData: JSON.stringify(extra),
-        type: 'signup',
-      },
-    });
+    setLoading(true);
+    try {
+      const auth = getFirebaseAuth();
+      const phoneNumber = `+91${phone.trim()}`;
+
+      if (auth) {
+        console.log(`Requesting initial OTP for: ${phoneNumber}`);
+        const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
+        
+        router.push({
+          pathname: "/otp-verify",
+          params: {
+            name: name.trim(),
+            email: email.trim(),
+            password: isOtpMode ? "" : password,
+            role,
+            phone: phoneNumber,
+            extraData: JSON.stringify(extra),
+            initialVerificationId: confirmation.verificationId, // Pass the ID
+            type: 'signup',
+          },
+        });
+      } else {
+        // Fallback for Expo Go (development only)
+        Alert.alert("Warning", "Phone verification is not available in Expo Go. Navigating anyway for testing.");
+        router.push({
+          pathname: "/otp-verify",
+          params: {
+            name: name.trim(),
+            email: email.trim(),
+            password: isOtpMode ? "" : password,
+            role,
+            phone: phoneNumber,
+            extraData: JSON.stringify(extra),
+            type: 'signup',
+          },
+        });
+      }
+    } catch (error: any) {
+      console.error("Signup/OTP Error:", error);
+      Alert.alert("Error", "Failed to send verification code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputRow = (icon: React.ReactNode, input: React.ReactNode) => (

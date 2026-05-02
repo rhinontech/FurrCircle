@@ -49,14 +49,14 @@ export default function ProfileScreen() {
       count: String(user?.petCount ?? 0),
       action: () => router.push("/profile/pets"),
     },
-    {
-      icon: CalendarDays,
-      label: "My Appointments",
-      action: () => router.push("/appointments"),
-    },
+    // {
+    //   icon: CalendarDays,
+    //   label: "My Appointments",
+    //   action: () => router.push("/appointments"),
+    // },
     {
       icon: Bookmark,
-      label: "Saved",
+      label: "Saved Posts",
       // count: savedVetsCount !== null ? String(savedVetsCount) : undefined,
       action: () => router.push("/profile/saved"),
     },

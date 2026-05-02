@@ -11,7 +11,7 @@ import { userCommunityApi } from "@/services/users/communityApi";
 import { pickAndUploadImage } from "@/services/uploadApi";
 
 const postCategories = ["General", "Health", "Adoption", "Training", "Nutrition", "Lost & Found"];
-const feedCategories = ["All", "Events", "Health", "Adoption", "Training", "Nutrition"];
+const feedCategories = ["All", "Health", "Adoption", "Training", "Nutrition"];
 
 function timeAgo(date: string) {
   const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
@@ -224,7 +224,7 @@ export default function CommunityScreen() {
             ))}
           </ScrollView>
 
-          {(activeCategory === "All" || activeCategory === "Events") && (
+          {/* {(activeCategory === "All" || activeCategory === "Events") && (
             <View style={{ marginBottom: 32 }}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                 <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary }}>Upcoming Events</Text>
@@ -258,7 +258,7 @@ export default function CommunityScreen() {
                 </ScrollView>
               )}
             </View>
-          )}
+          )} */}
 
           <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary, marginBottom: 16 }}>
             {activeCategory === "Events" ? "Past Events" : "Recent Posts"}
@@ -335,6 +335,7 @@ export default function CommunityScreen() {
 
       <Modal visible={isCreateModalVisible} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <Pressable style={{ flex: 1 }} onPress={() => setIsCreateModalVisible(false)} />
           <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: "88%" }}>
             <ScrollView
               showsVerticalScrollIndicator={false}

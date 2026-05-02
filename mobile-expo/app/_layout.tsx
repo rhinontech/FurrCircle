@@ -32,7 +32,7 @@ function GlobalHeader() {
   const { chatUnreadCount, notifUnreadCount } = useNotifications();
 
   // Determine if we are already on a "utility" screen to avoid stacking them
-  const isOnUtility = segments[0] === 'notifications' || segments.includes('chats');
+  const isOnUtility = segments[0] === 'notifications' || segments.includes('chats') || segments.includes('events');
 
   const handleNavigate = (path: string) => {
     if (isOnUtility) {
@@ -57,6 +57,12 @@ function GlobalHeader() {
           </View>
         )}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Pressable
+            onPress={() => handleNavigate('/community/events')}
+            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <AppIcon name="calendar" size={20} color={colors.textPrimary} weight="medium" />
+          </Pressable>
           <Pressable
             onPress={() => handleNavigate('/community/chats')}
             style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}

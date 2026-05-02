@@ -8,7 +8,9 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Modal,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -39,10 +41,13 @@ export default function EditReminderScreen() {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [type, setType] = useState("general");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [time, setTime] = useState(new Date().toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: false }));
   const [recurrence, setRecurrence] = useState("none");
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [dateObj, setDateObj] = useState(new Date());
 
   useEffect(() => {
     const loadPets = async () => {
@@ -65,10 +70,23 @@ export default function EditReminderScreen() {
           setTitle(reminder.title || "");
           setNotes(reminder.notes || "");
           setType(reminder.type || "general");
-          setDate(reminder.date ? String(reminder.date).slice(0, 10) : "");
-          setTime(reminder.time || "");
-          setRecurrence(reminder.recurrence || "none");
-          setSelectedPetId(reminder.petId ? String(reminder.petId) : null);
+          if (reminder.date) {
+            // Ensure we parse the date string correctly without timezone shifts
+            const datePart = String(reminder.date).split("T")[0];
+            const [year, month, day] = datePart.split("-").map(Number);
+            const d = new Date();
+            d.setFullYear(year, month - 1, day);
+            
+            if (reminder.time) {
+              const [h, m] = reminder.time.split(":").map(Number);
+              d.setHours(h, m, 0, 0);
+              setTime(reminder.time);
+            } else {
+              d.setHours(10, 0, 0, 0); // Default to 10 AM if no time
+            }
+            setDate(datePart);
+            setDateObj(d);
+          }
         }
       } catch {
         // ignore
@@ -82,6 +100,11 @@ export default function EditReminderScreen() {
   const handleSave = async () => {
     if (!title.trim()) {
       Alert.alert("Error", "Please enter a title for this reminder.");
+      return;
+    }
+
+    if (dateObj < new Date()) {
+      Alert.alert("Invalid Date", "You cannot set a reminder for a time that has already passed.");
       return;
     }
 
@@ -169,25 +192,127 @@ export default function EditReminderScreen() {
           {/* Date */}
           <View>
             <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>Due Date</Text>
-            <TextInput
-              value={date}
-              onChangeText={setDate}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.textMuted}
-              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 16, height: 48, fontSize: 15, color: colors.textPrimary }}
-            />
+            <Pressable
+              onPress={() => setShowDatePicker(true)}
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 16, height: 48, justifyContent: "center" }}
+            >
+              <Text style={{ fontSize: 15, color: date ? colors.textPrimary : colors.textMuted }}>
+                {date ? dateObj.toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' }) : "Select Date"}
+              </Text>
+            </Pressable>
+            {showDatePicker && (
+              Platform.OS === "ios" ? (
+                <Modal transparent animationType="fade" visible={showDatePicker}>
+                  <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" }}>
+                    <View style={{ backgroundColor: colors.bgCard, borderRadius: 20, padding: 20, width: "90%", alignItems: "center" }}>
+                      <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary, marginBottom: 20 }}>Select Date</Text>
+                      <DateTimePicker
+                        value={dateObj}
+                        mode="date"
+                        display="spinner"
+                        minimumDate={new Date()}
+                        onChange={(event, selectedDate) => {
+                          if (selectedDate) {
+                            const newDate = new Date(dateObj);
+                            newDate.setFullYear(selectedDate.getFullYear());
+                            newDate.setMonth(selectedDate.getMonth());
+                            newDate.setDate(selectedDate.getDate());
+                            setDateObj(newDate);
+                            setDate(newDate.toISOString().split("T")[0]);
+                          }
+                        }}
+                      />
+                      <Pressable 
+                        onPress={() => setShowDatePicker(false)}
+                        style={{ marginTop: 20, backgroundColor: colors.brand, paddingHorizontal: 40, paddingVertical: 12, borderRadius: 12 }}
+                      >
+                        <Text style={{ color: "#fff", fontWeight: "700" }}>Done</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </Modal>
+              ) : (
+                <DateTimePicker
+                  value={dateObj}
+                  mode="date"
+                  display="default"
+                  minimumDate={new Date()}
+                  onChange={(event, selectedDate) => {
+                    setShowDatePicker(false);
+                    if (selectedDate) {
+                      const newDate = new Date(dateObj);
+                      newDate.setFullYear(selectedDate.getFullYear());
+                      newDate.setMonth(selectedDate.getMonth());
+                      newDate.setDate(selectedDate.getDate());
+                      setDateObj(newDate);
+                      setDate(newDate.toISOString().split("T")[0]);
+                    }
+                  }}
+                />
+              )
+            )}
           </View>
 
           {/* Time */}
           <View>
             <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>Time</Text>
-            <TextInput
-              value={time}
-              onChangeText={setTime}
-              placeholder="HH:MM (optional)"
-              placeholderTextColor={colors.textMuted}
-              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 16, height: 48, fontSize: 15, color: colors.textPrimary }}
-            />
+            <Pressable
+              onPress={() => setShowTimePicker(true)}
+              style={{ backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 16, height: 48, justifyContent: "center" }}
+            >
+              <Text style={{ fontSize: 15, color: time ? colors.textPrimary : colors.textMuted }}>
+                {time ? dateObj.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true }) : "Select Time (optional)"}
+              </Text>
+            </Pressable>
+            {showTimePicker && (
+              Platform.OS === "ios" ? (
+                <Modal transparent animationType="fade" visible={showTimePicker}>
+                  <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" }}>
+                    <View style={{ backgroundColor: colors.bgCard, borderRadius: 20, padding: 20, width: "90%", alignItems: "center" }}>
+                      <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary, marginBottom: 20 }}>Select Time</Text>
+                      <DateTimePicker
+                        value={dateObj}
+                        mode="time"
+                        display="spinner"
+                        minimumDate={new Date()}
+                        onChange={(event, selectedDate) => {
+                          if (selectedDate) {
+                            const newDate = new Date(dateObj);
+                            newDate.setHours(selectedDate.getHours());
+                            newDate.setMinutes(selectedDate.getMinutes());
+                            setDateObj(newDate);
+                            setTime(newDate.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: false }));
+                          }
+                        }}
+                      />
+                      <Pressable 
+                        onPress={() => setShowTimePicker(false)}
+                        style={{ marginTop: 20, backgroundColor: colors.brand, paddingHorizontal: 40, paddingVertical: 12, borderRadius: 12 }}
+                      >
+                        <Text style={{ color: "#fff", fontWeight: "700" }}>Done</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </Modal>
+              ) : (
+                <DateTimePicker
+                  value={dateObj}
+                  mode="time"
+                  display="default"
+                  minimumDate={new Date()}
+                  onChange={(event, selectedDate) => {
+                    setShowTimePicker(false);
+                    if (selectedDate) {
+                      const newDate = new Date(dateObj);
+                      newDate.setHours(selectedDate.getHours());
+                      newDate.setMinutes(selectedDate.getMinutes());
+                      setDateObj(newDate);
+                      setTime(newDate.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: false }));
+                    }
+                  }}
+                />
+              )
+            )}
           </View>
 
           {/* Recurrence */}

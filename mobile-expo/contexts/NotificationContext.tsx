@@ -107,6 +107,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const appState = useRef(AppState.currentState);
   const socketRef = useRef<Socket | null>(null);
   const responseListenerRef = useRef<any>(null);
+  const lastProcessedNotifId = useRef<string | null>(null);
+  const [pendingNotification, setPendingNotification] = useState<any>(null);
 
   const getSeenMap = async (): Promise<Record<string, string>> => {
     try {
@@ -264,16 +266,27 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     // Robust data extraction: iOS/FCM sometimes nests data under a 'data' or 'body' key
     // or stringifies the entire payload.
     let data = { ...rawData };
-    if (rawData.data && typeof rawData.data === 'object') {
-      data = { ...data, ...rawData.data };
-    } else if (rawData.body && typeof rawData.body === 'object') {
-      data = { ...data, ...rawData.body };
-    }
+    
+    // Deep merge from common nested keys
+    ['data', 'body', 'notification', 'aps'].forEach(key => {
+      if (rawData[key] && typeof rawData[key] === 'object') {
+        data = { ...data, ...rawData[key] };
+      }
+      // Handle cases where these keys might be stringified JSON
+      if (typeof rawData[key] === 'string' && rawData[key].startsWith('{')) {
+        try { data = { ...data, ...JSON.parse(rawData[key]) }; } catch {}
+      }
+    });
 
-    // Handle case where the entire data object is stringified (rare but happens in some FCM configs)
-    if (typeof rawData.data === 'string' && rawData.data.startsWith('{')) {
-      try { data = { ...data, ...JSON.parse(rawData.data) }; } catch {}
-    }
+    // Also check for FCM flattened keys (e.g. "gcm.notification.actionType")
+    Object.keys(rawData).forEach(key => {
+      if (key.includes('.')) {
+        const simpleKey = key.split('.').pop();
+        if (simpleKey && !(simpleKey in data)) {
+          data[simpleKey] = rawData[key];
+        }
+      }
+    });
 
     // Log for debugging
     console.log('[NotificationContext] Handling response data:', JSON.stringify(data, null, 2));
@@ -298,7 +311,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     };
 
     if (Platform.OS === 'ios') {
-      setTimeout(navigate, 100);
+      // iOS often needs a longer delay on cold start to ensure the router is ready
+      setTimeout(navigate, 500);
     } else {
       navigate();
     }
@@ -306,14 +320,25 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     // 1. Handle notification that opened the app (Cold Start)
-    if (Notifications) {
-      Notifications.getLastNotificationResponseAsync().then((response: any) => {
-        if (response) {
-          console.log('[NotificationContext] Cold start notification detected');
-          handleResponse(response);
-        }
-      });
+    const handleColdStart = async () => {
+      if (!Notifications) return;
+      const response = await Notifications.getLastNotificationResponseAsync();
+      if (!response) return;
 
+      const id = response.notification.request.identifier;
+      // GUARD: Prevent double-fires from cold start catch-up
+      if (id && id === lastProcessedNotifId.current) return;
+      if (id) lastProcessedNotifId.current = id;
+
+      console.log('[NotificationContext] Cold start notification detected:', id);
+      handleResponse(response);
+    };
+
+    handleColdStart();
+  }, [handleResponse]);
+
+  useEffect(() => {
+    if (Notifications) {
       // 2. Listen for clicks while the app is in foreground/background
       responseListenerRef.current = Notifications.addNotificationResponseReceivedListener(handleResponse);
     }

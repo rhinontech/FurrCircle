@@ -544,10 +544,10 @@ export default function HomeScreen() {
                   <MessageCircle size={18} color={colors.textMuted} />
                   <Text style={{ fontSize: 12, fontWeight: "500", color: colors.textMuted }}>{latestPost.comments?.length || 0}</Text>
                 </Pressable>
-                <Pressable onPress={(e) => { e.stopPropagation(); handleShare(latestPost); }} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                {/* <Pressable onPress={(e) => { e.stopPropagation(); handleShare(latestPost); }} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                   <Share2 size={18} color={colors.textMuted} />
                   <Text style={{ fontSize: 12, fontWeight: "500", color: colors.textMuted }}>{latestPost.shareCount || 0}</Text>
-                </Pressable>
+                </Pressable> */}
                 <Pressable onPress={(e) => { e.stopPropagation(); handleSave(latestPost.id); }} style={{ marginLeft: "auto" }}>
                   {(() => {
                     const isSaved = (latestPost.savedBy || []).includes(String(user?.id || ""));
@@ -567,7 +567,8 @@ export default function HomeScreen() {
       </ScrollView>
 
       <Modal visible={!!petPickerTarget} animationType="slide" transparent onRequestClose={() => setPetPickerTarget(null)}>
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <Pressable style={{ flex: 1 }} onPress={() => setPetPickerTarget(null)} />
           <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24 }}>
             <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginBottom: 6 }}>Choose a Pet</Text>
             <Text style={{ fontSize: 13, color: colors.textMuted, marginBottom: 18 }}>Select which pet you want to log health data for.</Text>

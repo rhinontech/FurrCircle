@@ -171,6 +171,7 @@ const sendPushToActor = async (
         category,
         actionType: actionType || "",
         actionPayload: JSON.stringify(actionPayload || {}),
+        relatedId: (actionPayload?.relatedId || actionPayload?.id) ? String(actionPayload.relatedId || actionPayload.id) : undefined,
         title,
         body: message,
       },
@@ -192,6 +193,7 @@ const sendPushToActor = async (
           category,
           actionType: actionType || "",
           actionPayload: JSON.stringify(actionPayload || {}),
+          relatedId: (actionPayload?.relatedId || actionPayload?.id) ? String(actionPayload.relatedId || actionPayload.id) : undefined,
         },
       },
     }));
