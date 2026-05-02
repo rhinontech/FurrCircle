@@ -110,10 +110,10 @@ export default function MyPostsScreen() {
                   <MessageCircle size={18} color={colors.textMuted} />
                   <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted }}>{post.comments?.length ?? 0}</Text>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {/* <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Share2 size={18} color={colors.textMuted} />
                   <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textMuted }}>{post.shareCount ?? 0}</Text>
-                </View>
+                </View> */}
               </View>
             </Pressable>
           ))}

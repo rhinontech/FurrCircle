@@ -57,7 +57,7 @@ export default function SavedScreen() {
   const { colors } = useTheme();
   const { user } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<"vets" | "posts">("vets");
+  const [activeTab, setActiveTab] = useState<"vets" | "posts">("posts");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -74,16 +74,16 @@ export default function SavedScreen() {
 
   const fetchData = async () => {
     try {
-      if (activeTab === "vets") {
-        const data = await userDiscoverApi.listSavedVets();
-        setVets(data || []);
-      } else {
+      // if (activeTab === "vets") {
+      //   const data = await userDiscoverApi.listSavedVets();
+      //   setVets(data || []);
+      // } else {
         const feed = await userCommunityApi.listFeed();
         const savedPosts = (feed || []).filter((post: any) =>
           (post.savedBy || []).includes(String(user?.id))
         );
         setPosts(savedPosts);
-      }
+      // }
     } catch (e) {
       console.error("Failed to load saved data", e);
     } finally {
@@ -244,15 +244,15 @@ export default function SavedScreen() {
       </View>
 
       {/* Tabs */}
-      <View
+      {/* <View
         style={{
           flexDirection: "row",
           paddingHorizontal: 20,
           paddingVertical: 12,
           gap: 12,
         }}
-      >
-        <Pressable
+      > */}
+        {/* <Pressable
           onPress={() => setActiveTab("vets")}
           style={{
             flex: 1,
@@ -273,8 +273,8 @@ export default function SavedScreen() {
           >
             Vets
           </Text>
-        </Pressable>
-        <Pressable
+        </Pressable> */}
+        {/* <Pressable
           onPress={() => setActiveTab("posts")}
           style={{
             flex: 1,
@@ -296,7 +296,7 @@ export default function SavedScreen() {
             Posts
           </Text>
         </Pressable>
-      </View>
+      </View> */}
 
       {loading && !refreshing ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>

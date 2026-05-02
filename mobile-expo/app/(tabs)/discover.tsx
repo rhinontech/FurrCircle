@@ -294,7 +294,8 @@ export default function DiscoverScreen() {
 
       {/* Detail Modal */}
       <Modal visible={!!selectedItem} animationType="slide" transparent onRequestClose={closeModal}>
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: "rgba(0,0,0,0.5)"  }}>
+          <Pressable style={{ flex: 1}} onPress={closeModal} />
           <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '82%', overflow: 'hidden' }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingTop: 24, paddingBottom: 16 }}>
               <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>

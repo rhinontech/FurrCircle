@@ -246,7 +246,7 @@ export default function EditProfileScreen() {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "padding"} 
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 100}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 100}
       style={{ flex: 1, backgroundColor: colors.bg }}
     >
       <ScrollView 
