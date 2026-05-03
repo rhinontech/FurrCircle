@@ -6,7 +6,10 @@ import { uploadImage } from '../controllers/uploadController.ts';
 const router = Router();
 
 // Stories accept images + videos up to 50 MB
-router.post('/stories', protect, uploadMedia.single('image'), uploadImage);
+router.post('/stories', protect, uploadMedia.single('image'), (req: any, _res: any, next: any) => {
+  req.params.folder = 'stories';
+  next();
+}, uploadImage);
 
 // All other folders: images only up to 5 MB
 router.post('/:folder', protect, upload.single('image'), uploadImage);
