@@ -142,6 +142,7 @@ export const createStory = async (req: any, res: Response): Promise<void> => {
             mediaUrl,
             mediaType: type,
             city: (req.user?.city || "").trim().toLowerCase() || null,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         });
 
         res.status(201).json({ story: toPlain(story) });

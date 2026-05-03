@@ -49,8 +49,10 @@ export default (sequelize: Sequelize) => {
         }
     );
 
-    (Story as any).addHook("beforeCreate", (story: any) => {
-        story.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    (Story as any).addHook("beforeValidate", (story: any) => {
+        if (!story.expiresAt) {
+            story.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        }
     });
 
     (Story as any).associate = (models: any) => {
