@@ -62,7 +62,12 @@ export const uploadImage = async (
     body: formData,
   });
 
-  const data = await response.json();
+  let data: any;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(`Server error (HTTP ${response.status}) — please try again.`);
+  }
   if (!response.ok) {
     throw new Error(data.message || 'Upload failed');
   }
