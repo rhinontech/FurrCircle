@@ -1,25 +1,74 @@
 import { api } from '../api';
 import { normalizeConversation, normalizeEvent, normalizePost, normalizeProfile } from '../shared/normalizers';
 
+export type FeedTab = 'for_you' | 'trending' | 'nearby';
+
+export interface StoryItem {
+  id: string;
+  mediaUrl: string;
+  mediaType: 'image' | 'video';
+  viewCount: number;
+  viewedByMe: boolean;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface StoryGroup {
+  userId: string;
+  author: { id: string; name: string; avatar_url: string | null };
+  stories: StoryItem[];
+}
+
+export interface MyStoryResponse {
+  stories: StoryItem[];
+  totalViews: number;
+}
+
+export interface FeedPagination {
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+}
+
 export const userCommunityApi = {
   getCommunityData: async () => {
-    const [feed, events] = await Promise.all([
-      api.get<any[]>('/community/feed'),
+    const [feedResult, events] = await Promise.all([
+      api.get<any>('/community/feed?tab=for_you&page=1&limit=20'),
       api.get<any[]>('/community/events'),
     ]);
 
+    const rawFeed = feedResult?.posts ?? feedResult ?? [];
     return {
-      feed: (feed || []).map(normalizePost).filter(Boolean),
+      feed: (Array.isArray(rawFeed) ? rawFeed : []).map(normalizePost).filter(Boolean),
       events: (events || []).map(normalizeEvent).filter(Boolean),
     };
   },
+  getFeed: async (params: { tab?: FeedTab; page?: number; limit?: number } = {}): Promise<{ posts: any[]; pagination: FeedPagination }> => {
+    const { tab = 'for_you', page = 1, limit = 20 } = params;
+    const result = await api.get<any>(`/community/feed?tab=${tab}&page=${page}&limit=${limit}`);
+    const rawPosts = result?.posts ?? result ?? [];
+    return {
+      posts: (Array.isArray(rawPosts) ? rawPosts : []).map(normalizePost).filter(Boolean),
+      pagination: result?.pagination ?? { page, limit, total: 0, hasMore: false },
+    };
+  },
+  updateInterests: (payload: { petTypeInterests: string[]; topicInterests: string[] }) =>
+    api.patch<{ petTypeInterests: string[]; topicInterests: string[] }>('/community/interests', payload),
   getSpotlight: async () => {
     const post = await api.get<any>('/community/spotlight');
     return post ? normalizePost(post) : null;
   },
+  getStories: () => api.get<StoryGroup[]>('/community/stories'),
+  getMyStory: () => api.get<MyStoryResponse>('/community/stories/me'),
+  createStory: (payload: { mediaUrl: string; mediaType: 'image' | 'video' }) =>
+    api.post<{ story: any }>('/community/stories', payload),
+  viewStory: (id: string) => api.post<{ viewCount: number }>(`/community/stories/${id}/view`),
+  deleteStory: (id: string) => api.delete(`/community/stories/${id}`),
   listFeed: async () => {
-    const feed = await api.get<any[]>('/community/feed');
-    return (feed || []).map(normalizePost).filter(Boolean);
+    const result = await api.get<any>('/community/feed?tab=for_you&page=1&limit=20');
+    const raw = result?.posts ?? result ?? [];
+    return (Array.isArray(raw) ? raw : []).map(normalizePost).filter(Boolean);
   },
   listEvents: async () => {
     const events = await api.get<any[]>('/community/events');

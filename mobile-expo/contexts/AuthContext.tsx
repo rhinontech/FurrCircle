@@ -29,6 +29,8 @@ export interface User {
   clinicStampUrl?: string;
   licenseNumber?: string;
   hasCompletedOnboarding?: boolean;
+  petTypeInterests?: string[];
+  topicInterests?: string[];
 }
 
 type AuthPayload = User & {

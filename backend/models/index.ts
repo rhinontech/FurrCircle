@@ -131,6 +131,12 @@ db.pets.hasMany(db.adoption_applications, { foreignKey: 'petId', as: 'adoptionAp
 db.adoption_applications.belongsTo(db.users, { foreignKey: 'applicantId', as: 'applicant' });
 db.adoption_applications.belongsTo(db.users, { foreignKey: 'ownerId', as: 'petOwner' });
 
+// Stories
+db.stories.belongsTo(db.users, { foreignKey: 'userId', as: 'author', constraints: false });
+db.users.hasMany(db.stories, { foreignKey: 'userId', as: 'stories', constraints: false });
+db.stories.hasMany(db.story_views, { foreignKey: 'storyId', as: 'views' });
+db.story_views.belongsTo(db.stories, { foreignKey: 'storyId' });
+
 // ──────────────────────────────────────────────────────────────────────────────
 
 db.sequelize = sequelize;
@@ -164,6 +170,8 @@ export const notification_campaigns = db.notification_campaigns;
 export const campaign_deliveries = db.campaign_deliveries;
 export const adoption_applications = db.adoption_applications;
 export const contact_leads = db.contact_leads;
+export const stories = db.stories;
+export const story_views = db.story_views;
 
 export { sequelize, Sequelize };
 export default db;

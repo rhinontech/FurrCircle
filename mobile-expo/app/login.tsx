@@ -43,7 +43,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   // OTP is only for development builds / production, not Expo Go
-  const [isOtpMode, setIsOtpMode] = useState(true);
+  const [isOtpMode, setIsOtpMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {

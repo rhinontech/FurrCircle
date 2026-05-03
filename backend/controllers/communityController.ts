@@ -258,6 +258,7 @@ export const createCommunityPost = async (req: any, res: Response): Promise<void
       content: String(content).trim(),
       category,
       imageUrl,
+      city: (req.user?.city || "").trim().toLowerCase() || null,
       status: "approved",
     });
 
@@ -294,24 +295,122 @@ export const getMyPosts = async (req: any, res: Response): Promise<void> => {
   }
 };
 
-// @desc    Get approved posts for feed
-// @route   GET /api/community/feed
+const recomputeEngagementScore = async (postId: string) => {
+  const { posts: Post, likes: Like, comments: Comment } = db as any;
+  const post = await Post.findByPk(postId, {
+    include: [
+      { model: Like, as: "likes", attributes: ["id"] },
+      { model: Comment, as: "comments", attributes: ["id"] },
+    ],
+  });
+  if (!post) return;
+  const payload = toPlain(post);
+  const score =
+    (payload.likes || []).length +
+    (payload.comments || []).length * 2 +
+    (payload.shareCount || 0) * 3;
+  await Post.update({ engagementScore: score }, { where: { id: postId } });
+};
+
+// @desc    Get approved posts for feed (with tab + pagination support)
+// @route   GET /api/community/feed?tab=for_you|trending|nearby&page=1&limit=20
 export const getCommunityFeed = async (req: any, res: Response): Promise<void> => {
   try {
     const { posts: Post, comments: Comment, likes: Like, saved_posts: SavedPost } = db as any;
-    const posts = await Post.findAll({
-      where: { status: "approved" },
-      include: [
-        { model: Comment, as: "comments" },
-        { model: Like, as: "likes", attributes: ["userId", "userType"] },
-        { model: SavedPost, as: "savedPosts", attributes: ["userId", "userType"] },
-      ],
-      order: [["createdAt", "DESC"]],
-    });
+
+    const tab = (req.query.tab as string) || "for_you";
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, parseInt(req.query.limit as string) || 20);
+    const offset = (page - 1) * limit;
+
+    const postIncludes = [
+      { model: Comment, as: "comments" },
+      { model: Like, as: "likes", attributes: ["userId", "userType"] },
+      { model: SavedPost, as: "savedPosts", attributes: ["userId", "userType"] },
+    ];
+
+    let allPosts: any[];
+
+    if (tab === "trending") {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      allPosts = await Post.findAll({
+        where: { status: "approved", createdAt: { [Op.gte]: sevenDaysAgo } },
+        include: postIncludes,
+        order: [["engagementScore", "DESC"], ["createdAt", "DESC"]],
+      });
+    } else if (tab === "nearby") {
+      const userCity = (req.user?.city || "").trim().toLowerCase();
+      if (!userCity) {
+        res.json({
+          posts: [],
+          pagination: { page, limit, total: 0, hasMore: false },
+          hint: "Set your city in Profile to see Nearby posts",
+        });
+        return;
+      }
+      allPosts = await Post.findAll({
+        where: { status: "approved", city: userCity },
+        include: postIncludes,
+        order: [["createdAt", "DESC"]],
+      });
+    } else {
+      // for_you: score = engagementScore + topicMatch(30) + cityMatch(20) + recencyDecay
+      const userCity = (req.user?.city || "").trim().toLowerCase();
+      const userTopics: string[] = req.user?.topicInterests || [];
+
+      allPosts = await Post.findAll({
+        where: { status: "approved" },
+        include: postIncludes,
+        order: [["createdAt", "DESC"]],
+      });
+
+      allPosts = allPosts
+        .map((post: any) => {
+          const payload = toPlain(post);
+          const hoursOld = (Date.now() - new Date(payload.createdAt).getTime()) / 3600000;
+          const recencyDecay = Math.max(0, 100 - hoursOld * 2);
+          const topicBonus = userTopics.length > 0 && userTopics.includes(payload.category) ? 30 : 0;
+          const cityBonus = userCity && (payload.city || "").trim().toLowerCase() === userCity ? 20 : 0;
+          const score = (payload.engagementScore || 0) + topicBonus + cityBonus + recencyDecay;
+          return { post, score };
+        })
+        .sort((a: any, b: any) => b.score - a.score)
+        .map((item: any) => item.post);
+    }
+
+    const total = allPosts.length;
+    const pagePosts = allPosts.slice(offset, offset + limit);
+    const hasMore = offset + limit < total;
 
     const resolveProfile = createProfileResolver();
-    const serialized = await Promise.all(posts.map((post: any) => serializePost(post, resolveProfile)));
-    res.json(serialized);
+    const serialized = await Promise.all(pagePosts.map((post: any) => serializePost(post, resolveProfile)));
+
+    res.json({
+      posts: serialized,
+      pagination: { page, limit, total, hasMore },
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update user's feed interests
+// @route   PATCH /api/community/interests
+export const updateInterests = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { users: User } = db as any;
+    const validPetTypes = ["Dog", "Cat", "Bird", "Rabbit", "Fish", "Other"];
+    const validTopics = ["Health", "Adoption", "Training", "Nutrition", "Lost & Found"];
+
+    const petTypeInterests = (req.body.petTypeInterests || []).filter((v: string) => validPetTypes.includes(v));
+    const topicInterests = (req.body.topicInterests || []).filter((v: string) => validTopics.includes(v));
+
+    await User.update(
+      { petTypeInterests, topicInterests },
+      { where: { id: req.user.id } }
+    );
+
+    res.json({ petTypeInterests, topicInterests });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -375,11 +474,14 @@ export const toggleLike = async (req: any, res: Response): Promise<void> => {
     if (existingLike) {
       await existingLike.destroy();
       res.json({ liked: false, message: "Post unliked" });
+      recomputeEngagementScore(req.params.id).catch(() => {});
       return;
     }
 
     await Like.create({ postId: req.params.id, userId: req.user.id, userType: req.userType || "user" });
     res.json({ liked: true, message: "Post liked" });
+
+    recomputeEngagementScore(req.params.id).catch(() => {});
 
     // Notify post author (fire and forget, skip self-likes)
     if (post.userId !== req.user.id || post.userType !== (req.userType || "user")) {
@@ -451,6 +553,8 @@ export const sharePost = async (req: any, res: Response): Promise<void> => {
     await post.save();
 
     res.json({ shareCount: post.shareCount });
+
+    recomputeEngagementScore(req.params.id).catch(() => {});
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -483,6 +587,8 @@ export const addComment = async (req: any, res: Response): Promise<void> => {
 
     const resolveProfile = createProfileResolver();
     res.status(201).json({ comment: await serializeComment(comment, resolveProfile) });
+
+    recomputeEngagementScore(req.params.id).catch(() => {});
 
     // Notify post author (fire and forget, skip self-comments)
     if (post.userId !== req.user.id || post.userType !== (req.userType || "user")) {

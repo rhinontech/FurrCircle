@@ -75,6 +75,18 @@ export default (sequelize: Sequelize) => {
                 allowNull: false,
                 defaultValue: false,
             },
+            petTypeInterests: {
+                type: DataTypes.ARRAY(DataTypes.STRING),
+                allowNull: true,
+                defaultValue: [],
+                // Values: 'Dog' | 'Cat' | 'Bird' | 'Rabbit' | 'Fish' | 'Other'
+            },
+            topicInterests: {
+                type: DataTypes.ARRAY(DataTypes.STRING),
+                allowNull: true,
+                defaultValue: [],
+                // Values: 'Health' | 'Adoption' | 'Training' | 'Nutrition' | 'Lost & Found'
+            },
             resetToken: {
                 type: DataTypes.STRING,
                 allowNull: true,

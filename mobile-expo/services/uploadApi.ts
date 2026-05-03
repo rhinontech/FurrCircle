@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import Constants from 'expo-constants';
 
-export type UploadFolder = 'profiles' | 'pets' | 'posts' | 'events' | 'stamps' | 'reports' | 'certificates';
+export type UploadFolder = 'profiles' | 'pets' | 'posts' | 'events' | 'stamps' | 'reports' | 'certificates' | 'stories';
 
 const normalizeBaseUrl = (value?: string | null) => {
   const fallback = 'http://127.0.0.1:5001';
@@ -106,4 +106,48 @@ export const captureAndUploadImage = async (
   const asset = await captureImage(options);
   if (!asset) return null;
   return uploadImage(asset, folder);
+};
+
+export const pickAndUploadMedia = async (
+  folder: UploadFolder
+): Promise<{ url: string; mediaType: 'image' | 'video' } | null> => {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    throw new Error('Photo library access is required.');
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.All,
+    allowsEditing: false,
+    quality: 0.8,
+    videoMaxDuration: 30,
+  });
+
+  if (result.canceled || !result.assets?.[0]) return null;
+  const asset = result.assets[0];
+  const url = await uploadImage(asset, folder);
+  const mediaType = (asset.type === 'video' || asset.mimeType?.startsWith('video/')) ? 'video' : 'image';
+  return { url, mediaType };
+};
+
+export const captureAndUploadStory = async (
+  folder: UploadFolder
+): Promise<{ url: string; mediaType: 'image' | 'video' } | null> => {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== 'granted') {
+    throw new Error('Camera access is required.');
+  }
+
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.All,
+    allowsEditing: false,
+    quality: 0.8,
+    videoMaxDuration: 30,
+  });
+
+  if (result.canceled || !result.assets?.[0]) return null;
+  const asset = result.assets[0];
+  const url = await uploadImage(asset, folder);
+  const mediaType = (asset.type === 'video' || asset.mimeType?.startsWith('video/')) ? 'video' : 'image';
+  return { url, mediaType };
 };

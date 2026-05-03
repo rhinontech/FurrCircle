@@ -11,6 +11,7 @@ import {
   sharePost,
   addComment,
   deleteComment,
+  updateInterests,
   getEvents,
   getEventById,
   getPublicEventById,
@@ -21,6 +22,13 @@ import {
   sendMessage,
   startChat,
 } from "../controllers/communityController.ts";
+import {
+  getStoriesForCity,
+  getMyStory,
+  createStory,
+  viewStory,
+  deleteStory,
+} from "../controllers/storyController.ts";
 import { protect } from "../middleware/authMiddleware.ts";
 
 const router = express.Router();
@@ -37,6 +45,15 @@ router.get("/chats", protect, getChats);
 router.get("/chats/:id", protect, getChatById);
 router.post("/chats/start", protect, startChat);
 router.post("/chats/:id/messages", protect, sendMessage);
+
+// Stories — /stories/me must come before /stories/:id
+router.get("/stories/me", protect, getMyStory);
+router.get("/stories", protect, getStoriesForCity);
+router.post("/stories", protect, createStory);
+router.post("/stories/:id/view", protect, viewStory);
+router.delete("/stories/:id", protect, deleteStory);
+
+router.patch("/interests", protect, updateInterests);
 
 router.get("/spotlight", protect, getSpotlightPost);
 router.get("/feed", protect, getCommunityFeed);

@@ -18,6 +18,7 @@ import {
   Phone,
   Pencil,
   CalendarDays,
+  Sliders,
 } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -65,6 +66,11 @@ export default function ProfileScreen() {
       label: "My Posts",
       count: myPostsCount !== null ? String(myPostsCount) : undefined,
       action: () => router.push("/profile/posts"),
+    },
+    {
+      icon: Sliders,
+      label: "Feed Interests",
+      action: () => router.push("/profile/interests" as any),
     },
     {
       icon: Bell,
