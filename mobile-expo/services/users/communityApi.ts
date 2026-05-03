@@ -64,6 +64,7 @@ export const userCommunityApi = {
   createStory: (payload: { mediaUrl: string; mediaType: 'image' | 'video' }) =>
     api.post<{ story: any }>('/community/stories', payload),
   viewStory: (id: string) => api.post<{ viewCount: number }>(`/community/stories/${id}/view`),
+  getStoryViewers: (id: string) => api.get<{ viewers: { id: string; name: string; avatarUrl: string | null; viewedAt: string }[]; total: number }>(`/community/stories/${id}/viewers`),
   deleteStory: (id: string) => api.delete(`/community/stories/${id}`),
   listFeed: async () => {
     const result = await api.get<any>('/community/feed?tab=for_you&page=1&limit=20');

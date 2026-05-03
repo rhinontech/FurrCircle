@@ -58,6 +58,7 @@ export default function CommunityScreen() {
   const [storyViewerState, setStoryViewerState] = useState({ visible: false, groupIndex: 0, storyIndex: 0 });
   const [storyCreateVisible, setStoryCreateVisible] = useState(false);
   const [viewingMyStory, setViewingMyStory] = useState(false);
+  const [myStoryViewed, setMyStoryViewed] = useState(false);
 
   // Post creation state
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
@@ -281,12 +282,14 @@ export default function CommunityScreen() {
   };
 
   const handleStoryViewerClose = () => {
+    if (viewingMyStory) setMyStoryViewed(true);
     setStoryViewerState((prev) => ({ ...prev, visible: false }));
     setViewingMyStory(false);
     loadStories();
   };
 
   const handleStoryCreated = () => {
+    setMyStoryViewed(false);
     loadStories();
   };
 
@@ -376,6 +379,7 @@ export default function CommunityScreen() {
         onPressStory={handlePressStory}
         onPressMyStory={handlePressMyStory}
         onPressAddStory={() => setStoryCreateVisible(true)}
+        myStoryViewed={myStoryViewed}
       />
 
       {/* Nearby hint */}
@@ -460,6 +464,7 @@ export default function CommunityScreen() {
         myStoryGroup={viewingMyStory ? myStoryGroup : null}
         initialGroupIndex={storyViewerState.groupIndex}
         initialStoryIndex={storyViewerState.storyIndex}
+        currentUserId={user?.id}
         onClose={handleStoryViewerClose}
       />
 

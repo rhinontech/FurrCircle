@@ -179,6 +179,46 @@ export const viewStory = async (req: any, res: Response): Promise<void> => {
     }
 };
 
+// @desc    Get viewers of a story (own stories only)
+// @route   GET /api/community/stories/:id/viewers
+export const getStoryViewers = async (req: any, res: Response): Promise<void> => {
+    try {
+        const { stories: Story, story_views: StoryView, users: User } = db as any;
+
+        const story = await Story.findOne({ where: { id: req.params.id, userId: req.user.id } });
+        if (!story) {
+            res.status(404).json({ message: "Story not found or not yours" });
+            return;
+        }
+
+        const views = await StoryView.findAll({
+            where: { storyId: req.params.id },
+            order: [["createdAt", "DESC"]],
+        });
+
+        const viewerIds = views.map((v: any) => v.viewerId);
+        const users = viewerIds.length
+            ? await User.findAll({ where: { id: viewerIds }, attributes: ["id", "name", "avatar_url"] })
+            : [];
+        const userMap = new Map(users.map((u: any) => [u.id, toPlain(u)]));
+
+        const viewers = views.map((v: any) => {
+            const payload = toPlain(v);
+            const u = userMap.get(payload.viewerId) as any;
+            return {
+                id: payload.viewerId,
+                name: u?.name || "User",
+                avatarUrl: u?.avatar_url || null,
+                viewedAt: payload.createdAt,
+            };
+        });
+
+        res.json({ viewers, total: viewers.length });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // @desc    Delete own story
 // @route   DELETE /api/community/stories/:id
 export const deleteStory = async (req: any, res: Response): Promise<void> => {

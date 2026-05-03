@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Image, Pressable, FlatList } from "react-native";
 import { AppText as Text } from "@/components/ui/AppText";
-import { Plus, Eye } from "@/components/ui/IconCompat";
+import { Plus } from "@/components/ui/IconCompat";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { StoryGroup, MyStoryResponse } from "@/services/users/communityApi";
 
@@ -14,6 +14,7 @@ interface Props {
   onPressAddStory: () => void;
   currentUserAvatar?: string | null;
   currentUserName?: string;
+  myStoryViewed?: boolean;
 }
 
 const BUBBLE_SIZE = 68;
@@ -28,29 +29,40 @@ export default function StoriesBar({
   onPressAddStory,
   currentUserAvatar,
   currentUserName,
+  myStoryViewed = false,
 }: Props) {
   const { colors } = useTheme();
 
   const otherGroups = storyGroups.filter((g) => g.userId !== currentUserId);
+  const hasStory = !!(myStory && myStory.stories.length > 0);
 
-  const renderMyStory = () => {
-    const hasStory = myStory && myStory.stories.length > 0;
+  const ringColor = hasStory
+    ? myStoryViewed
+      ? colors.border
+      : colors.brand
+    : colors.border;
 
-    return (
-      <Pressable
-        onPress={hasStory ? onPressMyStory : onPressAddStory}
-        style={{ alignItems: "center", width: BUBBLE_SIZE + 16, marginRight: 4 }}
-      >
+  const renderMyStory = () => (
+    <View style={{ alignItems: "center", width: BUBBLE_SIZE + 16, marginRight: 4 }}>
+      {/* Main bubble — tap to view (if has story) or add (if no story) */}
+      <Pressable onPress={hasStory ? onPressMyStory : onPressAddStory}>
         <View
           style={{
             width: BUBBLE_SIZE,
             height: BUBBLE_SIZE,
             borderRadius: BUBBLE_SIZE / 2,
             padding: RING_WIDTH,
-            backgroundColor: hasStory ? colors.brand : colors.border,
+            backgroundColor: ringColor,
           }}
         >
-          <View style={{ flex: 1, borderRadius: (BUBBLE_SIZE - RING_WIDTH * 2) / 2, overflow: "hidden", backgroundColor: colors.bgSubtle }}>
+          <View
+            style={{
+              flex: 1,
+              borderRadius: (BUBBLE_SIZE - RING_WIDTH * 2) / 2,
+              overflow: "hidden",
+              backgroundColor: colors.bgSubtle,
+            }}
+          >
             {currentUserAvatar ? (
               <Image source={{ uri: currentUserAvatar }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
             ) : (
@@ -62,56 +74,34 @@ export default function StoriesBar({
             )}
           </View>
 
-          {!hasStory && (
-            <View
-              style={{
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                width: 22,
-                height: 22,
-                borderRadius: 11,
-                backgroundColor: colors.brand,
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 2,
-                borderColor: colors.bgCard,
-              }}
-            >
-              <Plus size={12} color="#fff" />
-            </View>
-          )}
-
-          {hasStory && (
-            <View
-              style={{
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                minWidth: 22,
-                height: 18,
-                borderRadius: 9,
-                backgroundColor: colors.brand,
-                alignItems: "center",
-                justifyContent: "center",
-                paddingHorizontal: 4,
-                borderWidth: 2,
-                borderColor: colors.bgCard,
-                flexDirection: "row",
-                gap: 2,
-              }}
-            >
-              <Eye size={9} color="#fff" />
-              <Text style={{ fontSize: 9, color: "#fff", fontWeight: "700" }}>{myStory!.totalViews}</Text>
-            </View>
-          )}
+          {/* Always show + badge in bottom-right */}
+          <Pressable
+            onPress={onPressAddStory}
+            hitSlop={8}
+            style={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              width: 22,
+              height: 22,
+              borderRadius: 11,
+              backgroundColor: colors.brand,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 2,
+              borderColor: colors.bgCard,
+            }}
+          >
+            <Plus size={12} color="#fff" />
+          </Pressable>
         </View>
-        <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 4, textAlign: "center" }} numberOfLines={1}>
-          {hasStory ? "My Story" : "Add Story"}
-        </Text>
       </Pressable>
-    );
-  };
+
+      <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 4, textAlign: "center" }} numberOfLines={1}>
+        {hasStory ? "My Story" : "Add Story"}
+      </Text>
+    </View>
+  );
 
   const renderStoryBubble = ({ item }: { item: StoryGroup }) => {
     const hasUnviewed = item.stories.some((s) => !s.viewedByMe);
@@ -131,7 +121,14 @@ export default function StoriesBar({
             backgroundColor: ringColor,
           }}
         >
-          <View style={{ flex: 1, borderRadius: (BUBBLE_SIZE - RING_WIDTH * 2) / 2, overflow: "hidden", backgroundColor: colors.bgSubtle }}>
+          <View
+            style={{
+              flex: 1,
+              borderRadius: (BUBBLE_SIZE - RING_WIDTH * 2) / 2,
+              overflow: "hidden",
+              backgroundColor: colors.bgSubtle,
+            }}
+          >
             {item.author?.avatar_url ? (
               <Image source={{ uri: item.author.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
             ) : (
@@ -150,7 +147,7 @@ export default function StoriesBar({
     );
   };
 
-  if (otherGroups.length === 0 && (!myStory || myStory.stories.length === 0)) {
+  if (otherGroups.length === 0 && !hasStory) {
     return (
       <View style={{ paddingVertical: 4, paddingHorizontal: 20, marginBottom: 16 }}>
         {renderMyStory()}

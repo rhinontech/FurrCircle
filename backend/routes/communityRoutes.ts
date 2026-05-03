@@ -28,6 +28,7 @@ import {
   createStory,
   viewStory,
   deleteStory,
+  getStoryViewers,
 } from "../controllers/storyController.ts";
 import { protect } from "../middleware/authMiddleware.ts";
 
@@ -51,6 +52,7 @@ router.get("/stories/me", protect, getMyStory);
 router.get("/stories", protect, getStoriesForCity);
 router.post("/stories", protect, createStory);
 router.post("/stories/:id/view", protect, viewStory);
+router.get("/stories/:id/viewers", protect, getStoryViewers);
 router.delete("/stories/:id", protect, deleteStory);
 
 router.patch("/interests", protect, updateInterests);

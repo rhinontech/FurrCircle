@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { View, Image, Modal, Pressable, Dimensions, StatusBar } from "react-native";
+import { View, Image, Modal, Pressable, Dimensions, StatusBar, FlatList, PanResponder, Animated as RNAnimated } from "react-native";
 import { AppText as Text } from "@/components/ui/AppText";
-import { X } from "@/components/ui/IconCompat";
+import { X, Eye, TrendingUp } from "@/components/ui/IconCompat";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, cancelAnimation, Easing } from "react-native-reanimated";
 import { Video, ResizeMode } from "expo-av";
 import type { StoryGroup, StoryItem } from "@/services/users/communityApi";
@@ -11,12 +11,20 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const IMAGE_DURATION_MS = 5000;
 const VIDEO_MAX_MS = 30000;
 
+interface Viewer {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  viewedAt: string;
+}
+
 interface Props {
   visible: boolean;
   storyGroups: StoryGroup[];
   myStoryGroup?: StoryGroup | null;
   initialGroupIndex: number;
   initialStoryIndex: number;
+  currentUserId?: string;
   onClose: () => void;
 }
 
@@ -26,14 +34,24 @@ export default function StoryViewer({
   myStoryGroup,
   initialGroupIndex,
   initialStoryIndex,
+  currentUserId,
   onClose,
 }: Props) {
-  const allGroups = myStoryGroup ? [myStoryGroup, ...storyGroups.filter((g) => g.userId !== myStoryGroup.userId)] : storyGroups;
+  const allGroups = myStoryGroup
+    ? [myStoryGroup, ...storyGroups.filter((g) => g.userId !== myStoryGroup.userId)]
+    : storyGroups;
 
   const [groupIndex, setGroupIndex] = useState(initialGroupIndex);
   const [storyIndex, setStoryIndex] = useState(initialStoryIndex);
   const [paused, setPaused] = useState(false);
   const [videoDuration, setVideoDuration] = useState(IMAGE_DURATION_MS);
+
+  // Viewer panel state
+  const [viewerPanelVisible, setViewerPanelVisible] = useState(false);
+  const [viewers, setViewers] = useState<Viewer[]>([]);
+  const [viewersTotal, setViewersTotal] = useState(0);
+  const [viewersLoading, setViewersLoading] = useState(false);
+  const panelY = useRef(new RNAnimated.Value(SCREEN_HEIGHT)).current;
 
   const progress = useSharedValue(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -41,6 +59,7 @@ export default function StoryViewer({
 
   const currentGroup = allGroups[groupIndex];
   const currentStory: StoryItem | undefined = currentGroup?.stories[storyIndex];
+  const isOwnStory = !!currentUserId && currentGroup?.userId === currentUserId;
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -86,13 +105,10 @@ export default function StoryViewer({
   useEffect(() => {
     if (!visible || !currentStory) return;
     setVideoDuration(IMAGE_DURATION_MS);
-
     userCommunityApi.viewStory(currentStory.id).catch(() => {});
-
     if (currentStory.mediaType === "image") {
       startProgress(IMAGE_DURATION_MS);
     }
-
     return () => {
       clearTimer();
       cancelAnimation(progress);
@@ -115,6 +131,43 @@ export default function StoryViewer({
     }
   }, [paused]);
 
+  // Pan responder for swipe-up gesture on own stories
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) => isOwnStory && gs.dy < -10 && Math.abs(gs.dy) > Math.abs(gs.dx),
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dy < -50) openViewerPanel();
+      },
+    })
+  ).current;
+
+  const openViewerPanel = useCallback(async () => {
+    if (!currentStory) return;
+    setPaused(true);
+    setViewerPanelVisible(true);
+    RNAnimated.spring(panelY, { toValue: 0, useNativeDriver: true }).start();
+    if (!viewersLoading) {
+      setViewersLoading(true);
+      try {
+        const res = await userCommunityApi.getStoryViewers(currentStory.id);
+        setViewers(res?.viewers || []);
+        setViewersTotal(res?.total || 0);
+      } catch {
+        setViewers([]);
+      } finally {
+        setViewersLoading(false);
+      }
+    }
+  }, [currentStory, viewersLoading]);
+
+  const closeViewerPanel = useCallback(() => {
+    RNAnimated.timing(panelY, { toValue: SCREEN_HEIGHT, duration: 250, useNativeDriver: true }).start(() => {
+      setViewerPanelVisible(false);
+      setViewers([]);
+      setPaused(false);
+    });
+  }, []);
+
   const progressBarStyle = useAnimatedStyle(() => ({
     width: `${progress.value * 100}%`,
   }));
@@ -127,9 +180,7 @@ export default function StoryViewer({
       setVideoDuration(clampedDur);
       startProgress(clampedDur);
     }
-    if (status.didJustFinish) {
-      goNext();
-    }
+    if (status.didJustFinish) goNext();
   };
 
   if (!visible || !currentStory) return null;
@@ -139,7 +190,7 @@ export default function StoryViewer({
   return (
     <Modal visible={visible} animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <StatusBar hidden />
-      <View style={{ flex: 1, backgroundColor: "#000" }}>
+      <View style={{ flex: 1, backgroundColor: "#000" }} {...panResponder.panHandlers}>
         {/* Media */}
         {currentStory.mediaType === "video" ? (
           <Video
@@ -192,13 +243,37 @@ export default function StoryViewer({
           </Pressable>
         </View>
 
+        {/* Own story bottom bar — view count + swipe up */}
+        {isOwnStory && (
+          <Pressable
+            onPress={openViewerPanel}
+            style={{
+              position: "absolute",
+              bottom: 48,
+              left: 0,
+              right: 0,
+              alignItems: "center",
+              zIndex: 20,
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 8,
+            }}
+          >
+            <Eye size={16} color="rgba(255,255,255,0.8)" />
+            <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 14, fontWeight: "600" }}>
+              {currentStory.viewCount} {currentStory.viewCount === 1 ? "view" : "views"}
+            </Text>
+            <TrendingUp size={16} color="rgba(255,255,255,0.8)" />
+          </Pressable>
+        )}
+
         {/* Tap zones */}
         <View style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: SCREEN_WIDTH * 0.3, zIndex: 10 }}>
           <Pressable
             style={{ flex: 1 }}
             onPress={goPrev}
             onLongPress={() => setPaused(true)}
-            onPressOut={() => setPaused(false)}
+            onPressOut={() => { if (!viewerPanelVisible) setPaused(false); }}
           />
         </View>
         <View style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: SCREEN_WIDTH * 0.7, zIndex: 10 }}>
@@ -206,10 +281,67 @@ export default function StoryViewer({
             style={{ flex: 1 }}
             onPress={goNext}
             onLongPress={() => setPaused(true)}
-            onPressOut={() => setPaused(false)}
+            onPressOut={() => { if (!viewerPanelVisible) setPaused(false); }}
           />
         </View>
       </View>
+
+      {/* Viewer panel (own stories only) */}
+      {viewerPanelVisible && (
+        <RNAnimated.View
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: SCREEN_HEIGHT * 0.55,
+            backgroundColor: "#1a1a1a",
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            zIndex: 100,
+            transform: [{ translateY: panelY }],
+          }}
+        >
+          {/* Handle + header */}
+          <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 4 }}>
+            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.3)" }} />
+          </View>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 12 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Eye size={18} color="#fff" />
+              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>{viewersTotal} {viewersTotal === 1 ? "View" : "Views"}</Text>
+            </View>
+            <Pressable onPress={closeViewerPanel} hitSlop={12}>
+              <X size={20} color="rgba(255,255,255,0.6)" />
+            </Pressable>
+          </View>
+
+          {/* Viewer list */}
+          {viewersLoading ? (
+            <Text style={{ color: "rgba(255,255,255,0.5)", textAlign: "center", marginTop: 24 }}>Loading...</Text>
+          ) : viewers.length === 0 ? (
+            <Text style={{ color: "rgba(255,255,255,0.4)", textAlign: "center", marginTop: 32, fontSize: 14 }}>No views yet</Text>
+          ) : (
+            <FlatList
+              data={viewers}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}
+              renderItem={({ item }) => (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 }}>
+                  {item.avatarUrl ? (
+                    <Image source={{ uri: item.avatarUrl }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                  ) : (
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" }}>
+                      <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>{item.name[0]?.toUpperCase()}</Text>
+                    </View>
+                  )}
+                  <Text style={{ color: "#fff", fontSize: 14, fontWeight: "500" }}>{item.name}</Text>
+                </View>
+              )}
+            />
+          )}
+        </RNAnimated.View>
+      )}
     </Modal>
   );
 }
