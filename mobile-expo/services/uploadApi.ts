@@ -156,3 +156,36 @@ export const captureAndUploadStory = async (
   const mediaType = (asset.type === 'video' || asset.mimeType?.startsWith('video/')) ? 'video' : 'image';
   return { url, mediaType };
 };
+
+// Pick image or video without uploading — used for the story editor flow
+export const pickMedia = async (): Promise<ImagePicker.ImagePickerAsset | null> => {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    throw new Error('Photo library access is required.');
+  }
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.All,
+    allowsEditing: false,
+    quality: 0.65,
+    videoMaxDuration: 30,
+  });
+  if (result.canceled || !result.assets?.[0]) return null;
+  return result.assets[0];
+};
+
+// Capture from camera without uploading — 9:16 portrait ratio for stories
+export const captureStoryCamera = async (): Promise<ImagePicker.ImagePickerAsset | null> => {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== 'granted') {
+    throw new Error('Camera access is required.');
+  }
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.All,
+    allowsEditing: true,
+    aspect: [9, 16],
+    quality: 0.65,
+    videoMaxDuration: 30,
+  });
+  if (result.canceled || !result.assets?.[0]) return null;
+  return result.assets[0];
+};

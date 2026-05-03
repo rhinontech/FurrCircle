@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { View, Image, Modal, Pressable, Dimensions, StatusBar, FlatList, PanResponder, Animated as RNAnimated } from "react-native";
+import { View, Image, Modal, Pressable, Dimensions, StatusBar, FlatList, PanResponder, Animated as RNAnimated, ActivityIndicator } from "react-native";
 import { AppText as Text } from "@/components/ui/AppText";
 import { X, Eye, TrendingUp } from "@/components/ui/IconCompat";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, cancelAnimation, Easing } from "react-native-reanimated";
@@ -45,6 +45,7 @@ export default function StoryViewer({
   const [storyIndex, setStoryIndex] = useState(initialStoryIndex);
   const [paused, setPaused] = useState(false);
   const [videoDuration, setVideoDuration] = useState(IMAGE_DURATION_MS);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Viewer panel state
   const [viewerPanelVisible, setViewerPanelVisible] = useState(false);
@@ -105,6 +106,7 @@ export default function StoryViewer({
   useEffect(() => {
     if (!visible || !currentStory) return;
     setVideoDuration(IMAGE_DURATION_MS);
+    setImageLoaded(false);
     userCommunityApi.viewStory(currentStory.id).catch(() => {});
     if (currentStory.mediaType === "image") {
       startProgress(IMAGE_DURATION_MS);
@@ -201,13 +203,23 @@ export default function StoryViewer({
             shouldPlay={!paused}
             isLooping={false}
             onPlaybackStatusUpdate={handleVideoStatus}
+            onReadyForDisplay={() => setImageLoaded(true)}
           />
         ) : (
           <Image
+            key={currentStory.id}
             source={{ uri: currentStory.mediaUrl }}
-            style={{ position: "absolute", width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
+            style={{ position: "absolute", width: SCREEN_WIDTH, height: SCREEN_HEIGHT, opacity: imageLoaded ? 1 : 0 }}
             resizeMode="contain"
+            onLoad={() => setImageLoaded(true)}
           />
+        )}
+
+        {/* Loading spinner until media is ready */}
+        {!imageLoaded && (
+          <View style={{ position: "absolute", width: SCREEN_WIDTH, height: SCREEN_HEIGHT, alignItems: "center", justifyContent: "center" }}>
+            <ActivityIndicator size="large" color="rgba(255,255,255,0.8)" />
+          </View>
         )}
 
         {/* Progress bars */}
@@ -265,6 +277,27 @@ export default function StoryViewer({
             </Text>
             <TrendingUp size={16} color="rgba(255,255,255,0.8)" />
           </Pressable>
+        )}
+
+        {/* Caption overlay */}
+        {currentStory.caption && (
+          <View
+            style={{
+              position: "absolute",
+              bottom: isOwnStory ? 96 : 48,
+              left: 20,
+              right: 20,
+              alignItems: "center",
+              zIndex: 15,
+            }}
+            pointerEvents="none"
+          >
+            <View style={{ backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 }}>
+              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600", textAlign: "center", lineHeight: 22 }}>
+                {currentStory.caption}
+              </Text>
+            </View>
+          </View>
         )}
 
         {/* Tap zones */}

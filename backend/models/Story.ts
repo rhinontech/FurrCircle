@@ -29,6 +29,10 @@ export default (sequelize: Sequelize) => {
                 allowNull: false,
                 defaultValue: "image", // image | video
             },
+            caption: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
             city: {
                 type: DataTypes.STRING,
                 allowNull: true,

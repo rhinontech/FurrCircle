@@ -10,6 +10,7 @@ const serializeStory = (story: any, viewerIds: Set<string>) => {
         id: payload.id,
         mediaUrl: payload.mediaUrl,
         mediaType: payload.mediaType,
+        caption: payload.caption || null,
         viewCount: payload.viewCount || 0,
         viewedByMe: viewerIds.has(payload.id),
         createdAt: payload.createdAt,
@@ -107,6 +108,7 @@ export const getMyStory = async (req: any, res: Response): Promise<void> => {
                 id: payload.id,
                 mediaUrl: payload.mediaUrl,
                 mediaType: payload.mediaType,
+                caption: payload.caption || null,
                 viewCount: payload.viewCount || 0,
                 viewedByMe: true,
                 createdAt: payload.createdAt,
@@ -127,7 +129,7 @@ export const getMyStory = async (req: any, res: Response): Promise<void> => {
 export const createStory = async (req: any, res: Response): Promise<void> => {
     try {
         const { stories: Story } = db as any;
-        const { mediaUrl, mediaType } = req.body;
+        const { mediaUrl, mediaType, caption } = req.body;
 
         if (!mediaUrl) {
             res.status(400).json({ message: "mediaUrl is required" });
@@ -141,6 +143,7 @@ export const createStory = async (req: any, res: Response): Promise<void> => {
             userType: req.userType || "user",
             mediaUrl,
             mediaType: type,
+            caption: caption?.trim() || null,
             city: (req.user?.city || "").trim().toLowerCase() || null,
             expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         });

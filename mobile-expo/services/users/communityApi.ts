@@ -7,6 +7,7 @@ export interface StoryItem {
   id: string;
   mediaUrl: string;
   mediaType: 'image' | 'video';
+  caption?: string | null;
   viewCount: number;
   viewedByMe: boolean;
   createdAt: string;
@@ -61,7 +62,7 @@ export const userCommunityApi = {
   },
   getStories: () => api.get<StoryGroup[]>('/community/stories'),
   getMyStory: () => api.get<MyStoryResponse>('/community/stories/me'),
-  createStory: (payload: { mediaUrl: string; mediaType: 'image' | 'video' }) =>
+  createStory: (payload: { mediaUrl: string; mediaType: 'image' | 'video'; caption?: string }) =>
     api.post<{ story: any }>('/community/stories', payload),
   viewStory: (id: string) => api.post<{ viewCount: number }>(`/community/stories/${id}/view`),
   getStoryViewers: (id: string) => api.get<{ viewers: { id: string; name: string; avatarUrl: string | null; viewedAt: string }[]; total: number }>(`/community/stories/${id}/viewers`),
