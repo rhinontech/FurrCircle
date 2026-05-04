@@ -231,7 +231,15 @@ export default function VetDetailsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View>
+      <ScrollView
+        style={{ flex: 1 }}
+        // Use contentContainerStyle for layout padding/spacing
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 24 // Ensures bottom buttons aren't cut off
+        }}
+        showsVerticalScrollIndicator={false}
+
+      >
 
         {/* Hero gradient header */}
         <LinearGradient
@@ -372,7 +380,7 @@ export default function VetDetailsScreen() {
             </Pressable>
           )}
         </View>
-      </View>
+      </ScrollView>
 
       {/* Set Reminder Bottom Sheet */}
       <Modal visible={reminderModal} transparent animationType="slide" onRequestClose={() => setReminderModal(false)}>

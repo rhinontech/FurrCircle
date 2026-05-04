@@ -324,7 +324,7 @@ export default function AddPetScreen() {
             )}
           </View>
 
-          <View style={{ marginBottom: 32 }}>
+          {/* <View style={{ marginBottom: 32 }}>
             <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 }}>Microchip ID</Text>
             <TextInput
               placeholder="e.g. 985112345678"
@@ -334,7 +334,7 @@ export default function AddPetScreen() {
               style={{ backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 16, height: 48, fontSize: 16, color: colors.textPrimary }}
               maxLength={50}
             />
-          </View>
+          </View> */}
 
           <Pressable
             onPress={handleSubmit}
