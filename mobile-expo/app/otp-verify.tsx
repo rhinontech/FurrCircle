@@ -30,7 +30,7 @@ const getFirebaseAuth = () => {
 
 export default function OtpVerifyScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { register, loginOtp } = useAuth();
   const params = useLocalSearchParams();
   const inputRef = useRef<TextInput>(null);
@@ -195,7 +195,7 @@ export default function OtpVerifyScreen() {
                 borderRadius: 14,
                 borderWidth: 2,
                 borderColor: isFocused ? colors.brand : (isFilled ? colors.brand + "40" : colors.border),
-                backgroundColor: isFocused ? colors.brand + "08" : colors.bgCard,
+                backgroundColor: isFocused ? (isDark ? "#1a243d" : "#f0f4ff") : colors.bgCard,
                 justifyContent: 'center',
                 alignItems: 'center',
                 ...Platform.select({
@@ -206,7 +206,7 @@ export default function OtpVerifyScreen() {
                     shadowRadius: 8,
                   },
                   android: {
-                    elevation: isFocused ? 3 : 0,
+                    // Removed elevation to fix internal shadow artifacts on some Android devices
                   }
                 })
               }}
@@ -329,7 +329,17 @@ export default function OtpVerifyScreen() {
               }}
               keyboardType="number-pad"
               maxLength={6}
-              style={{ position: 'absolute', opacity: 0, height: 0, width: 0 }}
+              caretHidden={true}
+              selectionColor="transparent"
+              cursorColor="transparent"
+              underlineColorAndroid="transparent"
+              style={{ 
+                position: 'absolute', 
+                opacity: 0, 
+                width: 1, 
+                height: 1,
+                left: -100, // Move it off-screen for extra safety
+              }}
               autoFocus
             />
 

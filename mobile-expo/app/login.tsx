@@ -52,7 +52,7 @@ export default function LoginScreen() {
         Alert.alert("Error", "Please enter a valid 10-digit phone number");
         return;
       }
-      
+
       setLoading(true);
       try {
         const auth = getFirebaseAuth();
@@ -61,7 +61,7 @@ export default function LoginScreen() {
         if (auth) {
           console.log(`Requesting Login OTP for: ${phoneNumber}`);
           const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
-          
+
           router.push({
             pathname: "/otp-verify",
             params: {
@@ -272,14 +272,16 @@ export default function LoginScreen() {
             )}
 
             {/* Forgot password */}
-            <Pressable
-              onPress={() => router.push("/forgot-password")}
-              style={{ alignSelf: "flex-end", marginBottom: 28 }}
-            >
-              <Text style={{ fontSize: 13, color: colors.brand, fontWeight: "600" }}>
-                Forgot password?
-              </Text>
-            </Pressable>
+            {!isOtpMode && (
+              <Pressable
+                onPress={() => router.push("/forgot-password")}
+                style={{ alignSelf: "flex-end", marginBottom: 28 }}
+              >
+                <Text style={{ fontSize: 13, color: colors.brand, fontWeight: "600" }}>
+                  Forgot password?
+                </Text>
+              </Pressable>
+            )}
 
             {/* Sign In button */}
             <LinearGradient
@@ -334,6 +336,18 @@ export default function LoginScreen() {
               <Pressable onPress={() => router.push("/signup")}>
                 <Text style={{ fontSize: 14, fontWeight: "700", color: colors.brand }}>Sign Up</Text>
               </Pressable>
+            </View>
+
+            {/* Powered by */}
+            <View style={{ marginTop: 'auto', paddingTop: 32, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 0, opacity: 0.5 }}>
+              <Text style={{ fontSize: 10, color: colors.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                Powered by
+              </Text>
+              <Image
+                source={require("../assets/rhinon_tech_dark_logo.png")}
+                style={{ width: 110, height: 26 }}
+                resizeMode="contain"
+              />
             </View>
           </View>
         </ScrollView>

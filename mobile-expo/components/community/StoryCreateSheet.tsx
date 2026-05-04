@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Modal, Pressable, Alert } from "react-native";
+import { View, Modal, Pressable, Alert, Platform } from "react-native";
 import { AppText as Text } from "@/components/ui/AppText";
 import { Camera, ImagePlus, X } from "@/components/ui/IconCompat";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -22,7 +22,15 @@ export default function StoryCreateSheet({ visible, onClose, onSuccess }: Props)
 
   const handleSource = async (source: "camera" | "library") => {
     setPicking(true);
+    
+    // 1. Close the chooser modal first to clear the native stack
+    onClose();
+    
+    // 2. Wait for chooser dismissal to complete (iOS needs time to settle)
+    await new Promise(resolve => setTimeout(resolve, Platform.OS === 'ios' ? 600 : 100));
+
     try {
+      // 3. Open media picker from the 'base' app state (no nested modals)
       const asset = source === "camera"
         ? await captureStoryCamera()
         : await pickMedia();
@@ -33,8 +41,12 @@ export default function StoryCreateSheet({ visible, onClose, onSuccess }: Props)
       }
 
       setSelectedAsset(asset);
-      setEditorVisible(true);
-      onClose(); // dismiss chooser sheet; editor modal takes over
+      
+      // 4. Delay to ensure picker/camera dismissal is finished before presenting editor
+      setTimeout(() => {
+        setEditorVisible(true);
+      }, Platform.OS === 'ios' ? 400 : 100);
+
     } catch (error: any) {
       Alert.alert("Error", error.message || "Could not access media.");
     } finally {
@@ -74,7 +86,7 @@ export default function StoryCreateSheet({ visible, onClose, onSuccess }: Props)
               paddingTop: 20,
               paddingBottom: 40,
             }}
-            onPress={() => {}}
+            onPress={() => { }}
           >
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
               <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary }}>Add to Your Story</Text>
@@ -134,15 +146,16 @@ export default function StoryCreateSheet({ visible, onClose, onSuccess }: Props)
             </View>
           </Pressable>
         </Pressable>
+        
       </Modal>
 
       {/* Full-screen story editor — shown after media is selected */}
       <StoryEditor
-        visible={editorVisible}
-        asset={selectedAsset}
-        onCancel={handleEditorCancel}
-        onPublish={handleEditorPublish}
-      />
+          visible={editorVisible}
+          asset={selectedAsset}
+          onCancel={handleEditorCancel}
+          onPublish={handleEditorPublish}
+        />
     </>
   );
 }

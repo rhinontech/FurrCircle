@@ -14,18 +14,18 @@ export default function SecurityScreen() {
   const [showLocation, setShowLocation] = React.useState(true);
 
   const securitySections = [
-    {
-      title: "Account Security",
-      items: [
-        { 
-          icon: Lock, 
-          label: "Change Password", 
-          action: () => router.push("/profile/change-password"),
-          toggle: false,
-          value: undefined
-        },
-      ]
-    },
+    // {
+    //   title: "Account Security",
+    //   items: [
+    //     { 
+    //       icon: Lock, 
+    //       label: "Change Password", 
+    //       action: () => router.push("/profile/change-password"),
+    //       toggle: false,
+    //       value: undefined
+    //     },
+    //   ]
+    // },
     {
       title: "Privacy Settings",
       items: [

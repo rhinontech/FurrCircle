@@ -71,7 +71,7 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   // OTP is only for development builds / production, not Expo Go
-  const [isOtpMode, setIsOtpMode] = useState(true);
+  const [isOtpMode, setIsOtpMode] = useState(false);
 
   // Shelter-specific
   // const [shelterCity, setShelterCity] = useState("");
@@ -416,6 +416,18 @@ export default function SignupScreen() {
               <Pressable onPress={() => router.push("/login")}>
                 <Text style={{ fontSize: 14, fontWeight: "700", color: colors.brand }}>Sign In</Text>
               </Pressable>
+            </View>
+            
+            {/* Powered by */}
+            <View style={{ marginTop: 'auto', paddingTop: 32, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 0, opacity: 0.5 }}>
+              <Text style={{ fontSize: 10, color: colors.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                Powered by
+              </Text>
+              <Image 
+                source={require("../assets/rhinon_tech_dark_logo.png")} 
+                style={{ width: 110, height: 26 }} 
+                resizeMode="contain" 
+              />
             </View>
           </View>
         </ScrollView>
