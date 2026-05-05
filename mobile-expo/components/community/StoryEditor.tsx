@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Image,
@@ -11,11 +11,22 @@ import {
   ActivityIndicator,
   StatusBar,
   TouchableOpacity,
+  StyleSheet,
+  ScrollView,
 } from "react-native";
 import { AppText as Text } from "@/components/ui/AppText";
-import { X, ArrowRight, Pencil, Star, Download } from "@/components/ui/IconCompat";
-import { Video, ResizeMode } from "expo-av";
+import { X, Type, Pencil, ChevronRight, RotateCcw, Edit2 } from "lucide-react-native";
+import { Svg, Path } from "react-native-svg";
+import ViewShot from "react-native-view-shot";
 import type { ImagePickerAsset } from "expo-image-picker";
+
+// Gestures
+import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle,
+  runOnJS,
+} from "react-native-reanimated";
 
 const { width: SW, height: SH } = Dimensions.get("window");
 
@@ -28,36 +39,67 @@ interface Props {
   visible: boolean;
   asset: ImagePickerAsset | null;
   onCancel: () => void;
-  onPublish: (caption?: string) => Promise<void>;
+  onPublish: (uri: string, caption?: string) => Promise<void>;
 }
 
 export default function StoryEditor({ visible, asset, onCancel, onPublish }: Props) {
   const [caption, setCaption] = useState("");
   const [publishing, setPublishing] = useState(false);
+  const viewShotRef = useRef<any>(null);
 
   // Text overlay state
   const [textMode, setTextMode] = useState(false);
   const [overlayText, setOverlayText] = useState("");
   const [overlayDraft, setOverlayDraft] = useState("");
-  const [textColor, setTextColor] = useState("#FFFFFF");
 
-  const isVideo = asset?.type === "video" || asset?.mimeType?.startsWith("video/");
+  // Reanimated Shared Values for Vertical Gestures
+  const translateY = useSharedValue(0);
+  const startY = useSharedValue(0);
 
-  const handlePublish = async () => {
-    setPublishing(true);
-    try {
-      const fullCaption = [overlayText, caption].filter(Boolean).join("\n").trim();
-      await onPublish(fullCaption || undefined);
-      setCaption("");
+  // Drawing state
+  const [drawingMode, setDrawingMode] = useState(false);
+  const [markerColor, setMarkerColor] = useState("#FFFFFF");
+  const [paths, setPaths] = useState<{ d: string; color: string }[]>([]);
+  const [currentPath, setCurrentPath] = useState<string[]>([]);
+
+  const CAMERA_HEIGHT = SW * (16 / 9);
+  const VERTICAL_MARGIN = (SH - CAMERA_HEIGHT) / 2;
+
+  // Reset state when a new asset is loaded
+  useEffect(() => {
+    if (visible && asset) {
+      setPaths([]);
       setOverlayText("");
-    } finally {
-      setPublishing(false);
+      setOverlayDraft("");
+      setCaption("");
+      translateY.value = 0;
+      setDrawingMode(false);
+      setTextMode(false);
     }
-  };
+  }, [asset?.uri, visible]);
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetY([-5, 5])
+    .onStart(() => {
+      startY.value = translateY.value;
+    })
+    .onUpdate((event) => {
+      const newY = startY.value + event.translationY;
+      const minBound = - (CAMERA_HEIGHT * 0.38);
+      const maxBound = (CAMERA_HEIGHT * 0.52);
+      translateY.value = Math.min(Math.max(newY, minBound), maxBound);
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: translateY.value },
+    ],
+  }));
 
   const openTextMode = () => {
     setOverlayDraft(overlayText);
     setTextMode(true);
+    setDrawingMode(false);
   };
 
   const confirmText = () => {
@@ -66,294 +108,376 @@ export default function StoryEditor({ visible, asset, onCancel, onPublish }: Pro
   };
 
   const cancelText = () => {
-    setOverlayDraft("");
+    setOverlayDraft(overlayText);
     setTextMode(false);
+  };
+
+  const handlePublish = async () => {
+    if (!viewShotRef.current) return;
+    setPublishing(true);
+    try {
+      // Give React time to re-render and hide UI elements (like edit button)
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const uri = await viewShotRef.current.capture();
+      await onPublish(uri, caption || undefined);
+
+      setCaption("");
+      setOverlayText("");
+      setPaths([]);
+      translateY.value = 0;
+    } catch (err) {
+      console.error("Failed to capture story", err);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const startDrawing = (x: number, y: number) => {
+    if (!drawingMode) return;
+    setCurrentPath([`M${x},${y}`]);
+  };
+
+  const moveDrawing = (x: number, y: number) => {
+    if (!drawingMode) return;
+    setCurrentPath(prev => [...prev, `L${x},${y}`]);
+  };
+
+  const endDrawing = () => {
+    if (!drawingMode || currentPath.length === 0) return;
+    setPaths(prev => [...prev, { d: currentPath.join(" "), color: markerColor }]);
+    setCurrentPath([]);
+  };
+
+  const undoDrawing = () => {
+    setPaths(prev => prev.slice(0, -1));
   };
 
   if (!asset) return null;
 
   return (
     <Modal visible={visible} animationType="fade" statusBarTranslucent>
-      <StatusBar hidden />
-      <View style={{ flex: 1, backgroundColor: "#000" }}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <StatusBar hidden />
+        <View style={styles.container}>
 
-        {/* Full-screen media */}
-        {isVideo ? (
-          <Video
-            source={{ uri: asset.uri }}
-            style={{ position: "absolute", width: SW, height: SH }}
-            resizeMode={ResizeMode.COVER}
-            shouldPlay={!textMode}
-            isLooping
-          />
-        ) : (
+        <ViewShot
+          ref={viewShotRef}
+          options={{ format: "jpg", quality: 0.9 }}
+          style={[styles.mediaContainer, { height: CAMERA_HEIGHT, top: VERTICAL_MARGIN }]}
+        >
           <Image
             source={{ uri: asset.uri }}
-            style={{ position: "absolute", width: SW, height: SH }}
+            style={styles.image}
             resizeMode="cover"
           />
-        )}
 
-        {/* Gradient overlay at bottom for controls */}
-        <View
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 180,
-            background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
-            backgroundColor: "transparent",
-          }}
-          pointerEvents="none"
-        />
-
-        {/* Text overlay on image */}
-        {overlayText !== "" && !textMode && (
-          <Pressable
-            onPress={openTextMode}
-            style={{
-              position: "absolute",
-              left: 32,
-              right: 32,
-              top: SH * 0.38,
-              alignItems: "center",
-            }}
+          {/* Drawing Canvas */}
+          <View 
+            style={styles.canvasContainer}
+            pointerEvents="box-none"
+            onStartShouldSetResponder={() => drawingMode}
+            onResponderGrant={(e) => startDrawing(e.nativeEvent.locationX, e.nativeEvent.locationY)}
+            onResponderMove={(e) => moveDrawing(e.nativeEvent.locationX, e.nativeEvent.locationY)}
+            onResponderRelease={endDrawing}
           >
-            <View
-              style={{
-                backgroundColor: "rgba(0,0,0,0.45)",
-                borderRadius: 10,
-                paddingHorizontal: 18,
-                paddingVertical: 10,
-              }}
-            >
-              <Text style={{ color: textColor, fontSize: 26, fontWeight: "700", textAlign: "center", lineHeight: 34 }}>
-                {overlayText}
-              </Text>
-            </View>
-          </Pressable>
-        )}
-
-        {/* ── Top bar ── */}
-        {!textMode && (
-          <View
-            style={{
-              position: "absolute",
-              top: 56,
-              left: 0,
-              right: 0,
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              paddingHorizontal: 16,
-              zIndex: 30,
-            }}
-          >
-            {/* Close */}
-            <Pressable
-              onPress={onCancel}
-              hitSlop={12}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: "rgba(0,0,0,0.5)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <X size={22} color="#fff" />
-            </Pressable>
-
-            {/* Aa — text tool */}
-            <Pressable
-              onPress={openTextMode}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                backgroundColor: "rgba(0,0,0,0.5)",
-                borderRadius: 22,
-                paddingHorizontal: 16,
-                paddingVertical: 10,
-              }}
-            >
-              <Text style={{ color: "#fff", fontSize: 17, fontWeight: "800", letterSpacing: 0.5 }}>Aa</Text>
-              <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>Text</Text>
-            </Pressable>
+            <Svg width="100%" height="100%">
+              {paths.map((p, i) => (
+                <Path key={i} d={p.d} stroke={p.color} strokeWidth={5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              ))}
+              {currentPath.length > 0 && (
+                <Path d={currentPath.join(" ")} stroke={markerColor} strokeWidth={5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              )}
+            </Svg>
           </View>
-        )}
 
-        {/* ── Right toolbar ── */}
-        {!textMode && (
-          <View
-            style={{
-              position: "absolute",
-              right: 14,
-              top: SH * 0.22,
-              gap: 18,
-              alignItems: "center",
-              zIndex: 30,
-            }}
-          >
-            {[
-              { icon: <Star size={22} color="#fff" />, label: "Stickers" },
-              { icon: <Pencil size={22} color="#fff" />, label: "Draw" },
-              { icon: <Download size={22} color="#fff" />, label: "Save" },
-            ].map(({ icon, label }) => (
-              <View key={label} style={{ alignItems: "center", gap: 4, opacity: 0.6 }}>
-                <View
-                  style={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: 23,
-                    backgroundColor: "rgba(0,0,0,0.5)",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {icon}
+          {/* Snapchat-style Snap-to-Width Text overlay */}
+          {overlayText !== "" && !textMode && (
+            <GestureDetector gesture={panGesture}>
+              <Animated.View 
+                style={[styles.textOverlay, animatedStyle]}
+                collapsable={false}
+              >
+                <View style={styles.textOverlayInner}>
+                  <Text style={styles.overlayText}>{overlayText}</Text>
+                  
+                  {!publishing && (
+                    <TouchableOpacity 
+                      onPress={openTextMode}
+                      style={styles.textEditBtn}
+                    >
+                      <Edit2 size={18} color="#fff" />
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <Text style={{ color: "#fff", fontSize: 10, fontWeight: "500" }}>{label}</Text>
+              </Animated.View>
+            </GestureDetector>
+          )}
+        </ViewShot>
+
+        {!textMode && (
+          <View style={styles.topBar}>
+            <Pressable onPress={onCancel} hitSlop={12}>
+              <View style={styles.iconCircle}>
+                <X size={24} color="#fff" />
               </View>
-            ))}
+            </Pressable>
+
+            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+              {drawingMode && (
+                <View style={styles.miniColorPicker}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}>
+                    {TOOL_COLORS.map(c => (
+                      <Pressable
+                        key={c}
+                        onPress={() => setMarkerColor(c)}
+                        style={[
+                          styles.miniColor,
+                          { backgroundColor: c, borderWidth: markerColor === c ? 2 : 0, borderColor: "#fff" }
+                        ]}
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+              {paths.length > 0 && drawingMode && (
+                <Pressable onPress={undoDrawing}>
+                  <View style={styles.iconCircle}>
+                    <RotateCcw size={20} color="#fff" />
+                  </View>
+                </Pressable>
+              )}
+              <Pressable onPress={() => { setDrawingMode(!drawingMode); if (textMode) setTextMode(false); }}>
+                <View style={[styles.iconCircle, { backgroundColor: drawingMode ? "#fff" : "rgba(0,0,0,0.3)" }]}>
+                  <Pencil size={20} color={drawingMode ? "#000" : "#fff"} />
+                </View>
+              </Pressable>
+              <Pressable onPress={() => { setTextMode(true); setDrawingMode(false); }}>
+                <View style={[styles.iconCircle, { backgroundColor: textMode ? "#fff" : "rgba(0,0,0,0.3)" }]}>
+                  <Type size={22} color={textMode ? "#000" : "#fff"} />
+                </View>
+              </Pressable>
+            </View>
           </View>
         )}
 
-        {/* ── Text editing overlay ── */}
         {textMode && (
-          <View
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundColor: "rgba(0,0,0,0.55)",
-              zIndex: 50,
-              justifyContent: "center",
-              alignItems: "center",
-              paddingHorizontal: 32,
-            }}
-          >
+          <View style={styles.textEditorOverlay}>
             <TextInput
               autoFocus
               value={overlayDraft}
               onChangeText={setOverlayDraft}
               placeholder="Type something..."
               placeholderTextColor="rgba(255,255,255,0.45)"
-              style={{
-                color: textColor,
-                fontSize: 28,
-                fontWeight: "700",
-                textAlign: "center",
-                width: "100%",
-                minHeight: 60,
-              }}
+              style={styles.textInput}
               multiline
               blurOnSubmit={false}
             />
 
-            {/* Color picker row */}
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 24, flexWrap: "wrap", justifyContent: "center" }}>
-              {TOOL_COLORS.map((c) => (
-                <Pressable
-                  key={c}
-                  onPress={() => setTextColor(c)}
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 14,
-                    backgroundColor: c,
-                    borderWidth: textColor === c ? 3 : 1.5,
-                    borderColor: textColor === c ? "#fff" : "rgba(255,255,255,0.3)",
-                  }}
-                />
-              ))}
-            </View>
-
             <View style={{ flexDirection: "row", gap: 16, marginTop: 28 }}>
-              <Pressable
-                onPress={cancelText}
-                style={{ paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24, backgroundColor: "rgba(255,255,255,0.15)" }}
-              >
+              <Pressable onPress={cancelText} style={styles.cancelBtn}>
                 <Text style={{ color: "#fff", fontWeight: "600" }}>Cancel</Text>
               </Pressable>
-              <Pressable
-                onPress={confirmText}
-                style={{ paddingHorizontal: 28, paddingVertical: 12, borderRadius: 24, backgroundColor: "#fff" }}
-              >
+              <Pressable onPress={confirmText} style={styles.doneBtn}>
                 <Text style={{ color: "#000", fontWeight: "700" }}>Done</Text>
               </Pressable>
             </View>
           </View>
         )}
 
-        {/* ── Bottom bar — caption + publish ── */}
-        {!textMode && (
+        {!textMode && !drawingMode && (
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{ position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 30 }}
+            style={styles.bottomBar}
           >
-            <View
-              style={{
-                paddingHorizontal: 20,
-                paddingTop: 16,
-                paddingBottom: Platform.OS === "ios" ? 44 : 28,
-                backgroundColor: "rgba(0,0,0,0.5)",
-                gap: 14,
-              }}
-            >
-              {/* Caption input */}
-              <TextInput
-                value={caption}
-                onChangeText={setCaption}
-                placeholder="Add a caption..."
-                placeholderTextColor="rgba(255,255,255,0.5)"
-                style={{
-                  color: "#fff",
-                  fontSize: 15,
-                  borderBottomWidth: 1,
-                  borderBottomColor: "rgba(255,255,255,0.2)",
-                  paddingVertical: 8,
-                }}
-                returnKeyType="done"
-              />
-
-              {/* Publish button */}
-              <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-                <Pressable
-                  onPress={handlePublish}
-                  disabled={publishing}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 10,
-                    backgroundColor: publishing ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.15)",
-                    borderWidth: 1.5,
-                    borderColor: "rgba(255,255,255,0.6)",
-                    borderRadius: 32,
-                    paddingHorizontal: 24,
-                    paddingVertical: 13,
-                  }}
-                >
-                  {publishing ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <>
-                      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.25)", alignItems: "center", justifyContent: "center" }}>
-                        <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>
-                          {"★"}
-                        </Text>
-                      </View>
-                      <Text style={{ color: "#fff", fontSize: 15, fontWeight: "700" }}>Your story</Text>
-                      <ArrowRight size={18} color="#fff" />
-                    </>
-                  )}
-                </Pressable>
+            <View style={styles.bottomBarInner}>
+              <View style={styles.captionInputContainer}>
+                <TextInput
+                  value={caption}
+                  onChangeText={setCaption}
+                  placeholder="Add a caption..."
+                  placeholderTextColor="rgba(255,255,255,0.7)"
+                  style={styles.captionInput}
+                />
               </View>
+
+              <TouchableOpacity
+                onPress={handlePublish}
+                disabled={publishing}
+                style={styles.publishBtn}
+              >
+                {publishing ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <ChevronRight size={28} color="#fff" />
+                )}
+              </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
         )}
       </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  mediaContainer: {
+    position: "absolute",
+    width: SW,
+    backgroundColor: "#111",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+  },
+  canvasContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+  },
+  textOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: "40%",
+    zIndex: 20,
+    width: SW,
+  },
+  textOverlayInner: {
+    backgroundColor: "rgba(0,0,0,0.5)",
+    paddingVertical: 12,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 40, // Space for the floating button
+  },
+  textEditBtn: {
+    position: "absolute",
+    right: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  overlayText: {
+    fontSize: 24,
+    fontWeight: "700",
+    textAlign: "center",
+    lineHeight: 32,
+    color: "#FFFFFF",
+  },
+  topBar: {
+    position: "absolute",
+    top: 50,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    zIndex: 30,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  miniColorPicker: {
+    flexDirection: "row",
+    height: 40,
+    width: SW * 0.45,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    borderRadius: 20,
+    alignItems: "center",
+  },
+  miniColor: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+  },
+  textEditorOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    zIndex: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+  },
+  textInput: {
+    fontSize: 28,
+    fontWeight: "700",
+    textAlign: "center",
+    width: "100%",
+    minHeight: 60,
+    color: "#FFFFFF",
+  },
+  cancelBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.15)",
+  },
+  doneBtn: {
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: "#fff",
+  },
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 60,
+  },
+  bottomBarInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: Platform.OS === "ios" ? 40 : 20,
+    paddingTop: 10,
+    gap: 12,
+  },
+  captionInputContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    borderRadius: 25,
+    paddingHorizontal: 18,
+    height: 50,
+    justifyContent: "center",
+  },
+  captionInput: {
+    color: "#fff",
+    fontSize: 15,
+  },
+  publishBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#4F46E5",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+});
