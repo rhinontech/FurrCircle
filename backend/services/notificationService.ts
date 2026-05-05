@@ -199,6 +199,7 @@ const sendPushToActor = async (
     }));
 
   if (messages.length === 0) {
+    console.warn(`[NotificationService] No valid FCM tokens for actor ${actorId}`);
     return {
       status: "failed",
       deliveredCount: 0,
@@ -207,7 +208,9 @@ const sendPushToActor = async (
     };
   }
 
-  return sendFCMPush(messages);
+  const result = await sendFCMPush(messages);
+  console.log(`[NotificationService] Push delivery result for actor ${actorId}: status=${result.status}, delivered=${result.deliveredCount}, failed=${result.failedCount}${result.error ? `, error=${result.error}` : ""}`);
+  return result;
 };
 
 export const dispatchChatAlert = async (

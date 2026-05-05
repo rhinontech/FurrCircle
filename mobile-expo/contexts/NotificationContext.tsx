@@ -217,8 +217,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const pollAll = useCallback(async () => {
     if (!isLoggedIn) return;
-    await Promise.allSettled([refreshChatCount(), refreshNotifCount(), refreshPreferences(), syncPushPreference()]);
-  }, [isLoggedIn, refreshChatCount, refreshNotifCount, refreshPreferences, syncPushPreference]);
+    await Promise.allSettled([
+      refreshChatCount(), 
+      refreshNotifCount(), 
+      refreshPreferences(), 
+      syncPushPreference(),
+      registerDevice(true) // Ensure device is registered/updated periodically
+    ]);
+  }, [isLoggedIn, refreshChatCount, refreshNotifCount, refreshPreferences, syncPushPreference, registerDevice]);
 
   const markChatsRead = useCallback(async () => {
     try {
@@ -413,8 +419,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       return;
     }
 
+    // Trigger immediate sync on login
     pollAll();
-    registerDevice(true).catch(() => {});
+    
     pollTimer.current = setInterval(pollAll, POLL_INTERVAL);
 
     const sub = AppState.addEventListener('change', (nextState) => {
@@ -426,7 +433,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (pollTimer.current) clearInterval(pollTimer.current);
       sub.remove();
     };
-  }, [isLoggedIn, pollAll, registerDevice]);
+  }, [isLoggedIn, pollAll]);
 
   const notifUnreadCount = activityUnreadCount + campaignUnreadCount;
   const unreadCount = chatUnreadCount + notifUnreadCount;

@@ -146,7 +146,10 @@ export const registerNotificationDevice = async (req: Request, res: Response): P
     const platform = normalizePlatform(req.body?.platform);
     const pushEnabled = req.body?.pushEnabled !== false;
 
+    console.log(`[NotificationController] Registering device: actorId=${actorId}, platform=${platform}, hasToken=${!!expoPushToken}, pushEnabled=${pushEnabled}`);
+
     if (!installationId || !platform) {
+      console.warn(`[NotificationController] Missing required fields: installationId=${!!installationId}, platform=${!!platform}`);
       res.status(400).json({ message: "installationId and valid platform are required" });
       return;
     }
@@ -174,6 +177,7 @@ export const registerNotificationDevice = async (req: Request, res: Response): P
 
     res.status(201).json(device);
   } catch (error: any) {
+    console.error(`[NotificationController] Registration failed:`, error);
     res.status(500).json({ message: error.message });
   }
 };
