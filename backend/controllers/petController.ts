@@ -334,18 +334,54 @@ export const updatePet = async (req: any, res: Response): Promise<void> => {
 // @desc    Remove pet
 // @route   DELETE /api/pets/:id
 export const deletePet = async (req: any, res: Response): Promise<void> => {
+  const transaction = await db.sequelize.transaction();
   try {
-    const { pets: Pet } = db as any;
-    const pet = await Pet.findOne({ where: { id: req.params.id, ownerId: req.user.id } });
+    const {
+      pets: Pet,
+      vaccines: Vaccine,
+      medical_records: MedicalRecord,
+      medications: Medication,
+      allergies: Allergy,
+      appointments: Appointment,
+      reminders: Reminder,
+      vitals: Vital,
+      adoption_applications: AdoptionApplication,
+      conversations: Conversation,
+      messages: Message,
+    } = db as any;
+
+    const pet = await Pet.findOne({
+      where: { id: req.params.id, ownerId: req.user.id },
+      transaction,
+    });
 
     if (!pet) {
+      await transaction.rollback();
       res.status(404).json({ message: "Pet not found" });
       return;
     }
 
-    await pet.destroy();
-    res.json({ success: true, message: "Pet removed successfully" });
+    const petId = pet.id;
+
+    // Delete all related records
+    await Vaccine.destroy({ where: { petId }, transaction });
+    await MedicalRecord.destroy({ where: { petId }, transaction });
+    await Medication.destroy({ where: { petId }, transaction });
+    await Allergy.destroy({ where: { petId }, transaction });
+    await Appointment.destroy({ where: { petId }, transaction });
+    await Reminder.destroy({ where: { petId }, transaction });
+    await Vital.destroy({ where: { petId }, transaction });
+    await AdoptionApplication.destroy({ where: { petId }, transaction });
+    await Message.destroy({ where: { petId }, transaction });
+    await Conversation.destroy({ where: { petId }, transaction });
+
+    // Finally delete the pet
+    await pet.destroy({ transaction });
+
+    await transaction.commit();
+    res.json({ success: true, message: "Pet and all related records removed successfully" });
   } catch (error: any) {
+    if (transaction) await transaction.rollback();
     res.status(500).json({ message: error.message });
   }
 };
