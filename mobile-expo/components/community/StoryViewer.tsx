@@ -4,8 +4,49 @@ import { AppText as Text } from "@/components/ui/AppText";
 import { X, Eye, TrendingUp } from "@/components/ui/IconCompat";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, cancelAnimation, Easing } from "react-native-reanimated";
 import { Video, ResizeMode } from "expo-av";
+import * as FileSystem from "expo-file-system/legacy";
 import type { StoryGroup, StoryItem } from "@/services/users/communityApi";
 import { userCommunityApi } from "@/services/users/communityApi";
+
+const CACHE_DIR = ((FileSystem as any).cacheDirectory || "") + "story_cache/";
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+// Helper: Ensure cache directory exists
+async function ensureDirExists() {
+  const dirInfo = await FileSystem.getInfoAsync(CACHE_DIR);
+  if (!dirInfo.exists) {
+    await FileSystem.makeDirectoryAsync(CACHE_DIR, { intermediates: true });
+  }
+}
+
+// Helper: Get local filename from URL
+function getLocalFilename(url: string) {
+  const parts = url.split("/");
+  return parts[parts.length - 1];
+}
+
+// Helper: Cleanup files older than 3 days
+async function cleanupCache() {
+  try {
+    await ensureDirExists();
+    const files = await FileSystem.readDirectoryAsync(CACHE_DIR);
+    const now = Date.now();
+    for (const file of files) {
+      const filePath = CACHE_DIR + file;
+      const fileInfo = await FileSystem.getInfoAsync(filePath);
+      if (fileInfo.exists && !fileInfo.isDirectory) {
+        // modificationTime is in seconds in some versions of expo
+        const modTime = fileInfo.modificationTime ? fileInfo.modificationTime * 1000 : now;
+        const age = now - modTime;
+        if (age > THREE_DAYS_MS) {
+          await FileSystem.deleteAsync(filePath, { idempotent: true });
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Cache cleanup failed", err);
+  }
+}
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const IMAGE_DURATION_MS = 5000;
@@ -46,6 +87,7 @@ export default function StoryViewer({
   const [paused, setPaused] = useState(false);
   const [videoDuration, setVideoDuration] = useState(IMAGE_DURATION_MS);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [displayUri, setDisplayUri] = useState<string | null>(null);
 
   // Viewer panel state
   const [viewerPanelVisible, setViewerPanelVisible] = useState(false);
@@ -61,6 +103,49 @@ export default function StoryViewer({
   const currentGroup = allGroups[groupIndex];
   const currentStory: StoryItem | undefined = currentGroup?.stories[storyIndex];
   const isOwnStory = !!currentUserId && currentGroup?.userId === currentUserId;
+
+  useEffect(() => {
+    cleanupCache();
+  }, []);
+
+  const loadAndCacheStory = async (story: StoryItem) => {
+    try {
+      await ensureDirExists();
+      const filename = getLocalFilename(story.mediaUrl);
+      const localPath = CACHE_DIR + filename;
+      const fileInfo = await FileSystem.getInfoAsync(localPath);
+
+      if (fileInfo.exists) {
+        setDisplayUri(localPath);
+      } else {
+        // Show remote while downloading
+        setDisplayUri(story.mediaUrl);
+        const download = await FileSystem.downloadAsync(story.mediaUrl, localPath);
+        setDisplayUri(download.uri);
+      }
+      preloadNextStories();
+    } catch (err) {
+      setDisplayUri(story.mediaUrl);
+    }
+  };
+
+  const preloadNextStories = async () => {
+    try {
+      const currentGroup = allGroups[groupIndex];
+      if (!currentGroup) return;
+      for (let i = 1; i <= 2; i++) {
+        const nextStory = currentGroup.stories[storyIndex + i];
+        if (nextStory) {
+          const filename = getLocalFilename(nextStory.mediaUrl);
+          const localPath = CACHE_DIR + filename;
+          const info = await FileSystem.getInfoAsync(localPath);
+          if (!info.exists) {
+             FileSystem.downloadAsync(nextStory.mediaUrl, localPath);
+          }
+        }
+      }
+    } catch (e) {}
+  };
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -107,10 +192,9 @@ export default function StoryViewer({
     if (!visible || !currentStory) return;
     setVideoDuration(IMAGE_DURATION_MS);
     setImageLoaded(false);
+    setDisplayUri(null);
+    loadAndCacheStory(currentStory);
     userCommunityApi.viewStory(currentStory.id).catch(() => {});
-    if (currentStory.mediaType === "image") {
-      startProgress(IMAGE_DURATION_MS);
-    }
     return () => {
       clearTimer();
       cancelAnimation(progress);
@@ -128,10 +212,14 @@ export default function StoryViewer({
     if (paused) {
       cancelAnimation(progress);
       clearTimer();
-    } else if (currentStory?.mediaType === "image") {
-      startProgress(IMAGE_DURATION_MS);
+    } else if (imageLoaded && displayUri) {
+      if (currentStory?.mediaType === "image") {
+        startProgress(IMAGE_DURATION_MS);
+      } else if (currentStory?.mediaType === "video" && videoDuration > 0) {
+        startProgress(videoDuration);
+      }
     }
-  }, [paused]);
+  }, [paused, imageLoaded, videoDuration, displayUri]);
 
   // Pan responder for swipe-up gesture on own stories
   const panResponder = useRef(
@@ -180,7 +268,6 @@ export default function StoryViewer({
     if (status.isLoaded && status.durationMillis && videoDuration !== status.durationMillis) {
       const clampedDur = Math.min(dur, VIDEO_MAX_MS);
       setVideoDuration(clampedDur);
-      startProgress(clampedDur);
     }
     if (status.didJustFinish) goNext();
   };
@@ -197,7 +284,7 @@ export default function StoryViewer({
         {currentStory.mediaType === "video" ? (
           <Video
             ref={videoRef}
-            source={{ uri: currentStory.mediaUrl }}
+            source={{ uri: displayUri || currentStory.mediaUrl }}
             style={{ position: "absolute", width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
             resizeMode={ResizeMode.CONTAIN}
             shouldPlay={!paused}
@@ -208,7 +295,7 @@ export default function StoryViewer({
         ) : (
           <Image
             key={currentStory.id}
-            source={{ uri: currentStory.mediaUrl }}
+            source={{ uri: displayUri || currentStory.mediaUrl }}
             style={{ position: "absolute", width: SCREEN_WIDTH, height: SCREEN_HEIGHT, opacity: imageLoaded ? 1 : 0 }}
             resizeMode="contain"
             onLoad={() => setImageLoaded(true)}
@@ -244,7 +331,7 @@ export default function StoryViewer({
             {currentGroup?.author?.avatar_url ? (
               <Image source={{ uri: currentGroup.author.avatar_url }} style={{ width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: "#fff" }} />
             ) : (
-              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.3)", alignItems: "center", justifyContent: "center" }}>
+              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" }}>
                 <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>{(currentGroup?.author?.name || "?")[0]?.toUpperCase()}</Text>
               </View>
             )}
