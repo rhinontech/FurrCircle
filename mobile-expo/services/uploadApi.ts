@@ -30,8 +30,7 @@ export const pickImage = async (options?: {
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: options?.allowsEditing ?? true,
-    aspect: options?.aspect ?? [1, 1],
+    allowsEditing: options?.allowsEditing ?? false,
     quality: 0.8,
   });
 
@@ -95,8 +94,7 @@ export const captureImage = async (options?: {
 
   const result = await ImagePicker.launchCameraAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: options?.allowsEditing ?? true,
-    aspect: options?.aspect ?? [4, 3],
+    allowsEditing: options?.allowsEditing ?? false,
     quality: 0.8,
   });
 
@@ -181,8 +179,7 @@ export const captureStoryCamera = async (): Promise<ImagePicker.ImagePickerAsset
   }
   const result = await ImagePicker.launchCameraAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.All,
-    allowsEditing: true,
-    aspect: [9, 16],
+    allowsEditing: false,
     quality: 0.65,
     videoMaxDuration: 30,
   });

@@ -1,12 +1,16 @@
-import React, { useState } from "react";
-import { View, Modal, Pressable, Alert, Platform } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, Modal, Pressable, Alert, Platform, Image, FlatList, ActivityIndicator } from "react-native";
 import { AppText as Text } from "@/components/ui/AppText";
-import { Camera, ImagePlus, X } from "@/components/ui/IconCompat";
+import { Camera, X, ChevronDown } from "lucide-react-native";
 import { useTheme } from "@/contexts/ThemeContext";
-import { captureStoryCamera, pickMedia, uploadImage } from "@/services/uploadApi";
+import { pickMedia, uploadImage } from "@/services/uploadApi";
 import { userCommunityApi } from "@/services/users/communityApi";
 import StoryEditor from "./StoryEditor";
+import StoryCamera from "./StoryCamera";
+import * as MediaLibrary from "expo-media-library";
 import type { ImagePickerAsset } from "expo-image-picker";
+
+const PAGE_SIZE = 30;
 
 interface Props {
   visible: boolean;
@@ -14,148 +18,241 @@ interface Props {
   onSuccess: () => void;
 }
 
+// Memoized individual image component for maximum performance
+const GalleryImage = React.memo(({ asset, onPress }: { asset: MediaLibrary.Asset; onPress: (a: MediaLibrary.Asset) => void }) => {
+  const [displayUri, setDisplayUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadInfo = async () => {
+      try {
+        // Only fetch detailed info for the thumbnail
+        const info = await MediaLibrary.getAssetInfoAsync(asset);
+        if (isMounted) setDisplayUri(info.localUri || info.uri);
+      } catch (e) {
+        if (isMounted) setDisplayUri(asset.uri);
+      }
+    };
+    loadInfo();
+    return () => { isMounted = false; };
+  }, [asset.id]);
+
+  return (
+    <Pressable onPress={() => onPress(asset)} style={styles.gridItem}>
+      <Image 
+        source={displayUri ? { uri: displayUri } : undefined} 
+        style={styles.imageTile} 
+      />
+    </Pressable>
+  );
+});
+
 export default function StoryCreateSheet({ visible, onClose, onSuccess }: Props) {
   const { colors } = useTheme();
   const [picking, setPicking] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<ImagePickerAsset | null>(null);
   const [editorVisible, setEditorVisible] = useState(false);
+  const [cameraVisible, setCameraVisible] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  
+  // Gallery Pagination State
+  const [galleryAssets, setGalleryAssets] = useState<MediaLibrary.Asset[]>([]);
+  const [endCursor, setEndCursor] = useState<string | undefined>(undefined);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
-  const handleSource = async (source: "camera" | "library") => {
-    setPicking(true);
-    
-    // 1. Close the chooser modal first to clear the native stack
-    onClose();
-    
-    // 2. Wait for chooser dismissal to complete (iOS needs time to settle)
-    await new Promise(resolve => setTimeout(resolve, Platform.OS === 'ios' ? 600 : 100));
+  const resetState = () => {
+    setSelectedAsset(null);
+    setEditorVisible(false);
+    setCameraVisible(false);
+    setPickerVisible(false);
+    setPublishing(false);
+    onSuccess();
+  };
 
-    try {
-      // 3. Open media picker from the 'base' app state (no nested modals)
-      const asset = source === "camera"
-        ? await captureStoryCamera()
-        : await pickMedia();
-
-      if (!asset) {
-        setPicking(false);
-        return;
+  // Permission and initial load
+  useEffect(() => {
+    const init = async () => {
+      if (visible) {
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status === 'granted') {
+          setPickerVisible(true);
+          loadInitialGallery();
+        } else {
+          Alert.alert("Permission Required", "Please allow gallery access.", [{ text: "OK", onPress: onClose }]);
+        }
+      } else {
+        setPickerVisible(false);
+        setGalleryAssets([]);
+        setEndCursor(undefined);
+        setHasNextPage(true);
       }
+    };
+    init();
+  }, [visible]);
 
-      setSelectedAsset(asset);
+  const loadInitialGallery = async () => {
+    try {
+      const result = await MediaLibrary.getAssetsAsync({
+        first: PAGE_SIZE,
+        sortBy: [MediaLibrary.SortBy.creationTime],
+        mediaType: [MediaLibrary.MediaType.photo],
+      });
       
-      // 4. Delay to ensure picker/camera dismissal is finished before presenting editor
-      setTimeout(() => {
-        setEditorVisible(true);
-      }, Platform.OS === 'ios' ? 400 : 100);
+      setGalleryAssets(result.assets);
+      setEndCursor(result.endCursor);
+      setHasNextPage(result.hasNextPage);
+    } catch (e) {
+      console.error("Failed to load initial gallery", e);
+    }
+  };
 
-    } catch (error: any) {
-      Alert.alert("Error", error.message || "Could not access media.");
+  const loadMoreAssets = async () => {
+    if (!hasNextPage || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const result = await MediaLibrary.getAssetsAsync({
+        first: PAGE_SIZE,
+        after: endCursor,
+        sortBy: [MediaLibrary.SortBy.creationTime],
+        mediaType: [MediaLibrary.MediaType.photo],
+      });
+      
+      // Filter out duplicates to prevent "Duplicate Key" errors
+      setGalleryAssets(prev => {
+        const existingIds = new Set(prev.map(a => a.id));
+        const uniqueNew = result.assets.filter(a => !existingIds.has(a.id));
+        return [...prev, ...uniqueNew];
+      });
+      
+      setEndCursor(result.endCursor);
+      setHasNextPage(result.hasNextPage);
+    } catch (e) {
+      console.error("Failed to load more assets", e);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+
+
+  const handleSource = (source: "camera" | "library") => {
+    if (source === "camera") {
+      setPickerVisible(false);
+      setTimeout(() => setCameraVisible(true), 300);
+    }
+  };
+
+  const handleSelectAsset = async (asset: MediaLibrary.Asset) => {
+    try {
+      setPicking(true);
+      // Fetch expensive info ONLY when selected
+      const info = await MediaLibrary.getAssetInfoAsync(asset);
+      setPickerVisible(false);
+      setSelectedAsset({
+        uri: info.localUri || info.uri,
+        width: info.width,
+        height: info.height,
+        type: "image",
+      } as ImagePickerAsset);
+      setTimeout(() => setEditorVisible(true), 300);
+    } catch (error) {
+      Alert.alert("Error", "Could not load photo.");
     } finally {
       setPicking(false);
     }
   };
 
-  const handleEditorPublish = async (caption?: string) => {
+  const handleEditorPublish = async (uri: string, caption?: string) => {
     if (!selectedAsset) return;
-    const mediaType = (selectedAsset.type === "video" || selectedAsset.mimeType?.startsWith("video/")) ? "video" : "image";
-    const url = await uploadImage(selectedAsset, "stories");
-    await userCommunityApi.createStory({ mediaUrl: url, mediaType, caption });
-    setEditorVisible(false);
-    setSelectedAsset(null);
-    onSuccess();
+    setPublishing(true);
+    try {
+      const url = await uploadImage({ ...selectedAsset, uri }, "stories");
+      if (url) {
+        await userCommunityApi.createStory({ mediaUrl: url, mediaType: "image", caption: caption || "" });
+        onClose();
+        resetState();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setPublishing(false);
+    }
   };
 
-  const handleEditorCancel = () => {
-    setEditorVisible(false);
-    setSelectedAsset(null);
+  const renderItem = ({ item, index }: { item: MediaLibrary.Asset | string; index: number }) => {
+    if (item === "camera") {
+      return (
+        <Pressable onPress={() => handleSource("camera")} style={styles.gridItem}>
+          <View style={styles.cameraTile}>
+            <Camera size={40} color="#fff" />
+          </View>
+        </Pressable>
+      );
+    }
+    
+    const asset = item as MediaLibrary.Asset;
+    return <GalleryImage asset={asset} onPress={handleSelectAsset} />;
   };
 
   return (
     <>
-      {/* Chooser bottom sheet */}
-      <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-        <Pressable
-          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
-          onPress={onClose}
-        >
-          <Pressable
-            style={{
-              backgroundColor: colors.bgCard,
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
-              paddingHorizontal: 24,
-              paddingTop: 20,
-              paddingBottom: 40,
-            }}
-            onPress={() => { }}
-          >
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-              <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary }}>Add to Your Story</Text>
-              <Pressable onPress={onClose} hitSlop={8}>
-                <X size={20} color={colors.textMuted} />
-              </Pressable>
-            </View>
+      <Modal visible={pickerVisible} animationType="slide" transparent={false} statusBarTranslucent>
+        <View style={styles.pickerContainer}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Pressable onPress={onClose} hitSlop={12}>
+              <X size={28} color="#fff" />
+            </Pressable>
+            <Text style={styles.headerTitle}>Add to story</Text>
+            <View style={{ width: 28 }} />
+          </View>
 
-            <View style={{ gap: 12 }}>
-              <Pressable
-                onPress={() => handleSource("camera")}
-                disabled={picking}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 16,
-                  padding: 18,
-                  borderRadius: 16,
-                  backgroundColor: colors.bgSubtle,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  opacity: picking ? 0.6 : 1,
-                }}
-              >
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.brand + "22", alignItems: "center", justifyContent: "center" }}>
-                  <Camera size={22} color={colors.brand} />
-                </View>
-                <View>
-                  <Text style={{ fontSize: 15, fontWeight: "600", color: colors.textPrimary }}>Camera</Text>
-                  <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Take a photo or video</Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                onPress={() => handleSource("library")}
-                disabled={picking}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 16,
-                  padding: 18,
-                  borderRadius: 16,
-                  backgroundColor: colors.bgSubtle,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  opacity: picking ? 0.6 : 1,
-                }}
-              >
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.brand + "22", alignItems: "center", justifyContent: "center" }}>
-                  <ImagePlus size={22} color={colors.brand} />
-                </View>
-                <View>
-                  <Text style={{ fontSize: 15, fontWeight: "600", color: colors.textPrimary }}>Photo & Video Library</Text>
-                  <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Choose from your gallery</Text>
-                </View>
-              </Pressable>
+          {/* Static Recents Label */}
+          <View style={styles.recentsBar}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Text style={styles.recentsText}>Recents</Text>
+              
             </View>
-          </Pressable>
-        </Pressable>
-        
+            {/* <Pressable style={styles.selectBtn}>
+              <Text style={styles.selectBtnText}>Select</Text>
+            </Pressable> */}
+          </View>
+
+          {/* Optimized Photo Grid */}
+          <FlatList
+            data={["camera", ...galleryAssets]}
+            renderItem={renderItem}
+            keyExtractor={(item) => (typeof item === "string" ? item : item.id)}
+            numColumns={3}
+            onEndReached={loadMoreAssets}
+            onEndReachedThreshold={0.7}
+            initialNumToRender={12}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            removeClippedSubviews={Platform.OS === "android"}
+            ListFooterComponent={loadingMore ? <ActivityIndicator color="#fff" style={{ margin: 20 }} /> : null}
+            contentContainerStyle={{ padding: 1 }}
+          />
+        </View>
       </Modal>
 
-      {/* Full-screen story editor — shown after media is selected */}
-      <StoryEditor
-          visible={editorVisible}
-          asset={selectedAsset}
-          onCancel={handleEditorCancel}
-          onPublish={handleEditorPublish}
-        />
+      <StoryEditor visible={editorVisible} asset={selectedAsset} onCancel={() => { setEditorVisible(false); onClose(); }} onPublish={handleEditorPublish} />
+      <StoryCamera visible={cameraVisible} onClose={() => { setCameraVisible(false); onClose(); }} onCapture={(asset) => { setCameraVisible(false); setSelectedAsset(asset); setTimeout(() => setEditorVisible(true), 400); }} />
     </>
   );
 }
+
+const styles = {
+  pickerContainer: { flex: 1, backgroundColor: "#000", paddingTop: Platform.OS === "ios" ? 50 : 20 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, height: 60 },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: "#fff" },
+  recentsBar: { paddingHorizontal: 16, paddingVertical: 10, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  recentsText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  selectBtn: { backgroundColor: "rgba(255,255,255,0.2)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  selectBtnText: { color: "#fff", fontSize: 13, fontWeight: "600" },
+  gridItem: { width: "33.33%", aspectRatio: 1, padding: 1 },
+  cameraTile: { flex: 1, backgroundColor: "#1A1A1A", alignItems: "center", justifyContent: "center" },
+  imageTile: { flex: 1, backgroundColor: "#121212" },
+} as any;
