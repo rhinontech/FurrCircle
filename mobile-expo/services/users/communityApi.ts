@@ -103,6 +103,7 @@ export const userCommunityApi = {
       comment: result?.comment ? { ...result.comment, author: normalizeProfile(result.comment.author) } : result?.comment,
     };
   },
+  deletePost: (id: string) => api.delete(`/community/posts/me/${id}`),
   getChatById: async (id: string) => normalizeConversation(await api.get<any>(`/community/chats/${id}`)),
   sendMessage: async (id: string, payload: Record<string, unknown>) => {
     const result = await api.post<any>(`/community/chats/${id}/messages`, payload);

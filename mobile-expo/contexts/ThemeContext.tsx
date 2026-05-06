@@ -35,6 +35,8 @@ export interface Colors {
   successBg: string;
   warningBg: string;
   infoBg: string;
+  danger: string;
+  dangerBg: string;
 }
 
 const LIGHT: Colors = {
@@ -62,6 +64,8 @@ const LIGHT: Colors = {
   successBg: "#f0fdf4",
   warningBg: "#fffbeb",
   infoBg: "#eff6ff",
+  danger: "#ef4444",
+  dangerBg: "#fef2f2",
 };
 
 const DARK: Colors = {
@@ -89,6 +93,8 @@ const DARK: Colors = {
   successBg: "#052e16",
   warningBg: "#1c1007",
   infoBg: "#0c1a3a",
+  danger: "#f87171",
+  dangerBg: "#450a0a",
 };
 
 interface ThemeContextType {

@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from "react";
-import { View, ScrollView, Pressable, Image, ActivityIndicator, RefreshControl } from "react-native";
+import { View, ScrollView, Pressable, Image, ActivityIndicator, RefreshControl, Alert } from "react-native";
 import { AppText as Text } from "@/components/ui/AppText";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import { ChevronLeft, Heart, MessageCircle, Share2, FileText } from "@/components/ui/IconCompat";
+import { ChevronLeft, Heart, MessageCircle, Share2, FileText, Trash2 } from "@/components/ui/IconCompat";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import StatusChip from "../../components/ui/StatusChip";
@@ -24,6 +24,7 @@ export default function MyPostsScreen() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const fetchPosts = async () => {
     try {
@@ -45,6 +46,32 @@ export default function MyPostsScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     fetchPosts();
+  };
+
+  const handleDeletePost = (postId: string) => {
+    Alert.alert(
+      "Delete Post",
+      "Are you sure you want to delete this post? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsDeleting(postId);
+              await userCommunityApi.deletePost(postId);
+              setPosts(prev => prev.filter(p => p.id !== postId));
+            } catch (e) {
+              console.error("Failed to delete post", e);
+              Alert.alert("Error", "Could not delete the post. Please try again.");
+            } finally {
+              setIsDeleting(null);
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -87,10 +114,30 @@ export default function MyPostsScreen() {
                     </Text>
                   </View>
                 </View>
-                <StatusChip
-                  label={post.status ? post.status.charAt(0).toUpperCase() + post.status.slice(1) : "Pending"}
-                  variant={statusVariant(post.status)}
-                />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <StatusChip
+                    label={post.status ? post.status.charAt(0).toUpperCase() + post.status.slice(1) : "Pending"}
+                    variant={statusVariant(post.status)}
+                  />
+                  <Pressable 
+                    onPress={() => handleDeletePost(post.id)}
+                    hitSlop={10}
+                    style={{ 
+                      width: 32, 
+                      height: 32, 
+                      borderRadius: 16, 
+                      backgroundColor: colors.dangerBg, 
+                      alignItems: 'center', 
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {isDeleting === post.id ? (
+                      <ActivityIndicator size="small" color={colors.danger} />
+                    ) : (
+                      <Trash2 size={16} color={colors.danger} />
+                    )}
+                  </Pressable>
+                </View>
               </View>
 
               <Text style={{ fontSize: 14, color: colors.textPrimary, lineHeight: 22, marginBottom: 12 }} numberOfLines={4}>
