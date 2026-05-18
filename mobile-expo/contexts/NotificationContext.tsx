@@ -109,6 +109,23 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const responseListenerRef = useRef<any>(null);
   const lastProcessedNotifId = useRef<string | null>(null);
   const [pendingNotification, setPendingNotification] = useState<any>(null);
+  const lastRegisteredToken = useRef<string | null>(null);
+
+  const setupNotificationChannels = useCallback(async () => {
+    if (Platform.OS !== 'android' || !Notifications) return;
+    
+    try {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#2563EB',
+        showBadge: true,
+      });
+    } catch (error) {
+      console.warn('[NotificationContext] Failed to setup channels:', error);
+    }
+  }, []);
 
   const getSeenMap = async (): Promise<Record<string, string>> => {
     try {
@@ -182,36 +199,53 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [isLoggedIn]);
 
-  const registerDevice = useCallback(async (enabled: boolean) => {
+  const registerDevice = useCallback(async (forceRefresh = false) => {
     if (!isLoggedIn || (Platform.OS !== 'ios' && Platform.OS !== 'android')) return;
 
     try {
       const installationId = await getInstallationId();
-      let expoPushToken: string | null = null;
+      let fcmToken: string | null = null;
+      let isEnabled = true;
 
-      if (enabled && Notifications) {
-        let settings = await Notifications.getPermissionsAsync();
-        if (!settings.granted) {
-          settings = await Notifications.requestPermissionsAsync();
-        }
+      // 1. Get FCM Token (Using Firebase directly, not gated by Expo-Notifications)
+      try {
+        fcmToken = await registerForPushNotificationsAsync();
+        isEnabled = !!fcmToken;
+      } catch (e) {
+        console.warn('[NotificationContext] FCM Token fetch failed:', e);
+        isEnabled = false;
+      }
 
-        enabled = settings.granted;
-        if (enabled) {
-          expoPushToken = await registerForPushNotificationsAsync();
-          enabled = !!expoPushToken;
-        }
+      // 2. Check Permissions (Expo-Notifications for UI/Settings sync)
+      if (isEnabled && Notifications) {
+        try {
+          const settings = await Notifications.getPermissionsAsync();
+          if (settings.ios?.status === 3 || settings.granted) {
+            isEnabled = true;
+          } else {
+            // If permissions explicitly denied, we still register but mark as disabled
+            // unless we want to keep it enabled for silent data pushes
+            isEnabled = false;
+          }
+        } catch {}
+      }
+
+      // GUARD: Avoid redundant registration if token hasn't changed
+      if (!forceRefresh && fcmToken === lastRegisteredToken.current && fcmToken !== null) {
+        return;
       }
 
       await userNotificationsApi.registerDevice({
         installationId,
-        expoPushToken,
-        platform: Platform.OS,
-        pushEnabled: enabled,
+        expoPushToken: fcmToken,
+        platform: Platform.OS as 'ios' | 'android',
+        pushEnabled: isEnabled,
       });
 
-      setPushEnabled(enabled);
-    } catch {
-      setPushEnabled(false);
+      lastRegisteredToken.current = fcmToken;
+      setPushEnabled(isEnabled);
+    } catch (err) {
+      console.warn('[NotificationContext] Device registration failed:', err);
     }
   }, [isLoggedIn]);
 
@@ -221,10 +255,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       refreshChatCount(), 
       refreshNotifCount(), 
       refreshPreferences(), 
-      syncPushPreference(),
-      registerDevice(true) // Ensure device is registered/updated periodically
+      syncPushPreference()
     ]);
-  }, [isLoggedIn, refreshChatCount, refreshNotifCount, refreshPreferences, syncPushPreference, registerDevice]);
+  }, [isLoggedIn, refreshChatCount, refreshNotifCount, refreshPreferences, syncPushPreference]);
 
   const markChatsRead = useCallback(async () => {
     try {
@@ -359,9 +392,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           if (Notifications) {
             await Notifications.scheduleNotificationAsync({
               content: {
-                title: remoteMessage.notification?.title || '',
-                body: remoteMessage.notification?.body || '',
+                title: remoteMessage.notification?.title || remoteMessage.data?.title || 'FurrCircle',
+                body: remoteMessage.notification?.body || remoteMessage.data?.body || '',
                 data: remoteMessage.data || {},
+                ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
               },
               trigger: null,
             });
@@ -420,13 +454,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
 
     // Trigger immediate sync on login
+    setupNotificationChannels();
     pollAll();
+    registerDevice(); // Register once on login/mount
     
     pollTimer.current = setInterval(pollAll, POLL_INTERVAL);
 
     const sub = AppState.addEventListener('change', (nextState) => {
       appState.current = nextState;
-      if (nextState === 'active') pollAll();
+      if (nextState === 'active') {
+        pollAll();
+        registerDevice(); // Ensure token is still valid when app comes back
+      }
     });
 
     return () => {
