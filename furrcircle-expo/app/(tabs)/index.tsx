@@ -3,6 +3,7 @@ import {
   StyleSheet, Modal, Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import { useRouter } from "expo-router";
 import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, Search } from "lucide-react-native";
 import { useState } from "react";
@@ -19,7 +20,7 @@ export default function FeedScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: tk.bg }]}>
       <FeedHeader />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120, flexGrow: 1 }}>
         <StoryRail />
         <View style={styles.feedList}>
           {posts.map((p) => <PostCard key={p.id} post={p} />)}
@@ -73,7 +74,7 @@ function StoryRail() {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}
       style={styles.storyRail}
-      contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 8, gap: 14 }}>
+      contentContainerStyle={{ paddingHorizontal: 8, paddingVertical: 8, gap: 14 }}>
       {stories.map((s) => (
         <TouchableOpacity key={s.label} onPress={() => router.push("/reels")} style={styles.storyItem} activeOpacity={0.8}>
           <View style={[styles.storyRing, s.isYou ? styles.storyRingGray : styles.storyRingGradient]}>
@@ -107,8 +108,8 @@ function PostCard({ post }: { post: Post }) {
       </View>
 
       <TouchableOpacity onPress={() => router.push(`/post/${post.id}`)} activeOpacity={0.9}
-        style={[styles.imageWrapper, { backgroundColor: post.tintColor }]}>
-        <Image source={post.image} style={styles.postImage} resizeMode="contain" />
+        style={[styles.imageWrapper, { backgroundColor: post.tintColor}]}>
+        <Image source={post.image} style={styles.postImage}/>
       </TouchableOpacity>
 
       <View style={styles.actions}>
@@ -160,7 +161,7 @@ function ComposeSheet({ open, onClose }: { open: boolean; onClose: () => void })
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 12 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12 },
   logoText: { fontFamily: "Poppins_700Bold", fontSize: 28, lineHeight: 34 },
   logoCoral: { color: colors.coral },
   subtitle: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
@@ -175,22 +176,22 @@ const styles = StyleSheet.create({
   storyInner: { flex: 1, borderRadius: 30, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#F7F8FA", overflow: "hidden" },
   storyImg: { width: "90%", height: "90%" },
   storyLabel: { fontSize: 11, fontFamily: "Poppins_600SemiBold", color: colors.foreground + "bb", textAlign: "center" },
-  feedList: { gap: 20, paddingHorizontal: 16, marginTop: 12 },
-  card: { borderRadius: 24, overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
-  cardHeader: { flexDirection: "row", alignItems: "center", padding: 14, paddingBottom: 0, gap: 10 },
+  feedList: { gap: 20, paddingHorizontal: 16, marginTop: 12, width: "100%" },
+  card: { borderRadius: 24, alignSelf: "stretch", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
+  cardHeader: { flexDirection: "row", alignItems: "center", padding: 16, paddingBottom: 0, gap: 10 },
   cardMeta: { flex: 1 },
   petName: { fontFamily: "Poppins_700Bold", fontSize: 14, lineHeight: 20 },
   petOwner: { fontSize: 11, fontFamily: "Inter_400Regular" },
   typeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   typeBadgeText: { fontFamily: "Poppins_700Bold", fontSize: 10, color: "#fff" },
-  imageWrapper: { marginHorizontal: 14, marginTop: 12, borderRadius: 16, aspectRatio: 1, alignItems: "center", justifyContent: "center" },
+  imageWrapper: { width: "92%", alignSelf: "center", aspectRatio: 1, marginTop: 12, marginBottom: 4, borderRadius: 16, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   postImage: { width: "80%", height: "80%" },
-  actions: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingTop: 12, gap: 16 },
+  actions: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 12, gap: 16 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   actionCount: { fontSize: 14, fontFamily: "Poppins_600SemiBold" },
-  caption: { paddingHorizontal: 14, paddingTop: 8, fontSize: 14, lineHeight: 20, fontFamily: "Inter_400Regular" },
+  caption: { paddingHorizontal: 16, paddingTop: 8, fontSize: 14, lineHeight: 20, fontFamily: "Inter_400Regular" },
   captionBold: { fontFamily: "Poppins_700Bold" },
-  tags: { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 4, fontSize: 12, fontFamily: "Poppins_600SemiBold", color: colors.primary },
+  tags: { paddingHorizontal: 16, paddingBottom: 16, paddingTop: 4, fontSize: 12, fontFamily: "Poppins_600SemiBold", color: colors.primary },
   fab: { position: "absolute", bottom: 96, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   sheet: { borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 20, paddingBottom: 40 },
