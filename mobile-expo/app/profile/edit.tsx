@@ -21,19 +21,26 @@ import { CustomPawPrint } from "../(tabs)/index";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth, type User as AuthUser } from "../../contexts/AuthContext";
 import { pickAndUploadImage } from "@/services/uploadApi";
+import { COUNTRIES } from "@/components/ui/CountryPicker";
 
 const FALLBACK_AVATAR = require("../../assets/pet-dog.jpg");
-const PHONE_PREFIX = "+91";
 
-// Strip +91 prefix when loading stored phone into the input
-const stripPrefix = (phone: string) => phone.replace(/^\+91\s*/, "").trim();
-// Re-attach prefix on save
-const withPrefix = (digits: string) => (digits.trim() ? `${PHONE_PREFIX} ${digits.trim()}` : "");
+// Find matching country from a full phone number like "+911234567890"
+const findCountryFromPhone = (phone: string) => {
+  if (!phone) return COUNTRIES.find(c => c.dialCode === "+91")!;
+  const sorted = [...COUNTRIES].sort((a, b) => b.dialCode.length - a.dialCode.length);
+  return sorted.find(c => phone.startsWith(c.dialCode)) ?? COUNTRIES.find(c => c.dialCode === "+91")!;
+};
+
+const stripDialCode = (phone: string) => {
+  const country = findCountryFromPhone(phone);
+  return phone.startsWith(country.dialCode) ? phone.slice(country.dialCode.length).trim() : phone;
+};
 
 type FormState = {
   name: string;
   email: string;
-  phoneDigits: string; // digits only, without +91
+  phoneDigits: string; // digits only, without country code
   city: string;
   address: string;
   bio: string;
@@ -50,7 +57,7 @@ type FormState = {
 const createInitialForm = (user: AuthUser | null): FormState => ({
   name: user?.name || "",
   email: user?.email || "",
-  phoneDigits: stripPrefix(user?.phone || ""),
+  phoneDigits: stripDialCode(user?.phone || ""),
   city: user?.city || "",
   address: user?.address || "",
   bio: user?.bio || "",
@@ -210,7 +217,7 @@ export default function EditProfileScreen() {
       await updateProfile({
         name: form.name.trim(),
         email: form.email.trim(),
-        phone: withPrefix(form.phoneDigits),
+        phone: user?.phone || "",
         city: form.city.trim(),
         address: form.address.trim(),
         bio: form.bio.trim(),
@@ -357,13 +364,14 @@ export default function EditProfileScreen() {
                 </Pressable>
               </View>
               <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, borderRadius: 14, height: 52, overflow: "hidden", opacity: 0.7 }}>
-                <View style={{ paddingHorizontal: 14, borderRightWidth: 1, borderRightColor: colors.border, height: "100%", justifyContent: "center", backgroundColor: colors.bgSubtle }}>
-                  <Text style={{ fontSize: 15, fontWeight: "600", color: colors.textPrimary }}>+91</Text>
+                <View style={{ paddingHorizontal: 14, borderRightWidth: 1, borderRightColor: colors.border, height: "100%", justifyContent: "center", backgroundColor: colors.bgSubtle, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Text style={{ fontSize: 16 }}>{findCountryFromPhone(user?.phone || "").flag}</Text>
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: colors.textPrimary }}>{findCountryFromPhone(user?.phone || "").dialCode}</Text>
                 </View>
                 <TextInput
                   value={form.phoneDigits}
                   editable={false}
-                  placeholder="98765 43210"
+                  placeholder="Phone number"
                   placeholderTextColor={colors.textMuted}
                   style={{ flex: 1, paddingHorizontal: 14, fontSize: 15, color: colors.textMuted }}
                 />

@@ -1,0 +1,158 @@
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { getPets, type Pet } from "../../src/lib/pets-store";
+import { colors } from "../../src/lib/theme";
+import { useTokens } from "../../src/lib/theme-store";
+import { Avatar } from "../../src/components/Avatar";
+
+const SEED_PETS = [
+  { id: "moona", name: "Moona", breed: "Collie · ♀ · 2y", tintColor: "rgba(255,107,107,0.15)", img: require("../../src/assets/doodle-boy-dog.png") },
+  { id: "kobi",  name: "Kobi",  breed: "Tabby · ♂ · 4y",  tintColor: "rgba(37,99,235,0.1)",   img: require("../../src/assets/doodle-birthday.png") },
+];
+const TINT_COLORS = ["rgba(255,107,107,0.15)","rgba(37,99,235,0.1)","rgba(255,217,61,0.3)","rgba(255,111,207,0.15)","rgba(76,175,80,0.15)"];
+
+export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const tk = useTokens();
+  const [pets, setPets] = useState<Pet[]>([]);
+  useEffect(() => { getPets().then(setPets); }, []);
+
+  return (
+    <ScrollView style={[styles.container, { paddingTop: insets.top, backgroundColor: tk.bg }]}
+      showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: tk.text }]}>Profile</Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => router.push("/u/goutham")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
+            <Share2 size={20} color={tk.text} strokeWidth={2} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/settings")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
+            <Settings size={20} color={tk.text} strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* User card */}
+      <View style={[styles.userCard, { backgroundColor: tk.card }]}>
+        <Avatar source={require("../../src/assets/doodle-boy-dog.png")} name="Goutham R." size={80} />
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.userName, { color: tk.text }]}>Goutham R.</Text>
+          <Text style={[styles.userMeta, { color: tk.textMuted }]}>Mumbai · 2 pets</Text>
+          <View style={styles.statsRow}>
+            <Text style={[styles.statText, { color: tk.textMuted }]}><Text style={[styles.statNum, { color: tk.text }]}>128</Text> followers</Text>
+            <Text style={[styles.statText, { color: tk.textMuted }]}><Text style={[styles.statNum, { color: tk.text }]}>96</Text> following</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Pets */}
+      <View style={styles.sectionRow}>
+        <Text style={[styles.sectionTitle, { color: tk.text }]}>My pets</Text>
+        <TouchableOpacity onPress={() => router.push("/add-pet")} style={styles.addPetBtn}>
+          <Plus size={16} color={colors.coral} /><Text style={styles.addPetText}>Add pet</Text>
+        </TouchableOpacity>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 8 }}>
+        {SEED_PETS.map((p) => (
+          <TouchableOpacity key={p.id} onPress={() => router.push("/pet")} style={[styles.petCard, { backgroundColor: p.tintColor }]} activeOpacity={0.85}>
+            <Image source={p.img} style={styles.petCardImg} resizeMode="contain" />
+            <Text style={[styles.petCardName, { color: tk.text }]}>{p.name}</Text>
+            <Text style={[styles.petCardBreed, { color: tk.textMuted }]}>{p.breed}</Text>
+          </TouchableOpacity>
+        ))}
+        {pets.map((p, i) => (
+          <TouchableOpacity key={p.id} onPress={() => router.push("/pet")} style={[styles.petCard, { backgroundColor: TINT_COLORS[(i + 2) % TINT_COLORS.length] }]} activeOpacity={0.85}>
+            <View style={[styles.petCardImgWrap, { overflow: "hidden" }]}>
+              {p.photo && <Image source={{ uri: p.photo }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />}
+            </View>
+            <Text style={[styles.petCardName, { color: tk.text }]}>{p.name}</Text>
+            <Text style={[styles.petCardBreed, { color: tk.textMuted }]}>{p.breed} · {p.gender === "female" ? "♀" : "♂"} · {p.ageYears}y</Text>
+          </TouchableOpacity>
+        ))}
+        <TouchableOpacity onPress={() => router.push("/add-pet")} style={[styles.petCardAdd, { backgroundColor: tk.card, borderColor: tk.border }]} activeOpacity={0.85}>
+          <Plus size={24} color={tk.textMuted} />
+          <Text style={[styles.addPetCardText, { color: tk.textMuted }]}>Add pet</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* Quick access */}
+      <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Quick access</Text>
+      <View style={styles.tilesGrid}>
+        <Tile onPress={() => router.push("/today")}  icon={Sun}         label="Today"       tintColor="rgba(255,107,107,0.15)" tk={tk} />
+        <Tile onPress={() => router.push("/events")} icon={CalendarDays} label="Events"      tintColor="rgba(255,217,61,0.3)"  tk={tk} />
+        <Tile onPress={() => router.push("/lost")}   icon={Siren}        label="Lost & Found" tintColor="rgba(255,111,207,0.15)" tk={tk} />
+        <Tile onPress={() => router.push("/care")}   icon={Stethoscope}  label="Care"        tintColor="rgba(37,99,235,0.1)"   tk={tk} />
+      </View>
+
+      {/* Activity */}
+      <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Activity</Text>
+      <View style={styles.activityList}>
+        <Row onPress={() => router.push("/notifications")} icon={Bell}          label="Notifications"       meta="3 new"    tintColor="rgba(255,217,61,0.3)"  tk={tk} />
+        <Row onPress={() => router.push("/chat")}          icon={MessageCircle} label="Messages"            meta="2 unread" tintColor="rgba(37,99,235,0.1)"   tk={tk} />
+        <Row onPress={() => router.push("/pet")}           icon={Award}         label="Badges & Achievements" meta="12"    tintColor="rgba(255,111,207,0.15)" tk={tk} />
+        <Row onPress={() => router.push("/discover")}      icon={MapPin}        label="Places visited"      meta="8"        tintColor="rgba(76,175,80,0.15)"  tk={tk} />
+      </View>
+    </ScrollView>
+  );
+}
+
+function Row({ onPress, icon: Icon, label, meta, tintColor, tk }: any) {
+  return (
+    <TouchableOpacity onPress={onPress} style={[styles.row, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+      <View style={[styles.rowIcon, { backgroundColor: tintColor }]}><Icon size={20} color={colors.foreground} strokeWidth={2} /></View>
+      <Text style={[styles.rowLabel, { flex: 1, color: tk.text }]}>{label}</Text>
+      <Text style={[styles.rowMeta, { color: tk.textMuted }]}>{meta}</Text>
+      <ChevronRight size={16} color={tk.textMuted} />
+    </TouchableOpacity>
+  );
+}
+
+function Tile({ onPress, icon: Icon, label, tintColor, tk }: any) {
+  return (
+    <TouchableOpacity onPress={onPress} style={[styles.tile, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+      <View style={[styles.tileIconBg, { backgroundColor: tintColor }]}>
+        <Icon size={20} color={tk.text} strokeWidth={2} />
+      </View>
+      <Text style={[styles.tileLabel, { color: tk.text }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 8, paddingBottom: 12 },
+  title: { fontFamily: "Poppins_700Bold", fontSize: 28 },
+  headerActions: { flexDirection: "row", gap: 8 },
+  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
+  userCard: { flexDirection: "row", alignItems: "center", gap: 16, borderRadius: 24, padding: 16, marginHorizontal: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 3 },
+  userName: { fontFamily: "Poppins_700Bold", fontSize: 20 },
+  userMeta: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  statsRow: { flexDirection: "row", gap: 12, marginTop: 8 },
+  statText: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  statNum: { fontFamily: "Poppins_700Bold" },
+  sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, marginTop: 24, marginBottom: 12 },
+  sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 17 },
+  addPetBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
+  addPetText: { fontFamily: "Poppins_600SemiBold", fontSize: 13, color: colors.coral },
+  petCard: { width: 160, borderRadius: 22, padding: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2 },
+  petCardImg: { width: "100%", height: 72 },
+  petCardImgWrap: { width: "100%", height: 72, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.6)" },
+  petCardName: { fontFamily: "Poppins_700Bold", fontSize: 15, marginTop: 8 },
+  petCardBreed: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  petCardAdd: { width: 160, borderRadius: 22, borderWidth: 2, borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 4 },
+  addPetCardText: { fontFamily: "Poppins_700Bold", fontSize: 13 },
+  tilesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, paddingHorizontal: 20 },
+  tile: { width: "47%", borderRadius: 16, padding: 16, gap: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  tileIconBg: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  tileLabel: { fontFamily: "Poppins_700Bold", fontSize: 13 },
+  activityList: { gap: 10, paddingHorizontal: 20 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, padding: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+  rowIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  rowLabel: { fontFamily: "Poppins_700Bold", fontSize: 15 },
+  rowMeta: { fontSize: 13, fontFamily: "Inter_400Regular" },
+});

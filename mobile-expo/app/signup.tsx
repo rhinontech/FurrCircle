@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
+import CountryPicker, { COUNTRIES, type Country } from "@/components/ui/CountryPicker";
 import { AppText as Text } from "@/components/ui/AppText";
 import {
   // Heart,
@@ -65,6 +66,7 @@ export default function SignupScreen() {
   // };
 
   const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState<Country>(COUNTRIES.find(c => c.dialCode === "+91")!);
   const [loading, setLoading] = useState(false);
 
   const [name, setName] = useState("");
@@ -87,8 +89,8 @@ export default function SignupScreen() {
       return;
     }
 
-    if (phone.length !== 10) {
-      Alert.alert("Invalid Phone", "Please enter a valid 10-digit phone number");
+    if (phone.length < 5) {
+      Alert.alert("Invalid Phone", "Please enter a valid phone number");
       return;
     }
 
@@ -105,7 +107,7 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       const auth = getFirebaseAuth();
-      const phoneNumber = `+91${phone.trim()}`;
+      const phoneNumber = `${country.dialCode}${phone.trim()}`;
 
       if (auth) {
         console.log(`Requesting initial OTP for: ${phoneNumber}`);
@@ -317,31 +319,17 @@ export default function SignupScreen() {
                   overflow: "hidden",
                 }}
               >
-                <View
-                  style={{
-                    paddingHorizontal: 16,
-                    height: 54,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    borderRightWidth: 1,
-                    borderRightColor: colors.border,
-                    backgroundColor: colors.bgSubtle,
-                  }}
-                >
-                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.textPrimary }}>
-                    +91
-                  </Text>
-                </View>
+                <CountryPicker selected={country} onSelect={setCountry} />
                 <TextInput
-                  placeholder="98765 43210"
+                  placeholder="Phone number"
                   placeholderTextColor={colors.textMuted}
                   value={phone}
                   onChangeText={(text) => {
                     const cleaned = text.replace(/[^0-9]/g, "");
-                    if (cleaned.length <= 10) setPhone(cleaned);
+                    if (cleaned.length <= 15) setPhone(cleaned);
                   }}
                   keyboardType="number-pad"
-                  maxLength={10}
+                  maxLength={15}
                   style={{ flex: 1, height: 54, paddingHorizontal: 14, fontSize: 15, color: colors.textPrimary }}
                 />
               </View>
