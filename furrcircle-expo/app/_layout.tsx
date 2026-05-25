@@ -59,6 +59,8 @@ export default function RootLayout() {
           <Stack.Screen name="add-pet" options={{ presentation: "modal" }} />
           <Stack.Screen name="ask" options={{ presentation: "modal" }} />
           <Stack.Screen name="onboarding" options={{ presentation: "fullScreenModal" }} />
+          <Stack.Screen name="login" options={{ presentation: "card" }} />
+          <Stack.Screen name="signup" options={{ presentation: "card" }} />
         </Stack>
       </QueryClientProvider>
     </GestureHandlerRootView>
