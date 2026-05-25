@@ -1,0 +1,114 @@
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert } from "react-native";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import { Camera } from "lucide-react-native";
+import * as ImagePicker from "expo-image-picker";
+import { ScreenHeader } from "../src/components/ScreenHeader";
+import { PageContainer } from "../src/components/PageContainer";
+import { addPet } from "../src/lib/pets-store";
+import { colors } from "../src/lib/theme";
+import { useTokens } from "../src/lib/theme-store";
+
+const PERSONALITY_TAGS = ["Friendly", "Playful", "Calm", "Active", "Independent", "Cuddly", "Protective", "Curious"];
+
+export default function AddPetScreen() {
+  const router = useRouter();
+  const tk = useTokens();
+  const [name, setName] = useState("");
+  const [species, setSpecies] = useState("dog");
+  const [breed, setBreed] = useState("");
+  const [gender, setGender] = useState<"male" | "female">("female");
+  const [ageYears, setAgeYears] = useState("1");
+  const [photo, setPhoto] = useState<string | undefined>();
+  const [personality, setPersonality] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const pickPhoto = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images", quality: 0.8 });
+    if (!result.canceled) setPhoto(result.assets[0].uri);
+  };
+
+  const toggleTag = (t: string) =>
+    setPersonality((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
+
+  const save = async () => {
+    if (!name.trim()) { Alert.alert("Name required"); return; }
+    setSaving(true);
+    await addPet({ name: name.trim(), species, breed: breed.trim(), gender, ageYears: parseInt(ageYears) || 1, photo, personality });
+    router.back();
+  };
+
+  return (
+    <PageContainer>
+    <View style={[styles.container, { backgroundColor: tk.bg }]}>
+      <ScreenHeader title="Add a pet" />
+      <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 20 }}>
+        <TouchableOpacity onPress={pickPhoto} style={styles.photoBtn} activeOpacity={0.8}>
+          {photo ? null : <Camera size={32} color={colors.foreground + "88"} />}
+          <Text style={styles.photoBtnText}>{photo ? "Change photo" : "Add photo"}</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.label}>Name</Text>
+        <TextInput value={name} onChangeText={setName} placeholder="e.g. Moona" placeholderTextColor={colors.foreground + "66"} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
+
+        <Text style={styles.label}>Species</Text>
+        <View style={styles.toggle}>
+          {["dog", "cat", "other"].map((s) => (
+            <TouchableOpacity key={s} onPress={() => setSpecies(s)} style={[styles.toggleBtn, { backgroundColor: tk.card }, species === s && styles.toggleBtnActive]}>
+              <Text style={[styles.toggleText, species === s && styles.toggleTextActive]}>{s.charAt(0).toUpperCase() + s.slice(1)}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.label}>Breed</Text>
+        <TextInput value={breed} onChangeText={setBreed} placeholder="e.g. Border Collie" placeholderTextColor={colors.foreground + "66"} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
+
+        <Text style={styles.label}>Gender</Text>
+        <View style={styles.toggle}>
+          {(["female", "male"] as const).map((g) => (
+            <TouchableOpacity key={g} onPress={() => setGender(g)} style={[styles.toggleBtn, { backgroundColor: tk.card }, gender === g && styles.toggleBtnActive]}>
+              <Text style={[styles.toggleText, gender === g && styles.toggleTextActive]}>{g === "female" ? "♀ Female" : "♂ Male"}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.label}>Age (years)</Text>
+        <TextInput value={ageYears} onChangeText={setAgeYears} keyboardType="numeric" style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
+
+        <Text style={styles.label}>Personality</Text>
+        <View style={styles.tagRow}>
+          {PERSONALITY_TAGS.map((t) => (
+            <TouchableOpacity key={t} onPress={() => toggleTag(t)} style={[styles.tag, { backgroundColor: tk.card }, personality.includes(t) && styles.tagActive]}>
+              <Text style={[styles.tagText, personality.includes(t) && styles.tagTextActive]}>{t}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TouchableOpacity onPress={save} disabled={saving} style={styles.saveBtn} activeOpacity={0.85}>
+          <Text style={styles.saveBtnText}>{saving ? "Saving…" : "Add pet"}</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
+    </PageContainer>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  photoBtn: { height: 140, borderRadius: 24, borderWidth: 2, borderColor: "rgba(26,26,46,0.15)", borderStyle: "dashed", alignItems: "center", justifyContent: "center", marginVertical: 16, gap: 8 },
+  photoBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 14, color: colors.foreground + "88" },
+  label: { fontFamily: "Poppins_700Bold", fontSize: 13, color: colors.foreground + "99", marginBottom: 6, marginTop: 16, textTransform: "uppercase", letterSpacing: 0.5 },
+  input: { borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, fontFamily: "Inter_400Regular" },
+  toggle: { flexDirection: "row", gap: 8 },
+  toggleBtn: { flex: 1, paddingVertical: 10, borderRadius: 20, alignItems: "center" },
+  toggleBtnActive: { backgroundColor: colors.foreground },
+  toggleText: { fontFamily: "Poppins_600SemiBold", fontSize: 13, color: colors.foreground + "99" },
+  toggleTextActive: { color: colors.white },
+  tagRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  tag: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
+  tagActive: { backgroundColor: "rgba(37,99,235,0.1)" },
+  tagText: { fontFamily: "Poppins_600SemiBold", fontSize: 13, color: colors.foreground + "88" },
+  tagTextActive: { color: colors.primary },
+  saveBtn: { marginTop: 28, backgroundColor: colors.primary, borderRadius: 24, paddingVertical: 16, alignItems: "center" },
+  saveBtnText: { fontFamily: "Poppins_700Bold", fontSize: 16, color: colors.white },
+});
