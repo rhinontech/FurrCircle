@@ -1,5 +1,5 @@
 import "../src/global.css";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts, Poppins_700Bold, Poppins_600SemiBold, Poppins_500Medium } from "@expo-google-fonts/poppins";
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from "@expo-google-fonts/inter";
@@ -8,6 +8,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { View } from "react-native";
 import { useEffect } from "react";
 import { useThemeStore, useTokens } from "../src/lib/theme-store";
+import { useAuthStore } from "../src/lib/auth-store";
 
 const queryClient = new QueryClient();
 
@@ -25,9 +26,26 @@ export default function RootLayout() {
   const dark = useThemeStore((s) => s.dark);
   const tokens = useTokens();
 
-  useEffect(() => { load(); }, []);
+  const hydrate = useAuthStore((s) => s.hydrate);
+  const user = useAuthStore((s) => s.user);
+  const authLoading = useAuthStore((s) => s.loading);
+  const router = useRouter();
+  const segments = useSegments();
 
-  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: "#F7F8FA" }} />;
+  useEffect(() => { load(); hydrate(); }, []);
+
+  // Auth guard: redirect based on login state once both fonts + auth are ready
+  useEffect(() => {
+    if (!fontsLoaded || authLoading) return;
+    const inAuthGroup = segments[0] === "login" || segments[0] === "signup";
+    if (!user && !inAuthGroup) {
+      router.replace("/login");
+    } else if (user && inAuthGroup) {
+      router.replace("/(tabs)");
+    }
+  }, [user, authLoading, fontsLoaded, segments]);
+
+  if (!fontsLoaded || authLoading) return <View style={{ flex: 1, backgroundColor: "#F7F8FA" }} />;
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: tokens.bg }}>
