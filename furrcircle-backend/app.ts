@@ -82,6 +82,7 @@ import vetReviewRoutes from './routes/vetReviewRoutes.ts';
 import contactLeadRoutes from './routes/contactLeadRoutes.ts';
 import placesRoutes from './routes/placesRoutes.ts';
 import placesVetsRoutes from './routes/placesVetsRoutes.ts';
+import userRoutes from './routes/userRoutes.ts';
 
 // Routes
 app.get('/', (req: Request, res: Response) => {
@@ -104,6 +105,7 @@ app.use('/api/vets/:vetId/reviews', vetReviewRoutes);
 app.use('/api/contact-leads', contactLeadRoutes);
 app.use('/api/places', placesRoutes);
 app.use('/api/places-vets', placesVetsRoutes);
+app.use('/api/users', userRoutes);
 
 // Test DB Connection and Start Server
 const startServer = async (attempt = 1) => {

@@ -5,7 +5,7 @@ import { Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
-import { addPet } from "../src/lib/pets-store";
+import { petApi } from "../services/pet/petApi";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 
@@ -34,8 +34,21 @@ export default function AddPetScreen() {
   const save = async () => {
     if (!name.trim()) { Alert.alert("Name required"); return; }
     setSaving(true);
-    await addPet({ name: name.trim(), species, breed: breed.trim(), gender, ageYears: parseInt(ageYears) || 1, photo, personality });
-    router.back();
+    try {
+      await petApi.createPet({ 
+        name: name.trim(), 
+        species, 
+        breed: breed.trim(), 
+        gender, 
+        age: ageYears, 
+        avatar_url: photo, 
+        description: personality.join(', ') // sending personality as description for now
+      });
+      router.back();
+    } catch (err: any) {
+      Alert.alert("Error adding pet", err?.response?.data?.message || err.message);
+      setSaving(false);
+    }
   };
 
   return (
