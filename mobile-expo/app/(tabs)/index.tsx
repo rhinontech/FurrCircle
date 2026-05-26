@@ -6,7 +6,7 @@ import StatusChip from "../../components/ui/StatusChip";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { userHomeApi } from "@/services/users/homeApi";
 import { userCommunityApi } from "@/services/users/communityApi";
 import { placesVetsApi } from "@/services/users/placesVetsApi";
@@ -225,77 +225,90 @@ export default function HomeScreen() {
   const renderPetInfoContent = ({ item }: { item: any }) => (
     <Pressable
       onPress={() => router.push(`/pets/${item.id}`)}
-      style={{ width: cardWidth, padding: 24 }}
+      style={{ width: screenWidth }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#fff', padding: 3 }}>
-          <View style={{ flex: 1, borderRadius: 41, overflow: 'hidden', backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}>
-            {item.avatar_url ? (
-              <Image source={{ uri: item.avatar_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-            ) : (
-              <CustomPawPrint size={36} color={colors.textMuted} />
-            )}
-          </View>
-          <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#fff', borderRadius: 12, padding: 2 }}>
-            <View style={{ backgroundColor: '#3b82f6', borderRadius: 10, padding: 4 }}>
-              <Camera size={12} color="#fff" />
+      <View style={{ marginHorizontal: 20, borderRadius: 24, overflow: 'hidden' }}>
+        <LinearGradient
+          colors={['#3b82f6', '#1e3a8a']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ padding: 24 }}
+        >
+          {/* Background Paw Prints */}
+          <CustomPawPrint size={100} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', right: -10, top: -10 }} />
+          <CustomPawPrint size={60} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', right: 40, bottom: 60 }} />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#fff', padding: 3 }}>
+              <View style={{ flex: 1, borderRadius: 41, overflow: 'hidden', backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center' }}>
+                {item.avatar_url ? (
+                  <Image source={{ uri: item.avatar_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                ) : (
+                  <CustomPawPrint size={36} color={colors.textMuted} />
+                )}
+              </View>
+              <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#fff', borderRadius: 12, padding: 2 }}>
+                <View style={{ backgroundColor: '#3b82f6', borderRadius: 10, padding: 4 }}>
+                  <Camera size={12} color="#fff" />
+                </View>
+              </View>
+            </View>
+
+            <View style={{ flex: 1, marginLeft: 20 }}>
+              <Text
+                style={{ fontSize: 24, fontWeight: '800', color: '#fff' }}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
+                {item.name}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
+                  <Text style={{ fontSize: 13, color: '#fff', fontWeight: '600' }}>Age : {item.age || 'Age Unknown'}</Text>
+                </View>
+              </View>
             </View>
           </View>
-        </View>
 
-        <View style={{ flex: 1, marginLeft: 20 }}>
-          <Text
-            style={{ fontSize: 24, fontWeight: '800', color: '#fff' }}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.7}
-          >
-            {item.name}
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
-              <Text style={{ fontSize: 13, color: '#fff', fontWeight: '600' }}>Age : {item.age || 'Age Unknown'}</Text>
+          <View style={{ height: 1, marginVertical: 14, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <View style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Image source={require("@/assets/adaptive-icon.png")} style={{ width: 14, height: 14, tintColor: '#fff' }} />
+                </View>
+                <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Weight</Text>
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>{item.weight || '--'}</Text>
+            </View>
+
+            <View style={{ width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+
+            <View style={{ flex: 1.2, alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <View style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Heart size={14} color="#fff" />
+                </View>
+                <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Health Score</Text>
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>{item.healthScore || '95'}/100</Text>
+            </View>
+
+            <View style={{ width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <View style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Calendar size={14} color="#fff" />
+                </View>
+                <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Next Visit</Text>
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>{item.nextVisit || '--'}</Text>
             </View>
           </View>
-        </View>
-      </View>
-
-      <View style={{ height: 1, marginVertical: 14, backgroundColor: 'rgba(255,255,255,0.1)' }} />
-
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-            <View style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
-              <Image source={require("@/assets/adaptive-icon.png")} style={{ width: 14, height: 14, tintColor: '#fff' }} />
-            </View>
-            <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Weight</Text>
-          </View>
-          <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>{item.weight || '--'}</Text>
-        </View>
-
-        <View style={{ width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.1)' }} />
-
-        <View style={{ flex: 1.2, alignItems: 'center' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-            <View style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
-              <Heart size={14} color="#fff" />
-            </View>
-            <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Health Score</Text>
-          </View>
-          <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>{item.healthScore || '95'}/100</Text>
-        </View>
-
-        <View style={{ width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.1)' }} />
-
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-            <View style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
-              <Calendar size={14} color="#fff" />
-            </View>
-            <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Next Visit</Text>
-          </View>
-          <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>{item.nextVisit || '--'}</Text>
-        </View>
+        </LinearGradient>
       </View>
     </Pressable>
   );
@@ -340,40 +353,35 @@ export default function HomeScreen() {
               </Pressable>
             </View>
           ) : (
-            <View style={{ marginHorizontal: 20, borderRadius: 24, overflow: 'hidden' }}>
-              <LinearGradient
-                colors={['#3b82f6', '#1e3a8a']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ paddingVertical: 0 }}
-              >
-                {/* Background Paw Prints (Static) */}
-                <CustomPawPrint size={100} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', right: -10, top: -10, }} />
-                <CustomPawPrint size={60} color="rgba(255,255,255,0.05)" style={{ position: 'absolute', right: 40, bottom: 60 }} />
+            <View>
+              <Animated.FlatList
+                key={`pet-slider-${pets.length}`}
+                data={pets}
+                renderItem={renderPetInfoContent}
+                horizontal
+                pagingEnabled
+                scrollEnabled={pets.length > 1}
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={screenWidth}
+                decelerationRate="fast"
+                keyExtractor={(item) => item.id.toString()}
+                onScroll={onScroll}
+                scrollEventThrottle={16}
+                getItemLayout={(_, index) => ({
+                  length: screenWidth,
+                  offset: screenWidth * index,
+                  index,
+                })}
+              />
 
-                <Animated.FlatList
-                  data={pets}
-                  renderItem={renderPetInfoContent}
-                  horizontal
-                  pagingEnabled
-                  scrollEnabled={pets.length > 1}
-                  showsHorizontalScrollIndicator={false}
-                  snapToInterval={cardWidth}
-                  decelerationRate="fast"
-                  keyExtractor={(item) => item.id.toString()}
-                  onScroll={onScroll}
-                  scrollEventThrottle={16}
-                />
-
-                {/* Pagination Dots */}
-                {pets.length > 1 && (
-                  <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, paddingBottom: 16 }}>
-                    {pets.map((_, index) => (
-                      <PaginationDot key={index} index={index} scrollX={scrollX} cardWidth={cardWidth} />
-                    ))}
-                  </View>
-                )}
-              </LinearGradient>
+              {/* Pagination Dots */}
+              {pets.length > 1 && (
+                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: -12, paddingBottom: 16 }}>
+                  {pets.map((_, index) => (
+                    <PaginationDot key={index} index={index} scrollX={scrollX} cardWidth={screenWidth} />
+                  ))}
+                </View>
+              )}
             </View>
           )}
         </View>

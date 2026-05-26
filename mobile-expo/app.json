@@ -5,7 +5,7 @@
     "scheme": "furrcircle",
     "version": "1.0.6",
     "orientation": "portrait",
-    "icon": "./assets/adaptive-icon.png",
+    "icon": "./assets/furrCircle_IOS_icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -30,7 +30,7 @@
         "backgroundColor": "#ffffff"
       },
       "adaptiveIcon": {
-        "foregroundImage": "./assets/furrCircle_Android_logo.png",
+        "foregroundImage": "./assets/furrCircle_android_icon2.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,

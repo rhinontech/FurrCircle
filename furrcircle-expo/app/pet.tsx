@@ -166,7 +166,7 @@ function TimelineTab({ tk }: { tk: any }) {
         <View key={m.id} style={styles.timelineItem}>
           <View style={[styles.timelineDot, { backgroundColor: m.tintColor }]} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.timelineDate}>{m.date}</Text>
+            <Text style={[styles.timelineDate, { color: tk.textMuted }]}>{m.date}</Text>
             <Text style={[styles.timelineTitle, { color: tk.text }]}>{m.title}</Text>
             <Text style={[styles.timelineBody, { color: tk.text + "BB" }]}>{m.body}</Text>
           </View>

@@ -26,7 +26,7 @@ export const lightTokens = {
   text: "#1A1A2E",
   textMuted: "#1A1A2E99",
   border: "#E5E7EB",
-  inputBg: "#F7F8FA",
+  inputBg: "#FFFFFF",
 };
 
 export const darkTokens = {

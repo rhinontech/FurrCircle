@@ -193,7 +193,7 @@ export const getSpotlightPost = async (req: any, res: Response): Promise<void> =
     const posts = await Post.findAll({
       where: { status: "approved" },
       include: [
-        { model: Comment, as: "comments", attributes: ["id"] },
+        { model: Comment, as: "comments" },
         { model: Like, as: "likes", attributes: ["userId", "userType"] },
         { model: SavedPost, as: "savedPosts", attributes: ["userId"] },
       ],
@@ -294,6 +294,41 @@ export const getMyPosts = async (req: any, res: Response): Promise<void> => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+export const deleteMyPost = async (req: any, res: Response): Promise<void> => {
+  const transaction = await db.sequelize.transaction();
+  try {
+    const { posts: Post, comments: Comment, likes: Like, saved_posts: SavedPost } = db as any;
+    const { id } = req.params;
+
+    const post = await Post.findOne({
+      where: { id, userId: req.user.id },
+      transaction,
+    });
+
+    if (!post) {
+      await transaction.rollback();
+      res.status(404).json({ message: "Post not found or not yours" });
+      return;
+    }
+
+    // Delete related data
+    await Comment.destroy({ where: { postId: id }, transaction });
+    await Like.destroy({ where: { postId: id }, transaction });
+    await SavedPost.destroy({ where: { postId: id }, transaction });
+
+    // Delete the post
+    await post.destroy({ transaction });
+
+    await transaction.commit();
+    res.json({ message: "Post and all related data deleted successfully" });
+  } catch (error: any) {
+    if (transaction) await transaction.rollback();
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 const recomputeEngagementScore = async (postId: string) => {
   const { posts: Post, likes: Like, comments: Comment } = db as any;

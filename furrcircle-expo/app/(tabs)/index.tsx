@@ -10,7 +10,7 @@ import { useState } from "react";
 import { posts, type Post } from "../../src/lib/demo-data";
 import { colors } from "../../src/lib/theme";
 import { Avatar } from "../../src/components/Avatar";
-import { useTokens } from "../../src/lib/theme-store";
+import { useTokens, useThemeStore } from "../../src/lib/theme-store";
 
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
@@ -71,21 +71,23 @@ const stories = [
 
 function StoryRail() {
   const router = useRouter();
+  const tk = useTokens();
+  const dark = useThemeStore((s) => s.dark);
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}
       style={styles.storyRail}
       contentContainerStyle={{ paddingHorizontal: 8, paddingVertical: 8, gap: 14 }}>
       {stories.map((s) => (
         <TouchableOpacity key={s.label} onPress={() => router.push("/reels")} style={styles.storyItem} activeOpacity={0.8}>
-          <View style={[styles.storyRing, s.isYou ? styles.storyRingGray : styles.storyRingGradient]}>
-            <View style={[styles.storyInner, { backgroundColor: s.tintColor }]}>
+          <View style={[styles.storyRing, s.isYou ? (dark ? { backgroundColor: tk.border } : styles.storyRingGray) : styles.storyRingGradient]}>
+            <View style={[styles.storyInner, { backgroundColor: s.isYou ? (dark ? "rgba(240,240,255,0.08)" : "rgba(26,26,46,0.05)") : s.tintColor, borderColor: tk.bg }]}>
               {s.isYou
-                ? <Plus size={20} color="rgba(26,26,46,0.6)" />
+                ? <Plus size={20} color={tk.textMuted} />
                 : <Image source={s.img!} style={styles.storyImg} resizeMode="contain" />
               }
             </View>
           </View>
-          <Text style={styles.storyLabel} numberOfLines={1}>{s.label}</Text>
+          <Text style={[styles.storyLabel, { color: tk.text }]} numberOfLines={1}>{s.label}</Text>
         </TouchableOpacity>
       ))}
     </ScrollView>

@@ -18,12 +18,12 @@ export default function LogVaccineScreen() {
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
       <ScreenHeader title="Log Vaccine" />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
-        <Text style={styles.label}>Vaccine name</Text>
-        <TextInput value={vaccine} onChangeText={setVaccine} placeholder="e.g. DHPP" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
-        <Text style={styles.label}>Clinic / Vet</Text>
-        <TextInput value={clinic} onChangeText={setClinic} placeholder="e.g. Furr Care Clinic" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
-        <Text style={styles.label}>Next due date</Text>
-        <TextInput value={nextDate} onChangeText={setNextDate} placeholder="e.g. Nov 2027" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Vaccine name</Text>
+        <TextInput value={vaccine} onChangeText={setVaccine} placeholder="e.g. DHPP" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Clinic / Vet</Text>
+        <TextInput value={clinic} onChangeText={setClinic} placeholder="e.g. Furr Care Clinic" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Next due date</Text>
+        <TextInput value={nextDate} onChangeText={setNextDate} placeholder="e.g. Nov 2027" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
         <TouchableOpacity onPress={() => router.back()} style={styles.saveBtn}>
           <Text style={styles.saveBtnText}>Save</Text>
         </TouchableOpacity>

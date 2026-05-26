@@ -180,11 +180,16 @@ const sendPushToActor = async (
         priority: 'high' as const,
         notification: {
           sound: 'default',
+          channelId: 'default',
         },
       },
       apns: {
         payload: {
           aps: {
+            alert: {
+              title,
+              body: message,
+            },
             sound: 'default',
             badge: 1,
             'mutable-content': 1,

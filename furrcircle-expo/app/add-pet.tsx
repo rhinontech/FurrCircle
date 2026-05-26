@@ -43,45 +43,54 @@ export default function AddPetScreen() {
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
       <ScreenHeader title="Add a pet" />
       <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 20 }}>
-        <TouchableOpacity onPress={pickPhoto} style={styles.photoBtn} activeOpacity={0.8}>
-          {photo ? null : <Camera size={32} color={colors.foreground + "88"} />}
-          <Text style={styles.photoBtnText}>{photo ? "Change photo" : "Add photo"}</Text>
+        <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { borderColor: tk.border }]} activeOpacity={0.8}>
+          {photo ? null : <Camera size={32} color={tk.textMuted} />}
+          <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>{photo ? "Change photo" : "Add photo"}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.label}>Name</Text>
-        <TextInput value={name} onChangeText={setName} placeholder="e.g. Moona" placeholderTextColor={colors.foreground + "66"} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Name</Text>
+        <TextInput value={name} onChangeText={setName} placeholder="e.g. Moona" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
 
-        <Text style={styles.label}>Species</Text>
+        <Text style={[styles.label, { color: tk.textMuted }]}>Species</Text>
         <View style={styles.toggle}>
-          {["dog", "cat", "other"].map((s) => (
-            <TouchableOpacity key={s} onPress={() => setSpecies(s)} style={[styles.toggleBtn, { backgroundColor: tk.card }, species === s && styles.toggleBtnActive]}>
-              <Text style={[styles.toggleText, species === s && styles.toggleTextActive]}>{s.charAt(0).toUpperCase() + s.slice(1)}</Text>
-            </TouchableOpacity>
-          ))}
+          {["dog", "cat", "other"].map((s) => {
+            const isActive = species === s;
+            return (
+              <TouchableOpacity key={s} onPress={() => setSpecies(s)} style={[styles.toggleBtn, { backgroundColor: isActive ? tk.text : tk.card }]}>
+                <Text style={[styles.toggleText, { color: isActive ? tk.bg : tk.textMuted }]}>{s.charAt(0).toUpperCase() + s.slice(1)}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        <Text style={styles.label}>Breed</Text>
-        <TextInput value={breed} onChangeText={setBreed} placeholder="e.g. Border Collie" placeholderTextColor={colors.foreground + "66"} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Breed</Text>
+        <TextInput value={breed} onChangeText={setBreed} placeholder="e.g. Border Collie" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
 
-        <Text style={styles.label}>Gender</Text>
+        <Text style={[styles.label, { color: tk.textMuted }]}>Gender</Text>
         <View style={styles.toggle}>
-          {(["female", "male"] as const).map((g) => (
-            <TouchableOpacity key={g} onPress={() => setGender(g)} style={[styles.toggleBtn, { backgroundColor: tk.card }, gender === g && styles.toggleBtnActive]}>
-              <Text style={[styles.toggleText, gender === g && styles.toggleTextActive]}>{g === "female" ? "♀ Female" : "♂ Male"}</Text>
-            </TouchableOpacity>
-          ))}
+          {(["female", "male"] as const).map((g) => {
+            const isActive = gender === g;
+            return (
+              <TouchableOpacity key={g} onPress={() => setGender(g)} style={[styles.toggleBtn, { backgroundColor: isActive ? tk.text : tk.card }]}>
+                <Text style={[styles.toggleText, { color: isActive ? tk.bg : tk.textMuted }]}>{g === "female" ? "♀ Female" : "♂ Male"}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        <Text style={styles.label}>Age (years)</Text>
-        <TextInput value={ageYears} onChangeText={setAgeYears} keyboardType="numeric" style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Age (years)</Text>
+        <TextInput value={ageYears} onChangeText={setAgeYears} keyboardType="numeric" style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
 
-        <Text style={styles.label}>Personality</Text>
+        <Text style={[styles.label, { color: tk.textMuted }]}>Personality</Text>
         <View style={styles.tagRow}>
-          {PERSONALITY_TAGS.map((t) => (
-            <TouchableOpacity key={t} onPress={() => toggleTag(t)} style={[styles.tag, { backgroundColor: tk.card }, personality.includes(t) && styles.tagActive]}>
-              <Text style={[styles.tagText, personality.includes(t) && styles.tagTextActive]}>{t}</Text>
-            </TouchableOpacity>
-          ))}
+          {PERSONALITY_TAGS.map((t) => {
+            const isActive = personality.includes(t);
+            return (
+              <TouchableOpacity key={t} onPress={() => toggleTag(t)} style={[styles.tag, { backgroundColor: isActive ? "rgba(37,99,235,0.12)" : tk.card }]}>
+                <Text style={[styles.tagText, { color: isActive ? colors.primary : tk.textMuted }]}>{t}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         <TouchableOpacity onPress={save} disabled={saving} style={styles.saveBtn} activeOpacity={0.85}>

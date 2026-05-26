@@ -19,6 +19,7 @@ export default function AddPetScreen() {
 
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [petPhoto, setPetPhoto] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -117,7 +118,7 @@ export default function AddPetScreen() {
   const handleDelete = async () => {
     Alert.alert(
       "Remove Pet",
-      `Are you sure you want to remove ${name}? This action cannot be undone.`,
+      `Are you sure you want to remove ${name}? All data related to this pet will be deleted.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -125,10 +126,12 @@ export default function AddPetScreen() {
           style: "destructive",
           onPress: async () => {
             try {
+              setIsDeleting(true);
               await userPetsApi.deletePet(String(id));
               router.replace("/(tabs)/pets");
             } catch (error: any) {
               Alert.alert("Error", error.message || "Failed to delete pet.");
+              setIsDeleting(false);
             }
           }
         }
@@ -145,7 +148,7 @@ export default function AddPetScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 110 : 0} style={{ flex: 1, backgroundColor: colors.bg }}>
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "padding"} keyboardVerticalOffset={Platform.OS === 'ios' ? 110 : 50} style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingTop: 16 }}>
         <View style={{ paddingHorizontal: 20, paddingBottom: 24, flexDirection: 'row', alignItems: 'center' }}>
           <Pressable onPress={() => router.back()} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgSubtle, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
@@ -154,8 +157,16 @@ export default function AddPetScreen() {
           <Text style={{ fontSize: 20, fontWeight: '700', color: colors.textPrimary }}>{isEditing ? "Edit Pet" : "Add New Pet"}</Text>
           <View style={{ flex: 1 }} />
           {isEditing && (
-            <Pressable onPress={handleDelete} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#fff1f2', alignItems: 'center', justifyContent: 'center' }}>
-              <Trash2 size={20} color="#e11d48" />
+            <Pressable 
+              onPress={handleDelete} 
+              disabled={isDeleting}
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#fff1f2', alignItems: 'center', justifyContent: 'center', opacity: isDeleting ? 0.7 : 1 }}
+            >
+              {isDeleting ? (
+                <ActivityIndicator size="small" color="#e11d48" />
+              ) : (
+                <Trash2 size={20} color="#e11d48" />
+              )}
             </Pressable>
           )}
         </View>

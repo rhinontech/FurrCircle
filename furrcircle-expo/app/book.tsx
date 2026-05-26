@@ -20,20 +20,26 @@ export default function BookScreen() {
         </View>
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Select date</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-          {["Mon 22", "Tue 23", "Wed 24", "Thu 25", "Fri 26"].map((d, i) => (
-            <TouchableOpacity key={d} style={[styles.dateBtn, { backgroundColor: tk.card }, i === 0 && styles.dateBtnActive]}>
-              <Text style={[styles.dateBtnText, i === 0 && styles.dateBtnTextActive]}>{d}</Text>
-            </TouchableOpacity>
-          ))}
+          {["Mon 22", "Tue 23", "Wed 24", "Thu 25", "Fri 26"].map((d, i) => {
+            const isActive = i === 0;
+            return (
+              <TouchableOpacity key={d} style={[styles.dateBtn, { backgroundColor: isActive ? colors.primary : tk.card }]}>
+                <Text style={[styles.dateBtnText, { color: isActive ? colors.white : tk.textMuted }]}>{d}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Select time</Text>
         <View style={styles.timeGrid}>
-          {timeSlots.map((t, i) => (
-            <TouchableOpacity key={t} style={[styles.timeBtn, { backgroundColor: tk.card }, i === 1 && styles.timeBtnActive]}>
-              <Clock size={14} color={i === 1 ? colors.white : colors.foreground + "99"} />
-              <Text style={[styles.timeBtnText, i === 1 && styles.timeBtnTextActive]}>{t}</Text>
-            </TouchableOpacity>
-          ))}
+          {timeSlots.map((t, i) => {
+            const isActive = i === 1;
+            return (
+              <TouchableOpacity key={t} style={[styles.timeBtn, { backgroundColor: isActive ? colors.primary : tk.card }]}>
+                <Clock size={14} color={isActive ? colors.white : tk.textMuted} />
+                <Text style={[styles.timeBtnText, { color: isActive ? colors.white : tk.textMuted }]}>{t}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
         <TouchableOpacity style={styles.confirmBtn}>
           <Text style={styles.confirmBtnText}>Confirm appointment</Text>
