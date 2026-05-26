@@ -20,6 +20,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const tk = useTokens();
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
   const [pets, setPets] = useState<Pet[]>([]);
   useEffect(() => { getPets().then(setPets); }, []);
 
@@ -42,8 +43,9 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { paddingTop: insets.top, backgroundColor: tk.bg }]}
-      showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+    <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: tk.bg }}>
+      <ScrollView style={[styles.container, { backgroundColor: tk.bg }]}
+        showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
 
       <View style={styles.header}>
         <Text style={[styles.title, { color: tk.text }]}>Profile</Text>
@@ -119,17 +121,19 @@ export default function ProfileScreen() {
       </View>
 
       {/* Log Out */}
-      <TouchableOpacity
-        onPress={handleLogout}
-        style={[styles.logoutBtn, { backgroundColor: tk.card }]}
-        activeOpacity={0.8}
-      >
-        <View style={styles.logoutIconBg}>
-          <LogOut size={20} color="#EF4444" strokeWidth={2} />
+      <TouchableOpacity onPress={handleLogout}
+        style={[styles.dangerRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+        <View style={[styles.dangerIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
+          <LogOut size={20} color={colors.primary} strokeWidth={2} />
         </View>
-        <Text style={styles.logoutText}>Log Out</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.dangerLabel, { color: colors.primary }]}>Sign out</Text>
+          <Text style={[styles.dangerSub, { color: tk.textMuted }]}>{user?.email ?? ""}</Text>
+        </View>
+        <ChevronRight size={16} color={tk.textMuted} />
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -160,18 +164,22 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 8, paddingBottom: 12 },
   title: { fontFamily: "Poppins_700Bold", fontSize: 28 },
   headerActions: { flexDirection: "row", gap: 8 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
-  userCard: { flexDirection: "row", alignItems: "center", gap: 16, borderRadius: 24, padding: 16, marginHorizontal: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 3 },
+  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
+  userCard: { flexDirection: "row", alignItems: "center", gap: 16, borderRadius: 24, padding: 16, marginHorizontal: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
   userName: { fontFamily: "Poppins_700Bold", fontSize: 20 },
   userMeta: { fontSize: 13, fontFamily: "Inter_400Regular" },
   statsRow: { flexDirection: "row", gap: 12, marginTop: 8 },
   statText: { fontSize: 12, fontFamily: "Inter_400Regular" },
   statNum: { fontFamily: "Poppins_700Bold" },
+  dangerRow: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, padding: 16, marginHorizontal: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1, marginTop:24 },
+  dangerIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(239,68,68,0.12)", alignItems: "center", justifyContent: "center" },
+  dangerLabel: { fontFamily: "Poppins_700Bold", fontSize: 14, color: "#EF4444" },
+  dangerSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
   sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, marginTop: 24, marginBottom: 12 },
   sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 17 },
   addPetBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
   addPetText: { fontFamily: "Poppins_600SemiBold", fontSize: 13, color: colors.coral },
-  petCard: { width: 160, borderRadius: 22, padding: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2 },
+  petCard: { width: 160, borderRadius: 22, padding: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
   petCardImg: { width: "100%", height: 72 },
   petCardImgWrap: { width: "100%", height: 72, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.6)" },
   petCardName: { fontFamily: "Poppins_700Bold", fontSize: 15, marginTop: 8 },
@@ -179,11 +187,11 @@ const styles = StyleSheet.create({
   petCardAdd: { width: 160, borderRadius: 22, borderWidth: 2, borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 4 },
   addPetCardText: { fontFamily: "Poppins_700Bold", fontSize: 13 },
   tilesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, paddingHorizontal: 20 },
-  tile: { width: "47%", borderRadius: 16, padding: 16, gap: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  tile: { width: "47%", borderRadius: 16, padding: 16, gap: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
   tileIconBg: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   tileLabel: { fontFamily: "Poppins_700Bold", fontSize: 13 },
   activityList: { gap: 10, paddingHorizontal: 20 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, padding: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, padding: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
   rowIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   rowLabel: { fontFamily: "Poppins_700Bold", fontSize: 15 },
   rowMeta: { fontSize: 13, fontFamily: "Inter_400Regular" },

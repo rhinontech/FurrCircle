@@ -13,7 +13,7 @@ export default function BookScreen() {
     <PageContainer>
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
       <ScreenHeader title="Book Appointment" />
-      <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 16 }}>
+      <ScrollView contentContainerStyle={{ paddingVertical: 20, paddingHorizontal: 16 }}>
         <View style={[styles.vetCard, { backgroundColor: tk.card }]}>
           <Text style={[styles.vetName, { color: tk.text }]}>Furr Care Clinic</Text>
           <Text style={styles.vetSpec}>General · Surgery · Open now</Text>
