@@ -7,6 +7,7 @@ import { getPets, type Pet } from "../../src/lib/pets-store";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { Avatar } from "../../src/components/Avatar";
+import { useAuthStore } from "../../src/lib/auth-store";
 
 const SEED_PETS = [
   { id: "moona", name: "Moona", breed: "Collie · ♀ · 2y", tintColor: "rgba(255,107,107,0.15)", img: require("../../src/assets/doodle-boy-dog.png") },
@@ -18,6 +19,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const tk = useTokens();
+  const logout = useAuthStore((s) => s.logout);
   const [pets, setPets] = useState<Pet[]>([]);
   useEffect(() => { getPets().then(setPets); }, []);
 
@@ -30,7 +32,10 @@ export default function ProfileScreen() {
         {
           text: "Log Out",
           style: "destructive",
-          onPress: () => router.replace("/onboarding"),
+          onPress: async () => {
+            await logout();
+            router.replace("/login");
+          },
         },
       ]
     );
