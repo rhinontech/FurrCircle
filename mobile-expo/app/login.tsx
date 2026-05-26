@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
+import CountryPicker, { COUNTRIES, type Country } from "@/components/ui/CountryPicker";
 import { AppText as Text } from "@/components/ui/AppText";
 import {
   Mail,
@@ -42,21 +43,22 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState<Country>(COUNTRIES.find(c => c.dialCode === "+91")!);
   // OTP is only for development builds / production, not Expo Go
   const [isOtpMode, setIsOtpMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (isOtpMode) {
-      if (!phone || phone.length !== 10) {
-        Alert.alert("Error", "Please enter a valid 10-digit phone number");
+      if (!phone || phone.length < 5) {
+        Alert.alert("Error", "Please enter a valid phone number");
         return;
       }
 
       setLoading(true);
       try {
         const auth = getFirebaseAuth();
-        const phoneNumber = `+91${phone.trim()}`;
+        const phoneNumber = `${country.dialCode}${phone.trim()}`;
 
         if (auth) {
           console.log(`Requesting Login OTP for: ${phoneNumber}`);
@@ -190,31 +192,17 @@ export default function LoginScreen() {
                   marginBottom: 20,
                 }}
               >
-                <View
-                  style={{
-                    paddingHorizontal: 16,
-                    height: 54,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    borderRightWidth: 1,
-                    borderRightColor: colors.border,
-                    backgroundColor: colors.bgSubtle,
-                  }}
-                >
-                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.textPrimary }}>
-                    +91
-                  </Text>
-                </View>
+                <CountryPicker selected={country} onSelect={setCountry} />
                 <TextInput
-                  placeholder="98765 43210"
+                  placeholder="Phone number"
                   placeholderTextColor={colors.textMuted}
                   value={phone}
                   onChangeText={(text) => {
                     const cleaned = text.replace(/[^0-9]/g, "");
-                    if (cleaned.length <= 10) setPhone(cleaned);
+                    if (cleaned.length <= 15) setPhone(cleaned);
                   }}
                   keyboardType="number-pad"
-                  maxLength={10}
+                  maxLength={15}
                   style={{ flex: 1, height: 54, paddingHorizontal: 14, fontSize: 15, color: colors.textPrimary }}
                 />
               </View>
