@@ -3,6 +3,7 @@ import {
   StyleSheet, Dimensions, KeyboardAvoidingView, Platform,
   ScrollView, ActivityIndicator, Alert,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import Constants from "expo-constants";
@@ -25,6 +26,7 @@ const getFirebaseAuth = () => {
 export default function LoginScreen() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const insets = useSafeAreaInsets();
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -40,13 +42,13 @@ export default function LoginScreen() {
     setBusy(true);
     const err = await login(identifier.trim(), password);
     setBusy(false);
-    
+
     if (err) {
       if (err.startsWith("unverified:")) {
         const parts = err.split(":");
         // parts[1] is userId, parts[2] is emailOrPhone
         Alert.alert(
-          "Verify Account", 
+          "Verify Account",
           "Your account is not verified. Let's verify it now.",
           [
             {
@@ -141,11 +143,11 @@ export default function LoginScreen() {
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
-        <View style={styles.hero}>
+        <View style={[styles.hero, { paddingTop: insets.top, height: height * 0.30 + insets.top }]}>
           <Image source={require("../src/assets/doodle-puppy.png")} style={styles.heroImg} resizeMode="contain" />
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { paddingBottom: 40 + insets.bottom }]}>
           <Text style={styles.title}>Welcome back! 🐾</Text>
           <Text style={styles.subtitle}>Sign in to reconnect with your furry world</Text>
 
@@ -197,9 +199,9 @@ export default function LoginScreen() {
           </View>
 
           {/* Phone OTP Login Option */}
-          <TouchableOpacity 
-            style={[styles.phoneOtpBtn, otpLoginBusy && { opacity: 0.7 }]} 
-            onPress={handlePhoneOtpLogin} 
+          <TouchableOpacity
+            style={[styles.phoneOtpBtn, otpLoginBusy && { opacity: 0.7 }]}
+            onPress={handlePhoneOtpLogin}
             disabled={busy || otpLoginBusy}
           >
             {otpLoginBusy ? (

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Share2, UserPlus, MapPin, Grid3x3, Bookmark, Bone } from "lucide-react-native";
+import { Share2, UserPlus, MapPin, Grid3x3, Bookmark, Bone, MessageCircle } from "lucide-react-native";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { colors } from "../../src/lib/theme";
@@ -35,7 +35,7 @@ const pets = [
   { name: "Kobi", img: cat },
 ];
 
-export default function UserProfileScreen() {
+export default function PublicUserProfileScreen() {
   const { handle } = useLocalSearchParams<{ handle: string }>();
   const router = useRouter();
   const tk = useTokens();
@@ -79,10 +79,17 @@ export default function UserProfileScreen() {
               {/* Buttons */}
               <View style={styles.actionRow}>
                 <TouchableOpacity
-                  onPress={() => router.push("/settings")}
-                  style={[styles.editProfileBtn, { backgroundColor: colors.foreground + "1A" }]}
+                  onPress={() => setFollowing(!following)}
+                  style={[styles.followBtn, following ? { backgroundColor: colors.foreground + "1A" } : { backgroundColor: colors.primary }]}
                 >
-                  <Text style={[styles.editProfileBtnText, { color: tk.text }]}>Edit profile</Text>
+                  <UserPlus size={16} color={following ? colors.foreground : colors.white} />
+                  <Text style={[styles.followBtnText, { color: following ? colors.foreground : colors.white }]}>
+                    {following ? "Following" : "Follow"}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push("/chat")} style={[styles.messageBtn, { backgroundColor: colors.white }]}>
+                  <MessageCircle size={16} color={tk.text} />
+                  <Text style={[styles.messageBtnText, { color: tk.text }]}>Message</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -93,7 +100,7 @@ export default function UserProfileScreen() {
             {pets.map((p) => (
               <TouchableOpacity
                 key={p.name}
-                onPress={() => router.push(`/pet`)}
+                onPress={() => router.push(`/p/${p.name.toLowerCase()}` as any)}
                 style={[styles.petChip, { backgroundColor: colors.white }]}
               >
                 <View style={styles.petAvatar}>
@@ -145,10 +152,6 @@ function StatItem({ n, l, tk }: { n: string; l: string; tk: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   px5: { paddingHorizontal: 20 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  iconBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
-  backArrow: { fontSize: 20, color: colors.foreground, fontFamily: "Poppins_600SemiBold" },
-  headerHandle: { fontFamily: "Poppins_700Bold", fontSize: 16 },
   profileCard: { borderRadius: 24, padding: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 3 },
   profileTop: { flexDirection: "row", alignItems: "center", gap: 16 },
   avatarWrap: { width: 80, height: 80, borderRadius: 40, overflow: "hidden", backgroundColor: "rgba(255,107,107,0.2)", borderWidth: 4, borderColor: colors.white },
@@ -162,8 +165,10 @@ const styles = StyleSheet.create({
   locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
   locationText: { fontSize: 12, fontFamily: "Inter_400Regular" },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 16 },
-  editProfileBtn: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 20, paddingVertical: 10 },
-  editProfileBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14 },
+  followBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 20, paddingVertical: 10 },
+  followBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14 },
+  messageBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 20, paddingVertical: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
+  messageBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14 },
   petsScroll: { flexGrow: 0, marginTop: 16 },
   petsContent: { paddingHorizontal: 20, gap: 10 },
   petChip: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 20, paddingLeft: 6, paddingRight: 16, paddingVertical: 6, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 2 },

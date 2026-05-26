@@ -147,7 +147,7 @@ export default function PetPublicProfile() {
 
           {/* Owner chip */}
           <View style={styles.px6}>
-            <TouchableOpacity onPress={() => router.push(`/u/${pet.ownerHandle}`)} style={[styles.ownerChip, { backgroundColor: colors.white }]}>
+            <TouchableOpacity onPress={() => router.push(`/user/${pet.ownerHandle}` as any)} style={[styles.ownerChip, { backgroundColor: colors.white }]}>
               <View style={styles.ownerAvatar}>
                 <Image source={boyDog} style={styles.ownerAvatarImg} resizeMode="cover" />
               </View>
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   iconBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
   backArrow: { fontSize: 20, color: colors.foreground, fontFamily: "Poppins_600SemiBold" },
   headerTitle: { fontFamily: "Poppins_700Bold", fontSize: 16 },
-  heroCard: { borderRadius: 32, padding: 24, alignItems: "center", overflow: "hidden", marginBottom: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 3 },
+  heroCard: { borderRadius: 32, padding: 24, alignItems: "center", overflow: "hidden", marginBottom: 4 },
   heroImg: { width: 220, height: 224 },
   heartBtn: { position: "absolute", top: 16, right: 16, backgroundColor: colors.white, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 3 },
   nameRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 24, marginTop: 14, marginBottom: 12 },
