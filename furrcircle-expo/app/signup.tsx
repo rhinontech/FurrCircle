@@ -3,6 +3,7 @@ import {
   StyleSheet, Dimensions, KeyboardAvoidingView, Platform,
   ScrollView, ActivityIndicator, Alert,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, useEffect, useRef } from "react";
 import Constants from "expo-constants";
@@ -25,6 +26,7 @@ const getFirebaseAuth = () => {
 export default function SignupScreen() {
   const router = useRouter();
   const setSession = useAuthStore((s) => s.setSession);
+  const insets = useSafeAreaInsets();
 
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
@@ -220,11 +222,11 @@ export default function SignupScreen() {
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
-        <View style={styles.hero}>
+        <View style={[styles.hero, { paddingTop: insets.top, height: height * 0.28 + insets.top }]}>
           <Image source={require("../src/assets/doodle-boy-dog.png")} style={styles.heroImg} resizeMode="contain" />
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { paddingBottom: 40 + insets.bottom }]}>
           <Text style={styles.title}>Join FurrCircle 🐶</Text>
           <Text style={styles.subtitle}>Create your free account and start your pet journey</Text>
 

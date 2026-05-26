@@ -76,7 +76,7 @@ export default function SettingsScreen() {
             toggle={pushNotifs} onToggle={setPushNotifs} />
         </Section>
 
-        <Section title="Account" tk={tk}>
+        {/* <Section title="Account" tk={tk}>
           <TouchableOpacity onPress={handleLogout}
             style={[styles.dangerRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
             <View style={[styles.dangerIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
@@ -88,7 +88,7 @@ export default function SettingsScreen() {
             </View>
             <ChevronRight size={16} color={tk.textMuted} />
           </TouchableOpacity>
-        </Section>
+        </Section> */}
 
         <Section title="Danger zone" tk={tk}>
           <TouchableOpacity onPress={() => setConfirmDelete(true)}

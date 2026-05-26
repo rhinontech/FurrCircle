@@ -2,7 +2,9 @@ import { useState } from "react";
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, MessageCircle, Sparkles } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PageContainer } from "../../src/components/PageContainer";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 
@@ -104,24 +106,23 @@ export default function PetPublicProfile() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const tk = useTokens();
+  const insets = useSafeAreaInsets();
   const pet = pets[id ?? "moona"] ?? { ...pets.moona, name: capitalize(id ?? "pet") };
   const [liked, setLiked] = useState(false);
 
   return (
     <PageContainer>
-      <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        {/* Custom header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={[styles.iconBtn, { backgroundColor: colors.white }]}>
-            <Text style={styles.backArrow}>←</Text>
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: tk.text }]}>Pet profile</Text>
-          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.white }]}>
-            <Share2 size={20} color={colors.foreground} />
-          </TouchableOpacity>
-        </View>
+      <View style={[styles.container, { backgroundColor: tk.bg, paddingBottom: insets.bottom }]}>
+        <ScreenHeader
+          title="Pet profile"
+          right={
+            <TouchableOpacity style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.bg }}>
+              <Share2 size={20} color={tk.text} />
+            </TouchableOpacity>
+          }
+        />
 
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
           {/* Hero card */}
           <View style={styles.px5}>
             <View style={[styles.heroCard, { backgroundColor: pet.tint }]}>
@@ -146,7 +147,7 @@ export default function PetPublicProfile() {
 
           {/* Owner chip */}
           <View style={styles.px6}>
-            <TouchableOpacity onPress={() => router.push(`/u/${pet.ownerHandle}`)} style={[styles.ownerChip, { backgroundColor: colors.white }]}>
+            <TouchableOpacity onPress={() => router.push(`/user/${pet.ownerHandle}` as any)} style={[styles.ownerChip, { backgroundColor: colors.white }]}>
               <View style={styles.ownerAvatar}>
                 <Image source={boyDog} style={styles.ownerAvatarImg} resizeMode="cover" />
               </View>
@@ -221,7 +222,7 @@ const styles = StyleSheet.create({
   iconBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
   backArrow: { fontSize: 20, color: colors.foreground, fontFamily: "Poppins_600SemiBold" },
   headerTitle: { fontFamily: "Poppins_700Bold", fontSize: 16 },
-  heroCard: { borderRadius: 32, padding: 24, alignItems: "center", overflow: "hidden", marginBottom: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 3 },
+  heroCard: { borderRadius: 32, padding: 24, alignItems: "center", overflow: "hidden", marginBottom: 4 },
   heroImg: { width: 220, height: 224 },
   heartBtn: { position: "absolute", top: 16, right: 16, backgroundColor: colors.white, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 3 },
   nameRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 24, marginTop: 14, marginBottom: 12 },

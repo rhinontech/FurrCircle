@@ -39,17 +39,25 @@ export default function FeedScreen() {
 function FeedHeader() {
   const router = useRouter();
   const tk = useTokens();
+  const dark = useThemeStore((s) => s.dark);
+
+  const logoSource = dark
+    ? require("../../src/assets/furrcircle_dark_logo.png")
+    : require("../../src/assets/furrcircle_light_logo.png");
+
   return (
     <View style={[styles.header, { backgroundColor: tk.bg }]}>
       <View>
-        <Text style={[styles.logoText, { color: tk.text }]}>
-          Furr<Text style={styles.logoCoral}>Circle</Text>
-        </Text>
+        <Image
+          source={logoSource}
+          style={styles.logoImg}
+          resizeMode="contain"
+        />
         <Text style={[styles.subtitle, { color: tk.textMuted }]}>Today's circle, picked for Moona</Text>
       </View>
       <View style={styles.headerActions}>
-        <TouchableOpacity onPress={() => router.push("/discover")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
-          <Search size={20} color={tk.text} strokeWidth={2} />
+        <TouchableOpacity onPress={() => router.push("/chat")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
+          <MessageCircle size={20} color={tk.text} strokeWidth={2} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push("/notifications")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
           <Bell size={20} color={tk.text} strokeWidth={2} />
@@ -62,11 +70,11 @@ function FeedHeader() {
 
 const stories = [
   { label: "Your reel", isYou: true, tintColor: "rgba(26,26,46,0.09)", img: null },
-  { label: "Moona",   tintColor: "rgba(255,107,107,0.2)",  img: require("../../src/assets/doodle-boy-dog.png") },
-  { label: "Mochi",   tintColor: "rgba(37,99,235,0.12)",   img: require("../../src/assets/doodle-cat.png") },
-  { label: "Kobi",    tintColor: "rgba(255,217,61,0.35)",  img: require("../../src/assets/doodle-birthday.png") },
-  { label: "Biscuit", tintColor: "rgba(255,111,207,0.2)",  img: require("../../src/assets/doodle-puppy.png") },
-  { label: "Rocky",   tintColor: "rgba(76,175,80,0.18)",   img: require("../../src/assets/doodle-rescue.png") },
+  { label: "Moona", tintColor: "rgba(255,107,107,0.2)", img: require("../../src/assets/doodle-boy-dog.png") },
+  { label: "Mochi", tintColor: "rgba(37,99,235,0.12)", img: require("../../src/assets/doodle-cat.png") },
+  { label: "Kobi", tintColor: "rgba(255,217,61,0.35)", img: require("../../src/assets/doodle-birthday.png") },
+  { label: "Biscuit", tintColor: "rgba(255,111,207,0.2)", img: require("../../src/assets/doodle-puppy.png") },
+  { label: "Rocky", tintColor: "rgba(76,175,80,0.18)", img: require("../../src/assets/doodle-rescue.png") },
 ];
 
 function StoryRail() {
@@ -110,8 +118,8 @@ function PostCard({ post }: { post: Post }) {
       </View>
 
       <TouchableOpacity onPress={() => router.push(`/post/${post.id}`)} activeOpacity={0.9}
-        style={[styles.imageWrapper, { backgroundColor: post.tintColor}]}>
-        <Image source={post.image} style={styles.postImage}/>
+        style={[styles.imageWrapper, { backgroundColor: post.tintColor }]}>
+        <Image source={post.image} style={styles.postImage} />
       </TouchableOpacity>
 
       <View style={styles.actions}>
@@ -163,10 +171,9 @@ function ComposeSheet({ open, onClose }: { open: boolean; onClose: () => void })
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12 },
-  logoText: { fontFamily: "Poppins_700Bold", fontSize: 28, lineHeight: 34 },
-  logoCoral: { color: colors.coral },
-  subtitle: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12, paddingTop:10 },
+  logoImg: { width: 120, height: 50, alignSelf: "flex-start" },
+  subtitle: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: -4, marginLeft: 2 },
   headerActions: { flexDirection: "row", gap: 8 },
   iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
   notifDot: { position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.coral },
@@ -194,7 +201,7 @@ const styles = StyleSheet.create({
   caption: { paddingHorizontal: 16, paddingTop: 8, fontSize: 14, lineHeight: 20, fontFamily: "Inter_400Regular" },
   captionBold: { fontFamily: "Poppins_700Bold" },
   tags: { paddingHorizontal: 16, paddingBottom: 16, paddingTop: 4, fontSize: 12, fontFamily: "Poppins_600SemiBold", color: colors.primary },
-  fab: { position: "absolute", bottom: 96, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
+  fab: { position: "absolute", bottom: 16, right: 16, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   sheet: { borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 20, paddingBottom: 40 },
   sheetHandle: { width: 48, height: 6, borderRadius: 3, alignSelf: "center", marginBottom: 16, opacity: 0.2 },

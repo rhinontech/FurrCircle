@@ -43,7 +43,8 @@ export default function DiscoverScreen() {
 
   return (
     <PageContainer>
-    <ScrollView style={[styles.container, { paddingTop: insets.top, backgroundColor: tk.bg }]} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+    <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: tk.bg }}>
+      <ScrollView style={[styles.container, { backgroundColor: tk.bg }]} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
       <View style={styles.headerSection}>
         <Text style={[styles.title, { color: tk.text }]}>Discover</Text>
         <Text style={[styles.subtitle, { color: tk.textMuted }]}>Vets, pets & places near you</Text>
@@ -139,7 +140,8 @@ export default function DiscoverScreen() {
           </View>
         )}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
     </PageContainer>
   );
 }

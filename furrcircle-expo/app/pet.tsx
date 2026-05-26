@@ -64,7 +64,7 @@ export default function PetScreen() {
     <PageContainer>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title="Pet Profile" />
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
           {/* Hero card */}
           <View style={styles.px5}>
             <View style={styles.heroCard}>

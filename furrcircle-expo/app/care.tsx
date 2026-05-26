@@ -15,9 +15,9 @@ const tiles = [
   { icon: Activity, label: "Log Vitals", bg: colors.coral, text: "#fff", to: "/log/vitals" },
   { icon: Pill, label: "Log Meds", bg: colors.pinky, text: "#fff", to: "/log/meds" },
   { icon: FolderHeart, label: "Medical Records", bg: colors.sunshine, text: colors.foreground, to: "/records" },
-  { icon: Sparkles, label: "AI Symptom Check", bg: "#1D55D4", text: "#fff", to: "/care" },
+  // { icon: Sparkles, label: "AI Symptom Check", bg: "#1D55D4", text: "#fff", to: "/care" },
   { icon: FileText, label: "Pet Passport", bg: colors.foreground, text: "#fff", to: "/pet" },
-  { icon: ShieldCheck, label: "Insurance", bg: "#3EA842", text: "#fff", to: "/care" },
+  // { icon: ShieldCheck, label: "Insurance", bg: "#3EA842", text: "#fff", to: "/care" },
 ] as const;
 
 export default function CareScreen() {
