@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { margin: 0; padding: 0; background: #f0f4f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .wrapper { max-width: 600px; margin: 32px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.10); }
+    .header { background: #0F1F3D; padding: 28px 32px; text-align: center; }
+    .header img { height: 44px; }
+    .body { padding: 36px 32px; color: #333333; font-size: 15px; line-height: 1.7; }
+    .body h2 { margin: 0 0 16px; font-size: 22px; color: #0F1F3D; font-weight: 700; }
+    .body p { margin: 0 0 16px; }
+    .detail-box { background: #f0f4f8; border-left: 4px solid #1976D2; border-radius: 4px; padding: 16px 20px; margin: 0 0 24px; }
+    .detail-box p { margin: 6px 0; }
+    .detail-box strong { display: inline-block; width: 80px; color: #555; }
+    .footer { background: #f8f9fa; border-top: 1px solid #e8ecf0; padding: 20px 32px; text-align: center; font-size: 13px; color: #888888; }
+    .footer a { color: #1976D2; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <img src="{{LOGO_URL}}" alt="FurrCircle" />
+    </div>
+    <div class="body">
+      <h2>You're booked, {{name}}! 🎉</h2>
+      <p>Your spot has been reserved. Here are your event details:</p>
+      <div class="detail-box">
+        <p><strong>Event:</strong> {{eventTitle}}</p>
+        <p><strong>Date:</strong> {{eventDate}}</p>
+      </div>
+      <p>We can't wait to see you and your furry friend there!</p>
+      <p>See you soon!<br/><strong>The FurrCircle Team</strong></p>
+    </div>
+    <div class="footer">
+      <p>Need help? Reach us at <a href="mailto:support@furrcircle.com">support@furrcircle.com</a></p>
+      <p>© 2025 FurrCircle. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
