@@ -25,9 +25,6 @@
     },
     "plugins": [
       "expo-router",
-      "expo-status-bar",
-      "expo-image",
-      "expo-font",
       [
         "expo-image-picker",
         { "photosPermission": "Allow FurrCircle to access your photos." }

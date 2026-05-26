@@ -3,4 +3,10 @@ const { withNativeWind } = require("nativewind/metro");
 
 const config = getDefaultConfig(__dirname);
 
-module.exports = withNativeWind(config, { input: "./src/global.css" });
+// Ensure Metro watches all source files for Fast Refresh
+config.watchFolders = [__dirname];
+
+module.exports = withNativeWind(config, {
+  input: "./src/global.css",
+  inlineRem: 16,
+});

@@ -1,20 +1,38 @@
 import {
   View, Text, ScrollView, TouchableOpacity, Switch,
-  StyleSheet, Modal, Pressable,
+  StyleSheet, Modal, Pressable, Alert,
 } from "react-native";
 import { useState } from "react";
+import { useRouter } from "expo-router";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { colors } from "../src/lib/theme";
 import { useThemeStore, useTokens } from "../src/lib/theme-store";
+import { useAuthStore } from "../src/lib/auth-store";
 import {
   Moon, Sun, Eye, Lock, ShieldAlert, MapPin,
-  Bell, Trash2, ChevronRight,
+  Bell, Trash2, ChevronRight, LogOut,
 } from "lucide-react-native";
 
 export default function SettingsScreen() {
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
   const setDark = useThemeStore((s) => s.setDark);
+  const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
+  const router = useRouter();
+
+  function handleLogout() {
+    Alert.alert("Sign out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign out", style: "destructive",
+        onPress: async () => {
+          await logout();
+          router.replace("/login");
+        },
+      },
+    ]);
+  }
 
   const [privateProfile, setPrivateProfile] = useState(false);
   const [twoFA, setTwoFA] = useState(false);
@@ -56,6 +74,20 @@ export default function SettingsScreen() {
           <Row tk={tk} icon={Bell} iconBg="rgba(255,217,61,0.4)" iconColor={colors.foreground}
             label="Push notifications" sub="Likes, comments, matches"
             toggle={pushNotifs} onToggle={setPushNotifs} />
+        </Section>
+
+        <Section title="Account" tk={tk}>
+          <TouchableOpacity onPress={handleLogout}
+            style={[styles.dangerRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+            <View style={[styles.dangerIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
+              <LogOut size={20} color={colors.primary} strokeWidth={2} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.dangerLabel, { color: colors.primary }]}>Sign out</Text>
+              <Text style={[styles.dangerSub, { color: tk.textMuted }]}>{user?.email ?? ""}</Text>
+            </View>
+            <ChevronRight size={16} color={tk.textMuted} />
+          </TouchableOpacity>
         </Section>
 
         <Section title="Danger zone" tk={tk}>

@@ -22,7 +22,7 @@ export default function PostDetail() {
   return (
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
       <ScreenHeader title={post.pet} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}>
         <View style={[styles.imageWrapper, { backgroundColor: post.tintColor }]}>
           <Image source={post.image} style={styles.image} resizeMode="contain" />
         </View>
@@ -61,7 +61,7 @@ export default function PostDetail() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  imageWrapper: { margin: 16, borderRadius: 20, aspectRatio: 1, alignItems: "center", justifyContent: "center" },
+  imageWrapper: { width: "92%", alignSelf: "center", aspectRatio: 1, marginTop: 12, marginBottom: 8, borderRadius: 20, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   image: { width: "80%", height: "80%" },
   actions: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, gap: 16 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },

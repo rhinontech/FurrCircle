@@ -1,63 +1,185 @@
+import { useState } from "react";
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from "react-native";
-import { useLocalSearchParams } from "expo-router";
-import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { Share2, UserPlus, MapPin, Grid3x3, Bookmark, Bone } from "lucide-react-native";
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
-import { posts } from "../../src/lib/demo-data";
+
+const boyDog = require("../../src/assets/doodle-boy-dog.png");
+const puppy = require("../../src/assets/doodle-puppy.png");
+const cat = require("../../src/assets/doodle-cat.png");
+const group = require("../../src/assets/doodle-group.png");
+const walk = require("../../src/assets/doodle-walk.png");
+const birthday = require("../../src/assets/doodle-birthday.png");
+const rescue = require("../../src/assets/doodle-rescue.png");
+
+const gridItems = [
+  { img: boyDog, tint: "rgba(255,107,107,0.2)" },
+  { img: walk, tint: "rgba(37,99,235,0.15)" },
+  { img: birthday, tint: "rgba(255,111,207,0.15)" },
+  { img: group, tint: "rgba(76,175,80,0.15)" },
+  { img: rescue, tint: "rgba(255,217,61,0.3)" },
+  { img: cat, tint: "rgba(255,111,207,0.2)" },
+  { img: puppy, tint: "rgba(255,217,61,0.3)" },
+  { img: boyDog, tint: "rgba(37,99,235,0.1)" },
+  { img: walk, tint: "rgba(255,107,107,0.15)" },
+];
+
+const tabs = ["Posts", "Pets", "Saved"] as const;
+const tabIcons = { Posts: Grid3x3, Pets: Bone, Saved: Bookmark };
+
+const pets = [
+  { name: "Moona", img: puppy },
+  { name: "Kobi", img: cat },
+];
 
 export default function UserProfileScreen() {
   const { handle } = useLocalSearchParams<{ handle: string }>();
+  const router = useRouter();
   const tk = useTokens();
+  const [tab, setTab] = useState<(typeof tabs)[number]>("Posts");
+  const [following, setFollowing] = useState(false);
+
   return (
     <PageContainer>
-    <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title={`@${handle}`} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        <View style={[styles.hero, { backgroundColor: tk.card }]}>
-          <View style={styles.avatar}>
-            <Image source={require("../../src/assets/doodle-boy-dog.png")} style={styles.avatarImg} resizeMode="cover" />
-          </View>
-          <Text style={[styles.name, { color: tk.text }]}>Goutham R.</Text>
-          <Text style={styles.handle}>@{handle}</Text>
-          <Text style={[styles.location, { color: tk.textMuted }]}>Mumbai · 2 pets</Text>
-          <View style={styles.statsRow}>
-            <View style={styles.stat}><Text style={[styles.statNum, { color: tk.text }]}>128</Text><Text style={[styles.statLabel, { color: tk.textMuted }]}>Followers</Text></View>
-            <View style={styles.stat}><Text style={[styles.statNum, { color: tk.text }]}>96</Text><Text style={[styles.statLabel, { color: tk.textMuted }]}>Following</Text></View>
-            <View style={styles.stat}><Text style={[styles.statNum, { color: tk.text }]}>{posts.length}</Text><Text style={[styles.statLabel, { color: tk.textMuted }]}>Posts</Text></View>
-          </View>
-          <TouchableOpacity style={styles.followBtn}><Text style={styles.followBtnText}>Follow</Text></TouchableOpacity>
+      <View style={[styles.container, { backgroundColor: tk.bg }]}>
+        {/* Custom header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={[styles.iconBtn, { backgroundColor: colors.white }]}>
+            <Text style={styles.backArrow}>←</Text>
+          </TouchableOpacity>
+          <Text style={[styles.headerHandle, { color: tk.text }]}>@{handle}</Text>
+          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.white }]}>
+            <Share2 size={20} color={colors.foreground} />
+          </TouchableOpacity>
         </View>
-        <Text style={[styles.gridTitle, { color: tk.text }]}>Posts</Text>
-        <View style={styles.grid}>
-          {posts.map((p) => (
-            <View key={p.id} style={[styles.gridItem, { backgroundColor: p.tintColor }]}>
-              <Image source={p.image} style={styles.gridImg} resizeMode="contain" />
+
+        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+          {/* Profile card */}
+          <View style={styles.px5}>
+            <View style={[styles.profileCard, { backgroundColor: colors.white }]}>
+              {/* Avatar + stats */}
+              <View style={styles.profileTop}>
+                <View style={styles.avatarWrap}>
+                  <Image source={boyDog} style={styles.avatarImg} resizeMode="cover" />
+                </View>
+                <View style={styles.statsRow}>
+                  <StatItem n="48" l="Posts" tk={tk} />
+                  <StatItem n="1.2k" l="Followers" tk={tk} />
+                  <StatItem n="312" l="Following" tk={tk} />
+                </View>
+              </View>
+              {/* Name + bio */}
+              <Text style={[styles.displayName, { color: tk.text }]}>Goutham R.</Text>
+              <Text style={[styles.bio, { color: tk.textMuted }]}>Dad to Moona 🐕 & Kobi 🐈 · positive-reinforcement believer.</Text>
+              <View style={styles.locationRow}>
+                <MapPin size={12} color={tk.textMuted} />
+                <Text style={[styles.locationText, { color: tk.textMuted }]}>Mumbai, India</Text>
+              </View>
+              {/* Buttons */}
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  onPress={() => setFollowing(!following)}
+                  style={[styles.followBtn, following ? { backgroundColor: colors.foreground + "1A" } : { backgroundColor: colors.primary }]}
+                >
+                  <UserPlus size={16} color={following ? colors.foreground : colors.white} />
+                  <Text style={[styles.followBtnText, { color: following ? colors.foreground : colors.white }]}>
+                    {following ? "Following" : "Follow"}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.messageBtn, { backgroundColor: colors.white }]}>
+                  <Text style={[styles.messageBtnText, { color: tk.text }]}>Message</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
+          </View>
+
+          {/* Pets rail */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.petsScroll} contentContainerStyle={styles.petsContent}>
+            {pets.map((p) => (
+              <TouchableOpacity key={p.name} style={[styles.petChip, { backgroundColor: colors.white }]}>
+                <View style={styles.petAvatar}>
+                  <Image source={p.img} style={styles.petAvatarImg} resizeMode="cover" />
+                </View>
+                <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Tabs */}
+          <View style={[styles.tabsRow, { borderBottomColor: colors.border }]}>
+            {tabs.map((t) => {
+              const Icon = tabIcons[t];
+              const active = tab === t;
+              return (
+                <TouchableOpacity key={t} onPress={() => setTab(t)} style={styles.tabItem}>
+                  <Icon size={16} color={active ? colors.coral : colors.foreground + "88"} />
+                  <Text style={[styles.tabText, { color: active ? colors.coral : colors.foreground + "88" }]}>{t}</Text>
+                  {active && <View style={styles.tabActiveBar} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Post grid */}
+          <View style={styles.grid}>
+            {gridItems.map((g, i) => (
+              <TouchableOpacity key={i} style={[styles.gridItem, { backgroundColor: g.tint }]}>
+                <Image source={g.img} style={styles.gridImg} resizeMode="contain" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
     </PageContainer>
+  );
+}
+
+function StatItem({ n, l, tk }: { n: string; l: string; tk: any }) {
+  return (
+    <View style={styles.statItem}>
+      <Text style={[styles.statNum, { color: tk.text }]}>{n}</Text>
+      <Text style={[styles.statLabel, { color: tk.textMuted }]}>{l}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  hero: { alignItems: "center", padding: 24, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 3 },
-  avatar: { width: 88, height: 88, borderRadius: 44, overflow: "hidden", backgroundColor: "rgba(255,107,107,0.15)", marginBottom: 12 },
+  px5: { paddingHorizontal: 20 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
+  iconBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
+  backArrow: { fontSize: 20, color: colors.foreground, fontFamily: "Poppins_600SemiBold" },
+  headerHandle: { fontFamily: "Poppins_700Bold", fontSize: 16 },
+  profileCard: { borderRadius: 24, padding: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 3 },
+  profileTop: { flexDirection: "row", alignItems: "center", gap: 16 },
+  avatarWrap: { width: 80, height: 80, borderRadius: 40, overflow: "hidden", backgroundColor: "rgba(255,107,107,0.2)", borderWidth: 4, borderColor: colors.white },
   avatarImg: { width: "100%", height: "100%" },
-  name: { fontFamily: "Poppins_700Bold", fontSize: 20 },
-  handle: { fontSize: 14, color: colors.primary, fontFamily: "Poppins_600SemiBold", marginTop: 2 },
-  location: { fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 4 },
-  statsRow: { flexDirection: "row", gap: 24, marginTop: 16 },
-  stat: { alignItems: "center" },
-  statNum: { fontFamily: "Poppins_700Bold", fontSize: 18, color: colors.foreground },
-  statLabel: { fontSize: 12, color: colors.foreground + "88", fontFamily: "Inter_400Regular" },
-  followBtn: { marginTop: 16, backgroundColor: colors.primary, borderRadius: 24, paddingHorizontal: 40, paddingVertical: 10 },
-  followBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14, color: colors.white },
-  gridTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, color: colors.foreground, paddingHorizontal: 16, marginTop: 20, marginBottom: 12 },
-  grid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 12, gap: 6 },
-  gridItem: { width: "30.5%", aspectRatio: 1, borderRadius: 14, overflow: "hidden", alignItems: "center", justifyContent: "center" },
+  statsRow: { flex: 1, flexDirection: "row", justifyContent: "space-around" },
+  statItem: { alignItems: "center" },
+  statNum: { fontFamily: "Poppins_700Bold", fontSize: 18 },
+  statLabel: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  displayName: { fontFamily: "Poppins_700Bold", fontSize: 20, marginTop: 14 },
+  bio: { fontSize: 14, fontFamily: "Inter_400Regular", marginTop: 4, lineHeight: 20 },
+  locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
+  locationText: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  actionRow: { flexDirection: "row", gap: 10, marginTop: 16 },
+  followBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 20, paddingVertical: 10 },
+  followBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14 },
+  messageBtn: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: 20, paddingVertical: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
+  messageBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14 },
+  petsScroll: { flexGrow: 0, marginTop: 16 },
+  petsContent: { paddingHorizontal: 20, gap: 10 },
+  petChip: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 20, paddingLeft: 6, paddingRight: 16, paddingVertical: 6, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 2 },
+  petAvatar: { width: 32, height: 32, borderRadius: 16, overflow: "hidden", backgroundColor: "rgba(255,107,107,0.2)" },
+  petAvatarImg: { width: "100%", height: "100%" },
+  petName: { fontFamily: "Poppins_700Bold", fontSize: 14 },
+  tabsRow: { flexDirection: "row", borderBottomWidth: 1, marginTop: 16, paddingHorizontal: 20 },
+  tabItem: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12, position: "relative" },
+  tabText: { fontFamily: "Poppins_700Bold", fontSize: 12 },
+  tabActiveBar: { position: "absolute", bottom: 0, left: 0, right: 0, height: 2, backgroundColor: colors.coral },
+  grid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 4, paddingTop: 4, gap: 4 },
+  gridItem: { width: "32.5%", aspectRatio: 1, alignItems: "center", justifyContent: "center" },
   gridImg: { width: "80%", height: "80%" },
 });
