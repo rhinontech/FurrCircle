@@ -37,7 +37,7 @@ export default function RootLayout() {
   // Auth guard: redirect based on login state once both fonts + auth are ready
   useEffect(() => {
     if (!fontsLoaded || authLoading) return;
-    const inAuthGroup = segments[0] === "login" || segments[0] === "signup";
+    const inAuthGroup = ["login", "signup", "otp-verify", "forgot-password"].includes(segments[0] || "");
     if (!user && !inAuthGroup) {
       router.replace("/login");
     } else if (user && inAuthGroup) {
@@ -79,6 +79,8 @@ export default function RootLayout() {
           <Stack.Screen name="onboarding" options={{ presentation: "fullScreenModal" }} />
           <Stack.Screen name="login" options={{ presentation: "card" }} />
           <Stack.Screen name="signup" options={{ presentation: "card" }} />
+          <Stack.Screen name="otp-verify" options={{ presentation: "card" }} />
+          <Stack.Screen name="forgot-password" options={{ presentation: "card" }} />
         </Stack>
       </QueryClientProvider>
     </GestureHandlerRootView>

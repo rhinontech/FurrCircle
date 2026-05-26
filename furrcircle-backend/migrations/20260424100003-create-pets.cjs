@@ -83,6 +83,21 @@ module.exports = {
         allowNull: true,
         defaultValue: 'Healthy'
       },
+      adoption_fee: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: true,
+        defaultValue: 0
+      },
+      foster_fee_per_day: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: true,
+        defaultValue: 0
+      },
+      foster_provides: {
+        type: Sequelize.JSON,
+        allowNull: true,
+        defaultValue: []
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

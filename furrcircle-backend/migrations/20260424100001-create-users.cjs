@@ -59,6 +59,37 @@ module.exports = {
         allowNull: false,
         defaultValue: false
       },
+      username: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
+      },
+      otpCode: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      otpExpiry: {
+        type: Sequelize.DATE,
+        allowNull: true
+      },
+      latitude: {
+        type: Sequelize.FLOAT,
+        allowNull: true
+      },
+      longitude: {
+        type: Sequelize.FLOAT,
+        allowNull: true
+      },
+      petTypeInterests: {
+        type: Sequelize.ARRAY(Sequelize.STRING),
+        allowNull: true,
+        defaultValue: []
+      },
+      topicInterests: {
+        type: Sequelize.ARRAY(Sequelize.STRING),
+        allowNull: true,
+        defaultValue: []
+      },
       resetToken: {
         type: Sequelize.STRING,
         allowNull: true

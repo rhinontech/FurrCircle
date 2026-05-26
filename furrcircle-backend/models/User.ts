@@ -87,6 +87,19 @@ export default (sequelize: Sequelize) => {
                 defaultValue: [],
                 // Values: 'Health' | 'Adoption' | 'Training' | 'Nutrition' | 'Lost & Found'
             },
+            username: {
+                type: DataTypes.STRING,
+                allowNull: true, // Make nullable to avoid breaking if existing users lack username initially, but we enforce it in DB / API checks
+                unique: true,
+            },
+            otpCode: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            otpExpiry: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
             resetToken: {
                 type: DataTypes.STRING,
                 allowNull: true,

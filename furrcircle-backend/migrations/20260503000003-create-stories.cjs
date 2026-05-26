@@ -32,6 +32,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
+      caption: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
       viewCount: {
         type: Sequelize.INTEGER,
         allowNull: false,
