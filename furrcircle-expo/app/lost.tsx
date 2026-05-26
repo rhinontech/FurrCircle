@@ -17,24 +17,24 @@ export default function LostScreen() {
         </TouchableOpacity>
       } />
       <ScrollView contentContainerStyle={{ paddingBottom: 40, paddingHorizontal: 16 }}>
-        <Text style={styles.intro}>Help reunite pets with their families. Share sightings or report a missing pet.</Text>
+        <Text style={[styles.intro, { color: tk.textMuted }]}>Help reunite pets with their families. Share sightings or report a missing pet.</Text>
         {lostPets.map((p) => (
           <View key={p.id} style={[styles.card, { backgroundColor: p.tintColor }]}>
             <View style={styles.statusRow}>
               <View style={[styles.statusBadge, { backgroundColor: p.status === "lost" ? colors.coral : colors.success }]}>
                 <Text style={styles.statusText}>{p.status.toUpperCase()}</Text>
               </View>
-              <Text style={styles.lastSeen}>{p.lastSeen}</Text>
+              <Text style={[styles.lastSeen, { color: tk.textMuted }]}>{p.lastSeen}</Text>
             </View>
             <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
             <Text style={[styles.petBreed, { color: tk.textMuted }]}>{p.breed}</Text>
             <View style={styles.areaRow}>
-              <MapPin size={13} color={colors.foreground + "99"} />
-              <Text style={styles.areaText}>{p.area}</Text>
+              <MapPin size={13} color={tk.textMuted} />
+              <Text style={[styles.areaText, { color: tk.textMuted }]}>{p.area}</Text>
             </View>
             {p.reward !== "—" && <Text style={styles.reward}>Reward: {p.reward}</Text>}
             <View style={styles.cardActions}>
-              <TouchableOpacity style={styles.sightingBtn}><Text style={styles.sightingBtnText}>I spotted this pet</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.sightingBtn, { backgroundColor: tk.text }]}><Text style={[styles.sightingBtnText, { color: tk.bg }]}>I spotted this pet</Text></TouchableOpacity>
               <TouchableOpacity style={[styles.shareBtn, { backgroundColor: tk.card }]}><Text style={[styles.shareBtnText, { color: tk.text }]}>Share</Text></TouchableOpacity>
             </View>
           </View>

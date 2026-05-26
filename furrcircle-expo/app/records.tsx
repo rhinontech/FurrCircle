@@ -20,7 +20,7 @@ export default function RecordsScreen() {
             <FileText size={20} color={v.status === "ok" ? colors.success : colors.coral} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.cardTitle, { color: tk.text }]}>{v.name}</Text>
-              <Text style={styles.cardMeta}>Given: {v.date} · Next: {v.next}</Text>
+              <Text style={[styles.cardMeta, { color: tk.textMuted }]}>Given: {v.date} · Next: {v.next}</Text>
             </View>
             <View style={[styles.badge, { backgroundColor: v.status === "ok" ? "rgba(76,175,80,0.15)" : "rgba(255,107,107,0.15)" }]}>
               <Text style={[styles.badgeText, { color: v.status === "ok" ? colors.success : colors.coral }]}>{v.status === "ok" ? "OK" : "DUE"}</Text>
@@ -36,8 +36,8 @@ export default function RecordsScreen() {
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Insurance</Text>
         <View style={[styles.infoCard, { backgroundColor: tk.card }]}>
           <Text style={[styles.infoTitle, { color: tk.text }]}>{moonaPassport.insurance.provider}</Text>
-          <Text style={styles.infoMeta}>Policy: {moonaPassport.insurance.policy}</Text>
-          <Text style={styles.infoMeta}>{moonaPassport.insurance.valid}</Text>
+          <Text style={[styles.infoMeta, { color: tk.textMuted }]}>Policy: {moonaPassport.insurance.policy}</Text>
+          <Text style={[styles.infoMeta, { color: tk.textMuted }]}>{moonaPassport.insurance.valid}</Text>
         </View>
       </ScrollView>
     </View>

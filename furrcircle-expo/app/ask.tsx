@@ -24,18 +24,21 @@ export default function AskScreen() {
         </TouchableOpacity>
       } showBack={false} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
-        <Text style={styles.label}>Circle</Text>
+        <Text style={[styles.label, { color: tk.textMuted }]}>Circle</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ marginBottom: 4 }}>
-          {circles.slice(0, 5).map((c) => (
-            <TouchableOpacity key={c.slug} onPress={() => setCircle(c.slug)} style={[styles.circleBtn, { backgroundColor: tk.card }, circle === c.slug && styles.circleBtnActive]}>
-              <Text style={[styles.circleBtnText, circle === c.slug && styles.circleBtnTextActive]}>{c.name}</Text>
-            </TouchableOpacity>
-          ))}
+          {circles.slice(0, 5).map((c) => {
+            const isActive = circle === c.slug;
+            return (
+              <TouchableOpacity key={c.slug} onPress={() => setCircle(c.slug)} style={[styles.circleBtn, { backgroundColor: isActive ? tk.text : tk.card }]}>
+                <Text style={[styles.circleBtnText, { color: isActive ? tk.bg : tk.textMuted }]}>{c.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
-        <Text style={styles.label}>Question</Text>
-        <TextInput value={title} onChangeText={setTitle} placeholder="What's your question?" placeholderTextColor={colors.foreground + "66"} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
-        <Text style={styles.label}>Details (optional)</Text>
-        <TextInput value={body} onChangeText={setBody} multiline numberOfLines={6} placeholder="Share more context…" placeholderTextColor={colors.foreground + "66"} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Question</Text>
+        <TextInput value={title} onChangeText={setTitle} placeholder="What's your question?" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Details (optional)</Text>
+        <TextInput value={body} onChangeText={setBody} multiline numberOfLines={6} placeholder="Share more context…" placeholderTextColor={tk.textMuted} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
         <TouchableOpacity onPress={() => router.back()} style={styles.postBtn} activeOpacity={0.85}>
           <Text style={styles.postBtnText}>Post question</Text>
         </TouchableOpacity>

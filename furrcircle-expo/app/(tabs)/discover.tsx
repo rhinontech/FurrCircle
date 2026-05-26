@@ -50,8 +50,8 @@ export default function DiscoverScreen() {
       </View>
 
       <View style={[styles.searchBar, { backgroundColor: tk.card }]}>
-        <Search size={20} color={colors.foreground + "80"} />
-        <TextInput placeholder="Search vets, breeds, places…" placeholderTextColor={colors.foreground + "66"} style={[styles.searchInput, { color: tk.text }]} />
+        <Search size={20} color={tk.textMuted} />
+        <TextInput placeholder="Search vets, breeds, places…" placeholderTextColor={tk.textMuted} style={[styles.searchInput, { color: tk.text }]} />
       </View>
 
       <View style={styles.sectionRow}>
@@ -73,14 +73,14 @@ export default function DiscoverScreen() {
                 {v.open && <View style={styles.openBadge}><Text style={styles.openText}>OPEN</Text></View>}
               </View>
               <View style={styles.vetSpecRow}>
-                <Stethoscope size={12} color={colors.foreground + "88"} />
-                <Text style={styles.vetSpec}>{v.spec}</Text>
+                <Stethoscope size={12} color={tk.textMuted} />
+                <Text style={[styles.vetSpec, { color: tk.textMuted }]}>{v.spec}</Text>
               </View>
               <View style={styles.vetMeta}>
                 <Star size={12} color={colors.sunshine} fill={colors.sunshine} />
-                <Text style={styles.vetMetaText}>{v.rating}</Text>
-                <MapPin size={12} color={colors.foreground + "88"} />
-                <Text style={styles.vetMetaText}>{v.dist}</Text>
+                <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{v.rating}</Text>
+                <MapPin size={12} color={tk.textMuted} />
+                <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{v.dist}</Text>
               </View>
             </View>
             <View style={styles.callBtn}>
@@ -92,7 +92,7 @@ export default function DiscoverScreen() {
 
       <View style={styles.sectionRow}>
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Pets nearby</Text>
-        <Text style={styles.petCount}>{pets.length} found</Text>
+        <Text style={[styles.petCount, { color: tk.textMuted }]}>{pets.length} found</Text>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
@@ -100,11 +100,14 @@ export default function DiscoverScreen() {
           { k: "all" as Mode, label: "All" },
           { k: "adoption" as Mode, label: "Adoption" },
           { k: "foster" as Mode, label: "Foster" },
-        ]).map(({ k, label }) => (
-          <TouchableOpacity key={k} onPress={() => setMode(k)} style={[styles.filterBtn, { backgroundColor: tk.card }, mode === k && styles.filterBtnActive]}>
-            <Text style={[styles.filterBtnText, mode === k && styles.filterBtnTextActive]}>{label}</Text>
-          </TouchableOpacity>
-        ))}
+        ]).map(({ k, label }) => {
+          const isActive = mode === k;
+          return (
+            <TouchableOpacity key={k} onPress={() => setMode(k)} style={[styles.filterBtn, { backgroundColor: isActive ? tk.text : tk.card }]}>
+              <Text style={[styles.filterBtnText, { color: isActive ? tk.bg : tk.textMuted }]}>{label}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       <View style={styles.petsGrid}>
@@ -122,17 +125,17 @@ export default function DiscoverScreen() {
                 <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
                 <Heart size={16} color={colors.pinky} />
               </View>
-              <Text style={styles.petBreed}>{p.breed}</Text>
+              <Text style={[styles.petBreed, { color: tk.textMuted }]}>{p.breed}</Text>
               <View style={styles.petDistRow}>
-                <MapPin size={12} color={colors.foreground + "88"} />
-                <Text style={styles.petDist}>{p.dist}</Text>
+                <MapPin size={12} color={tk.textMuted} />
+                <Text style={[styles.petDist, { color: tk.textMuted }]}>{p.dist}</Text>
               </View>
             </View>
           </TouchableOpacity>
         ))}
         {pets.length === 0 && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No pets match this filter yet.</Text>
+            <Text style={[styles.emptyText, { color: tk.textMuted }]}>No pets match this filter yet.</Text>
           </View>
         )}
       </View>

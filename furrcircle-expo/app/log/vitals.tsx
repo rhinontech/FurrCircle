@@ -18,12 +18,12 @@ export default function LogVitalsScreen() {
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
       <ScreenHeader title="Log Vitals" />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
-        <Text style={styles.label}>Weight (kg)</Text>
-        <TextInput value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder="e.g. 14.2" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
-        <Text style={styles.label}>Temperature (°C)</Text>
-        <TextInput value={temp} onChangeText={setTemp} keyboardType="decimal-pad" placeholder="e.g. 38.5" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
-        <Text style={styles.label}>Notes</Text>
-        <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={4} placeholder="Any observations…" placeholderTextColor={colors.foreground + "66"} style={[styles.input, styles.textarea]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Weight (kg)</Text>
+        <TextInput value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder="e.g. 14.2" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Temperature (°C)</Text>
+        <TextInput value={temp} onChangeText={setTemp} keyboardType="decimal-pad" placeholder="e.g. 38.5" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Notes</Text>
+        <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={4} placeholder="Any observations…" placeholderTextColor={tk.textMuted} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
         <TouchableOpacity onPress={() => router.back()} style={styles.saveBtn}>
           <Text style={styles.saveBtnText}>Save</Text>
         </TouchableOpacity>

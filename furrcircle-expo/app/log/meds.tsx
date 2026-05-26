@@ -18,12 +18,12 @@ export default function LogMedsScreen() {
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
       <ScreenHeader title="Log Medication" />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
-        <Text style={styles.label}>Medication name</Text>
-        <TextInput value={med} onChangeText={setMed} placeholder="e.g. Nexgard" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
-        <Text style={styles.label}>Dose</Text>
-        <TextInput value={dose} onChangeText={setDose} placeholder="e.g. 1 tablet" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text }]} />
-        <Text style={styles.label}>Notes</Text>
-        <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={4} placeholder="Any observations…" placeholderTextColor={colors.foreground + "66"} style={[styles.input, styles.textarea]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Medication name</Text>
+        <TextInput value={med} onChangeText={setMed} placeholder="e.g. Nexgard" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Dose</Text>
+        <TextInput value={dose} onChangeText={setDose} placeholder="e.g. 1 tablet" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Notes</Text>
+        <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={4} placeholder="Any observations…" placeholderTextColor={tk.textMuted} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
         <TouchableOpacity onPress={() => router.back()} style={styles.saveBtn}>
           <Text style={styles.saveBtnText}>Save</Text>
         </TouchableOpacity>

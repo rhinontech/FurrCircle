@@ -1,7 +1,7 @@
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus } from "lucide-react-native";
+import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { getPets, type Pet } from "../../src/lib/pets-store";
 import { colors } from "../../src/lib/theme";
@@ -10,9 +10,9 @@ import { Avatar } from "../../src/components/Avatar";
 
 const SEED_PETS = [
   { id: "moona", name: "Moona", breed: "Collie · ♀ · 2y", tintColor: "rgba(255,107,107,0.15)", img: require("../../src/assets/doodle-boy-dog.png") },
-  { id: "kobi",  name: "Kobi",  breed: "Tabby · ♂ · 4y",  tintColor: "rgba(37,99,235,0.1)",   img: require("../../src/assets/doodle-birthday.png") },
+  { id: "kobi", name: "Kobi", breed: "Tabby · ♂ · 4y", tintColor: "rgba(37,99,235,0.1)", img: require("../../src/assets/doodle-birthday.png") },
 ];
-const TINT_COLORS = ["rgba(255,107,107,0.15)","rgba(37,99,235,0.1)","rgba(255,217,61,0.3)","rgba(255,111,207,0.15)","rgba(76,175,80,0.15)"];
+const TINT_COLORS = ["rgba(255,107,107,0.15)", "rgba(37,99,235,0.1)", "rgba(255,217,61,0.3)", "rgba(255,111,207,0.15)", "rgba(76,175,80,0.15)"];
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -20,6 +20,21 @@ export default function ProfileScreen() {
   const tk = useTokens();
   const [pets, setPets] = useState<Pet[]>([]);
   useEffect(() => { getPets().then(setPets); }, []);
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out of your account?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: () => router.replace("/onboarding"),
+        },
+      ]
+    );
+  };
 
   return (
     <ScrollView style={[styles.container, { paddingTop: insets.top, backgroundColor: tk.bg }]}
@@ -83,20 +98,32 @@ export default function ProfileScreen() {
       {/* Quick access */}
       <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Quick access</Text>
       <View style={styles.tilesGrid}>
-        <Tile onPress={() => router.push("/today")}  icon={Sun}         label="Today"       tintColor="rgba(255,107,107,0.15)" tk={tk} />
-        <Tile onPress={() => router.push("/events")} icon={CalendarDays} label="Events"      tintColor="rgba(255,217,61,0.3)"  tk={tk} />
-        <Tile onPress={() => router.push("/lost")}   icon={Siren}        label="Lost & Found" tintColor="rgba(255,111,207,0.15)" tk={tk} />
-        <Tile onPress={() => router.push("/care")}   icon={Stethoscope}  label="Care"        tintColor="rgba(37,99,235,0.1)"   tk={tk} />
+        <Tile onPress={() => router.push("/today")} icon={Sun} label="Today" tintColor="rgba(255,107,107,0.15)" tk={tk} />
+        <Tile onPress={() => router.push("/events")} icon={CalendarDays} label="Events" tintColor="rgba(255,217,61,0.3)" tk={tk} />
+        <Tile onPress={() => router.push("/lost")} icon={Siren} label="Lost & Found" tintColor="rgba(255,111,207,0.15)" tk={tk} />
+        <Tile onPress={() => router.push("/care")} icon={Stethoscope} label="Care" tintColor="rgba(37,99,235,0.1)" tk={tk} />
       </View>
 
       {/* Activity */}
       <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Activity</Text>
       <View style={styles.activityList}>
-        <Row onPress={() => router.push("/notifications")} icon={Bell}          label="Notifications"       meta="3 new"    tintColor="rgba(255,217,61,0.3)"  tk={tk} />
-        <Row onPress={() => router.push("/chat")}          icon={MessageCircle} label="Messages"            meta="2 unread" tintColor="rgba(37,99,235,0.1)"   tk={tk} />
-        <Row onPress={() => router.push("/pet")}           icon={Award}         label="Badges & Achievements" meta="12"    tintColor="rgba(255,111,207,0.15)" tk={tk} />
-        <Row onPress={() => router.push("/discover")}      icon={MapPin}        label="Places visited"      meta="8"        tintColor="rgba(76,175,80,0.15)"  tk={tk} />
+        <Row onPress={() => router.push("/notifications")} icon={Bell} label="Notifications" meta="3 new" tintColor="rgba(255,217,61,0.3)" tk={tk} />
+        <Row onPress={() => router.push("/chat")} icon={MessageCircle} label="Messages" meta="2 unread" tintColor="rgba(37,99,235,0.1)" tk={tk} />
+        <Row onPress={() => router.push("/pet")} icon={Award} label="Badges & Achievements" meta="12" tintColor="rgba(255,111,207,0.15)" tk={tk} />
+        <Row onPress={() => router.push("/discover")} icon={MapPin} label="Places visited" meta="8" tintColor="rgba(76,175,80,0.15)" tk={tk} />
       </View>
+
+      {/* Log Out */}
+      <TouchableOpacity
+        onPress={handleLogout}
+        style={[styles.logoutBtn, { backgroundColor: tk.card }]}
+        activeOpacity={0.8}
+      >
+        <View style={styles.logoutIconBg}>
+          <LogOut size={20} color="#EF4444" strokeWidth={2} />
+        </View>
+        <Text style={styles.logoutText}>Log Out</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -104,7 +131,7 @@ export default function ProfileScreen() {
 function Row({ onPress, icon: Icon, label, meta, tintColor, tk }: any) {
   return (
     <TouchableOpacity onPress={onPress} style={[styles.row, { backgroundColor: tk.card }]} activeOpacity={0.8}>
-      <View style={[styles.rowIcon, { backgroundColor: tintColor }]}><Icon size={20} color={colors.foreground} strokeWidth={2} /></View>
+      <View style={[styles.rowIcon, { backgroundColor: tintColor }]}><Icon size={20} color={tk.text} strokeWidth={2} /></View>
       <Text style={[styles.rowLabel, { flex: 1, color: tk.text }]}>{label}</Text>
       <Text style={[styles.rowMeta, { color: tk.textMuted }]}>{meta}</Text>
       <ChevronRight size={16} color={tk.textMuted} />
@@ -155,4 +182,32 @@ const styles = StyleSheet.create({
   rowIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   rowLabel: { fontFamily: "Poppins_700Bold", fontSize: 15 },
   rowMeta: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 20,
+    marginTop: 28,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  logoutIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(239, 68, 68, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoutText: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 16,
+    color: "#EF4444",
+  },
 });

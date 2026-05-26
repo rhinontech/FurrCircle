@@ -15,14 +15,14 @@ export default function MemoryScreen() {
         <TouchableOpacity style={styles.addBtn}><Plus size={18} color={colors.primary} /></TouchableOpacity>
       } />
       <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 16 }}>
-        <Text style={styles.subtitle}>Moona's precious moments, saved forever.</Text>
+        <Text style={[styles.subtitle, { color: tk.textMuted }]}>Moona's precious moments, saved forever.</Text>
         {moonaTimeline.map((m) => (
           <View key={m.id} style={[styles.card, { backgroundColor: tk.card, borderLeftColor: m.tintColor }]}>
             <View style={[styles.dot, { backgroundColor: m.tintColor }]} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.date}>{m.date}</Text>
+              <Text style={[styles.date, { color: tk.textMuted }]}>{m.date}</Text>
               <Text style={[styles.title, { color: tk.text }]}>{m.title}</Text>
-              <Text style={styles.body}>{m.body}</Text>
+              <Text style={[styles.body, { color: tk.text }]}>{m.body}</Text>
             </View>
           </View>
         ))}

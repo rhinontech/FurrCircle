@@ -116,15 +116,18 @@ export default function MatchScreen() {
         style={styles.modePillsScroll}
         contentContainerStyle={styles.modePillsContent}
       >
-        {modes.map((m) => (
-          <TouchableOpacity
-            key={m}
-            onPress={() => changeMode(m)}
-            style={[styles.modePill, { backgroundColor: tk.card }, mode === m && styles.modePillActive]}
-          >
-            <Text style={[styles.modePillText, mode === m && styles.modePillTextActive]}>{m}</Text>
-          </TouchableOpacity>
-        ))}
+        {modes.map((m) => {
+          const isActive = mode === m;
+          return (
+            <TouchableOpacity
+              key={m}
+              onPress={() => changeMode(m)}
+              style={[styles.modePill, { backgroundColor: isActive ? tk.text : tk.card }]}
+            >
+              <Text style={[styles.modePillText, { color: isActive ? tk.bg : tk.textMuted }]}>{m}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       {/* Stacked cards */}

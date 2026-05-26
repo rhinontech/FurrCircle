@@ -20,13 +20,13 @@ export default function TodayScreen() {
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
       <ScreenHeader title="Today" />
       <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 16 }}>
-        <Text style={styles.dateLabel}>{new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</Text>
+        <Text style={[styles.dateLabel, { color: tk.textMuted }]}>{new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</Text>
         {todayTasks.map((t) => (
           <View key={t.id} style={[styles.card, { backgroundColor: tk.card }, t.done && styles.cardDone]}>
             <View style={[styles.icon, { backgroundColor: t.tintColor }]}>
-              <t.icon size={20} color={t.done ? colors.success : colors.foreground} strokeWidth={2} />
+              <t.icon size={20} color={t.done ? colors.success : tk.text} strokeWidth={2} />
             </View>
-            <Text style={[styles.taskTitle, { color: tk.text }, t.done && styles.taskDone]}>{t.title}</Text>
+            <Text style={[styles.taskTitle, { color: t.done ? tk.textMuted : tk.text }, t.done && { textDecorationLine: "line-through" }]}>{t.title}</Text>
             {t.urgent && <View style={styles.urgentBadge}><Text style={styles.urgentText}>URGENT</Text></View>}
           </View>
         ))}

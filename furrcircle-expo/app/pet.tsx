@@ -33,11 +33,14 @@ export default function PetScreen() {
         </View>
 
         <View style={styles.tabs}>
-          {(["about", "timeline", "passport"] as Tab[]).map((t) => (
-            <TouchableOpacity key={t} onPress={() => setTab(t)} style={[styles.tab, { backgroundColor: tk.card }, tab === t && styles.tabActive]}>
-              <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text>
-            </TouchableOpacity>
-          ))}
+          {(["about", "timeline", "passport"] as Tab[]).map((t) => {
+            const isActive = tab === t;
+            return (
+              <TouchableOpacity key={t} onPress={() => setTab(t)} style={[styles.tab, { backgroundColor: isActive ? tk.text : tk.card }]}>
+                <Text style={[styles.tabText, { color: isActive ? tk.bg : tk.textMuted }]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {tab === "about" && <AboutTab />}
@@ -81,9 +84,9 @@ function TimelineTab() {
         <View key={m.id} style={styles.timelineItem}>
           <View style={[styles.timelineDot, { backgroundColor: m.tintColor }]} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.timelineDate}>{m.date}</Text>
+            <Text style={[styles.timelineDate, { color: tk.textMuted }]}>{m.date}</Text>
             <Text style={[styles.timelineTitle, { color: tk.text }]}>{m.title}</Text>
-            <Text style={styles.timelineBody}>{m.body}</Text>
+            <Text style={[styles.timelineBody, { color: tk.text }]}>{m.body}</Text>
           </View>
         </View>
       ))}
@@ -105,7 +108,7 @@ function PassportTab() {
           <Syringe size={16} color={v.status === "ok" ? colors.success : colors.coral} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.vaccineName, { color: tk.text }]}>{v.name}</Text>
-            <Text style={styles.vaccineDate}>Next: {v.next}</Text>
+            <Text style={[styles.vaccineDate, { color: tk.textMuted }]}>Next: {v.next}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: v.status === "ok" ? "rgba(76,175,80,0.15)" : "rgba(255,107,107,0.15)" }]}>
             <Text style={[styles.statusText, { color: v.status === "ok" ? colors.success : colors.coral }]}>{v.status === "ok" ? "UP TO DATE" : "DUE"}</Text>
@@ -115,8 +118,8 @@ function PassportTab() {
       <Text style={[styles.sectionLabel, { color: tk.textMuted }]}>Vet</Text>
       <View style={[styles.infoCard, { backgroundColor: tk.card }]}>
         <Text style={[styles.infoText, { color: tk.text }]}>{moonaPassport.vet.name}</Text>
-        <Text style={styles.infoSubText}>{moonaPassport.vet.clinic}</Text>
-        <Text style={styles.infoSubText}>{moonaPassport.vet.phone}</Text>
+        <Text style={[styles.infoSubText, { color: tk.textMuted }]}>{moonaPassport.vet.clinic}</Text>
+        <Text style={[styles.infoSubText, { color: tk.textMuted }]}>{moonaPassport.vet.phone}</Text>
       </View>
     </View>
   );

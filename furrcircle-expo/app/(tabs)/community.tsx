@@ -36,10 +36,10 @@ export default function CommunityScreen() {
       </View>
 
       <View style={[styles.searchBar, { backgroundColor: tk.card }]}>
-        <Search size={16} color={colors.foreground + "80"} />
+        <Search size={16} color={tk.textMuted} />
         <TextInput
           placeholder="Search circles & questions"
-          placeholderTextColor={colors.foreground + "66"}
+          placeholderTextColor={tk.textMuted}
           style={[styles.searchInput, { color: tk.text }]}
         />
       </View>
@@ -56,7 +56,7 @@ export default function CommunityScreen() {
               <Text style={styles.trendTagText}>{t.tag.toUpperCase()}</Text>
             </View>
             <Text style={[styles.trendCardTitle, { color: tk.text }]} numberOfLines={3}>{t.title}</Text>
-            <Text style={styles.trendMeta}>{t.upvotes} upvotes · {t.answers} replies</Text>
+            <Text style={[styles.trendMeta, { color: tk.textMuted }]}>{t.upvotes} upvotes · {t.answers} replies</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -70,7 +70,7 @@ export default function CommunityScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.circleName, { color: tk.text }]}>{c.name}</Text>
-              <Text style={styles.circleMeta}>{(c.members / 1000).toFixed(1)}k members</Text>
+              <Text style={[styles.circleMeta, { color: tk.textMuted }]}>{(c.members / 1000).toFixed(1)}k members</Text>
             </View>
             {c.unread > 0 && (
               <View style={styles.unreadBadge}>

@@ -16,19 +16,19 @@ export default function EventsScreen() {
         {events.map((e) => (
           <View key={e.id} style={[styles.card, { backgroundColor: tk.card, borderLeftColor: e.tintColor.replace("rgba(", "").split(",")[0] === "255" ? colors.coral : colors.primary }]}>
             <View style={[styles.dateBox, { backgroundColor: e.tintColor }]}>
-              <Text style={styles.dateDay}>{e.day}</Text>
-              <Text style={styles.dateMonth}>{e.month}</Text>
+              <Text style={[styles.dateDay, { color: tk.text }]}>{e.day}</Text>
+              <Text style={[styles.dateMonth, { color: tk.textMuted }]}>{e.month}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.eventTitle, { color: tk.text }]}>{e.title}</Text>
-              <Text style={styles.eventDate}>{e.date}</Text>
+              <Text style={[styles.eventDate, { color: tk.textMuted }]}>{e.date}</Text>
               <View style={styles.metaRow}>
-                <MapPin size={12} color={colors.foreground + "88"} />
-                <Text style={styles.metaText}>{e.location}</Text>
+                <MapPin size={12} color={tk.textMuted} />
+                <Text style={[styles.metaText, { color: tk.textMuted }]}>{e.location}</Text>
               </View>
               <View style={styles.metaRow}>
-                <Users size={12} color={colors.foreground + "88"} />
-                <Text style={styles.metaText}>{e.attendees} going</Text>
+                <Users size={12} color={tk.textMuted} />
+                <Text style={[styles.metaText, { color: tk.textMuted }]}>{e.attendees} going</Text>
               </View>
             </View>
             <TouchableOpacity style={styles.rsvpBtn}>

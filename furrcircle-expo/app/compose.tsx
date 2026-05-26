@@ -28,12 +28,12 @@ export default function ComposeScreen() {
         </TouchableOpacity>
       } showBack={false} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
-        <TouchableOpacity onPress={pickPhoto} style={styles.photoArea} activeOpacity={0.8}>
+        <TouchableOpacity onPress={pickPhoto} style={[styles.photoArea, { borderColor: tk.border }]} activeOpacity={0.8}>
           {photo
             ? <Image source={{ uri: photo }} style={styles.previewImg} resizeMode="cover" />
             : <>
-              <Camera size={40} color={colors.foreground + "66"} />
-              <Text style={styles.photoHint}>Tap to add a photo</Text>
+              <Camera size={40} color={tk.textMuted} />
+              <Text style={[styles.photoHint, { color: tk.textMuted }]}>Tap to add a photo</Text>
             </>
           }
         </TouchableOpacity>
@@ -43,7 +43,7 @@ export default function ComposeScreen() {
           multiline
           numberOfLines={4}
           placeholder="Write a caption for Moona…"
-          placeholderTextColor={colors.foreground + "66"}
+          placeholderTextColor={tk.textMuted}
           style={[styles.captionInput, { backgroundColor: tk.inputBg, color: tk.text }]}
         />
         <TouchableOpacity onPress={() => router.back()} style={styles.postBtn} activeOpacity={0.85}>
