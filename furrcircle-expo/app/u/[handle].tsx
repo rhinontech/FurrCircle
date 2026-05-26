@@ -5,6 +5,8 @@ import { Share2, UserPlus, MapPin, Grid3x3, Bookmark, Bone } from "lucide-react-
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { userApi } from "../../services/user/userApi";
+import { useEffect } from "react";
 
 const boyDog = require("../../src/assets/doodle-boy-dog.png");
 const puppy = require("../../src/assets/doodle-puppy.png");
@@ -40,6 +42,22 @@ export default function UserProfileScreen() {
   const tk = useTokens();
   const [tab, setTab] = useState<(typeof tabs)[number]>("Posts");
   const [following, setFollowing] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (handle) {
+      userApi.getUserProfile(handle as string)
+        .then(data => {
+          setUserProfile(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to load profile:", err);
+          setLoading(false);
+        });
+    }
+  }, [handle]);
 
   return (
     <PageContainer>
@@ -62,20 +80,20 @@ export default function UserProfileScreen() {
               {/* Avatar + stats */}
               <View style={styles.profileTop}>
                 <View style={styles.avatarWrap}>
-                  <Image source={boyDog} style={styles.avatarImg} resizeMode="cover" />
+                  <Image source={userProfile?.avatar_url ? { uri: userProfile.avatar_url } : boyDog} style={styles.avatarImg} resizeMode="cover" />
                 </View>
                 <View style={styles.statsRow}>
-                  <StatItem n="48" l="Posts" tk={tk} />
-                  <StatItem n="1.2k" l="Followers" tk={tk} />
-                  <StatItem n="312" l="Following" tk={tk} />
+                  <StatItem n={userProfile?.postCount?.toString() || "0"} l="Posts" tk={tk} />
+                  <StatItem n={userProfile?.followersCount?.toString() || "0"} l="Followers" tk={tk} />
+                  <StatItem n={userProfile?.followingCount?.toString() || "0"} l="Following" tk={tk} />
                 </View>
               </View>
               {/* Name + bio */}
-              <Text style={[styles.displayName, { color: tk.text }]}>Goutham R.</Text>
-              <Text style={[styles.bio, { color: tk.textMuted }]}>Dad to Moona 🐕 & Kobi 🐈 · positive-reinforcement believer.</Text>
+              <Text style={[styles.displayName, { color: tk.text }]}>{userProfile?.name || handle}</Text>
+              {userProfile?.bio && <Text style={[styles.bio, { color: tk.textMuted }]}>{userProfile.bio}</Text>}
               <View style={styles.locationRow}>
                 <MapPin size={12} color={tk.textMuted} />
-                <Text style={[styles.locationText, { color: tk.textMuted }]}>Mumbai, India</Text>
+                <Text style={[styles.locationText, { color: tk.textMuted }]}>{userProfile?.city || "Location unknown"}</Text>
               </View>
               {/* Buttons */}
               <View style={styles.actionRow}>
@@ -97,10 +115,10 @@ export default function UserProfileScreen() {
 
           {/* Pets rail */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.petsScroll} contentContainerStyle={styles.petsContent}>
-            {pets.map((p) => (
-              <TouchableOpacity key={p.name} style={[styles.petChip, { backgroundColor: colors.white }]}>
+            {userProfile?.pets?.map((p: any) => (
+              <TouchableOpacity key={p.id} style={[styles.petChip, { backgroundColor: colors.white }]}>
                 <View style={styles.petAvatar}>
-                  <Image source={p.img} style={styles.petAvatarImg} resizeMode="cover" />
+                  <Image source={p.avatar_url ? { uri: p.avatar_url } : puppy} style={styles.petAvatarImg} resizeMode="cover" />
                 </View>
                 <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
               </TouchableOpacity>

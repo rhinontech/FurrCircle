@@ -1,13 +1,14 @@
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { getPets, type Pet } from "../../src/lib/pets-store";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { Avatar } from "../../src/components/Avatar";
 import { useAuthStore } from "../../src/lib/auth-store";
+import { petApi } from "../../services/pet/petApi";
 
 const SEED_PETS = [
   { id: "moona", name: "Moona", breed: "Collie · ♀ · 2y", tintColor: "rgba(255,107,107,0.15)", img: require("../../src/assets/doodle-boy-dog.png") },
@@ -19,9 +20,14 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const tk = useTokens();
-  const logout = useAuthStore((s) => s.logout);
-  const [pets, setPets] = useState<Pet[]>([]);
-  useEffect(() => { getPets().then(setPets); }, []);
+  const { user, logout } = useAuthStore();
+  const [pets, setPets] = useState<any[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      petApi.getMyPets().then(setPets).catch(console.error);
+    }, [])
+  );
 
   const handleLogout = () => {
     Alert.alert(
@@ -48,7 +54,7 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <Text style={[styles.title, { color: tk.text }]}>Profile</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => router.push("/u/goutham")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
+          <TouchableOpacity onPress={() => user?.username && router.push(`/u/${user.username}`)} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
             <Share2 size={20} color={tk.text} strokeWidth={2} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("/settings")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
@@ -59,10 +65,10 @@ export default function ProfileScreen() {
 
       {/* User card */}
       <View style={[styles.userCard, { backgroundColor: tk.card }]}>
-        <Avatar source={require("../../src/assets/doodle-boy-dog.png")} name="Goutham R." size={80} />
+        <Avatar source={user?.avatar_url ? { uri: user.avatar_url } : require("../../src/assets/doodle-boy-dog.png")} name={user?.name || "User"} size={80} />
         <View style={{ flex: 1 }}>
-          <Text style={[styles.userName, { color: tk.text }]}>Goutham R.</Text>
-          <Text style={[styles.userMeta, { color: tk.textMuted }]}>Mumbai · 2 pets</Text>
+          <Text style={[styles.userName, { color: tk.text }]}>{user?.name || "User"}</Text>
+          <Text style={[styles.userMeta, { color: tk.textMuted }]}>{user?.city || "Location unknown"} · {pets.length} pets</Text>
           <View style={styles.statsRow}>
             <Text style={[styles.statText, { color: tk.textMuted }]}><Text style={[styles.statNum, { color: tk.text }]}>128</Text> followers</Text>
             <Text style={[styles.statText, { color: tk.textMuted }]}><Text style={[styles.statNum, { color: tk.text }]}>96</Text> following</Text>
@@ -78,20 +84,20 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 8 }}>
-        {SEED_PETS.map((p) => (
-          <TouchableOpacity key={p.id} onPress={() => router.push("/pet")} style={[styles.petCard, { backgroundColor: p.tintColor }]} activeOpacity={0.85}>
+        {pets.length === 0 && SEED_PETS.map((p) => (
+          <TouchableOpacity key={p.id} onPress={() => router.push({ pathname: "/pet", params: { id: p.id } })} style={[styles.petCard, { backgroundColor: p.tintColor }]} activeOpacity={0.85}>
             <Image source={p.img} style={styles.petCardImg} resizeMode="contain" />
             <Text style={[styles.petCardName, { color: tk.text }]}>{p.name}</Text>
             <Text style={[styles.petCardBreed, { color: tk.textMuted }]}>{p.breed}</Text>
           </TouchableOpacity>
         ))}
         {pets.map((p, i) => (
-          <TouchableOpacity key={p.id} onPress={() => router.push("/pet")} style={[styles.petCard, { backgroundColor: TINT_COLORS[(i + 2) % TINT_COLORS.length] }]} activeOpacity={0.85}>
+          <TouchableOpacity key={p.id} onPress={() => router.push({ pathname: "/pet", params: { id: p.id } })} style={[styles.petCard, { backgroundColor: TINT_COLORS[(i + 2) % TINT_COLORS.length] }]} activeOpacity={0.85}>
             <View style={[styles.petCardImgWrap, { overflow: "hidden" }]}>
-              {p.photo && <Image source={{ uri: p.photo }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />}
+              {p.avatar_url && <Image source={{ uri: p.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />}
             </View>
             <Text style={[styles.petCardName, { color: tk.text }]}>{p.name}</Text>
-            <Text style={[styles.petCardBreed, { color: tk.textMuted }]}>{p.breed} · {p.gender === "female" ? "♀" : "♂"} · {p.ageYears}y</Text>
+            <Text style={[styles.petCardBreed, { color: tk.textMuted }]}>{p.breed || p.species} · {p.gender === "female" ? "♀" : "♂"} · {p.age || "?"}y</Text>
           </TouchableOpacity>
         ))}
         <TouchableOpacity onPress={() => router.push("/add-pet")} style={[styles.petCardAdd, { backgroundColor: tk.card, borderColor: tk.border }]} activeOpacity={0.85}>

@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home } from "lucide-react-native";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
-import { moonaTimeline, moonaPassport } from "../src/lib/demo-data";
+import { petApi } from "../services/pet/petApi";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 
@@ -30,7 +30,35 @@ const galleryTints = [
 export default function PetScreen() {
   const router = useRouter();
   const tk = useTokens();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const [tab, setTab] = useState<(typeof tabs)[number]>("About");
+  const [pet, setPet] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (id && id !== "moona") {
+      petApi.getPetById(id)
+        .then(data => { setPet(data); setLoading(false); })
+        .catch(err => { console.error("Failed to load pet:", err); setLoading(false); });
+    } else {
+      setLoading(false); // fallback for seed pets
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <PageContainer>
+        <View style={[styles.container, { backgroundColor: tk.bg, justifyContent: "center", alignItems: "center" }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </PageContainer>
+    );
+  }
+
+  const petName = pet?.name || "Moona";
+  const petBreed = pet?.breed || pet?.species || "Border Collie";
+  const petGender = pet?.gender === "male" ? "♂" : "♀";
+  const petAge = pet?.age || "2";
 
   return (
     <PageContainer>
@@ -40,7 +68,7 @@ export default function PetScreen() {
           {/* Hero card */}
           <View style={styles.px5}>
             <View style={styles.heroCard}>
-              <Image source={require("../src/assets/doodle-boy-dog.png")} style={styles.heroImg} resizeMode="contain" />
+              <Image source={pet?.avatar_url ? { uri: pet.avatar_url } : require("../src/assets/doodle-boy-dog.png")} style={styles.heroImg} resizeMode="contain" />
               <TouchableOpacity style={[styles.heroBtn, { top: 16, right: 16 }]}>
                 <Share2 size={16} color={colors.foreground} />
               </TouchableOpacity>
@@ -53,8 +81,8 @@ export default function PetScreen() {
           {/* Name + verified */}
           <View style={styles.nameRow}>
             <View>
-              <Text style={[styles.petName, { color: tk.text }]}>Moona</Text>
-              <Text style={[styles.petBreed, { color: tk.textMuted }]}>Border Collie · ♀ · 2 years</Text>
+              <Text style={[styles.petName, { color: tk.text }]}>{petName}</Text>
+              <Text style={[styles.petBreed, { color: tk.textMuted }]}>{petBreed} · {petGender} · {petAge} years</Text>
             </View>
             <View style={styles.verifiedBadge}>
               <ShieldCheck size={12} color={colors.white} />
@@ -73,9 +101,9 @@ export default function PetScreen() {
           </View>
 
           <View style={styles.px5}>
-            {tab === "About" && <AboutTab router={router} />}
-            {tab === "Timeline" && <TimelineTab tk={tk} />}
-            {tab === "Passport" && <PassportTab tk={tk} />}
+            {tab === "About" && <AboutTab router={router} pet={pet} />}
+            {tab === "Timeline" && <TimelineTab tk={tk} pet={pet} />}
+            {tab === "Passport" && <PassportTab tk={tk} pet={pet} />}
           </View>
         </ScrollView>
       </View>
@@ -83,19 +111,22 @@ export default function PetScreen() {
   );
 }
 
-function AboutTab({ router }: { router: any }) {
+function AboutTab({ router, pet }: { router: any, pet: any }) {
   const tk = useTokens();
-  const [adoption, setAdoption] = useState(false);
-  const [foster, setFoster] = useState(false);
-  const traits = ["Playful", "Loves water", "Good with kids", "Loud barker", "Smart"];
+  const [adoption, setAdoption] = useState(pet?.isAdoptionOpen || false);
+  const [foster, setFoster] = useState(pet?.isFosterOpen || false);
+  
+  // Use DB traits/description if available, else fallback
+  const traitsText = pet?.description || "";
+  const traits = traitsText ? traitsText.split(',').map((t: string) => t.trim()) : ["Playful", "Loves water", "Good with kids", "Smart"];
 
   return (
     <View style={{ gap: 20 }}>
       {/* Stats */}
       <View style={styles.statsGrid}>
-        <StatCard icon={Cake} label="Age" value="2 y" />
-        <StatCard icon={Ruler} label="Weight" value="14 kg" />
-        <StatCard icon={MapPin} label="Mumbai" value="2 km" />
+        <StatCard icon={Cake} label="Age" value={pet?.age ? `${pet.age} y` : "2 y"} />
+        <StatCard icon={Ruler} label="Weight" value={pet?.weight ? `${pet.weight} kg` : "14 kg"} />
+        <StatCard icon={MapPin} label={pet?.city || "Mumbai"} value="-" />
       </View>
 
       {/* Availability */}
@@ -126,7 +157,7 @@ function AboutTab({ router }: { router: any }) {
       <View>
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Personality</Text>
         <View style={styles.traitRow}>
-          {traits.map((t, i) => (
+          {traits.map((t: string, i: number) => (
             <View key={t} style={[styles.traitChip, { backgroundColor: traitColors[i % 5].bg }]}>
               <Text style={[styles.traitText, { color: traitColors[i % 5].text }]}>{t}</Text>
             </View>
@@ -158,17 +189,20 @@ function AboutTab({ router }: { router: any }) {
   );
 }
 
-function TimelineTab({ tk }: { tk: any }) {
+function TimelineTab({ tk, pet }: { tk: any, pet: any }) {
+  const timeline = pet?.Appointments || [];
+
   return (
     <View style={styles.timelineWrap}>
       <View style={styles.timelineLine} />
-      {moonaTimeline.map((m) => (
-        <View key={m.id} style={styles.timelineItem}>
-          <View style={[styles.timelineDot, { backgroundColor: m.tintColor }]} />
+      {timeline.length === 0 && <Text style={{ color: tk.textMuted, marginTop: 20 }}>No timeline events found.</Text>}
+      {timeline.map((m: any, i: number) => (
+        <View key={m.id || i} style={styles.timelineItem}>
+          <View style={[styles.timelineDot, { backgroundColor: traitColors[i % 5].bg }]} />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.timelineDate, { color: tk.textMuted }]}>{m.date}</Text>
-            <Text style={[styles.timelineTitle, { color: tk.text }]}>{m.title}</Text>
-            <Text style={[styles.timelineBody, { color: tk.text + "BB" }]}>{m.body}</Text>
+            <Text style={[styles.timelineDate, { color: tk.textMuted }]}>{m.date} {m.time}</Text>
+            <Text style={[styles.timelineTitle, { color: tk.text }]}>{m.reason || "Appointment"}</Text>
+            <Text style={[styles.timelineBody, { color: tk.text + "BB" }]}>{m.status}</Text>
           </View>
         </View>
       ))}
@@ -176,7 +210,10 @@ function TimelineTab({ tk }: { tk: any }) {
   );
 }
 
-function PassportTab({ tk }: { tk: any }) {
+function PassportTab({ tk, pet }: { tk: any, pet: any }) {
+  const vaccines = pet?.Vaccines || [];
+  const allergies = pet?.Allergies?.map((a: any) => a.name) || ["Peanuts"];
+  const microchip = pet?.microchip_id || "981020000345119";
   return (
     <View style={{ gap: 16 }}>
       {/* Microchip */}
@@ -185,24 +222,25 @@ function PassportTab({ tk }: { tk: any }) {
           <BadgeCheck size={16} color={colors.success} />
           <Text style={styles.passportCardLabel}>MICROCHIP</Text>
         </View>
-        <Text style={[styles.passportCardValue, { color: tk.text }]}>{moonaPassport.microchip}</Text>
+        <Text style={[styles.passportCardValue, { color: tk.text }]}>{microchip}</Text>
       </View>
 
       {/* Vaccines */}
       <View>
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Vaccines</Text>
         <View style={{ gap: 8 }}>
-          {moonaPassport.vaccines.map((v) => (
-            <View key={v.name} style={[styles.vaccineRow, { backgroundColor: colors.white }]}>
-              <View style={[styles.vaccineIcon, { backgroundColor: v.status === "ok" ? "rgba(76,175,80,0.15)" : "rgba(255,217,61,0.4)" }]}>
-                <Syringe size={16} color={v.status === "ok" ? colors.success : colors.foreground} />
+          {vaccines.length === 0 && <Text style={{ color: tk.textMuted }}>No vaccines recorded.</Text>}
+          {vaccines.map((v: any, i: number) => (
+            <View key={v.id || i} style={[styles.vaccineRow, { backgroundColor: colors.white }]}>
+              <View style={[styles.vaccineIcon, { backgroundColor: v.status === "completed" ? "rgba(76,175,80,0.15)" : "rgba(255,217,61,0.4)" }]}>
+                <Syringe size={16} color={v.status === "completed" ? colors.success : colors.foreground} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.vaccineName, { color: tk.text }]}>{v.name}</Text>
-                <Text style={[styles.vaccineDate, { color: tk.textMuted }]}>Given {v.date} · Next {v.next}</Text>
+                <Text style={[styles.vaccineDate, { color: tk.textMuted }]}>Given {v.dateAdministered || '-'} · Next {v.nextDueDate || '-'}</Text>
               </View>
-              <View style={[styles.vaccineBadge, { backgroundColor: v.status === "ok" ? colors.success : colors.sunshine }]}>
-                <Text style={[styles.vaccineBadgeText, { color: v.status === "ok" ? colors.white : colors.foreground }]}>{v.status === "ok" ? "OK" : "Due"}</Text>
+              <View style={[styles.vaccineBadge, { backgroundColor: v.status === "completed" ? colors.success : colors.sunshine }]}>
+                <Text style={[styles.vaccineBadgeText, { color: v.status === "completed" ? colors.white : colors.foreground }]}>{v.status === "completed" ? "OK" : "Due"}</Text>
               </View>
             </View>
           ))}
@@ -213,7 +251,8 @@ function PassportTab({ tk }: { tk: any }) {
       <View>
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Allergies</Text>
         <View style={styles.traitRow}>
-          {moonaPassport.allergies.map((a) => (
+          {allergies.length === 0 && <Text style={{ color: tk.textMuted }}>No allergies known.</Text>}
+          {allergies.map((a: string) => (
             <View key={a} style={[styles.traitChip, { backgroundColor: "rgba(255,107,107,0.15)" }]}>
               <Text style={[styles.traitText, { color: colors.coral }]}>{a}</Text>
             </View>
@@ -224,19 +263,19 @@ function PassportTab({ tk }: { tk: any }) {
       {/* Primary vet */}
       <View style={[styles.passportCard, { backgroundColor: colors.white }]}>
         <Text style={styles.passportCardLabel}>PRIMARY VET</Text>
-        <Text style={[styles.passportCardValue, { color: tk.text }]}>{moonaPassport.vet.name}</Text>
-        <Text style={[styles.passportCardSub, { color: tk.textMuted }]}>{moonaPassport.vet.clinic}</Text>
+        <Text style={[styles.passportCardValue, { color: tk.text }]}>Dr. Patel</Text>
+        <Text style={[styles.passportCardSub, { color: tk.textMuted }]}>Paws & Claws Clinic</Text>
         <TouchableOpacity style={styles.phoneBtn}>
           <Phone size={13} color={colors.white} />
-          <Text style={styles.phoneBtnText}>{moonaPassport.vet.phone}</Text>
+          <Text style={styles.phoneBtnText}>+91 98765 43210</Text>
         </TouchableOpacity>
       </View>
 
       {/* Insurance */}
       <View style={[styles.passportCard, { backgroundColor: colors.white }]}>
         <Text style={styles.passportCardLabel}>INSURANCE</Text>
-        <Text style={[styles.passportCardValue, { color: tk.text }]}>{moonaPassport.insurance.provider}</Text>
-        <Text style={[styles.passportCardSub, { color: tk.textMuted }]}>Policy {moonaPassport.insurance.policy} · {moonaPassport.insurance.valid}</Text>
+        <Text style={[styles.passportCardValue, { color: tk.text }]}>PawCare Health</Text>
+        <Text style={[styles.passportCardSub, { color: tk.textMuted }]}>Policy PAW-2023 · Valid till Dec 2024</Text>
       </View>
     </View>
   );
