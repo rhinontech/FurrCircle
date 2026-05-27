@@ -14,7 +14,7 @@ type AuthState = {
   setSession: (payload: AuthPayload) => Promise<void>;
 };
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   loading: true,
 
@@ -31,8 +31,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         
         try {
           const fresh = await authApi.getMe();
-          await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(fresh));
-          set({ user: fresh });
+          const freshWithToken = { ...fresh, token };
+          await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(freshWithToken));
+          set({ user: freshWithToken });
         } catch (err) {
           console.error("Hydration profile refresh failed:", err);
         }
@@ -67,13 +68,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   setSession: async (payload: AuthPayload) => {
-    if (payload.token) {
-      await Promise.all([
-        AsyncStorage.setItem(AUTH_KEY, JSON.stringify(payload)),
-        SecureStore.setItemAsync('token', payload.token),
-      ]);
-      set({ user: payload });
+    const currentToken = payload.token || get().user?.token;
+    const userToSave = { ...payload, token: currentToken };
+
+    if (currentToken) {
+      await SecureStore.setItemAsync('token', currentToken);
     }
+
+    await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(userToSave));
+    set({ user: userToSave });
   },
 
   logout: async () => {

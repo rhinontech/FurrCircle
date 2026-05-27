@@ -1,13 +1,12 @@
-import { useState } from "react";
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useState, useCallback } from "react";
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Share2, UserPlus, MapPin, Grid3x3, Bookmark, Bone } from "lucide-react-native";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { userApi } from "../../services/user/userApi";
-import { useEffect } from "react";
 
 const boyDog = require("../../src/assets/doodle-boy-dog.png");
 const puppy = require("../../src/assets/doodle-puppy.png");
@@ -61,19 +60,22 @@ export default function UserProfileScreen() {
     }
   };
 
-  useEffect(() => {
-    if (handle) {
-      userApi.getUserProfile(handle as string)
-        .then(data => {
-          setUserProfile(data);
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error("Failed to load profile:", err);
-          setLoading(false);
-        });
-    }
-  }, [handle]);
+  useFocusEffect(
+    useCallback(() => {
+      if (handle) {
+        setLoading(true);
+        userApi.getUserProfile(handle as string)
+          .then(data => {
+            setUserProfile(data);
+            setLoading(false);
+          })
+          .catch(err => {
+            console.error("Failed to load profile:", err);
+            setLoading(false);
+          });
+      }
+    }, [handle])
+  );
 
   return (
     <PageContainer>
@@ -87,8 +89,13 @@ export default function UserProfileScreen() {
           }
         />
 
-        <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
-          {/* Profile card */}
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
+            {/* Profile card */}
           <View style={styles.px5}>
             <View style={[styles.profileCard, { backgroundColor: tk.card }]}>
               {/* Avatar + stats */}
@@ -152,7 +159,7 @@ export default function UserProfileScreen() {
               {/* Pets rail */}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.petsScroll} contentContainerStyle={styles.petsContent}>
                 {userProfile?.pets?.map((p: any) => (
-                  <TouchableOpacity key={p.id} style={[styles.petChip, { backgroundColor: tk.card }]}>
+                  <TouchableOpacity key={p.id} onPress={() => router.push({ pathname: "/pet", params: { id: p.id } })} style={[styles.petChip, { backgroundColor: tk.card }]}>
                     <View style={styles.petAvatar}>
                       <Image source={p.avatar_url ? { uri: p.avatar_url } : puppy} style={styles.petAvatarImg} resizeMode="cover" />
                     </View>
@@ -187,6 +194,7 @@ export default function UserProfileScreen() {
             </>
           )}
         </ScrollView>
+        )}
       </View >
     </PageContainer >
   );

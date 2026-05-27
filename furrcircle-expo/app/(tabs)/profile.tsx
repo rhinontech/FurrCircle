@@ -11,10 +11,6 @@ import { useAuthStore } from "../../src/lib/auth-store";
 import { petApi } from "../../services/pet/petApi";
 import { userApi } from "../../services/user/userApi";
 
-const SEED_PETS = [
-  { id: "moona", name: "Moona", breed: "Collie · ♀ · 2y", tintColor: "rgba(255,107,107,0.15)", img: require("../../src/assets/doodle-boy-dog.png") },
-  { id: "kobi", name: "Kobi", breed: "Tabby · ♂ · 4y", tintColor: "rgba(37,99,235,0.1)", img: require("../../src/assets/doodle-birthday.png") },
-];
 const TINT_COLORS = ["rgba(255,107,107,0.15)", "rgba(37,99,235,0.1)", "rgba(255,217,61,0.3)", "rgba(255,111,207,0.15)", "rgba(76,175,80,0.15)"];
 
 export default function ProfileScreen() {
@@ -98,27 +94,15 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 8 }}>
-          {pets.length === 0 ? (
-            SEED_PETS.map((p) => (
-              <TouchableOpacity key={p.id} onPress={() => router.push({ pathname: "/pet", params: { id: p.id } })} style={[styles.petCard, { backgroundColor: p.tintColor }]} activeOpacity={0.85}>
-                <View style={styles.petCardImgContainer}>
-                  <Image source={p.img} style={styles.petCardImgInner} resizeMode="stretch" />
-                </View>
-                <Text style={[styles.petCardName, { color: tk.text }]}>{p.name}</Text>
-                <Text style={[styles.petCardBreed, { color: tk.textMuted }]}>{p.breed}</Text>
-              </TouchableOpacity>
-            ))
-          ) : (
-            pets.map((p, i) => (
-              <TouchableOpacity key={p.id} onPress={() => router.push({ pathname: "/pet", params: { id: p.id } })} style={[styles.petCard, { backgroundColor: TINT_COLORS[(i + 2) % TINT_COLORS.length] }]} activeOpacity={0.85}>
-                <View style={[styles.petCardImgWrap, { overflow: "hidden" }]}>
-                  {p.avatar_url ? <Image source={{ uri: p.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" /> : null}
-                </View>
-                <Text style={[styles.petCardName, { color: tk.text }]}>{p.name}</Text>
-                <Text style={[styles.petCardBreed, { color: tk.textMuted }]}>{p.breed || p.species} · {p.gender === "female" ? "♀" : "♂"} · {p.age || "?"}y</Text>
-              </TouchableOpacity>
-            ))
-          )}
+          {pets.map((p, i) => (
+            <TouchableOpacity key={p.id} onPress={() => router.push({ pathname: "/pet", params: { id: p.id } })} style={[styles.petCard, { backgroundColor: TINT_COLORS[(i + 2) % TINT_COLORS.length] }]} activeOpacity={0.85}>
+              <View style={[styles.petCardImgWrap, { overflow: "hidden" }]}>
+                {p.avatar_url ? <Image source={{ uri: p.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" /> : null}
+              </View>
+              <Text style={[styles.petCardName, { color: tk.text }]}>{p.name}</Text>
+              <Text style={[styles.petCardBreed, { color: tk.textMuted }]}>{p.breed || p.species} · {p.gender === "female" ? "♀" : "♂"} · {p.age || "?"}y</Text>
+            </TouchableOpacity>
+          ))}
           <TouchableOpacity onPress={() => router.push("/add-pet")} style={[styles.petCardAdd, { backgroundColor: tk.card, borderColor: tk.border }]} activeOpacity={0.85}>
             <Plus size={24} color={tk.textMuted} />
             <Text style={[styles.addPetCardText, { color: tk.textMuted }]}>Add pet</Text>
