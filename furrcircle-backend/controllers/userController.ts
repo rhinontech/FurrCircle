@@ -13,7 +13,7 @@ const calculateHealthScore = (pet: any) => {
 
 // @desc    Get public user profile by handle (username)
 // @route   GET /api/users/:handle
-export const getUserByHandle = async (req: Request, res: Response): Promise<void> => {
+export const getUserByHandle = async (req: any, res: Response): Promise<void> => {
   try {
     const { users: User, vets: Vet, pets: Pet, posts: Post } = db as any;
     const { handle } = req.params;
@@ -22,7 +22,7 @@ export const getUserByHandle = async (req: Request, res: Response): Promise<void
     let isVet = false;
     let account = await User.findOne({
       where: { username: { [Op.iLike]: handle } },
-      attributes: ['id', 'name', 'username', 'avatar_url', 'bio', 'city', 'role', 'isVerified', 'createdAt'],
+      attributes: ['id', 'name', 'username', 'avatar_url', 'bio', 'city', 'role', 'isVerified', 'createdAt', 'isPrivate'],
     });
 
     if (!account) {
@@ -40,13 +40,31 @@ export const getUserByHandle = async (req: Request, res: Response): Promise<void
     }
 
     // Get their posts count (assuming posts table has userId)
-    const postCount = await Post.count({ where: { userId: account.id } });
+    let postCount = await Post.count({ where: { userId: account.id } });
 
-    // Get their pets (if user)
+    const { follows: Follow } = db as any;
+    const followersCount = await Follow.count({ where: { followingId: account.id, status: 'accepted' } });
+    const followingCount = await Follow.count({ where: { followerId: account.id, status: 'accepted' } });
+
+    let followStatus = 'none';
+    if (req.user && req.user.id !== account.id) {
+      const follow = await Follow.findOne({
+        where: { followerId: req.user.id, followingId: account.id }
+      });
+      if (follow) {
+        followStatus = follow.status;
+      }
+    } else if (req.user && req.user.id === account.id) {
+      followStatus = 'self';
+    }
+
+    const isPrivate = !isVet && account.isPrivate;
+    const canViewContent = followStatus === 'accepted' || followStatus === 'self' || !isPrivate;
+
     let petsList = [];
-    if (!isVet) {
+    if (!isVet && canViewContent) {
       const pets = await Pet.findAll({
-        where: { ownerId: account.id, isAdoptionOpen: false, isFosterOpen: false }, // Only private pets? Actually they probably want all pets on profile.
+        where: { ownerId: account.id, isAdoptionOpen: false, isFosterOpen: false }, 
       });
       
       petsList = pets.map((pet: any) => {
@@ -58,14 +76,44 @@ export const getUserByHandle = async (req: Request, res: Response): Promise<void
       });
     }
 
+    if (!canViewContent) {
+      postCount = 0; // Hide post count if private
+    }
+
     res.json({
       ...account.toJSON(),
       isVet,
       postCount,
       pets: petsList,
-      followersCount: 0, // Follow feature disabled per request
-      followingCount: 0,
+      followersCount,
+      followingCount,
+      followStatus,
+      isPrivate,
+      canViewContent,
     });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateProfile = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { users: User } = db as any;
+    const userId = req.user.id;
+    const { isPrivate } = req.body;
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    if (isPrivate !== undefined) {
+      user.isPrivate = isPrivate;
+    }
+
+    await user.save();
+    res.json({ success: true, isPrivate: user.isPrivate });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

@@ -34,11 +34,22 @@ export default function SettingsScreen() {
     ]);
   }
 
-  const [privateProfile, setPrivateProfile] = useState(false);
+  const [privateProfile, setPrivateProfile] = useState(user?.isPrivate || false);
   const [twoFA, setTwoFA] = useState(false);
   const [preciseLocation, setPreciseLocation] = useState(true);
   const [pushNotifs, setPushNotifs] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const togglePrivateProfile = async (val: boolean) => {
+    setPrivateProfile(val);
+    try {
+      const { userApi } = require('../../services/user/userApi');
+      await userApi.updateProfile({ isPrivate: val });
+    } catch (err) {
+      setPrivateProfile(!val); // revert
+      console.error('Failed to update privacy', err);
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
@@ -54,7 +65,7 @@ export default function SettingsScreen() {
         <Section title="Privacy & security" tk={tk}>
           <Row tk={tk} icon={Eye} iconBg="rgba(255,111,207,0.15)" iconColor={colors.pinky}
             label="Private profile" sub="Only followers see your posts"
-            toggle={privateProfile} onToggle={setPrivateProfile} />
+            toggle={privateProfile} onToggle={togglePrivateProfile} />
           <Row tk={tk} icon={Lock} iconBg="rgba(76,175,80,0.15)" iconColor={colors.success}
             label="Two-factor auth" sub="Extra step on new logins"
             toggle={twoFA} onToggle={setTwoFA} />

@@ -46,6 +46,21 @@ export default function UserProfileScreen() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const handleFollowToggle = async () => {
+    if (!userProfile) return;
+    try {
+      if (userProfile.followStatus === 'none') {
+        const res = await userApi.followUser(userProfile.id);
+        setUserProfile({ ...userProfile, followStatus: res.status });
+      } else {
+        await userApi.unfollowUser(userProfile.id);
+        setUserProfile({ ...userProfile, followStatus: 'none', followersCount: userProfile.followersCount - 1 });
+      }
+    } catch (err) {
+      console.error('Failed to toggle follow', err);
+    }
+  };
+
   useEffect(() => {
     if (handle) {
       userApi.getUserProfile(handle as string)
@@ -96,56 +111,82 @@ export default function UserProfileScreen() {
               </View>
               {/* Buttons */}
               <View style={styles.actionRow}>
-                <TouchableOpacity
-                  onPress={() => router.push("/settings")}
-                  style={[styles.editProfileBtn, { backgroundColor: colors.foreground + "1A" }]}
-                >
-                  <Text style={[styles.editProfileBtnText, { color: tk.text }]}>Edit profile</Text>
-                </TouchableOpacity>
+                {userProfile?.followStatus === 'self' && (
+                  <TouchableOpacity
+                    onPress={() => router.push("/settings")}
+                    style={[styles.editProfileBtn, { backgroundColor: colors.foreground + "1A" }]}
+                  >
+                    <Text style={[styles.editProfileBtnText, { color: tk.text }]}>Edit profile</Text>
+                  </TouchableOpacity>
+                )}
+                {userProfile?.followStatus === 'none' && (
+                  <TouchableOpacity onPress={handleFollowToggle} style={[styles.editProfileBtn, { backgroundColor: colors.primary }]}>
+                    <Text style={[styles.editProfileBtnText, { color: colors.white }]}>Follow</Text>
+                  </TouchableOpacity>
+                )}
+                {userProfile?.followStatus === 'pending' && (
+                  <TouchableOpacity onPress={handleFollowToggle} style={[styles.editProfileBtn, { backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border }]}>
+                    <Text style={[styles.editProfileBtnText, { color: tk.text }]}>Requested</Text>
+                  </TouchableOpacity>
+                )}
+                {userProfile?.followStatus === 'accepted' && (
+                  <TouchableOpacity onPress={handleFollowToggle} style={[styles.editProfileBtn, { backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border }]}>
+                    <Text style={[styles.editProfileBtnText, { color: tk.text }]}>Following</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           </View>
 
-          {/* Pets rail */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.petsScroll} contentContainerStyle={styles.petsContent}>
-            {userProfile?.pets?.map((p: any) => (
-        <TouchableOpacity key={p.id} style={[styles.petChip, { backgroundColor: colors.white }]}>
-          <View style={styles.petAvatar}>
-            <Image source={p.avatar_url ? { uri: p.avatar_url } : puppy} style={styles.petAvatarImg} resizeMode="cover" />
-          </View>
-          <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
-        </TouchableOpacity>
-      ))}
-      </ScrollView>
+          {/* Private state */ }
+          {userProfile && !userProfile.canViewContent ? (
+            <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 40, padding: 20 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.foreground + "0A", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                <Bookmark size={32} color={tk.textMuted} />
+              </View>
+              <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 18, color: tk.text }}>This account is private</Text>
+              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, marginTop: 4, textAlign: 'center' }}>Follow this account to see their photos and videos.</Text>
+            </View>
+          ) : (
+            <>
+              {/* Pets rail */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.petsScroll} contentContainerStyle={styles.petsContent}>
+                {userProfile?.pets?.map((p: any) => (
+                  <TouchableOpacity key={p.id} style={[styles.petChip, { backgroundColor: colors.white }]}>
+                    <View style={styles.petAvatar}>
+                      <Image source={p.avatar_url ? { uri: p.avatar_url } : puppy} style={styles.petAvatarImg} resizeMode="cover" />
+                    </View>
+                    <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
-          {/* Tabs */ }
-      < View style = { [styles.tabsRow, { borderBottomColor: colors.border }]} >
-      {
-        tabs.map((t) => {
-          const Icon = tabIcons[t];
-          const active = tab === t;
-          return (
-            <TouchableOpacity key={t} onPress={() => setTab(t)} style={styles.tabItem}>
-              <Icon size={16} color={active ? colors.coral : colors.foreground + "88"} />
-              <Text style={[styles.tabText, { color: active ? colors.coral : colors.foreground + "88" }]}>{t}</Text>
-              {active && <View style={styles.tabActiveBar} />}
-            </TouchableOpacity>
-          );
-        })
-      }
-          </View >
+              {/* Tabs */ }
+              <View style={[styles.tabsRow, { borderBottomColor: colors.border }]}>
+                {tabs.map((t) => {
+                  const Icon = tabIcons[t];
+                  const active = tab === t;
+                  return (
+                    <TouchableOpacity key={t} onPress={() => setTab(t)} style={styles.tabItem}>
+                      <Icon size={16} color={active ? colors.coral : colors.foreground + "88"} />
+                      <Text style={[styles.tabText, { color: active ? colors.coral : colors.foreground + "88" }]}>{t}</Text>
+                      {active && <View style={styles.tabActiveBar} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
-      {/* Post grid */ }
-      < View style = { styles.grid } >
-      {
-        gridItems.map((g, i) => (
-          <TouchableOpacity key={i} style={[styles.gridItem, { backgroundColor: g.tint }]}>
-            <Image source={g.img} style={styles.gridImg} resizeMode="contain" />
-          </TouchableOpacity>
-        ))
-      }
-          </View >
-        </ScrollView >
+              {/* Post grid */ }
+              <View style={styles.grid}>
+                {gridItems.map((g, i) => (
+                  <TouchableOpacity key={i} style={[styles.gridItem, { backgroundColor: g.tint }]}>
+                    <Image source={g.img} style={styles.gridImg} resizeMode="contain" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
+        </ScrollView>
       </View >
     </PageContainer >
   );

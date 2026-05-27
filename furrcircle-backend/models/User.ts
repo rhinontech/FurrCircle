@@ -75,6 +75,11 @@ export default (sequelize: Sequelize) => {
                 allowNull: false,
                 defaultValue: false,
             },
+            isPrivate: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
             petTypeInterests: {
                 type: DataTypes.ARRAY(DataTypes.STRING),
                 allowNull: true,
@@ -119,6 +124,10 @@ export default (sequelize: Sequelize) => {
         if (models.pets) User.hasMany(models.pets, { foreignKey: 'ownerId', as: 'pets' });
         if (models.vet_reviews) User.hasMany(models.vet_reviews, { foreignKey: 'userId', as: 'vetReviews' });
         if (models.appointments) User.hasMany(models.appointments, { foreignKey: 'ownerId', as: 'ownerAppointments' });
+        if (models.follows) {
+            User.hasMany(models.follows, { foreignKey: 'followerId', as: 'following' });
+            User.hasMany(models.follows, { foreignKey: 'followingId', as: 'followers' });
+        }
     };
 
     return User;

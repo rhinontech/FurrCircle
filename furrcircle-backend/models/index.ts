@@ -44,6 +44,12 @@ for (const file of filesInDir) {
 db.pets.belongsTo(db.users, { foreignKey: 'ownerId', as: 'owner' });
 db.users.hasMany(db.pets, { foreignKey: 'ownerId', as: 'pets' });
 
+// User <-> Follow
+db.follows.belongsTo(db.users, { foreignKey: 'followerId', as: 'followerUser' });
+db.follows.belongsTo(db.users, { foreignKey: 'followingId', as: 'followingUser' });
+db.users.hasMany(db.follows, { foreignKey: 'followerId', as: 'following' });
+db.users.hasMany(db.follows, { foreignKey: 'followingId', as: 'followers' });
+
 // Vet <-> VetReview
 db.vet_reviews.belongsTo(db.vets, { foreignKey: 'vetId', as: 'vet' });
 db.vets.hasMany(db.vet_reviews, { foreignKey: 'vetId', as: 'reviews' });
@@ -172,6 +178,7 @@ export const adoption_applications = db.adoption_applications;
 export const contact_leads = db.contact_leads;
 export const stories = db.stories;
 export const story_views = db.story_views;
+export const follows = db.follows;
 
 export { sequelize, Sequelize };
 export default db;
