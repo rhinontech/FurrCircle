@@ -21,6 +21,7 @@ export default function SettingsScreen() {
   const setDark = useThemeStore((s) => s.setDark);
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
+  const setSession = useAuthStore((s) => s.setSession);
   const router = useRouter();
 
   function handleLogout() {
@@ -36,18 +37,23 @@ export default function SettingsScreen() {
     ]);
   }
 
-  const [privateProfile, setPrivateProfile] = useState(user?.isPrivate || false);
+  const privateProfile = user?.isPrivate || false;
   const [twoFA, setTwoFA] = useState(false);
   const [preciseLocation, setPreciseLocation] = useState(true);
   const [pushNotifs, setPushNotifs] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const togglePrivateProfile = async (val: boolean) => {
-    setPrivateProfile(val);
+    // Optimistic update
+    if (user) await setSession({ ...user, isPrivate: val });
     try {
-      await userApi.updateProfile({ isPrivate: val });
+      const res = await userApi.updateProfile({ isPrivate: val });
+      if (res.success && res.user && user) {
+        await setSession({ ...user, ...res.user });
+      }
     } catch (err) {
-      setPrivateProfile(!val); // revert
+      // Revert on failure
+      if (user) await setSession({ ...user, isPrivate: !val });
       console.error('Failed to update privacy', err);
     }
   };

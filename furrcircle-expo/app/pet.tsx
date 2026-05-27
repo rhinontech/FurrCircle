@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home } from "lucide-react-native";
+import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2 } from "lucide-react-native";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { petApi } from "../services/pet/petApi";
@@ -72,9 +72,15 @@ export default function PetScreen() {
               <TouchableOpacity style={[styles.heroBtn, { top: 16, right: 16 }]}>
                 <Share2 size={16} color={colors.foreground} />
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.heroBtn, { top: 64, right: 16 }]}>
-                <Heart size={16} color={colors.pinky} fill={colors.pinky} />
-              </TouchableOpacity>
+              {pet?.canManage ? (
+                <TouchableOpacity onPress={() => router.push(`/edit-pet?id=${pet.id}`)} style={[styles.heroBtn, { top: 64, right: 16 }]}>
+                  <Edit2 size={16} color={colors.foreground} />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={[styles.heroBtn, { top: 64, right: 16 }]}>
+                  <Heart size={16} color={colors.pinky} fill={colors.pinky} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -116,9 +122,32 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
   const [adoption, setAdoption] = useState(pet?.isAdoptionOpen || false);
   const [foster, setFoster] = useState(pet?.isFosterOpen || false);
   
-  // Use DB traits/description if available, else fallback
-  const traitsText = pet?.description || "";
-  const traits = traitsText ? traitsText.split(',').map((t: string) => t.trim()) : ["Playful", "Loves water", "Good with kids", "Smart"];
+  const toggleAdoption = async () => {
+    const newVal = !adoption;
+    setAdoption(newVal);
+    if (!pet?.id || pet.id === "moona") return;
+    try {
+      await petApi.updateListing(pet.id, { isAdoptionOpen: newVal });
+    } catch (err: any) {
+      setAdoption(!newVal);
+      Alert.alert("Error", "Could not update adoption status");
+    }
+  };
+
+  const toggleFoster = async () => {
+    const newVal = !foster;
+    setFoster(newVal);
+    if (!pet?.id || pet.id === "moona") return;
+    try {
+      await petApi.updateListing(pet.id, { isFosterOpen: newVal });
+    } catch (err: any) {
+      setFoster(!newVal);
+      Alert.alert("Error", "Could not update foster status");
+    }
+  };
+
+  // Use DB personality
+  const traits = Array.isArray(pet?.personality) ? pet.personality : [];
 
   return (
     <View style={{ gap: 20 }}>
@@ -134,16 +163,16 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Availability</Text>
         <Text style={[styles.sectionSub, { color: tk.textMuted }]}>Show Moona on Discover for matching families.</Text>
         <View style={styles.availGrid}>
-          <TouchableOpacity onPress={() => setAdoption(!adoption)}
-            style={[styles.availCard, adoption ? { backgroundColor: colors.success } : { backgroundColor: colors.white }]}>
+          <TouchableOpacity onPress={toggleAdoption} disabled={!pet?.canManage}
+            style={[styles.availCard, adoption ? { backgroundColor: colors.success } : { backgroundColor: colors.white }, !pet?.canManage && { opacity: 0.8 }]}>
             <Home size={20} color={adoption ? colors.white : colors.foreground} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.availLabel, { color: adoption ? colors.white : colors.foreground }]}>Open for adoption</Text>
               <Text style={[styles.availSub, { color: adoption ? colors.white + "CC" : colors.foreground + "88" }]}>{adoption ? "Listed" : "Off"}</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setFoster(!foster)}
-            style={[styles.availCard, foster ? { backgroundColor: colors.coral } : { backgroundColor: colors.white }]}>
+          <TouchableOpacity onPress={toggleFoster} disabled={!pet?.canManage}
+            style={[styles.availCard, foster ? { backgroundColor: colors.coral } : { backgroundColor: colors.white }, !pet?.canManage && { opacity: 0.8 }]}>
             <HandHeart size={20} color={foster ? colors.white : colors.foreground} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.availLabel, { color: foster ? colors.white : colors.foreground }]}>Open for foster</Text>
@@ -157,6 +186,7 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
       <View>
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Personality</Text>
         <View style={styles.traitRow}>
+          {traits.length === 0 && <Text style={{ color: tk.textMuted }}>No personality traits added.</Text>}
           {traits.map((t: string, i: number) => (
             <View key={t} style={[styles.traitChip, { backgroundColor: traitColors[i % 5].bg }]}>
               <Text style={[styles.traitText, { color: traitColors[i % 5].text }]}>{t}</Text>

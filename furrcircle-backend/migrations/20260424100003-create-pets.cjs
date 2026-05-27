@@ -98,6 +98,11 @@ module.exports = {
         allowNull: true,
         defaultValue: []
       },
+      personality: {
+        type: Sequelize.JSON,
+        allowNull: true,
+        defaultValue: []
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

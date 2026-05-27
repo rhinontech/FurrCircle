@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert } from "react-native";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useState, useEffect } from "react";
 import { Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
@@ -11,9 +11,11 @@ import { useTokens } from "../src/lib/theme-store";
 
 const PERSONALITY_TAGS = ["Friendly", "Playful", "Calm", "Active", "Independent", "Cuddly", "Protective", "Curious"];
 
-export default function AddPetScreen() {
+export default function EditPetScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const tk = useTokens();
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [species, setSpecies] = useState("dog");
   const [breed, setBreed] = useState("");
@@ -22,6 +24,32 @@ export default function AddPetScreen() {
   const [photo, setPhoto] = useState<string | undefined>();
   const [personality, setPersonality] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      petApi.getPetById(id)
+        .then(pet => {
+          if (pet.name) setName(pet.name);
+          if (pet.species) setSpecies(pet.species);
+          if (pet.breed) setBreed(pet.breed);
+          if (pet.gender) setGender(pet.gender as "male" | "female");
+          if (pet.age) setAgeYears(String(pet.age));
+          if (pet.avatar_url) setPhoto(pet.avatar_url);
+          if (pet.personality && Array.isArray(pet.personality) && pet.personality.length > 0) {
+            setPersonality(pet.personality);
+          } else if (pet.description) {
+            setPersonality(pet.description.split(',').map((t: string) => t.trim()));
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to load pet:", err);
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+  }, [id]);
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images", quality: 0.8 });
@@ -33,9 +61,10 @@ export default function AddPetScreen() {
 
   const save = async () => {
     if (!name.trim()) { Alert.alert("Name required"); return; }
+    if (!id) return;
     setSaving(true);
     try {
-      await petApi.createPet({ 
+      await petApi.updatePet(id, { 
         name: name.trim(), 
         species, 
         breed: breed.trim(), 
@@ -46,15 +75,25 @@ export default function AddPetScreen() {
       });
       router.back();
     } catch (err: any) {
-      Alert.alert("Error adding pet", err?.response?.data?.message || err.message);
+      Alert.alert("Error updating pet", err?.response?.data?.message || err.message);
       setSaving(false);
     }
   };
 
+  if (loading) {
+    return (
+      <PageContainer>
+        <View style={[styles.container, { backgroundColor: tk.bg, justifyContent: "center", alignItems: "center" }]}>
+          <Text style={{ color: tk.text }}>Loading...</Text>
+        </View>
+      </PageContainer>
+    );
+  }
+
   return (
     <PageContainer>
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title="Add a pet" />
+      <ScreenHeader title="Edit pet" />
       <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 20 }}>
         <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { borderColor: tk.border }]} activeOpacity={0.8}>
           {photo ? null : <Camera size={32} color={tk.textMuted} />}
@@ -107,7 +146,7 @@ export default function AddPetScreen() {
         </View>
 
         <TouchableOpacity onPress={save} disabled={saving} style={styles.saveBtn} activeOpacity={0.85}>
-          <Text style={styles.saveBtnText}>{saving ? "Saving…" : "Add pet"}</Text>
+          <Text style={styles.saveBtnText}>{saving ? "Saving…" : "Save changes"}</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

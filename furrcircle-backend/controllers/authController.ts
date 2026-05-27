@@ -47,6 +47,7 @@ const buildAuthPayload = async (subject: any, userType: 'user' | 'vet', token?: 
     bio: subject.bio,
     city: subject.city,
     address: subject.address,
+    isPrivate: subject.isPrivate,
     memberSince: toMemberSince(subject.createdAt),
   };
 
@@ -190,6 +191,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
         profession,
         city,
         address,
+        isPrivate: false,
       });
 
       if (isEmail || useBackendOtp) {
@@ -233,6 +235,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       isVerified: isEmail ? false : !useBackendOtp,
       city,
       address,
+      isPrivate: false,
     });
 
     if (isEmail || useBackendOtp) {

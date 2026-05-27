@@ -64,7 +64,7 @@ export const getUserByHandle = async (req: any, res: Response): Promise<void> =>
     let petsList = [];
     if (!isVet && canViewContent) {
       const pets = await Pet.findAll({
-        where: { ownerId: account.id, isAdoptionOpen: false, isFosterOpen: false }, 
+        where: { ownerId: account.id }, 
       });
       
       petsList = pets.map((pet: any) => {
