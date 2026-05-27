@@ -9,6 +9,7 @@ import { useTokens } from "../../src/lib/theme-store";
 import { Avatar } from "../../src/components/Avatar";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { petApi } from "../../services/pet/petApi";
+import { userApi } from "../../services/user/userApi";
 
 const SEED_PETS = [
   { id: "moona", name: "Moona", breed: "Collie · ♀ · 2y", tintColor: "rgba(255,107,107,0.15)", img: require("../../src/assets/doodle-boy-dog.png") },
@@ -22,11 +23,23 @@ export default function ProfileScreen() {
   const tk = useTokens();
   const { user, logout } = useAuthStore();
   const [pets, setPets] = useState<any[]>([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   useFocusEffect(
     useCallback(() => {
       petApi.getMyPets().then(setPets).catch(console.error);
-    }, [])
+
+      if (user?.username) {
+        userApi.getUserProfile(user.username)
+          .then((profile) => {
+            setUserProfile(profile);
+            if (profile?.pets) {
+              setPets(profile.pets);
+            }
+          })
+          .catch(console.error);
+      }
+    }, [user?.username])
   );
 
   const handleLogout = () => {
@@ -55,9 +68,9 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <Text style={[styles.title, { color: tk.text }]}>Profile</Text>
           <View style={styles.headerActions}>
-            <TouchableOpacity onPress={() => user?.username && router.push(`/u/${user.username}`)} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
+            {/* <TouchableOpacity onPress={() => user?.username && router.push(`/u/${user.username}`)} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
               <Share2 size={20} color={tk.text} strokeWidth={2} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity onPress={() => router.push("/settings")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
               <Settings size={20} color={tk.text} strokeWidth={2} />
             </TouchableOpacity>
@@ -65,17 +78,17 @@ export default function ProfileScreen() {
         </View>
 
         {/* User card */}
-        <View style={[styles.userCard, { backgroundColor: tk.card }]}>
-          <Avatar source={user?.avatar_url ? { uri: user.avatar_url } : require("../../src/assets/doodle-boy-dog.png")} name={user?.name || "User"} size={80} />
+        <TouchableOpacity onPress={() => user?.username && router.push(`/u/${user.username}`)} style={[styles.userCard, { backgroundColor: tk.card }]}>
+          <Avatar source={userProfile?.avatar_url ? { uri: userProfile.avatar_url } : (user?.avatar_url ? { uri: user.avatar_url } : require("../../src/assets/doodle-boy-dog.png"))} name={userProfile?.name || user?.name || "User"} size={80} />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.userName, { color: tk.text }]}>{user?.name || "User"}</Text>
-            <Text style={[styles.userMeta, { color: tk.textMuted }]}>{user?.city || "Location unknown"} · {pets.length} pets</Text>
+            <Text style={[styles.userName, { color: tk.text }]}>{userProfile?.name || user?.name || "User"}</Text>
+            <Text style={[styles.userMeta, { color: tk.textMuted }]}>{userProfile?.city || user?.city || "Location unknown"} · {pets.length} pets</Text>
             <View style={styles.statsRow}>
-              <Text style={[styles.statText, { color: tk.textMuted }]}><Text style={[styles.statNum, { color: tk.text }]}>128</Text> followers</Text>
-              <Text style={[styles.statText, { color: tk.textMuted }]}><Text style={[styles.statNum, { color: tk.text }]}>96</Text> following</Text>
+              <Text style={[styles.statText, { color: tk.textMuted }]}><Text style={[styles.statNum, { color: tk.text }]}>{userProfile?.followersCount?.toString() || "0"}</Text> followers</Text>
+              <Text style={[styles.statText, { color: tk.textMuted }]}><Text style={[styles.statNum, { color: tk.text }]}>{userProfile?.followingCount?.toString() || "0"}</Text> following</Text>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Pets */}
         <View style={styles.sectionRow}>
@@ -112,36 +125,36 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </ScrollView>
 
-          {/* Quick access */}
-          <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Quick access</Text>
-          <View style={styles.tilesGrid}>
-            <Tile onPress={() => router.push("/today")} icon={Sun} label="Today" tintColor="rgba(255,107,107,0.15)" tk={tk} />
-            <Tile onPress={() => router.push("/events")} icon={CalendarDays} label="Events" tintColor="rgba(255,217,61,0.3)" tk={tk} />
-            <Tile onPress={() => router.push("/lost")} icon={Siren} label="Lost & Found" tintColor="rgba(255,111,207,0.15)" tk={tk} />
-            <Tile onPress={() => router.push("/care")} icon={Stethoscope} label="Care" tintColor="rgba(37,99,235,0.1)" tk={tk} />
-          </View>
+        {/* Quick access */}
+        <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Quick access</Text>
+        <View style={styles.tilesGrid}>
+          <Tile onPress={() => router.push("/today")} icon={Sun} label="Today" tintColor="rgba(255,107,107,0.15)" tk={tk} />
+          <Tile onPress={() => router.push("/events")} icon={CalendarDays} label="Events" tintColor="rgba(255,217,61,0.3)" tk={tk} />
+          <Tile onPress={() => router.push("/lost")} icon={Siren} label="Lost & Found" tintColor="rgba(255,111,207,0.15)" tk={tk} />
+          <Tile onPress={() => router.push("/care")} icon={Stethoscope} label="Care" tintColor="rgba(37,99,235,0.1)" tk={tk} />
+        </View>
 
-          {/* Activity */}
-          <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Activity</Text>
-          <View style={styles.activityList}>
-            <Row onPress={() => router.push("/notifications")} icon={Bell} label="Notifications" meta="3 new" tintColor="rgba(255,217,61,0.3)" tk={tk} />
-            <Row onPress={() => router.push("/chat")} icon={MessageCircle} label="Messages" meta="2 unread" tintColor="rgba(37,99,235,0.1)" tk={tk} />
-            <Row onPress={() => router.push("/pet")} icon={Award} label="Badges & Achievements" meta="12" tintColor="rgba(255,111,207,0.15)" tk={tk} />
-            <Row onPress={() => router.push("/discover")} icon={MapPin} label="Places visited" meta="8" tintColor="rgba(76,175,80,0.15)" tk={tk} />
-          </View>
+        {/* Activity */}
+        <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Activity</Text>
+        <View style={styles.activityList}>
+          <Row onPress={() => router.push("/notifications")} icon={Bell} label="Notifications" meta="3 new" tintColor="rgba(255,217,61,0.3)" tk={tk} />
+          <Row onPress={() => router.push("/chat")} icon={MessageCircle} label="Messages" meta="2 unread" tintColor="rgba(37,99,235,0.1)" tk={tk} />
+          <Row onPress={() => router.push("/pet")} icon={Award} label="Badges & Achievements" meta="12" tintColor="rgba(255,111,207,0.15)" tk={tk} />
+          <Row onPress={() => router.push("/discover")} icon={MapPin} label="Places visited" meta="8" tintColor="rgba(76,175,80,0.15)" tk={tk} />
+        </View>
 
-          {/* Log Out */}
-          <TouchableOpacity onPress={handleLogout}
-            style={[styles.dangerRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
-            <View style={[styles.dangerIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
-              <LogOut size={20} color={colors.primary} strokeWidth={2} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.dangerLabel, { color: colors.primary }]}>Sign out</Text>
-              <Text style={[styles.dangerSub, { color: tk.textMuted }]}>{user?.email ?? ""}</Text>
-            </View>
-            <ChevronRight size={16} color={tk.textMuted} />
-          </TouchableOpacity>
+        {/* Log Out */}
+        <TouchableOpacity onPress={handleLogout}
+          style={[styles.dangerRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+          <View style={[styles.dangerIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
+            <LogOut size={20} color={colors.primary} strokeWidth={2} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.dangerLabel, { color: colors.primary }]}>Sign out</Text>
+            <Text style={[styles.dangerSub, { color: tk.textMuted }]}>{user?.email ?? ""}</Text>
+          </View>
+          <ChevronRight size={16} color={tk.textMuted} />
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
