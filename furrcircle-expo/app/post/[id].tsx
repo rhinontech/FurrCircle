@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, StyleSheet } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Heart, MessageCircle, Send, Bookmark } from "lucide-react-native";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Avatar } from "../../src/components/Avatar";
 import { posts, sampleComments } from "../../src/lib/demo-data";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { ShareSheet } from "../../src/components/ShareSheet";
 
 const commentImgs: Record<string, any> = {
   "Aanya P.":         require("../../src/assets/doodle-cat.png"),
@@ -14,10 +16,19 @@ const commentImgs: Record<string, any> = {
   "Priya M.":         require("../../src/assets/doodle-walk.png"),
 };
 
+const authorHandles: Record<string, string> = {
+  "Aanya P.": "aanya",
+  "Mehul S.": "mehul",
+  "Indie Dogs India": "indiedogs",
+  "Priya M.": "priya",
+};
+
 export default function PostDetail() {
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const post = posts.find((p) => p.id === id) ?? posts[0];
   const tk = useTokens();
+  const [shareOpen, setShareOpen] = useState(false);
 
   return (
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
@@ -30,7 +41,7 @@ export default function PostDetail() {
         <View style={styles.actions}>
           <TouchableOpacity style={styles.actionBtn}><Heart size={26} color={tk.text} /><Text style={[styles.actionCount, { color: tk.text }]}>{post.likes}</Text></TouchableOpacity>
           <TouchableOpacity style={styles.actionBtn}><MessageCircle size={26} color={tk.text} /><Text style={[styles.actionCount, { color: tk.text }]}>{post.comments}</Text></TouchableOpacity>
-          <TouchableOpacity><Send size={26} color={tk.text} /></TouchableOpacity>
+          <TouchableOpacity onPress={() => setShareOpen(true)}><Send size={26} color={tk.text} /></TouchableOpacity>
           <TouchableOpacity style={{ marginLeft: "auto" }}><Bookmark size={26} color={tk.text} /></TouchableOpacity>
         </View>
 
@@ -38,16 +49,26 @@ export default function PostDetail() {
         <Text style={styles.tags}>{post.tags.map((t) => `#${t}`).join("  ")}</Text>
 
         <Text style={[styles.commentsTitle, { color: tk.text }]}>Comments</Text>
-        {sampleComments.map((c) => (
-          <View key={c.id} style={styles.comment}>
-            <Avatar source={commentImgs[c.author]} name={c.author} size={36} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.commentAuthor, { color: tk.text }]}>{c.author}</Text>
-              <Text style={[styles.commentBody, { color: tk.textMuted }]}>{c.body}</Text>
+        {sampleComments.map((c) => {
+          const handle = authorHandles[c.author] || c.author.toLowerCase().replace(/[^a-z0-9]/g, "");
+          return (
+            <View key={c.id} style={styles.comment}>
+              <TouchableOpacity onPress={() => router.push(`/user/${handle}`)} activeOpacity={0.7}>
+                <Avatar source={commentImgs[c.author]} name={c.author} size={36} />
+              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text 
+                  onPress={() => router.push(`/user/${handle}`)}
+                  style={[styles.commentAuthor, { color: tk.text }]}
+                >
+                  {c.author}
+                </Text>
+                <Text style={[styles.commentBody, { color: tk.textMuted }]}>{c.body}</Text>
+              </View>
+              <Text style={[styles.commentLikes, { color: tk.textMuted }]}>♡ {c.likes}</Text>
             </View>
-            <Text style={[styles.commentLikes, { color: tk.textMuted }]}>♡ {c.likes}</Text>
-          </View>
-        ))}
+          );
+        })}
 
         <View style={styles.replyBar}>
           <TextInput placeholder="Add a comment…" placeholderTextColor={tk.textMuted}
@@ -55,6 +76,7 @@ export default function PostDetail() {
           <TouchableOpacity style={styles.sendBtn}><Send size={18} color="#fff" /></TouchableOpacity>
         </View>
       </ScrollView>
+      <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} postId={post.id} />
     </View>
   );
 }

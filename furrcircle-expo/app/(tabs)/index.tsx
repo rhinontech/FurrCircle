@@ -1,29 +1,112 @@
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
-  StyleSheet, Modal, Pressable,
+  StyleSheet, Modal, Pressable, Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useRouter } from "expo-router";
-import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, Search } from "lucide-react-native";
+import { Heart, MessageCircle, Send, Bookmark, Plus, Bell } from "lucide-react-native";
 import { useState } from "react";
+import * as ImagePicker from "expo-image-picker";
 import { posts, type Post } from "../../src/lib/demo-data";
 import { colors } from "../../src/lib/theme";
 import { Avatar } from "../../src/components/Avatar";
 import { useTokens, useThemeStore } from "../../src/lib/theme-store";
+import { ShareSheet } from "../../src/components/ShareSheet";
+import { StoryViewer, type Story, type StoryGroup } from "../../src/components/StoryViewer";
+import { StoryEditor } from "../../src/components/StoryEditor";
 
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const [composeOpen, setComposeOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [sharingPostId, setSharingPostId] = useState<string | null>(null);
   const tk = useTokens();
+
+  // Story states
+  const [myStories, setMyStories] = useState<Story[]>([]);
+  const [storyViewerVisible, setStoryViewerVisible] = useState(false);
+  const [selectedStoryGroupIndex, setSelectedStoryGroupIndex] = useState(0);
+  const [editorVisible, setEditorVisible] = useState(false);
+  const [pickedImageUri, setPickedImageUri] = useState<string | null>(null);
+
+  const allStoryGroups: StoryGroup[] = [
+    ...(myStories.length > 0
+      ? [
+          {
+            userId: "me",
+            username: "Your Story",
+            avatar: require("../../src/assets/doodle-boy-dog.png"),
+            stories: myStories,
+          },
+        ]
+      : []),
+    ...mockStoryGroups,
+  ];
+
+  const handlePressStory = (userId: string) => {
+    const index = allStoryGroups.findIndex((g) => g.userId === userId);
+    if (index !== -1) {
+      setSelectedStoryGroupIndex(index);
+      setStoryViewerVisible(true);
+    }
+  };
+
+  const handleAddStory = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Please allow gallery access to share stories.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets?.[0]?.uri) {
+      setPickedImageUri(result.assets[0].uri);
+      setEditorVisible(true);
+    }
+  };
+
+  const handleSaveStory = (overlayText: string, caption: string) => {
+    if (pickedImageUri) {
+      const newStory: Story = {
+        id: `my-${Date.now()}`,
+        mediaUrl: pickedImageUri,
+        mediaType: "image",
+        caption: caption || undefined,
+        overlayText: overlayText || undefined,
+      };
+      setMyStories((prev) => [...prev, newStory]);
+      setEditorVisible(false);
+      setPickedImageUri(null);
+      Alert.alert("Success", "Story added to Your Story!");
+    }
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: tk.bg }]}>
       <FeedHeader />
       <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120, flexGrow: 1 }}>
-        <StoryRail />
+        <StoryRail
+          myStories={myStories}
+          onPressStory={handlePressStory}
+          onAddStory={handleAddStory}
+        />
         <View style={styles.feedList}>
-          {posts.map((p) => <PostCard key={p.id} post={p} />)}
+          {posts.map((p) => (
+            <PostCard
+              key={p.id}
+              post={p}
+              onShare={(id) => {
+                setSharingPostId(id);
+                setShareOpen(true);
+              }}
+            />
+          ))}
         </View>
       </ScrollView>
 
@@ -32,6 +115,29 @@ export default function FeedScreen() {
       </TouchableOpacity>
 
       <ComposeSheet open={composeOpen} onClose={() => setComposeOpen(false)} />
+      <ShareSheet
+        open={shareOpen}
+        onClose={() => {
+          setShareOpen(false);
+          setSharingPostId(null);
+        }}
+        postId={sharingPostId}
+      />
+      <StoryViewer
+        visible={storyViewerVisible}
+        onClose={() => setStoryViewerVisible(false)}
+        storyGroups={allStoryGroups}
+        initialGroupIndex={selectedStoryGroupIndex}
+      />
+      <StoryEditor
+        visible={editorVisible}
+        imageUri={pickedImageUri}
+        onCancel={() => {
+          setEditorVisible(false);
+          setPickedImageUri(null);
+        }}
+        onSave={handleSaveStory}
+      />
     </View>
   );
 }
@@ -68,51 +174,138 @@ function FeedHeader() {
   );
 }
 
-const stories = [
-  { label: "Your reel", isYou: true, tintColor: "rgba(26,26,46,0.09)", img: null },
-  { label: "Moona", tintColor: "rgba(255,107,107,0.2)", img: require("../../src/assets/doodle-boy-dog.png") },
-  { label: "Mochi", tintColor: "rgba(37,99,235,0.12)", img: require("../../src/assets/doodle-cat.png") },
-  { label: "Kobi", tintColor: "rgba(255,217,61,0.35)", img: require("../../src/assets/doodle-birthday.png") },
-  { label: "Biscuit", tintColor: "rgba(255,111,207,0.2)", img: require("../../src/assets/doodle-puppy.png") },
-  { label: "Rocky", tintColor: "rgba(76,175,80,0.18)", img: require("../../src/assets/doodle-rescue.png") },
+const mockStoryGroups: StoryGroup[] = [
+  {
+    userId: "moona",
+    username: "Moona",
+    avatar: require("../../src/assets/doodle-boy-dog.png"),
+    stories: [
+      { id: "moona-1", mediaUrl: require("../../src/assets/doodle-boy-dog.png"), mediaType: "image", caption: "Sunbathing in the lawn ☀️" },
+      { id: "moona-2", mediaUrl: require("../../src/assets/doodle-birthday.png"), mediaType: "image", caption: "Happy birthday to me! 🎂" },
+    ]
+  },
+  {
+    userId: "mochi",
+    username: "Mochi",
+    avatar: require("../../src/assets/doodle-cat.png"),
+    stories: [
+      { id: "mochi-1", mediaUrl: require("../../src/assets/doodle-cat.png"), mediaType: "image", caption: "Just took a long nap. Feeling cute!" }
+    ]
+  },
+  {
+    userId: "kobi",
+    username: "Kobi",
+    avatar: require("../../src/assets/doodle-birthday.png"),
+    stories: [
+      { id: "kobi-1", mediaUrl: require("../../src/assets/doodle-walk.png"), mediaType: "image", caption: "Evening walks are the best!" }
+    ]
+  },
+  {
+    userId: "biscuit",
+    username: "Biscuit",
+    avatar: require("../../src/assets/doodle-puppy.png"),
+    stories: [
+      { id: "biscuit-1", mediaUrl: require("../../src/assets/doodle-puppy.png"), mediaType: "image", caption: "Exploring the backyard 🐕" }
+    ]
+  },
+  {
+    userId: "rocky",
+    username: "Rocky",
+    avatar: require("../../src/assets/doodle-rescue.png"),
+    stories: [
+      { id: "rocky-1", mediaUrl: require("../../src/assets/doodle-rescue.png"), mediaType: "image", caption: "Found my forever home today! ❤️" }
+    ]
+  }
 ];
 
-function StoryRail() {
-  const router = useRouter();
+function StoryRail({
+  myStories,
+  onPressStory,
+  onAddStory,
+}: {
+  myStories: Story[];
+  onPressStory: (userId: string) => void;
+  onAddStory: () => void;
+}) {
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}
       style={styles.storyRail}
       contentContainerStyle={{ paddingHorizontal: 8, paddingVertical: 8, gap: 14 }}>
-      {stories.map((s) => (
-        <TouchableOpacity key={s.label} onPress={() => router.push("/reels")} style={styles.storyItem} activeOpacity={0.8}>
-          <View style={[styles.storyRing, s.isYou ? (dark ? { backgroundColor: tk.border } : styles.storyRingGray) : styles.storyRingGradient]}>
-            <View style={[styles.storyInner, { backgroundColor: s.isYou ? (dark ? "rgba(240,240,255,0.08)" : "rgba(26,26,46,0.05)") : s.tintColor, borderColor: tk.bg }]}>
-              {s.isYou
-                ? <Plus size={20} color={tk.textMuted} />
-                : <Image source={s.img!} style={styles.storyImg} resizeMode="contain" />
-              }
+      
+      {/* Your Story Bubble */}
+      <TouchableOpacity
+        onPress={() => (myStories.length > 0 ? onPressStory("me") : onAddStory())}
+        style={styles.storyItem}
+        activeOpacity={0.8}
+      >
+        <View style={[styles.storyRing, myStories.length > 0 ? styles.storyRingGradient : (dark ? { backgroundColor: tk.border } : styles.storyRingGray)]}>
+          <View style={[styles.storyInner, { backgroundColor: myStories.length > 0 ? "rgba(255,107,107,0.2)" : (dark ? "rgba(240,240,255,0.08)" : "rgba(26,26,46,0.05)"), borderColor: tk.bg }]}>
+            {myStories.length > 0 ? (
+              <Image source={require("../../src/assets/doodle-boy-dog.png")} style={styles.storyImg} resizeMode="contain" />
+            ) : (
+              <Plus size={20} color={tk.textMuted} />
+            )}
+          </View>
+          {myStories.length > 0 && (
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                onAddStory();
+              }}
+              style={[
+                styles.miniAddBadge,
+                {
+                  backgroundColor: colors.coral,
+                  borderColor: tk.bg,
+                },
+              ]}
+            >
+              <Plus size={10} color="#fff" strokeWidth={3} />
+            </TouchableOpacity>
+          )}
+        </View>
+        <Text style={[styles.storyLabel, { color: tk.text }]} numberOfLines={1}>Your Story</Text>
+      </TouchableOpacity>
+
+      {/* Others' stories */}
+      {mockStoryGroups.map((group) => (
+        <TouchableOpacity
+          key={group.userId}
+          onPress={() => onPressStory(group.userId)}
+          style={styles.storyItem}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.storyRing, styles.storyRingGradient]}>
+            <View style={[styles.storyInner, { backgroundColor: "rgba(255,107,107,0.2)", borderColor: tk.bg }]}>
+              <Image source={group.avatar} style={styles.storyImg} resizeMode="contain" />
             </View>
           </View>
-          <Text style={[styles.storyLabel, { color: tk.text }]} numberOfLines={1}>{s.label}</Text>
+          <Text style={[styles.storyLabel, { color: tk.text }]} numberOfLines={1}>{group.username}</Text>
         </TouchableOpacity>
       ))}
     </ScrollView>
   );
 }
 
-function PostCard({ post }: { post: Post }) {
+function PostCard({ post, onShare }: { post: Post; onShare: (id: string) => void }) {
   const router = useRouter();
   const tk = useTokens();
   return (
     <View style={[styles.card, { backgroundColor: tk.card }]}>
       <View style={styles.cardHeader}>
-        <Avatar source={post.avatar} name={post.pet} size={44} />
-        <View style={styles.cardMeta}>
-          <Text style={[styles.petName, { color: tk.text }]}>{post.pet}</Text>
-          <Text style={[styles.petOwner, { color: tk.textMuted }]}>by {post.owner} · {post.time}</Text>
-        </View>
+        <TouchableOpacity
+          onPress={() => router.push(`/p/${post.pet.toLowerCase()}`)}
+          activeOpacity={0.7}
+          style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}
+        >
+          <Avatar source={post.avatar} name={post.pet} size={44} />
+          <View style={styles.cardMeta}>
+            <Text style={[styles.petName, { color: tk.text }]}>{post.pet}</Text>
+            <Text style={[styles.petOwner, { color: tk.textMuted }]}>by {post.owner} · {post.time}</Text>
+          </View>
+        </TouchableOpacity>
         {post.type === "rescue" && <View style={[styles.typeBadge, { backgroundColor: colors.success }]}><Text style={styles.typeBadgeText}>RESCUE</Text></View>}
         {post.type === "milestone" && <View style={[styles.typeBadge, { backgroundColor: colors.pinky }]}><Text style={styles.typeBadgeText}>MILESTONE</Text></View>}
       </View>
@@ -125,7 +318,7 @@ function PostCard({ post }: { post: Post }) {
       <View style={styles.actions}>
         <TouchableOpacity style={styles.actionBtn}><Heart size={24} color={tk.text} /><Text style={[styles.actionCount, { color: tk.text }]}>{post.likes}</Text></TouchableOpacity>
         <TouchableOpacity style={styles.actionBtn}><MessageCircle size={24} color={tk.text} /><Text style={[styles.actionCount, { color: tk.text }]}>{post.comments}</Text></TouchableOpacity>
-        <TouchableOpacity><Send size={24} color={tk.text} /></TouchableOpacity>
+        <TouchableOpacity onPress={() => onShare(post.id)}><Send size={24} color={tk.text} /></TouchableOpacity>
         <TouchableOpacity style={{ marginLeft: "auto" }}><Bookmark size={24} color={tk.text} /></TouchableOpacity>
       </View>
 
@@ -185,6 +378,7 @@ const styles = StyleSheet.create({
   storyInner: { flex: 1, borderRadius: 30, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#F7F8FA", overflow: "hidden" },
   storyImg: { width: "90%", height: "90%" },
   storyLabel: { fontSize: 11, fontFamily: "Poppins_600SemiBold", color: colors.foreground + "bb", textAlign: "center" },
+  miniAddBadge: { position: "absolute", bottom: -2, right: -2, width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", borderWidth: 2 },
   feedList: { gap: 20, paddingHorizontal: 16, marginTop: 12, width: "100%" },
   card: { borderRadius: 24, alignSelf: "stretch", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
   cardHeader: { flexDirection: "row", alignItems: "center", padding: 16, paddingBottom: 0, gap: 10 },
