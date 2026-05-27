@@ -138,12 +138,13 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    paddingHorizontal: 16,
-    gap: 12,
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    rowGap: 12,
     paddingBottom: 8,
   },
   tile: {
-    width: "47%",
+    width: "48%",
     height: 128,
     borderRadius: 24,
     padding: 16,

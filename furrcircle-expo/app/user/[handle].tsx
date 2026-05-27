@@ -48,7 +48,7 @@ export default function PublicUserProfileScreen() {
         <ScreenHeader
           title={`@${handle}`}
           right={
-            <TouchableOpacity style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.bg }}>
+            <TouchableOpacity style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}>
               <Share2 size={20} color={tk.text} />
             </TouchableOpacity>
           }
@@ -57,10 +57,10 @@ export default function PublicUserProfileScreen() {
         <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
           {/* Profile card */}
           <View style={styles.px5}>
-            <View style={[styles.profileCard, { backgroundColor: colors.white }]}>
+            <View style={[styles.profileCard, { backgroundColor: tk.card }]}>
               {/* Avatar + stats */}
               <View style={styles.profileTop}>
-                <View style={styles.avatarWrap}>
+                <View style={[styles.avatarWrap, { borderColor: tk.card }]}>
                   <Image source={boyDog} style={styles.avatarImg} resizeMode="cover" />
                 </View>
                 <View style={styles.statsRow}>
@@ -80,14 +80,17 @@ export default function PublicUserProfileScreen() {
               <View style={styles.actionRow}>
                 <TouchableOpacity
                   onPress={() => setFollowing(!following)}
-                  style={[styles.followBtn, following ? { backgroundColor: colors.foreground + "1A" } : { backgroundColor: colors.primary }]}
+                  style={[styles.followBtn, following ? { backgroundColor: tk.text + "15" } : { backgroundColor: colors.primary }]}
                 >
-                  <UserPlus size={16} color={following ? colors.foreground : colors.white} />
-                  <Text style={[styles.followBtnText, { color: following ? colors.foreground : colors.white }]}>
+                  <UserPlus size={16} color={following ? tk.text : "#FFFFFF"} />
+                  <Text style={[styles.followBtnText, { color: following ? tk.text : "#FFFFFF" }]}>
                     {following ? "Following" : "Follow"}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => router.push("/chat")} style={[styles.messageBtn, { backgroundColor: colors.white }]}>
+                <TouchableOpacity 
+                  onPress={() => router.push("/chat")} 
+                  style={[styles.messageBtn, { backgroundColor: tk.text + "10", shadowColor: "transparent", elevation: 0 }]}
+                >
                   <MessageCircle size={16} color={tk.text} />
                   <Text style={[styles.messageBtnText, { color: tk.text }]}>Message</Text>
                 </TouchableOpacity>
@@ -100,8 +103,8 @@ export default function PublicUserProfileScreen() {
             {pets.map((p) => (
               <TouchableOpacity
                 key={p.name}
-                onPress={() => router.push(`/p/${p.name.toLowerCase()}` as any)}
-                style={[styles.petChip, { backgroundColor: colors.white }]}
+                onPress={() => router.replace(`/p/${p.name.toLowerCase()}` as any)}
+                style={[styles.petChip, { backgroundColor: tk.card }]}
               >
                 <View style={styles.petAvatar}>
                   <Image source={p.img} style={styles.petAvatarImg} resizeMode="cover" />
@@ -112,14 +115,14 @@ export default function PublicUserProfileScreen() {
           </ScrollView>
 
           {/* Tabs */}
-          <View style={[styles.tabsRow, { borderBottomColor: colors.border }]}>
+          <View style={[styles.tabsRow, { borderBottomColor: tk.border }]}>
             {tabs.map((t) => {
               const Icon = tabIcons[t];
               const active = tab === t;
               return (
                 <TouchableOpacity key={t} onPress={() => setTab(t)} style={styles.tabItem}>
-                  <Icon size={16} color={active ? colors.coral : colors.foreground + "88"} />
-                  <Text style={[styles.tabText, { color: active ? colors.coral : colors.foreground + "88" }]}>{t}</Text>
+                  <Icon size={16} color={active ? colors.coral : tk.textMuted} />
+                  <Text style={[styles.tabText, { color: active ? colors.coral : tk.textMuted }]}>{t}</Text>
                   {active && <View style={styles.tabActiveBar} />}
                 </TouchableOpacity>
               );

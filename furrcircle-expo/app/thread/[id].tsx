@@ -36,8 +36,8 @@ export default function ThreadDetail() {
 
             {/* Health warning */}
             {thread.isHealth && (
-              <View style={styles.warningBox}>
-                <ShieldAlert size={16} color={colors.foreground} style={{ marginTop: 1 }} />
+              <View style={[styles.warningBox, { backgroundColor: tk.card, borderColor: tk.border, borderWidth: 1 }]}>
+                <ShieldAlert size={16} color={colors.coral} style={{ marginTop: 1 }} />
                 <Text style={[styles.warningText, { color: tk.text + "CC" }]}>
                   Community advice is not a substitute for a vet. For emergencies, find care now.
                 </Text>
@@ -45,11 +45,11 @@ export default function ThreadDetail() {
             )}
 
             {/* Vote + action row */}
-            <View style={[styles.actionRow, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
-              <View style={[styles.voteGroup, { backgroundColor: colors.surface }]}>
-                <TouchableOpacity><ArrowUp size={16} color={colors.foreground} /></TouchableOpacity>
+            <View style={[styles.actionRow, { borderTopColor: tk.border, borderBottomColor: tk.border }]}>
+              <View style={[styles.voteGroup, { backgroundColor: tk.card, borderColor: tk.border, borderWidth: 1 }]}>
+                <TouchableOpacity><ArrowUp size={16} color={tk.text} /></TouchableOpacity>
                 <Text style={[styles.voteCount, { color: tk.text }]}>{thread.upvotes}</Text>
-                <TouchableOpacity><ArrowDown size={16} color={colors.foreground + "66"} /></TouchableOpacity>
+                <TouchableOpacity><ArrowDown size={16} color={tk.textMuted} /></TouchableOpacity>
               </View>
               <TouchableOpacity style={styles.actionBtn}>
                 <MessageCircle size={16} color={tk.textMuted} />
@@ -65,12 +65,12 @@ export default function ThreadDetail() {
           <Text style={[styles.answersTitle, { color: tk.text }]}>Top answers</Text>
           <View style={styles.answersWrap}>
             {answers.map((a, i) => (
-              <View key={i} style={[styles.answerCard, { backgroundColor: colors.white }]}>
+              <View key={i} style={[styles.answerCard, { backgroundColor: tk.card, borderColor: tk.border, borderWidth: 1 }]}>
                 <View style={styles.answerHeader}>
                   <View style={[styles.avatar, { backgroundColor: colors.primary + "26" }]} />
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.answerAuthor}>{a.author}</Text>
-                    <Text style={styles.answerRole}>{a.role} · {a.time}</Text>
+                    <Text style={[styles.answerAuthor, { color: tk.text }]}>{a.author}</Text>
+                    <Text style={[styles.answerRole, { color: tk.textMuted }]}>{a.role} · {a.time}</Text>
                   </View>
                   {a.verified && (
                     <View style={styles.vetBadge}>
@@ -80,9 +80,9 @@ export default function ThreadDetail() {
                 </View>
                 <Text style={[styles.answerBody, { color: tk.text + "D9" }]}>{a.body}</Text>
                 <View style={styles.answerFooter}>
-                  <View style={[styles.answerVoteGroup, { backgroundColor: colors.surface }]}>
-                    <ArrowUp size={13} color={colors.foreground} />
-                    <Text style={styles.answerVoteCount}>{a.upvotes}</Text>
+                  <View style={[styles.answerVoteGroup, { backgroundColor: tk.bg, borderColor: tk.border, borderWidth: 1 }]}>
+                    <ArrowUp size={13} color={tk.text} />
+                    <Text style={[styles.answerVoteCount, { color: tk.text }]}>{a.upvotes}</Text>
                   </View>
                   <TouchableOpacity>
                     <Text style={[styles.replyBtn, { color: tk.textMuted }]}>Reply</Text>
@@ -94,12 +94,12 @@ export default function ThreadDetail() {
         </ScrollView>
 
         {/* Fixed reply bar */}
-        <View style={[styles.replyBar, { backgroundColor: colors.white, borderTopColor: colors.border }]}>
-          <View style={[styles.replyInputWrap, { backgroundColor: colors.surface }]}>
+        <View style={[styles.replyBar, { backgroundColor: tk.card, borderTopColor: tk.border }]}>
+          <View style={[styles.replyInputWrap, { backgroundColor: tk.bg, borderColor: tk.border, borderWidth: 1 }]}>
             <TextInput
               placeholder="Add an answer…"
-              placeholderTextColor={colors.foreground + "66"}
-              style={[styles.replyInput, { color: colors.foreground }]}
+              placeholderTextColor={tk.textMuted}
+              style={[styles.replyInput, { color: tk.text }]}
             />
             <TouchableOpacity>
               <Text style={styles.postBtn}>Post</Text>

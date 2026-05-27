@@ -147,7 +147,7 @@ export default function PetPublicProfile() {
 
           {/* Owner chip */}
           <View style={styles.px6}>
-            <TouchableOpacity onPress={() => router.push(`/user/${pet.ownerHandle}` as any)} style={[styles.ownerChip, { backgroundColor: colors.white }]}>
+            <TouchableOpacity onPress={() => router.replace(`/user/${pet.ownerHandle}` as any)} style={[styles.ownerChip, { backgroundColor: tk.text + "10" }]}>
               <View style={styles.ownerAvatar}>
                 <Image source={boyDog} style={styles.ownerAvatarImg} resizeMode="cover" />
               </View>
@@ -160,9 +160,9 @@ export default function PetPublicProfile() {
 
           {/* Stats */}
           <View style={styles.statsRow}>
-            <StatCard icon={Cake} label="Age" value={pet.age} />
-            <StatCard icon={Ruler} label="Weight" value={pet.weight} />
-            <StatCard icon={MapPin} label="City" value={pet.location} />
+            <StatCard icon={Cake} label="Age" value={pet.age} tk={tk} />
+            <StatCard icon={Ruler} label="Weight" value={pet.weight} tk={tk} />
+            <StatCard icon={MapPin} label="City" value={pet.location} tk={tk} />
           </View>
 
           {/* Personality */}
@@ -204,12 +204,12 @@ export default function PetPublicProfile() {
   );
 }
 
-function StatCard({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function StatCard({ icon: Icon, label, value, tk }: { icon: any; label: string; value: string; tk: any }) {
   return (
-    <View style={[styles.statCard, { backgroundColor: colors.white }]}>
-      <Icon size={20} color={colors.foreground + "99"} />
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={[styles.statCard, { backgroundColor: tk.card }]}>
+      <Icon size={20} color={tk.textMuted} />
+      <Text style={[styles.statValue, { color: tk.text }]}>{value}</Text>
+      <Text style={[styles.statLabel, { color: tk.textMuted }]}>{label}</Text>
     </View>
   );
 }
