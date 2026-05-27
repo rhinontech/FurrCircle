@@ -30,8 +30,9 @@ const galleryTints = [
 export default function PetScreen() {
   const router = useRouter();
   const tk = useTokens();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const [tab, setTab] = useState<(typeof tabs)[number]>("About");
+  const { id, tab: tabParam } = useLocalSearchParams<{ id: string; tab?: string }>();
+  const initialTab = tabs.includes(tabParam as any) ? (tabParam as (typeof tabs)[number]) : "About";
+  const [tab, setTab] = useState<(typeof tabs)[number]>(initialTab);
   const [pet, setPet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 

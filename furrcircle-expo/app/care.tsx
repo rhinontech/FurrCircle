@@ -1,28 +1,41 @@
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Modal, Pressable } from "react-native";
+import { useState } from "react";
 import { useRouter } from "expo-router";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
+import { SEED_USERS } from "../src/lib/seed-data";
 import {
   Stethoscope, FileText, Sparkles, ShieldCheck,
-  Pill, Syringe, Activity, FolderHeart, ChevronRight,
+  Pill, Syringe, Activity, FolderHeart, ChevronRight, X,
 } from "lucide-react-native";
 
-const tiles = [
+type PickerTarget = "records" | "passport" | null;
+
+const DIRECT_TILES = [
   { icon: Stethoscope, label: "Book a Vet", bg: colors.primary, text: "#fff", to: "/book" },
   { icon: Syringe, label: "Log Vaccine", bg: colors.success, text: "#fff", to: "/log/vaccine" },
   { icon: Activity, label: "Log Vitals", bg: colors.coral, text: "#fff", to: "/log/vitals" },
   { icon: Pill, label: "Log Meds", bg: colors.pinky, text: "#fff", to: "/log/meds" },
-  { icon: FolderHeart, label: "Medical Records", bg: colors.sunshine, text: colors.foreground, to: "/records" },
-  // { icon: Sparkles, label: "AI Symptom Check", bg: "#1D55D4", text: "#fff", to: "/care" },
-  { icon: FileText, label: "Pet Passport", bg: colors.foreground, text: "#fff", to: "/pet" },
-  // { icon: ShieldCheck, label: "Insurance", bg: "#3EA842", text: "#fff", to: "/care" },
 ] as const;
 
 export default function CareScreen() {
   const router = useRouter();
   const tk = useTokens();
+  const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
+
+  // Demo: use first seed user's pets. Replace with auth store pets when backend is ready.
+  const myPets = SEED_USERS[0].pets;
+
+  const handlePetSelected = (petId: string) => {
+    setPickerTarget(null);
+    if (pickerTarget === "records") {
+      router.push({ pathname: "/records", params: { petId } });
+    } else if (pickerTarget === "passport") {
+      router.push({ pathname: "/pet", params: { id: petId, tab: "Passport" } });
+    }
+  };
 
   return (
     <PageContainer>
@@ -49,7 +62,7 @@ export default function CareScreen() {
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Care services</Text>
 
         <View style={styles.grid}>
-          {tiles.map(({ icon: Icon, label, bg, text, to }) => (
+          {DIRECT_TILES.map(({ icon: Icon, label, bg, text, to }) => (
             <TouchableOpacity
               key={label}
               onPress={() => router.push(to)}
@@ -62,9 +75,74 @@ export default function CareScreen() {
               <Text style={[styles.tileLabel, { color: text }]}>{label}</Text>
             </TouchableOpacity>
           ))}
+
+          {/* Medical Records — shows pet picker first */}
+          <TouchableOpacity
+            onPress={() => setPickerTarget("records")}
+            style={[styles.tile, { backgroundColor: colors.sunshine }]}
+            activeOpacity={0.85}
+          >
+            <View style={styles.tileIconWrap}>
+              <FolderHeart size={20} color={colors.foreground} strokeWidth={2.2} />
+            </View>
+            <Text style={[styles.tileLabel, { color: colors.foreground }]}>Medical Records</Text>
+          </TouchableOpacity>
+
+          {/* Pet Passport — shows pet picker first, then opens Passport tab */}
+          <TouchableOpacity
+            onPress={() => setPickerTarget("passport")}
+            style={[styles.tile, { backgroundColor: colors.foreground }]}
+            activeOpacity={0.85}
+          >
+            <View style={styles.tileIconWrap}>
+              <FileText size={20} color="#fff" strokeWidth={2.2} />
+            </View>
+            <Text style={[styles.tileLabel, { color: "#fff" }]}>Pet Passport</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
+
+    {/* Pet Picker Modal */}
+    <Modal visible={pickerTarget !== null} transparent animationType="slide" onRequestClose={() => setPickerTarget(null)}>
+      <Pressable style={styles.overlay} onPress={() => setPickerTarget(null)}>
+        <Pressable style={[styles.sheet, { backgroundColor: tk.card }]} onPress={(e) => e.stopPropagation()}>
+          <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+          <View style={styles.sheetTitleRow}>
+            <Text style={[styles.sheetTitle, { color: tk.text }]}>
+              {pickerTarget === "passport" ? "Whose passport?" : "Which pet?"}
+            </Text>
+            <TouchableOpacity onPress={() => setPickerTarget(null)}>
+              <X size={20} color={tk.textMuted} />
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.sheetSub, { color: tk.textMuted }]}>
+            {pickerTarget === "passport"
+              ? "Select a pet to view their passport"
+              : "Select a pet to view health records"}
+          </Text>
+          <View style={{ gap: 10, marginTop: 8 }}>
+            {myPets.map((pet) => (
+              <TouchableOpacity
+                key={pet.id}
+                onPress={() => handlePetSelected(pet.id)}
+                style={[styles.petRow, { backgroundColor: tk.bg }]}
+                activeOpacity={0.8}
+              >
+                <View style={styles.petEmoji}>
+                  <Text style={{ fontSize: 22 }}>{pet.emoji}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.petName, { color: tk.text }]}>{pet.name}</Text>
+                  <Text style={[styles.petMeta, { color: tk.textMuted }]}>{pet.breed} · {pet.species} · {pet.ageYears}y</Text>
+                </View>
+                <ChevronRight size={18} color={tk.textMuted} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
     </PageContainer>
   );
 }
@@ -168,4 +246,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
   },
+
+  // Pet Picker Modal
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  sheet: { borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, paddingBottom: 44 },
+  sheetHandle: { width: 48, height: 6, borderRadius: 3, alignSelf: "center", marginBottom: 20, opacity: 0.2 },
+  sheetTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
+  sheetTitle: { fontFamily: "Poppins_700Bold", fontSize: 20 },
+  sheetSub: { fontFamily: "Inter_400Regular", fontSize: 13, marginBottom: 4 },
+  petRow: {
+    flexDirection: "row", alignItems: "center", gap: 14,
+    borderRadius: 18, padding: 14,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+  },
+  petEmoji: { width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(37,99,235,0.08)", alignItems: "center", justifyContent: "center" },
+  petName: { fontFamily: "Poppins_700Bold", fontSize: 15 },
+  petMeta: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 2 },
 });
