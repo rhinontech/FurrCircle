@@ -100,7 +100,7 @@ export const updateProfile = async (req: any, res: Response): Promise<void> => {
   try {
     const { users: User } = db as any;
     const userId = req.user.id;
-    const { isPrivate } = req.body;
+    const { isPrivate, name, username, city, address, bio, avatar_url } = req.body;
 
     const user = await User.findByPk(userId);
     if (!user) {
@@ -108,12 +108,24 @@ export const updateProfile = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
-    if (isPrivate !== undefined) {
-      user.isPrivate = isPrivate;
+    if (username && username.toLowerCase() !== user.username?.toLowerCase()) {
+      const existing = await User.findOne({ where: { username: { [Op.iLike]: username } } });
+      if (existing) {
+        res.status(400).json({ message: "Username is already taken" });
+        return;
+      }
+      user.username = username;
     }
 
+    if (isPrivate !== undefined) user.isPrivate = isPrivate;
+    if (name !== undefined) user.name = name;
+    if (city !== undefined) user.city = city;
+    if (address !== undefined) user.address = address;
+    if (bio !== undefined) user.bio = bio;
+    if (avatar_url !== undefined) user.avatar_url = avatar_url;
+
     await user.save();
-    res.json({ success: true, isPrivate: user.isPrivate });
+    res.json({ success: true, user: user.toJSON() });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

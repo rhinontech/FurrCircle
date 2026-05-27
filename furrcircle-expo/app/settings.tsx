@@ -12,6 +12,8 @@ import {
   Moon, Sun, Eye, Lock, ShieldAlert, MapPin,
   Bell, Trash2, ChevronRight, LogOut,
 } from "lucide-react-native";
+import { userApi } from "../services/user/userApi";
+
 
 export default function SettingsScreen() {
   const tk = useTokens();
@@ -43,7 +45,6 @@ export default function SettingsScreen() {
   const togglePrivateProfile = async (val: boolean) => {
     setPrivateProfile(val);
     try {
-      const { userApi } = require('../../services/user/userApi');
       await userApi.updateProfile({ isPrivate: val });
     } catch (err) {
       setPrivateProfile(!val); // revert

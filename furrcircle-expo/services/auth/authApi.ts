@@ -12,6 +12,7 @@ export type AuthPayload = {
   token?: string;
   isVerified?: boolean;
   hasCompletedOnboarding?: boolean;
+  isPrivate?: boolean;
   avatar_url?: string;
   bio?: string;
   city?: string;

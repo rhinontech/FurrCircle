@@ -141,13 +141,36 @@ export default function EditProfileScreen() {
     }
 
     setSaving(true);
-    // Keep function empty for future backend connection as requested
-    setTimeout(() => {
+    try {
+      const { userApi } = require('../services/user/userApi');
+      const authStore = useAuthStore.getState();
+      
+      let newAvatarUrl = user?.avatar_url;
+      if (photo && photo !== user?.avatar_url) {
+        const uploadRes = await userApi.uploadImage(photo, 'profiles');
+        newAvatarUrl = uploadRes.url;
+      }
+
+      const res = await userApi.updateProfile({
+        name,
+        username,
+        address,
+        city,
+        avatar_url: newAvatarUrl
+      });
+      
+      if (res.success && res.user) {
+         await authStore.setSession({ ...user, ...res.user });
+         Alert.alert("Success", "Profile updated successfully!", [
+           { text: "OK", onPress: () => router.back() }
+         ]);
+      }
+    } catch (err: any) {
+      console.error(err);
+      Alert.alert("Error", err.response?.data?.message || err.message || "Failed to update profile.");
+    } finally {
       setSaving(false);
-      Alert.alert("Success", "Profile updated successfully (Mocked)!", [
-        { text: "OK", onPress: () => router.back() }
-      ]);
-    }, 1200);
+    }
   };
 
   const renderUsernameStatus = () => {

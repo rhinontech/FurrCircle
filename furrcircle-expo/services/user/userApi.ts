@@ -40,6 +40,26 @@ export const updateProfile = async (data: any) => {
     return response.data;
 };
 
+export const uploadImage = async (uri: string, folder: string = 'profiles') => {
+    const formData = new FormData();
+    const filename = uri.split('/').pop() || 'upload.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : 'image/jpeg';
+    
+    formData.append('image', {
+        uri,
+        name: filename,
+        type,
+    } as any);
+
+    const response = await PrivateAxios.post(`/upload/${folder}`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response.data;
+};
+
 export const userApi = {
     getUserProfile,
     followUser,
@@ -48,4 +68,5 @@ export const userApi = {
     rejectFollowRequest,
     getPendingFollowRequests,
     updateProfile,
+    uploadImage,
 };
