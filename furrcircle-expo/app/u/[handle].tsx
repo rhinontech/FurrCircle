@@ -160,9 +160,16 @@ export default function UserProfileScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.petsScroll} contentContainerStyle={styles.petsContent}>
                 {userProfile?.pets?.map((p: any) => (
                   <TouchableOpacity key={p.id} onPress={() => router.push({ pathname: "/pet", params: { id: p.id } })} style={[styles.petChip, { backgroundColor: tk.card }]}>
-                    <View style={styles.petAvatar}>
-                      <Image source={p.avatar_url ? { uri: p.avatar_url } : puppy} style={styles.petAvatarImg} resizeMode="cover" />
-                    </View>
+                    <View style={[styles.petAvatar, { overflow: "hidden" }]}>
+                    {p.avatar_url ? <Image source={{ uri: p.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" /> : <Image source={puppy} style={styles.petAvatarImg} />}
+                    {(p.isAdoptionOpen || p.isFosterOpen) && (
+                      <View style={{ position: 'absolute', top: 0, right: 0, left: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
+                        <Text style={{ color: colors.white, fontSize: 8, fontFamily: 'Poppins_700Bold' }}>
+                          {p.isAdoptionOpen && p.isFosterOpen ? "ADOPT/FOSTER" : p.isAdoptionOpen ? "ADOPT" : "FOSTER"}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                     <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
                   </TouchableOpacity>
                 ))}

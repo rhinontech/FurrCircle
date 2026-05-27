@@ -51,6 +51,7 @@ const normalizePetPayload = (pet: any) => {
     Medications: Array.isArray(payload?.Medications) ? payload.Medications.slice().sort(sortByDateDesc("startDate")) : [],
     Allergies: Array.isArray(payload?.Allergies) ? payload.Allergies.slice().sort(sortByDateDesc("diagnosedAt")) : [],
     Appointments: appointments,
+    personality: Array.isArray(payload?.personality) ? payload.personality : [],
   };
 };
 
@@ -83,6 +84,7 @@ const toPublicPetPayload = (pet: any, viewerId?: string) => {
     description: payload.description,
     history: payload.history,
     healthStatus: payload.healthStatus,
+    personality: payload.personality,
     isAdoptionOpen: payload.isAdoptionOpen,
     isFosterOpen: payload.isFosterOpen,
     fosterProvides: payload.fosterProvides ?? [],
@@ -183,7 +185,7 @@ export const getMyPets = async (req: any, res: Response): Promise<void> => {
 export const createPet = async (req: any, res: Response): Promise<void> => {
   try {
     const { pets: Pet } = db as any;
-    const { name, species, breed, age, weight, city, birth_date, gender, microchip_id, avatar_url, healthStatus } = req.body;
+    const { name, species, breed, age, weight, city, birth_date, gender, microchip_id, avatar_url, healthStatus, description, personality } = req.body;
 
     const pet = await Pet.create({
       ownerId: req.user.id,
@@ -197,6 +199,8 @@ export const createPet = async (req: any, res: Response): Promise<void> => {
       gender,
       microchip_id,
       avatar_url,
+      description,
+      personality: Array.isArray(personality) ? personality : [],
       healthStatus: healthStatus || "Healthy",
     });
 
@@ -316,7 +320,7 @@ export const updatePet = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
-    const updatableFields = ["name", "species", "breed", "age", "weight", "city", "birth_date", "gender", "microchip_id", "avatar_url", "healthStatus"];
+    const updatableFields = ["name", "species", "breed", "age", "weight", "city", "birth_date", "gender", "microchip_id", "avatar_url", "healthStatus", "description", "personality"];
 
     updatableFields.forEach((field) => {
       if (req.body[field] !== undefined) {

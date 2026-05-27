@@ -41,9 +41,31 @@ export const discoverPets = async () => {
     }
 };
 
+export const updatePet = async (id: string, payload: any) => {
+    try {
+        const response = await PrivateAxios.put(`/pets/${id}`, payload);
+        return response.data;
+    } catch (error: any) {
+        console.error("updatePet Error:", error?.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const updateListing = async (id: string, payload: any) => {
+    try {
+        const response = await PrivateAxios.patch(`/pets/${id}/listing`, payload);
+        return response.data;
+    } catch (error: any) {
+        console.error("updateListing Error:", error?.response?.data || error.message);
+        throw error;
+    }
+};
+
 export const petApi = {
     getMyPets,
     createPet,
     getPetById,
     discoverPets,
+    updatePet,
+    updateListing,
 };

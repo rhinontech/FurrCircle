@@ -64,6 +64,11 @@ module.exports = {
         allowNull: false,
         unique: true
       },
+      isPrivate: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       otpCode: {
         type: Sequelize.STRING,
         allowNull: true

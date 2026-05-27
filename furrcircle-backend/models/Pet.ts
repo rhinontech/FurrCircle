@@ -105,6 +105,11 @@ export default (sequelize: Sequelize) => {
                 defaultValue: [],
                 field: 'foster_provides',
             },
+            personality: {
+                type: DataTypes.JSON,
+                allowNull: true,
+                defaultValue: [],
+            },
         },
         {
             tableName: "pets",
