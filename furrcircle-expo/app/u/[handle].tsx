@@ -90,10 +90,10 @@ export default function UserProfileScreen() {
         <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
           {/* Profile card */}
           <View style={styles.px5}>
-            <View style={[styles.profileCard, { backgroundColor: colors.white }]}>
+            <View style={[styles.profileCard, { backgroundColor: tk.card }]}>
               {/* Avatar + stats */}
               <View style={styles.profileTop}>
-                <View style={styles.avatarWrap}>
+                <View style={[styles.avatarWrap, { borderColor: tk.card }]}>
                   <Image source={userProfile?.avatar_url ? { uri: userProfile.avatar_url } : boyDog} style={styles.avatarImg} resizeMode="cover" />
                 </View>
                 <View style={styles.statsRow}>
@@ -113,8 +113,8 @@ export default function UserProfileScreen() {
               <View style={styles.actionRow}>
                 {userProfile?.followStatus === 'self' && (
                   <TouchableOpacity
-                    onPress={() => router.push("/settings")}
-                    style={[styles.editProfileBtn, { backgroundColor: colors.foreground + "1A" }]}
+                    onPress={() => router.push("/edit-profile")}
+                    style={[styles.editProfileBtn, { backgroundColor: tk.text + "15" }]}
                   >
                     <Text style={[styles.editProfileBtnText, { color: tk.text }]}>Edit profile</Text>
                   </TouchableOpacity>
@@ -152,7 +152,7 @@ export default function UserProfileScreen() {
               {/* Pets rail */}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.petsScroll} contentContainerStyle={styles.petsContent}>
                 {userProfile?.pets?.map((p: any) => (
-                  <TouchableOpacity key={p.id} style={[styles.petChip, { backgroundColor: colors.white }]}>
+                  <TouchableOpacity key={p.id} style={[styles.petChip, { backgroundColor: tk.card }]}>
                     <View style={styles.petAvatar}>
                       <Image source={p.avatar_url ? { uri: p.avatar_url } : puppy} style={styles.petAvatarImg} resizeMode="cover" />
                     </View>
@@ -161,15 +161,15 @@ export default function UserProfileScreen() {
                 ))}
               </ScrollView>
 
-              {/* Tabs */ }
-              <View style={[styles.tabsRow, { borderBottomColor: colors.border }]}>
+              {/* Tabs */}
+              <View style={[styles.tabsRow, { borderBottomColor: tk.border }]}>
                 {tabs.map((t) => {
                   const Icon = tabIcons[t];
                   const active = tab === t;
                   return (
                     <TouchableOpacity key={t} onPress={() => setTab(t)} style={styles.tabItem}>
-                      <Icon size={16} color={active ? colors.coral : colors.foreground + "88"} />
-                      <Text style={[styles.tabText, { color: active ? colors.coral : colors.foreground + "88" }]}>{t}</Text>
+                      <Icon size={16} color={active ? colors.coral : tk.textMuted} />
+                      <Text style={[styles.tabText, { color: active ? colors.coral : tk.textMuted }]}>{t}</Text>
                       {active && <View style={styles.tabActiveBar} />}
                     </TouchableOpacity>
                   );
