@@ -14,6 +14,7 @@ import { Avatar } from "../../src/components/Avatar";
 import { useTokens, useThemeStore } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { userApi } from "../../services/user/userApi";
+import { reminderApi } from "../../services/reminder/reminderApi";
 import { LocationPickerModal, LocationResult } from "../../src/components/LocationPickerModal";
 import { ShareSheet } from "../../src/components/ShareSheet";
 import { StoryViewer, type Story, type StoryGroup } from "../../src/components/StoryViewer";
@@ -32,6 +33,14 @@ export default function FeedScreen() {
   const [selectedStoryGroupIndex, setSelectedStoryGroupIndex] = useState(0);
   const [editorVisible, setEditorVisible] = useState(false);
   const [pickedImageUri, setPickedImageUri] = useState<string | null>(null);
+  const [reminders, setReminders] = useState<any[]>([]);
+
+  // Fetch reminders
+  useState(() => {
+    reminderApi.getMyReminders()
+      .then(data => setReminders(data?.filter((r: any) => !r.isDone) || []))
+      .catch(console.error);
+  });
 
   const allStoryGroups: StoryGroup[] = [
     ...(myStories.length > 0
@@ -99,6 +108,24 @@ export default function FeedScreen() {
           onPressStory={handlePressStory}
           onAddStory={handleAddStory}
         />
+        {reminders.length > 0 && (
+          <View style={styles.remindersContainer}>
+            <Text style={[styles.sectionTitle, { color: tk.text }]}>Upcoming Reminders</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
+              {reminders.map((r, i) => (
+                <View key={r.id} style={[styles.reminderCard, { backgroundColor: tk.card, borderColor: tk.border }]}>
+                  <View style={[styles.reminderIconBg, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
+                    <Bell size={18} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={[styles.reminderTitle, { color: tk.text }]} numberOfLines={1}>{r.title}</Text>
+                    <Text style={[styles.reminderTime, { color: tk.textMuted }]}>{r.date} at {r.time}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
         <View style={styles.feedList}>
           {posts.map((p) => (
             <PostCard
@@ -408,6 +435,12 @@ const styles = StyleSheet.create({
   storyImg: { width: "90%", height: "90%" },
   storyLabel: { fontSize: 11, fontFamily: "Poppins_600SemiBold", color: colors.foreground + "bb", textAlign: "center" },
   miniAddBadge: { position: "absolute", bottom: -2, right: -2, width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", borderWidth: 2 },
+  remindersContainer: { marginTop: 16, marginBottom: 8 },
+  sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, paddingHorizontal: 16, marginBottom: 12 },
+  reminderCard: { flexDirection: "row", alignItems: "center", width: 240, padding: 12, borderRadius: 16, borderWidth: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
+  reminderIconBg: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  reminderTitle: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
+  reminderTime: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 2 },
   feedList: { gap: 20, paddingHorizontal: 16, marginTop: 12, width: "100%" },
   card: { borderRadius: 24, alignSelf: "stretch", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
   cardHeader: { flexDirection: "row", alignItems: "center", padding: 16, paddingBottom: 0, gap: 10 },

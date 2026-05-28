@@ -33,7 +33,7 @@ export const getPetById = async (id: string) => {
 
 export const discoverPets = async () => {
     try {
-        const response = await PublicAxios.get('/pets/discover');
+        const response = await PrivateAxios.get('/pets/discover');
         return response.data;
     } catch (error: any) {
         console.error("discoverPets Error:", error?.response?.data || error.message);

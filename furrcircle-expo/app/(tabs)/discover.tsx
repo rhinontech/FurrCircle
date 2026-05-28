@@ -10,35 +10,44 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Search, Heart, MapPin, Star, Stethoscope, Phone, HandHeart, Home } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
-
-const nearbyVets = [
-  { name: "Furr Care Clinic", spec: "General · Surgery", dist: "0.6 km", rating: 4.9, open: true, tintColor: "rgba(37,99,235,0.1)" },
-  { name: "Dr. Kavya Rao", spec: "Feline specialist", dist: "1.1 km", rating: 4.8, open: true, tintColor: "rgba(76,175,80,0.15)" },
-  { name: "Paws & Tails Hospital", spec: "24x7 emergency", dist: "2.3 km", rating: 4.7, open: true, tintColor: "rgba(255,107,107,0.15)" },
-  { name: "Bandra Pet Wellness", spec: "Dental · Grooming", dist: "3.0 km", rating: 4.6, open: false, tintColor: "rgba(255,217,61,0.3)" },
-];
+import { placesApi } from "../../services/places/placesApi";
+import { petApi } from "../../services/pet/petApi";
+import { useAuthStore } from "../../src/lib/auth-store";
 
 type Mode = "all" | "adoption" | "foster";
-
-const allPets = [
-  { img: require("../../src/assets/doodle-puppy.png"), name: "Biscuit", breed: "Beagle", dist: "0.8 km", tintColor: "rgba(255,217,61,0.3)", id: "biscuit", adoption: true, foster: false },
-  { img: require("../../src/assets/doodle-cat.png"), name: "Mochi", breed: "Persian", dist: "1.2 km", tintColor: "rgba(255,111,207,0.2)", id: "mochi", adoption: true, foster: true },
-  { img: require("../../src/assets/doodle-boy-dog.png"), name: "Rocky", breed: "Indie", dist: "1.6 km", tintColor: "rgba(37,99,235,0.1)", id: "rocky", adoption: false, foster: true },
-  { img: require("../../src/assets/doodle-puppy.png"), name: "Snow", breed: "Pom mix", dist: "2.4 km", tintColor: "rgba(76,175,80,0.15)", id: "snow", adoption: false, foster: true },
-];
 
 export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const tk = useTokens();
+  const { user } = useAuthStore();
   const [mode, setMode] = useState<Mode>("all");
+  const [nearbyVets, setNearbyVets] = useState<any[]>([]);
+  const [allPets, setAllPets] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (user?.city) {
+          const vetsData = await placesApi.getVetsByCity(user.city);
+          setNearbyVets(vetsData.items || []);
+        }
+        
+        const petsData = await petApi.discoverPets();
+        setAllPets(petsData || []);
+      } catch (err) {
+        console.error("Failed to fetch discover data:", err);
+      }
+    };
+    fetchData();
+  }, [user?.city]);
 
   const pets = allPets.filter((p) =>
-    mode === "all" ? p.adoption || p.foster : mode === "adoption" ? p.adoption : p.foster
+    mode === "all" ? p.isAdoptionOpen || p.isFosterOpen : mode === "adoption" ? p.isAdoptionOpen : p.isFosterOpen
   );
 
   return (
@@ -57,31 +66,34 @@ export default function DiscoverScreen() {
 
       <View style={styles.sectionRow}>
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Nearby vets</Text>
-        <TouchableOpacity onPress={() => router.push("/care")}>
+        <TouchableOpacity onPress={() => router.push("/vets")}>
           <Text style={styles.seeAll}>See all</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.vetList}>
-        {nearbyVets.map((v) => (
-          <TouchableOpacity key={v.name} onPress={() => router.push("/book")} style={[styles.vetRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
-            <View style={[styles.vetIcon, { backgroundColor: v.tintColor }]}>
+        {nearbyVets.slice(0, 4).map((v) => (
+          <TouchableOpacity key={v.id} onPress={() => router.push(`/vets/${v.id}`)} style={[styles.vetRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+            <View style={[styles.vetIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
               <Image source={require("../../src/assets/doodle-vet.png")} style={styles.vetImg} resizeMode="contain" />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <View style={styles.vetNameRow}>
                 <Text style={[styles.vetName, { color: tk.text }]} numberOfLines={1}>{v.name}</Text>
-                {v.open && <View style={styles.openBadge}><Text style={styles.openText}>OPEN</Text></View>}
               </View>
               <View style={styles.vetSpecRow}>
                 <Stethoscope size={12} color={tk.textMuted} />
-                <Text style={[styles.vetSpec, { color: tk.textMuted }]}>{v.spec}</Text>
+                <Text style={[styles.vetSpec, { color: tk.textMuted }]}>{v.address ? v.address.split(',')[0] : "General"}</Text>
               </View>
               <View style={styles.vetMeta}>
                 <Star size={12} color={colors.sunshine} fill={colors.sunshine} />
-                <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{v.rating}</Text>
-                <MapPin size={12} color={tk.textMuted} />
-                <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{v.dist}</Text>
+                <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{v.rating || "N/A"}</Text>
+                {user?.city && (
+                  <>
+                    <MapPin size={12} color={tk.textMuted} />
+                    <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{user.city}</Text>
+                  </>
+                )}
               </View>
             </View>
             <View style={styles.callBtn}>
@@ -114,11 +126,15 @@ export default function DiscoverScreen() {
       <View style={styles.petsGrid}>
         {pets.map((p) => (
           <TouchableOpacity key={p.id} onPress={() => router.push(`/p/${p.id}`)} style={[styles.petCard, { backgroundColor: tk.card }]} activeOpacity={0.85}>
-            <View style={[styles.petImageBg, { backgroundColor: p.tintColor }]}>
-              <Image source={p.img} style={styles.petImage} resizeMode="contain" />
+            <View style={[styles.petImageBg, { backgroundColor: "rgba(255,217,61,0.3)" }]}>
+              {p.avatar_url ? (
+                <Image source={{ uri: p.avatar_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              ) : (
+                <Image source={require("../../src/assets/doodle-puppy.png")} style={styles.petImage} resizeMode="contain" />
+              )}
               <View style={styles.petBadges}>
-                {p.adoption && <View style={[styles.adoptBadge, { backgroundColor: colors.success }]}><Text style={styles.adoptBadgeText}>Adopt</Text></View>}
-                {p.foster && <View style={[styles.adoptBadge, { backgroundColor: colors.coral }]}><Text style={styles.adoptBadgeText}>Foster</Text></View>}
+                {p.isAdoptionOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.success }]}><Text style={styles.adoptBadgeText}>Adopt</Text></View>}
+                {p.isFosterOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.coral }]}><Text style={styles.adoptBadgeText}>Foster</Text></View>}
               </View>
             </View>
             <View style={styles.petInfo}>
@@ -126,10 +142,10 @@ export default function DiscoverScreen() {
                 <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
                 <Heart size={16} color={colors.pinky} />
               </View>
-              <Text style={[styles.petBreed, { color: tk.textMuted }]}>{p.breed}</Text>
+              <Text style={[styles.petBreed, { color: tk.textMuted }]}>{p.breed || p.species}</Text>
               <View style={styles.petDistRow}>
                 <MapPin size={12} color={tk.textMuted} />
-                <Text style={[styles.petDist, { color: tk.textMuted }]}>{p.dist}</Text>
+                <Text style={[styles.petDist, { color: tk.textMuted }]}>{p.city || "Nearby"}</Text>
               </View>
             </View>
           </TouchableOpacity>

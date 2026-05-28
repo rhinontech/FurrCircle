@@ -56,7 +56,7 @@ export default function CareScreen() {
     } else if (pickerTarget === "meds") {
       router.push({ pathname: "/log/meds", params: { petId } });
     } else if (pickerTarget === "book") {
-      router.push({ pathname: "/book", params: { petId } });
+      router.push({ pathname: "/discover" });
     }
   };
 
@@ -70,7 +70,7 @@ export default function CareScreen() {
           <View style={styles.heroContent}>
             <Text style={styles.heroEyebrow}>MOONA · REMINDER</Text>
             <Text style={styles.heroTitle}>Monthly checkup is due this week</Text>
-            <TouchableOpacity onPress={() => router.push("/book")} style={styles.heroBtn} activeOpacity={0.85}>
+            <TouchableOpacity onPress={() => router.push("/discover")} style={styles.heroBtn} activeOpacity={0.85}>
               <Text style={styles.heroBtnText}>Book now</Text>
               <ChevronRight size={16} color={colors.primary} strokeWidth={2.5} />
             </TouchableOpacity>
