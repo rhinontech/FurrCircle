@@ -4,7 +4,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect, useRef } from "react";
-import { MapPin, User, Camera, Check, AlertCircle } from "lucide-react-native";
+import { MapPin, User, Camera, Check, AlertCircle, LocateFixed } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
@@ -12,6 +12,8 @@ import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 import { useAuthStore } from "../src/lib/auth-store";
 import { authApi } from "../services/auth/authApi";
+import { LocationPickerModal, LocationResult } from "../src/components/LocationPickerModal";
+import * as Location from "expo-location";
 
 const boyDog = require("../src/assets/doodle-boy-dog.png");
 
@@ -24,8 +26,12 @@ export default function EditProfileScreen() {
   const [name, setName] = useState(user?.name || "");
   const [address, setAddress] = useState(user?.address || "");
   const [city, setCity] = useState(user?.city || "");
+  const [latitude, setLatitude] = useState(user?.latitude || undefined);
+  const [longitude, setLongitude] = useState(user?.longitude || undefined);
   const [photo, setPhoto] = useState<string | undefined>(user?.avatar_url || undefined);
   const [saving, setSaving] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [isLocationModalVisible, setLocationModalVisible] = useState(false);
 
   // Live username check state
   const [usernameCheck, setUsernameCheck] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
@@ -38,6 +44,8 @@ export default function EditProfileScreen() {
     name.trim() !== (user?.name || "") ||
     address.trim() !== (user?.address || "") ||
     city.trim() !== (user?.city || "") ||
+    latitude !== (user?.latitude || undefined) ||
+    longitude !== (user?.longitude || undefined) ||
     photo !== (user?.avatar_url || undefined);
 
   // Disable save button if no changes, saving is true, or username check failed (if username has changed)
@@ -156,6 +164,8 @@ export default function EditProfileScreen() {
         username,
         address,
         city,
+        latitude,
+        longitude,
         avatar_url: newAvatarUrl
       });
       
@@ -194,6 +204,56 @@ export default function EditProfileScreen() {
         );
       default:
         return null;
+    }
+  };
+
+  const handleLocationSelect = (loc: LocationResult) => {
+    setLocationModalVisible(false);
+    setCity(loc.city);
+    setLatitude(loc.latitude);
+    setLongitude(loc.longitude);
+    setAddress(loc.address);
+  };
+
+  const handleAutoLocate = async () => {
+    setLocating(true);
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission denied', 'Allow location access in device settings.');
+        return;
+      }
+      let location = await Location.getLastKnownPositionAsync();
+      if (!location) {
+        location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      }
+      
+      if (!location) {
+        Alert.alert('Error', 'Failed to fetch location.');
+        setLocating(false);
+        return;
+      }
+      
+      const lat = location.coords.latitude;
+      const lon = location.coords.longitude;
+      
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
+        headers: { 'User-Agent': 'FurrCircleApp/1.0' }
+      });
+      const data = await response.json();
+      
+      if (data && data.address) {
+        const foundCity = data.address.city || data.address.town || data.address.village || data.address.county || "Unknown City";
+        setCity(foundCity);
+        setLatitude(lat);
+        setLongitude(lon);
+        setAddress(data.display_name);
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to fetch current location.');
+    } finally {
+      setLocating(false);
     }
   };
 
@@ -265,14 +325,19 @@ export default function EditProfileScreen() {
             {/* City Field */}
             <View style={styles.field}>
               <Text style={[styles.label, { color: tk.text }]}>City</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: tk.inputBg, borderColor: tk.border }]}>
-                <TextInput
-                  style={[styles.input, { color: tk.text }]}
-                  placeholder="e.g. Mumbai, India"
-                  placeholderTextColor={tk.textMuted}
-                  value={city}
-                  onChangeText={setCity}
-                />
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <TouchableOpacity
+                  style={[styles.inputWrapper, { flex: 1, backgroundColor: tk.inputBg, borderColor: tk.border, justifyContent: 'center' }]}
+                  onPress={() => setLocationModalVisible(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ color: city ? tk.text : tk.textMuted, fontFamily: "Inter_400Regular", fontSize: 15 }}>
+                    {city || "Select your city"}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleAutoLocate} disabled={locating} style={[styles.inputWrapper, { width: 52, paddingHorizontal: 0, alignItems: "center", backgroundColor: tk.card, borderColor: tk.border }]}>
+                  {locating ? <ActivityIndicator size="small" color={colors.primary} /> : <LocateFixed size={20} color={colors.primary} />}
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -316,6 +381,12 @@ export default function EditProfileScreen() {
           </View>
         </ScrollView>
       </View>
+
+      <LocationPickerModal
+        visible={isLocationModalVisible}
+        onClose={() => setLocationModalVisible(false)}
+        onSelectLocation={handleLocationSelect}
+      />
     </PageContainer>
   );
 }

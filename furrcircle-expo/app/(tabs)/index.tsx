@@ -5,13 +5,16 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useRouter } from "expo-router";
-import { Heart, MessageCircle, Send, Bookmark, Plus, Bell } from "lucide-react-native";
+import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown } from "lucide-react-native";
 import { useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { posts, type Post } from "../../src/lib/demo-data";
 import { colors } from "../../src/lib/theme";
 import { Avatar } from "../../src/components/Avatar";
 import { useTokens, useThemeStore } from "../../src/lib/theme-store";
+import { useAuthStore } from "../../src/lib/auth-store";
+import { userApi } from "../../services/user/userApi";
+import { LocationPickerModal, LocationResult } from "../../src/components/LocationPickerModal";
 import { ShareSheet } from "../../src/components/ShareSheet";
 import { StoryViewer, type Story, type StoryGroup } from "../../src/components/StoryViewer";
 import { StoryEditor } from "../../src/components/StoryEditor";
@@ -151,6 +154,23 @@ function FeedHeader() {
     ? require("../../src/assets/furrcircle_dark_logo.png")
     : require("../../src/assets/furrcircle_light_logo.png");
 
+  const user = useAuthStore(s => s.user);
+  const setSession = useAuthStore(s => s.setSession);
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+
+  const handleLocationSelect = async (loc: LocationResult) => {
+    setLocationModalVisible(false);
+    try {
+      const res = await userApi.updateProfile({ latitude: loc.latitude, longitude: loc.longitude, city: loc.city, address: loc.address });
+      if (res.success && res.user && user) {
+        await setSession({ ...user, ...res.user });
+      }
+    } catch (err) {
+      console.error('Failed to update location', err);
+      Alert.alert('Error', 'Failed to save location.');
+    }
+  };
+
   return (
     <View style={[styles.header, { backgroundColor: tk.bg }]}>
       <View>
@@ -159,7 +179,11 @@ function FeedHeader() {
           style={styles.logoImg}
           resizeMode="contain"
         />
-        <Text style={[styles.subtitle, { color: tk.textMuted }]}>Today's circle, picked for Moona</Text>
+        <TouchableOpacity onPress={() => setLocationModalVisible(true)} style={{ flexDirection: 'row', alignItems: 'center', marginTop: -4, marginLeft: 2 }}>
+          <MapPin size={12} color={tk.textMuted} style={{ marginRight: 2 }} />
+          <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted }}>{user?.city || "Select Location"}</Text>
+          <ChevronDown size={12} color={tk.textMuted} style={{ marginLeft: 2 }} />
+        </TouchableOpacity>
       </View>
       <View style={styles.headerActions}>
         <TouchableOpacity onPress={() => router.push("/chat")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
@@ -170,6 +194,11 @@ function FeedHeader() {
           <View style={styles.notifDot} />
         </TouchableOpacity>
       </View>
+      <LocationPickerModal
+        visible={locationModalVisible}
+        onClose={() => setLocationModalVisible(false)}
+        onSelectLocation={handleLocationSelect}
+      />
     </View>
   );
 }

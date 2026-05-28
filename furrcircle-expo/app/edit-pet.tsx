@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import { Camera } from "lucide-react-native";
@@ -8,6 +8,7 @@ import { PageContainer } from "../src/components/PageContainer";
 import { petApi } from "../services/pet/petApi";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const PERSONALITY_TAGS = ["Friendly", "Playful", "Calm", "Active", "Independent", "Cuddly", "Protective", "Curious"];
 
@@ -20,9 +21,11 @@ export default function EditPetScreen() {
   const [species, setSpecies] = useState("dog");
   const [breed, setBreed] = useState("");
   const [gender, setGender] = useState<"male" | "female">("female");
-  const [ageYears, setAgeYears] = useState("1");
+  const [birthDate, setBirthDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [photo, setPhoto] = useState<string | undefined>();
   const [personality, setPersonality] = useState<string[]>([]);
+  const [microchipId, setMicrochipId] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -33,8 +36,19 @@ export default function EditPetScreen() {
           if (pet.species) setSpecies(pet.species);
           if (pet.breed) setBreed(pet.breed);
           if (pet.gender) setGender(pet.gender as "male" | "female");
-          if (pet.age) setAgeYears(String(pet.age));
+          if (pet.birth_date) {
+            setBirthDate(new Date(pet.birth_date));
+          } else if (pet.age) {
+            // Very rough fallback if they only had age previously
+            const guessedDate = new Date();
+            const years = parseInt(pet.age);
+            if (!isNaN(years)) {
+              guessedDate.setFullYear(guessedDate.getFullYear() - years);
+              setBirthDate(guessedDate);
+            }
+          }
           if (pet.avatar_url) setPhoto(pet.avatar_url);
+          if (pet.microchip_id) setMicrochipId(pet.microchip_id);
           if (pet.personality && Array.isArray(pet.personality) && pet.personality.length > 0) {
             setPersonality(pet.personality);
           } else if (pet.description) {
@@ -60,17 +74,31 @@ export default function EditPetScreen() {
     setPersonality((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
 
   const save = async () => {
-    if (!name.trim()) { Alert.alert("Name required"); return; }
+    if (!name.trim()) { Alert.alert("Required", "Please enter your pet's name."); return; }
+    if (!breed.trim()) { Alert.alert("Required", "Please enter your pet's breed."); return; }
+    if (!birthDate) { Alert.alert("Required", "Please select your pet's Date of Birth."); return; }
     if (!id) return;
     setSaving(true);
+    
+    const today = new Date();
+    let years = today.getFullYear() - birthDate.getFullYear();
+    let months = today.getMonth() - birthDate.getMonth();
+    if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
+      years--;
+      months += 12;
+    }
+    const calculatedAge = years > 0 ? `${years}` : (months > 0 ? `${months} mo` : '< 1 mo');
+
     try {
       await petApi.updatePet(id, { 
         name: name.trim(), 
         species, 
         breed: breed.trim(), 
         gender, 
-        age: ageYears, 
+        age: calculatedAge,
+        birth_date: birthDate.toISOString().split('T')[0], 
         avatar_url: photo, 
+        microchip_id: microchipId.trim() || null,
         personality
       });
       router.back();
@@ -130,8 +158,43 @@ export default function EditPetScreen() {
           })}
         </View>
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>Age (years)</Text>
-        <TextInput value={ageYears} onChangeText={setAgeYears} keyboardType="numeric" style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>Date of Birth</Text>
+        {Platform.OS === 'ios' ? (
+          <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
+            <DateTimePicker
+              value={birthDate || new Date()}
+              mode="date"
+              display="default"
+              maximumDate={new Date()}
+              onChange={(e, date) => {
+                if (date) setBirthDate(date);
+              }}
+            />
+          </View>
+        ) : (
+          <>
+            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.input, { backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, justifyContent: 'center' }]} activeOpacity={0.8}>
+              <Text style={{ color: birthDate ? tk.text : tk.textMuted, fontFamily: "Inter_400Regular" }}>
+                {birthDate ? birthDate.toLocaleDateString() : "Select Date of Birth"}
+              </Text>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={birthDate || new Date()}
+                mode="date"
+                display="default"
+                maximumDate={new Date()}
+                onChange={(e, date) => {
+                  setShowDatePicker(false);
+                  if (date) setBirthDate(date);
+                }}
+              />
+            )}
+          </>
+        )}
+
+        <Text style={[styles.label, { color: tk.textMuted }]}>Microchip ID</Text>
+        <TextInput value={microchipId} onChangeText={setMicrochipId} placeholder="e.g. 981020000345119" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
 
         <Text style={[styles.label, { color: tk.textMuted }]}>Personality</Text>
         <View style={styles.tagRow}>

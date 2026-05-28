@@ -13,6 +13,8 @@ import {
   Bell, Trash2, ChevronRight, LogOut,
 } from "lucide-react-native";
 import { userApi } from "../services/user/userApi";
+import { LocationPickerModal, LocationResult } from "../src/components/LocationPickerModal";
+import * as Location from 'expo-location';
 
 
 export default function SettingsScreen() {
@@ -39,9 +41,9 @@ export default function SettingsScreen() {
 
   const privateProfile = user?.isPrivate || false;
   const [twoFA, setTwoFA] = useState(false);
-  const [preciseLocation, setPreciseLocation] = useState(true);
   const [pushNotifs, setPushNotifs] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isLocationModalVisible, setLocationModalVisible] = useState(false);
 
   const togglePrivateProfile = async (val: boolean) => {
     // Optimistic update
@@ -55,6 +57,21 @@ export default function SettingsScreen() {
       // Revert on failure
       if (user) await setSession({ ...user, isPrivate: !val });
       console.error('Failed to update privacy', err);
+    }
+  };
+
+
+
+  const handleManualLocationSelect = async (loc: LocationResult) => {
+    setLocationModalVisible(false);
+    try {
+      const res = await userApi.updateProfile({ latitude: loc.latitude, longitude: loc.longitude, city: loc.city, address: loc.address });
+      if (res.success && res.user && user) {
+        await setSession({ ...user, ...res.user });
+      }
+    } catch (err) {
+      console.error('Failed to update location manually', err);
+      Alert.alert('Error', 'Failed to save location.');
     }
   };
 
@@ -81,11 +98,12 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title="Location" tk={tk}>
-          <Row tk={tk} icon={MapPin} iconBg="rgba(76,175,80,0.15)" iconColor={colors.success}
-            label="Precise location" sub="Improves nearby matches & vets"
-            toggle={preciseLocation} onToggle={setPreciseLocation} />
-          <Row tk={tk} icon={MapPin} iconBg="rgba(37,99,235,0.1)" iconColor={colors.primary}
-            label="Home city" sub="Mumbai, India" isLink />
+          <TouchableOpacity onPress={() => setLocationModalVisible(true)} activeOpacity={0.8}>
+            <View pointerEvents="none">
+              <Row tk={tk} icon={MapPin} iconBg="rgba(37,99,235,0.1)" iconColor={colors.primary}
+                label="Home city" sub={user?.city || "Tap to set location"} isLink />
+            </View>
+          </TouchableOpacity>
         </Section>
 
         <Section title="Notifications" tk={tk}>
@@ -147,6 +165,12 @@ export default function SettingsScreen() {
           </View>
         </Pressable>
       </Modal>
+
+      <LocationPickerModal
+        visible={isLocationModalVisible}
+        onClose={() => setLocationModalVisible(false)}
+        onSelectLocation={handleManualLocationSelect}
+      />
     </View>
   );
 }

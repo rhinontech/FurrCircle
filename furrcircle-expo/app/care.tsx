@@ -10,23 +10,38 @@ import {
   Stethoscope, FileText, Sparkles, ShieldCheck,
   Pill, Syringe, Activity, FolderHeart, ChevronRight, X,
 } from "lucide-react-native";
+import { useEffect } from "react";
+import { petApi } from "../services/pet/petApi";
 
-type PickerTarget = "records" | "passport" | null;
+type PickerTarget = "records" | "passport" | "vaccine" | "vitals" | "meds" | "book" | null;
 
-const DIRECT_TILES = [
-  { icon: Stethoscope, label: "Book a Vet", bg: colors.primary, text: "#fff", to: "/book" },
-  { icon: Syringe, label: "Log Vaccine", bg: colors.success, text: "#fff", to: "/log/vaccine" },
-  { icon: Activity, label: "Log Vitals", bg: colors.coral, text: "#fff", to: "/log/vitals" },
-  { icon: Pill, label: "Log Meds", bg: colors.pinky, text: "#fff", to: "/log/meds" },
-] as const;
+const DIRECT_TILES: { icon: any; label: string; bg: string; text: string; target: PickerTarget }[] = [
+  { icon: Stethoscope, label: "Book a Vet", bg: colors.primary, text: "#fff", target: "book" },
+  { icon: Syringe, label: "Log Vaccine", bg: colors.success, text: "#fff", target: "vaccine" },
+  { icon: Activity, label: "Log Vitals", bg: colors.coral, text: "#fff", target: "vitals" },
+  { icon: Pill, label: "Log Meds", bg: colors.pinky, text: "#fff", target: "meds" },
+];
 
 export default function CareScreen() {
   const router = useRouter();
   const tk = useTokens();
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
 
-  // Demo: use first seed user's pets. Replace with auth store pets when backend is ready.
-  const myPets = SEED_USERS[0].pets;
+  const [myPets, setMyPets] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchPets = async () => {
+      try {
+        const pets = await petApi.getMyPets();
+        setMyPets(pets || []);
+      } catch (err) {
+        console.error("Failed to fetch pets", err);
+        // Fallback to seed data if failed
+        setMyPets(SEED_USERS[0].pets);
+      }
+    };
+    fetchPets();
+  }, []);
 
   const handlePetSelected = (petId: string) => {
     setPickerTarget(null);
@@ -34,6 +49,14 @@ export default function CareScreen() {
       router.push({ pathname: "/records", params: { petId } });
     } else if (pickerTarget === "passport") {
       router.push({ pathname: "/pet", params: { id: petId, tab: "Passport" } });
+    } else if (pickerTarget === "vaccine") {
+      router.push({ pathname: "/log/vaccine", params: { petId } });
+    } else if (pickerTarget === "vitals") {
+      router.push({ pathname: "/log/vitals", params: { petId } });
+    } else if (pickerTarget === "meds") {
+      router.push({ pathname: "/log/meds", params: { petId } });
+    } else if (pickerTarget === "book") {
+      router.push({ pathname: "/book", params: { petId } });
     }
   };
 
@@ -62,10 +85,10 @@ export default function CareScreen() {
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Care services</Text>
 
         <View style={styles.grid}>
-          {DIRECT_TILES.map(({ icon: Icon, label, bg, text, to }) => (
+          {DIRECT_TILES.map(({ icon: Icon, label, bg, text, target }) => (
             <TouchableOpacity
               key={label}
-              onPress={() => router.push(to)}
+              onPress={() => setPickerTarget(target)}
               style={[styles.tile, { backgroundColor: bg }]}
               activeOpacity={0.85}
             >
@@ -129,12 +152,16 @@ export default function CareScreen() {
                 style={[styles.petRow, { backgroundColor: tk.bg }]}
                 activeOpacity={0.8}
               >
-                <View style={styles.petEmoji}>
-                  <Text style={{ fontSize: 22 }}>{pet.emoji}</Text>
+                <View style={[styles.petEmoji, { overflow: "hidden" }]}>
+                  {pet.avatar_url ? (
+                    <Image source={{ uri: pet.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                  ) : (
+                    <Image source={require("../src/assets/doodle-boy-dog.png")} style={{ width: 36, height: 36 }} resizeMode="contain" />
+                  )}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.petName, { color: tk.text }]}>{pet.name}</Text>
-                  <Text style={[styles.petMeta, { color: tk.textMuted }]}>{pet.breed} · {pet.species} · {pet.ageYears}y</Text>
+                  <Text style={[styles.petMeta, { color: tk.textMuted }]}>{pet.breed || pet.species} · {pet.gender === "female" ? "♀" : "♂"} · {pet.age || "?"}y</Text>
                 </View>
                 <ChevronRight size={18} color={tk.textMuted} />
               </TouchableOpacity>

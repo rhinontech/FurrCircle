@@ -29,9 +29,6 @@ export default function ProfileScreen() {
         userApi.getUserProfile(user.username)
           .then((profile) => {
             setUserProfile(profile);
-            if (profile?.pets) {
-              setPets(profile.pets);
-            }
           })
           .catch(console.error);
       }

@@ -1,17 +1,47 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { useState } from "react";
+import { healthApi } from "../../services/health/healthApi";
 
 export default function LogVitalsScreen() {
   const router = useRouter();
+  const { petId } = useLocalSearchParams<{ petId: string }>();
   const tk = useTokens();
   const [weight, setWeight] = useState("");
   const [temp, setTemp] = useState("");
   const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = async () => {
+    if (!weight.trim() && !temp.trim()) {
+        Alert.alert("Error", "Please enter at least weight or temperature.");
+        return;
+    }
+    if (!petId) {
+        Alert.alert("Error", "No pet selected.");
+        return;
+    }
+    setLoading(true);
+    try {
+        await healthApi.addVital(petId, {
+            weight: weight ? Number(weight) : undefined,
+            temperature: temp ? Number(temp) : undefined,
+            notes: notes.trim() || undefined,
+            timestamp: new Date().toISOString()
+        });
+        Alert.alert("Success", "Vitals logged successfully.");
+        router.back();
+    } catch (err) {
+        console.error("Failed to log vitals:", err);
+        Alert.alert("Error", "Failed to log vitals.");
+    } finally {
+        setLoading(false);
+    }
+  };
 
   return (
     <PageContainer>
@@ -24,8 +54,8 @@ export default function LogVitalsScreen() {
         <TextInput value={temp} onChangeText={setTemp} keyboardType="decimal-pad" placeholder="e.g. 38.5" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
         <Text style={[styles.label, { color: tk.textMuted }]}>Notes</Text>
         <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={4} placeholder="Any observations…" placeholderTextColor={tk.textMuted} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        <TouchableOpacity onPress={() => router.back()} style={styles.saveBtn}>
-          <Text style={styles.saveBtnText}>Save</Text>
+        <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={loading}>
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save</Text>}
         </TouchableOpacity>
       </ScrollView>
     </View>

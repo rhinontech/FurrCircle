@@ -31,7 +31,16 @@
       "expo-router",
       [
         "expo-image-picker",
-        { "photosPermission": "Allow FurrCircle to access your photos." }
+        {
+          "photosPermission": "Allow FurrCircle to access your photos."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow FurrCircle to use your location to find nearby matches and vets.",
+          "locationWhenInUsePermission": "Allow FurrCircle to use your location to find nearby matches and vets."
+        }
       ],
       "@react-native-firebase/app",
       [
@@ -42,7 +51,8 @@
           }
         }
       ],
-      "@react-native-firebase/messaging"
+      "@react-native-firebase/messaging",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true

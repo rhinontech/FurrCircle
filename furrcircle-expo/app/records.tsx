@@ -5,8 +5,10 @@ import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
+import { useEffect } from "react";
+import { healthApi } from "../services/health/healthApi";
 import { moonaPassport } from "../src/lib/demo-data";
-import { FileText, Plus, X, Syringe, AlertCircle, ShieldCheck } from "lucide-react-native";
+import { FileText, Plus, X, Syringe, AlertCircle, ShieldCheck, Activity, Pill } from "lucide-react-native";
 
 type RecordType = "vaccine" | "allergy" | "insurance";
 
@@ -22,6 +24,26 @@ export default function RecordsScreen() {
 
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<RecordType | null>(null);
+
+  const [data, setData] = useState({ vaccines: [] as any[], allergies: [] as any[], records: [] as any[], meds: [] as any[], vitals: [] as any[] });
+  const [loading, setLoading] = useState(true);
+
+  const fetchRecords = async () => {
+    if (!petId) return;
+    try {
+      setLoading(true);
+      const res = await healthApi.getRecordsData(petId);
+      setData(res);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecords();
+  }, [petId]);
 
   // Form fields
   const [vaccineName, setVaccineName] = useState("");
@@ -39,19 +61,32 @@ export default function RecordsScreen() {
 
   const handleClose = () => { setAddSheetOpen(false); resetForm(); };
 
-  const handleSave = () => {
-    if (selectedType === "vaccine" && !vaccineName.trim()) {
-      Alert.alert("Required", "Please enter a vaccine name."); return;
+  const handleSave = async () => {
+    if (!petId) { Alert.alert("Error", "No pet selected"); return; }
+    try {
+      if (selectedType === "vaccine") {
+        if (!vaccineName.trim()) { Alert.alert("Required", "Please enter a vaccine name."); return; }
+        await healthApi.addVaccine(petId, {
+          name: vaccineName,
+          dateAdministered: vaccineDate || new Date().toISOString().slice(0, 10),
+          nextDueDate: vaccineNext || undefined,
+          status: "done"
+        });
+      } else if (selectedType === "allergy") {
+        if (!allergyName.trim()) { Alert.alert("Required", "Please enter an allergy."); return; }
+        await healthApi.addAllergy(petId, {
+          allergen: allergyName,
+        });
+      } else if (selectedType === "insurance") {
+        if (!insuranceName.trim()) { Alert.alert("Required", "Please enter the insurance provider."); return; }
+      }
+      Alert.alert("Saved", "Record added successfully.");
+      handleClose();
+      fetchRecords(); // refresh
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Failed to save record.");
     }
-    if (selectedType === "allergy" && !allergyName.trim()) {
-      Alert.alert("Required", "Please enter an allergy."); return;
-    }
-    if (selectedType === "insurance" && !insuranceName.trim()) {
-      Alert.alert("Required", "Please enter the insurance provider."); return;
-    }
-    // TODO: persist to backend
-    Alert.alert("Saved", "Record added successfully.");
-    handleClose();
   };
 
   return (
@@ -67,24 +102,61 @@ export default function RecordsScreen() {
       />
       <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 16 }}>
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Vaccination history</Text>
-        {moonaPassport.vaccines.map((v) => (
-          <View key={v.name} style={[styles.card, { backgroundColor: tk.card }]}>
-            <FileText size={20} color={v.status === "ok" ? colors.success : colors.coral} />
+        {data.vaccines.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No vaccines recorded.</Text>}
+        {data.vaccines.map((v) => (
+          <View key={v.id || v.name} style={[styles.card, { backgroundColor: tk.card }]}>
+            <FileText size={20} color={v.status === "done" || v.status === "ok" ? colors.success : colors.coral} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.cardTitle, { color: tk.text }]}>{v.name}</Text>
-              <Text style={[styles.cardMeta, { color: tk.textMuted }]}>Given: {v.date} · Next: {v.next}</Text>
+              <Text style={[styles.cardMeta, { color: tk.textMuted }]}>Given: {v.dateAdministered} {v.nextDueDate ? `· Next: ${v.nextDueDate}` : ''}</Text>
             </View>
-            <View style={[styles.badge, { backgroundColor: v.status === "ok" ? "rgba(76,175,80,0.15)" : "rgba(255,107,107,0.15)" }]}>
-              <Text style={[styles.badgeText, { color: v.status === "ok" ? colors.success : colors.coral }]}>{v.status === "ok" ? "OK" : "DUE"}</Text>
+            <View style={[styles.badge, { backgroundColor: v.status === "done" || v.status === "ok" ? "rgba(76,175,80,0.15)" : "rgba(255,107,107,0.15)" }]}>
+              <Text style={[styles.badgeText, { color: v.status === "done" || v.status === "ok" ? colors.success : colors.coral }]}>{v.status === "done" || v.status === "ok" ? "OK" : "DUE"}</Text>
             </View>
           </View>
         ))}
+        {/* Allergies */}
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Allergies</Text>
+        {data.allergies.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No allergies recorded.</Text>}
         <View style={styles.tagRow}>
-          {moonaPassport.allergies.map((a) => (
-            <View key={a} style={styles.allergyTag}><Text style={styles.allergyText}>{a}</Text></View>
+          {data.allergies.map((a) => (
+            <View key={a.id || a.allergen} style={styles.allergyTag}><Text style={styles.allergyText}>{a.allergen}</Text></View>
           ))}
         </View>
+
+        {/* Medications */}
+        <Text style={[styles.sectionTitle, { color: tk.text }]}>Medications</Text>
+        {data.meds.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No medications recorded.</Text>}
+        {data.meds.map((m: any, i: number) => (
+          <View key={m.id ? String(m.id) : String(i)} style={[styles.card, { backgroundColor: tk.card }]}>
+            <Pill size={20} color={colors.pinky} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cardTitle, { color: tk.text }]}>{m.name}</Text>
+              <Text style={[styles.cardMeta, { color: tk.textMuted }]}>
+                {m.dosage ? `Dose: ${m.dosage} ` : ""}
+                {m.startDate ? `· Started: ${m.startDate}` : ""}
+              </Text>
+            </View>
+          </View>
+        ))}
+
+        {/* Vitals */}
+        <Text style={[styles.sectionTitle, { color: tk.text }]}>Vitals</Text>
+        {data.vitals.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No vitals recorded.</Text>}
+        {data.vitals.map((v: any, i: number) => (
+          <View key={v.id ? String(v.id) : String(i)} style={[styles.card, { backgroundColor: tk.card }]}>
+            <Activity size={20} color={colors.coral} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cardTitle, { color: tk.text }]}>
+                {v.weight ? `Weight: ${v.weight}kg ` : ""}
+                {v.temperature ? `Temp: ${v.temperature}°C` : ""}
+                {!v.weight && !v.temperature ? "Vitals Logged" : ""}
+              </Text>
+              <Text style={[styles.cardMeta, { color: tk.textMuted }]}>{v.timestamp ? new Date(v.timestamp).toLocaleDateString() : ""} {v.notes ? `· ${v.notes}` : ""}</Text>
+            </View>
+          </View>
+        ))}
+
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Insurance</Text>
         <View style={[styles.infoCard, { backgroundColor: tk.card }]}>
           <Text style={[styles.infoTitle, { color: tk.text }]}>{moonaPassport.insurance.provider}</Text>

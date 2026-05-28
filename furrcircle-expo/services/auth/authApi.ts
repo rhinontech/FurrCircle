@@ -17,6 +17,8 @@ export type AuthPayload = {
   bio?: string;
   city?: string;
   address?: string;
+  latitude?: number;
+  longitude?: number;
   memberSince?: string;
   // Vet specific
   hospital_name?: string;

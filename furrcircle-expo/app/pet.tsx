@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2 } from "lucide-react-native";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2, Pill } from "lucide-react-native";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { petApi } from "../services/pet/petApi";
@@ -36,15 +36,17 @@ export default function PetScreen() {
   const [pet, setPet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (id && id !== "moona") {
-      petApi.getPetById(id)
-        .then(data => { setPet(data); setLoading(false); })
-        .catch(err => { console.error("Failed to load pet:", err); setLoading(false); });
-    } else {
-      setLoading(false); // fallback for seed pets
-    }
-  }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      if (id && id !== "moona") {
+        petApi.getPetById(id)
+          .then(data => { setPet(data); setLoading(false); })
+          .catch(err => { console.error("Failed to load pet:", err); setLoading(false); });
+      } else {
+        setLoading(false); // fallback for seed pets
+      }
+    }, [id])
+  );
 
   if (loading) {
     return (
@@ -243,18 +245,21 @@ function TimelineTab({ tk, pet }: { tk: any, pet: any }) {
 
 function PassportTab({ tk, pet }: { tk: any, pet: any }) {
   const vaccines = pet?.Vaccines || [];
-  const allergies = pet?.Allergies?.map((a: any) => a.name) || ["Peanuts"];
-  const microchip = pet?.microchip_id || "981020000345119";
+  const meds = pet?.Medications || [];
+  const allergies = pet?.Allergies?.map((a: any) => a.allergen) || [];
+  const microchip = pet?.microchip_id;
   return (
     <View style={{ gap: 16 }}>
       {/* Microchip */}
-      <View style={[styles.passportCard, { backgroundColor: colors.white }]}>
-        <View style={styles.passportCardHeader}>
-          <BadgeCheck size={16} color={colors.success} />
-          <Text style={styles.passportCardLabel}>MICROCHIP</Text>
+      {microchip && (
+        <View style={[styles.passportCard, { backgroundColor: colors.white }]}>
+          <View style={styles.passportCardHeader}>
+            <BadgeCheck size={16} color={colors.success} />
+            <Text style={styles.passportCardLabel}>MICROCHIP</Text>
+          </View>
+          <Text style={[styles.passportCardValue, { color: tk.text }]}>{microchip}</Text>
         </View>
-        <Text style={[styles.passportCardValue, { color: tk.text }]}>{microchip}</Text>
-      </View>
+      )}
 
       {/* Vaccines */}
       <View>
@@ -262,7 +267,7 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
         <View style={{ gap: 8 }}>
           {vaccines.length === 0 && <Text style={{ color: tk.textMuted }}>No vaccines recorded.</Text>}
           {vaccines.map((v: any, i: number) => (
-            <View key={v.id || i} style={[styles.vaccineRow, { backgroundColor: colors.white }]}>
+            <View key={v.id ? String(v.id) : String(i)} style={[styles.vaccineRow, { backgroundColor: colors.white }]}>
               <View style={[styles.vaccineIcon, { backgroundColor: v.status === "completed" ? "rgba(76,175,80,0.15)" : "rgba(255,217,61,0.4)" }]}>
                 <Syringe size={16} color={v.status === "completed" ? colors.success : colors.foreground} />
               </View>
@@ -283,24 +288,37 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Allergies</Text>
         <View style={styles.traitRow}>
           {allergies.length === 0 && <Text style={{ color: tk.textMuted }}>No allergies known.</Text>}
-          {allergies.map((a: string) => (
-            <View key={a} style={[styles.traitChip, { backgroundColor: "rgba(255,107,107,0.15)" }]}>
+          {allergies.map((a: string, i: number) => (
+            <View key={a || String(i)} style={[styles.traitChip, { backgroundColor: "rgba(255,107,107,0.15)" }]}>
               <Text style={[styles.traitText, { color: colors.coral }]}>{a}</Text>
             </View>
           ))}
         </View>
       </View>
 
-      {/* Primary vet */}
-      <View style={[styles.passportCard, { backgroundColor: colors.white }]}>
-        <Text style={styles.passportCardLabel}>PRIMARY VET</Text>
-        <Text style={[styles.passportCardValue, { color: tk.text }]}>Dr. Patel</Text>
-        <Text style={[styles.passportCardSub, { color: tk.textMuted }]}>Paws & Claws Clinic</Text>
-        <TouchableOpacity style={styles.phoneBtn}>
-          <Phone size={13} color={colors.white} />
-          <Text style={styles.phoneBtnText}>+91 98765 43210</Text>
-        </TouchableOpacity>
+      {/* Medications */}
+      <View>
+        <Text style={[styles.sectionTitle, { color: tk.text }]}>Medications</Text>
+        <View style={{ gap: 8 }}>
+          {meds.length === 0 && <Text style={{ color: tk.textMuted }}>No active medications.</Text>}
+          {meds.map((m: any, i: number) => (
+            <View key={m.id ? String(m.id) : String(i)} style={[styles.vaccineRow, { backgroundColor: colors.white }]}>
+              <View style={[styles.vaccineIcon, { backgroundColor: "rgba(255,111,207,0.15)" }]}>
+                <Pill size={16} color={colors.pinky} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.vaccineName, { color: tk.text }]}>{m.name}</Text>
+                <Text style={[styles.vaccineDate, { color: tk.textMuted }]}>
+                  {m.dosage ? `Dose: ${m.dosage} ` : ""}
+                  {m.startDate ? `· Started: ${m.startDate}` : ""}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
       </View>
+
+
 
       {/* Insurance */}
       <View style={[styles.passportCard, { backgroundColor: colors.white }]}>
