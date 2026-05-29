@@ -143,6 +143,21 @@ db.users.hasMany(db.stories, { foreignKey: 'userId', as: 'stories', constraints:
 db.stories.hasMany(db.story_views, { foreignKey: 'storyId', as: 'views' });
 db.story_views.belongsTo(db.stories, { foreignKey: 'storyId' });
 
+// Circles
+db.circles.belongsTo(db.users, { foreignKey: 'createdBy', as: 'creator' });
+db.circles.hasMany(db.circle_members, { foreignKey: 'circleId', as: 'members' });
+db.circle_members.belongsTo(db.circles, { foreignKey: 'circleId', as: 'circle' });
+db.circle_members.belongsTo(db.users, { foreignKey: 'userId', as: 'user' });
+db.users.hasMany(db.circle_members, { foreignKey: 'userId', as: 'circlesMembership' });
+
+// Questions
+db.questions.belongsTo(db.users, { foreignKey: 'userId', as: 'author', constraints: false });
+db.questions.belongsTo(db.circles, { foreignKey: 'circleId', as: 'circle' });
+db.circles.hasMany(db.questions, { foreignKey: 'circleId', as: 'questions' });
+db.questions.hasMany(db.question_answers, { foreignKey: 'questionId', as: 'answers' });
+db.question_answers.belongsTo(db.questions, { foreignKey: 'questionId' });
+db.question_answers.belongsTo(db.users, { foreignKey: 'userId', as: 'author', constraints: false });
+
 // ──────────────────────────────────────────────────────────────────────────────
 
 db.sequelize = sequelize;
@@ -179,6 +194,10 @@ export const contact_leads = db.contact_leads;
 export const stories = db.stories;
 export const story_views = db.story_views;
 export const follows = db.follows;
+export const circles = db.circles;
+export const circle_members = db.circle_members;
+export const questions = db.questions;
+export const question_answers = db.question_answers;
 
 export { sequelize, Sequelize };
 export default db;

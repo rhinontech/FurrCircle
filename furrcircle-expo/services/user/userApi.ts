@@ -60,6 +60,16 @@ export const uploadImage = async (uri: string, folder: string = 'profiles') => {
     return response.data;
 };
 
+export const searchUsers = async (q: string) => {
+    try {
+        const response = await PrivateAxios.get('/users/search', { params: { q } });
+        return response.data;
+    } catch (error: any) {
+        console.error('searchUsers Error:', error?.response?.data || error.message);
+        return [];
+    }
+};
+
 export const userApi = {
     getUserProfile,
     followUser,
@@ -69,4 +79,5 @@ export const userApi = {
     getPendingFollowRequests,
     updateProfile,
     uploadImage,
+    searchUsers,
 };

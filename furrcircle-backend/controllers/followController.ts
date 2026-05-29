@@ -39,27 +39,27 @@ export const followUser = async (req: any, res: Response): Promise<void> => {
 
     if (status === 'accepted') {
       await createRichNotification({
-        actorId: followerId,
+        actorId: followingId,
         actorType: "user",
         category: "social",
         type: "follow",
         title: "New Follower",
         message: `${req.user.name || "Someone"} started following you`,
-        targetId: followingId,
-        targetType: "user",
+        relatedId: followerId,
+        relatedType: "user",
         actionType: "profile",
         actionPayload: { id: followerId },
       });
     } else {
       await createRichNotification({
-        actorId: followerId,
+        actorId: followingId,
         actorType: "user",
         category: "social",
         type: "follow",
         title: "Follow Request",
         message: `${req.user.name || "Someone"} requested to follow you`,
-        targetId: followingId,
-        targetType: "user",
+        relatedId: followerId,
+        relatedType: "user",
         actionType: "notifications",
         actionPayload: { id: follow.id },
       });
@@ -112,14 +112,14 @@ export const acceptRequest = async (req: any, res: Response): Promise<void> => {
     await follow.save();
 
     await createRichNotification({
-      actorId: followingId,
+      actorId: followerId,
       actorType: "user",
       category: "social",
       type: "follow",
       title: "Follow Request Accepted",
       message: `${req.user.name || "Someone"} accepted your follow request`,
-      targetId: followerId,
-      targetType: "user",
+      relatedId: followingId,
+      relatedType: "user",
       actionType: "profile",
       actionPayload: { id: followingId },
     });

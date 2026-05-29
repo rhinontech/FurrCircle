@@ -84,6 +84,8 @@ import placesRoutes from './routes/placesRoutes.ts';
 import placesVetsRoutes from './routes/placesVetsRoutes.ts';
 import userRoutes from './routes/userRoutes.ts';
 import followRoutes from './routes/followRoutes.ts';
+import circleRoutes from './routes/circleRoutes.ts';
+import questionRoutes from './routes/questionRoutes.ts';
 
 // Routes
 app.get('/', (req: Request, res: Response) => {
@@ -108,6 +110,8 @@ app.use('/api/places', placesRoutes);
 app.use('/api/places-vets', placesVetsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/follows', followRoutes);
+app.use('/api/circles', circleRoutes);
+app.use('/api/questions', questionRoutes);
 
 // Test DB Connection and Start Server
 const startServer = async (attempt = 1) => {

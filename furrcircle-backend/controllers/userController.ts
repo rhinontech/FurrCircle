@@ -132,3 +132,40 @@ export const updateProfile = async (req: any, res: Response): Promise<void> => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const searchUsers = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { users: User } = db as any;
+    const q = String(req.query.q || "").trim();
+    if (!q) { res.json([]); return; }
+
+    const { follows: Follow } = db as any;
+    const users = await User.findAll({
+      where: {
+        [Op.or]: [
+          { name: { [Op.iLike]: `%${q}%` } },
+          { username: { [Op.iLike]: `%${q}%` } },
+        ],
+      },
+      attributes: ['id', 'name', 'username', 'avatar_url', 'city', 'bio'],
+      limit: 20,
+    });
+
+    const results = await Promise.all(users.map(async (u: any) => {
+      const data = u.toJSON();
+      let followStatus = 'none';
+      if (req.user && req.user.id !== data.id) {
+        const follow = await Follow.findOne({ where: { followerId: req.user.id, followingId: data.id } });
+        if (follow) followStatus = follow.status;
+      } else if (req.user && req.user.id === data.id) {
+        followStatus = 'self';
+      }
+      const followersCount = await Follow.count({ where: { followingId: data.id, status: 'accepted' } });
+      return { ...data, followStatus, followersCount };
+    }));
+
+    res.json(results);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

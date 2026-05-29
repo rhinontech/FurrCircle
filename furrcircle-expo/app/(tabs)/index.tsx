@@ -1,26 +1,26 @@
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
-  StyleSheet, Modal, Pressable, Alert,
+  StyleSheet, Modal, Pressable, Alert, ActivityIndicator, TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import * as ImagePicker from "expo-image-picker";
-import { posts, type Post } from "../../src/lib/demo-data";
+import { posts as dummyPosts, sampleComments, type Post } from "../../src/lib/demo-data";
 import { colors } from "../../src/lib/theme";
 import { Avatar } from "../../src/components/Avatar";
 import { useTokens, useThemeStore } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { userApi } from "../../services/user/userApi";
-import { reminderApi } from "../../services/reminder/reminderApi";
+import { feedApi } from "../../services/community/feedApi";
 import { LocationPickerModal, LocationResult } from "../../src/components/LocationPickerModal";
 import { ShareSheet } from "../../src/components/ShareSheet";
 import { StoryViewer, type Story, type StoryGroup } from "../../src/components/StoryViewer";
 import { StoryEditor } from "../../src/components/StoryEditor";
 
 export default function FeedScreen() {
+  const { refresh } = useLocalSearchParams<{ refresh?: string }>();
   const insets = useSafeAreaInsets();
   const [composeOpen, setComposeOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -33,14 +33,88 @@ export default function FeedScreen() {
   const [selectedStoryGroupIndex, setSelectedStoryGroupIndex] = useState(0);
   const [editorVisible, setEditorVisible] = useState(false);
   const [pickedImageUri, setPickedImageUri] = useState<string | null>(null);
-  const [reminders, setReminders] = useState<any[]>([]);
+  const [feedPosts, setFeedPosts] = useState<any[]>([]);
+  const [feedLoading, setFeedLoading] = useState(true);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const user = useAuthStore(s => s.user);
 
-  // Fetch reminders
-  useState(() => {
-    reminderApi.getMyReminders()
-      .then(data => setReminders(data?.filter((r: any) => !r.isDone) || []))
-      .catch(console.error);
-  });
+  const loadFeed = useCallback(async () => {
+    try {
+      setFeedLoading(true);
+      const data = await feedApi.getFeed('for_you', 1, 50);
+      const apiPosts = data?.posts || [];
+      setFeedPosts(apiPosts);
+
+      const userId = user?.id;
+      if (userId) {
+        const liked = new Set<string>(apiPosts.filter((p: any) => (p.likes || []).some((l: any) => l.userId === userId)).map((p: any) => p.id));
+        const saved = new Set<string>(apiPosts.filter((p: any) => (p.savedBy || []).includes(userId)).map((p: any) => p.id));
+        setLikedIds(liked);
+        setSavedIds(saved);
+      }
+    } catch (err) {
+      console.error("Failed to load feed:", err);
+      setFeedPosts([]);
+    } finally {
+      setFeedLoading(false);
+    }
+  }, [user?.id]);
+
+  useFocusEffect(useCallback(() => {
+    loadFeed();
+  }, [loadFeed]));
+
+  useEffect(() => {
+    if (refresh) {
+      loadFeed();
+    }
+  }, [refresh]);
+
+  const handleLike = async (postId: string) => {
+    const isDummy = dummyPosts.some(p => p.id === postId);
+    const isLiked = likedIds.has(postId);
+    setLikedIds(prev => {
+      const next = new Set(prev);
+      isLiked ? next.delete(postId) : next.add(postId);
+      return next;
+    });
+    
+    // Update count in state
+    setFeedPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        if (isDummy) {
+          return { ...p, likes: isLiked ? Math.max(0, p.likes - 1) : p.likes + 1 };
+        } else {
+          const currentLikes = p.likes || [];
+          return {
+            ...p,
+            likes: isLiked 
+              ? currentLikes.filter((l: any) => l.userId !== user?.id)
+              : [...currentLikes, { userId: user?.id }]
+          };
+        }
+      }
+      return p;
+    }));
+
+    if (!isDummy) {
+      try { await feedApi.likePost(postId); } catch {}
+    }
+  };
+
+  const handleSave = async (postId: string) => {
+    const isDummy = dummyPosts.some(p => p.id === postId);
+    const isSaved = savedIds.has(postId);
+    setSavedIds(prev => {
+      const next = new Set(prev);
+      isSaved ? next.delete(postId) : next.add(postId);
+      return next;
+    });
+    if (!isDummy) {
+      try { await feedApi.savePost(postId); } catch {}
+    }
+  };
 
   const allStoryGroups: StoryGroup[] = [
     ...(myStories.length > 0
@@ -108,35 +182,33 @@ export default function FeedScreen() {
           onPressStory={handlePressStory}
           onAddStory={handleAddStory}
         />
-        {reminders.length > 0 && (
-          <View style={styles.remindersContainer}>
-            <Text style={[styles.sectionTitle, { color: tk.text }]}>Upcoming Reminders</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
-              {reminders.map((r, i) => (
-                <View key={r.id} style={[styles.reminderCard, { backgroundColor: tk.card, borderColor: tk.border }]}>
-                  <View style={[styles.reminderIconBg, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
-                    <Bell size={18} color={colors.primary} />
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={[styles.reminderTitle, { color: tk.text }]} numberOfLines={1}>{r.title}</Text>
-                    <Text style={[styles.reminderTime, { color: tk.textMuted }]}>{r.date} at {r.time}</Text>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+        
+        {/* Feed List */}
         <View style={styles.feedList}>
-          {posts.map((p) => (
-            <PostCard
-              key={p.id}
-              post={p}
-              onShare={(id) => {
-                setSharingPostId(id);
-                setShareOpen(true);
-              }}
-            />
-          ))}
+          {feedLoading && feedPosts.length === 0 ? (
+            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+          ) : feedPosts.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Image source={require("../../src/assets/doodle-puppy.png")} style={styles.emptyImage} resizeMode="contain" />
+              <Text style={[styles.emptyTitle, { color: tk.text }]}>No posts yet</Text>
+              <Text style={[styles.emptyText, { color: tk.textMuted }]}>Be the first to share a moment of your pet!</Text>
+            </View>
+          ) : (
+            feedPosts.map((p) => (
+              <PostCard
+                key={p.id}
+                post={p}
+                isLiked={likedIds.has(p.id)}
+                isSaved={savedIds.has(p.id)}
+                onLike={() => handleLike(p.id)}
+                onSave={() => handleSave(p.id)}
+                onShare={(id) => {
+                  setSharingPostId(id);
+                  setShareOpen(true);
+                }}
+              />
+            ))
+          )}
         </View>
       </ScrollView>
 
@@ -144,7 +216,7 @@ export default function FeedScreen() {
         <Plus size={28} color="#fff" strokeWidth={2.4} />
       </TouchableOpacity>
 
-      <ComposeSheet open={composeOpen} onClose={() => setComposeOpen(false)} />
+      <ComposeSheet open={composeOpen} onClose={() => setComposeOpen(false)} onPublished={loadFeed} />
       <ShareSheet
         open={shareOpen}
         onClose={() => {
@@ -345,43 +417,180 @@ function StoryRail({
   );
 }
 
-function PostCard({ post, onShare }: { post: Post; onShare: (id: string) => void }) {
+function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare }: {
+  post: any; isLiked: boolean; isSaved: boolean;
+  onLike: () => void; onSave: () => void; onShare: (id: string) => void;
+}) {
   const router = useRouter();
   const tk = useTokens();
+  const { user } = useAuthStore();
+  const [commentOpen, setCommentOpen] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const isDummy = dummyPosts.some(d => d.id === post.id);
+  const [localComments, setLocalComments] = useState<any[]>(
+    Array.isArray(post.comments)
+      ? post.comments
+      : isDummy
+        ? sampleComments.map(c => ({
+            id: c.id,
+            text: c.body,
+            author: { name: c.author }
+          }))
+        : []
+  );
+
+  const author = isDummy ? {
+    name: post.pet,
+    avatar_url: null,
+    username: post.owner?.toLowerCase().replace(/[^a-z0-9]/g, ""),
+  } : (post.author || {});
+
+  const displayName = author.name || "Pet parent";
+  const avatarSource = post.avatar || (author.avatar_url ? { uri: author.avatar_url } : null);
+  
+  const TINT: Record<string, string> = {
+    dogs: "#FF6B6B22", cats: "#FF6FCF22", rescue: "#4CAF5022",
+    health: "#2563EB18", training: "#FFD93D44", milestone: "#FF6FCF22",
+    photo: "#FF6B6B22", reel: "#2563EB18", general: "#FFD93D22",
+  };
+  const tintColor = post.tintColor || TINT[(post.category || "").toLowerCase()] || "#FF6B6B22";
+
+  const likeCount = isDummy ? post.likes : (post.likes || []).length;
+  const commentCount = localComments.length;
+
+  const handleComment = async () => {
+    if (!commentText.trim()) return;
+
+    if (isDummy) {
+      const newComment = {
+        id: `dummy-c-${Date.now()}`,
+        text: commentText.trim(),
+        author: { name: user?.name || "Demo User" }
+      };
+      setLocalComments(prev => [...prev, newComment]);
+      setCommentText("");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await feedApi.commentOnPost(post.id, commentText.trim());
+      setLocalComments(prev => [...prev, res.comment]);
+      setCommentText("");
+    } catch {
+      Alert.alert("Error", "Could not post comment.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <View style={[styles.card, { backgroundColor: tk.card }]}>
+      {/* Header */}
       <View style={styles.cardHeader}>
         <TouchableOpacity
-          onPress={() => router.push(`/p/${post.pet.toLowerCase()}`)}
-          activeOpacity={0.7}
           style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}
+          onPress={() => author.username && router.push(isDummy ? `/user/${author.username}` : `/u/${author.username}`)}
         >
-          <Avatar source={post.avatar} name={post.pet} size={44} />
+          {typeof avatarSource === "number" ? (
+            <Image source={avatarSource} style={{ width: 44, height: 44, borderRadius: 22 }} />
+          ) : avatarSource?.uri ? (
+            <Image source={{ uri: avatarSource.uri }} style={{ width: 44, height: 44, borderRadius: 22 }} />
+          ) : (
+            <Avatar name={displayName} size={44} />
+          )}
           <View style={styles.cardMeta}>
-            <Text style={[styles.petName, { color: tk.text }]}>{post.pet}</Text>
-            <Text style={[styles.petOwner, { color: tk.textMuted }]}>by {post.owner} · {post.time}</Text>
+            <Text style={[styles.petName, { color: tk.text }]}>{displayName}</Text>
+            <Text style={[styles.petOwner, { color: tk.textMuted }]}>
+              {post.owner ? `by ${post.owner}` : `@${author.username || "parent"}`} · {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : post.time || "now"}
+            </Text>
           </View>
         </TouchableOpacity>
+        
+        {/* Type badges */}
         {post.type === "rescue" && <View style={[styles.typeBadge, { backgroundColor: colors.success }]}><Text style={styles.typeBadgeText}>RESCUE</Text></View>}
         {post.type === "milestone" && <View style={[styles.typeBadge, { backgroundColor: colors.pinky }]}><Text style={styles.typeBadgeText}>MILESTONE</Text></View>}
+        {!post.type && post.category === "Adoption" && <View style={[styles.typeBadge, { backgroundColor: colors.success }]}><Text style={styles.typeBadgeText}>ADOPTION</Text></View>}
+        {!post.type && post.category === "Lost & Found" && <View style={[styles.typeBadge, { backgroundColor: colors.coral }]}><Text style={styles.typeBadgeText}>LOST & FOUND</Text></View>}
+        {!post.type && post.category === "Training" && <View style={[styles.typeBadge, { backgroundColor: colors.primary }]}><Text style={styles.typeBadgeText}>TRAINING</Text></View>}
+        {!post.type && post.category === "Health" && <View style={[styles.typeBadge, { backgroundColor: "#2563EB" }]}><Text style={styles.typeBadgeText}>HEALTH</Text></View>}
       </View>
 
-      <TouchableOpacity onPress={() => router.push(`/post/${post.id}`)} activeOpacity={0.9}
-        style={[styles.imageWrapper, { backgroundColor: post.tintColor }]}>
-        <Image source={post.image} style={styles.postImage} />
+      {/* Image in tinted container */}
+      <TouchableOpacity
+        onPress={() => router.push(`/post/${post.id}`)}
+        activeOpacity={0.9}
+        style={[styles.imageWrapper, { backgroundColor: tintColor }]}
+      >
+        {post.image ? (
+          <Image source={post.image} style={styles.postImage} resizeMode="contain" />
+        ) : post.imageUrl ? (
+          <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+        ) : (
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.text, padding: 20, textAlign: "center", lineHeight: 22 }}>
+            {post.content}
+          </Text>
+        )}
       </TouchableOpacity>
 
+      {/* Caption */}
+      {(post.image || post.imageUrl) && (post.caption || post.content) ? (
+        <Text style={[styles.caption, { color: tk.text }]} numberOfLines={2}>
+          <Text style={styles.captionBold}>{post.pet || displayName} </Text>
+          {post.caption || post.content}
+        </Text>
+      ) : null}
+
+      {/* Tags */}
+      {post.tags ? (
+        <Text style={styles.tags}>{post.tags.map((t: string) => `#${t}`).join("  ")}</Text>
+      ) : post.category ? (
+        <Text style={styles.tags}>#{post.category}</Text>
+      ) : null}
+
+      {/* Actions */}
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.actionBtn}><Heart size={24} color={tk.text} /><Text style={[styles.actionCount, { color: tk.text }]}>{post.likes}</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn}><MessageCircle size={24} color={tk.text} /><Text style={[styles.actionCount, { color: tk.text }]}>{post.comments}</Text></TouchableOpacity>
-        <TouchableOpacity onPress={() => onShare(post.id)}><Send size={24} color={tk.text} /></TouchableOpacity>
-        <TouchableOpacity style={{ marginLeft: "auto" }}><Bookmark size={24} color={tk.text} /></TouchableOpacity>
+        <TouchableOpacity onPress={onLike} style={styles.actionBtn}>
+          <Heart size={24} color={isLiked ? colors.coral : tk.text} fill={isLiked ? colors.coral : "none"} />
+          <Text style={[styles.actionCount, { color: tk.text }]}>{likeCount}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setCommentOpen(v => !v)} style={styles.actionBtn}>
+          <MessageCircle size={24} color={tk.text} />
+          <Text style={[styles.actionCount, { color: tk.text }]}>{commentCount}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => onShare(post.id)}>
+          <Send size={24} color={tk.text} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onSave} style={{ marginLeft: "auto" }}>
+          <Bookmark size={24} color={isSaved ? colors.primary : tk.text} fill={isSaved ? colors.primary : "none"} />
+        </TouchableOpacity>
       </View>
 
-      <Text style={[styles.caption, { color: tk.text }]}>
-        <Text style={styles.captionBold}>{post.pet} </Text>{post.caption}
-      </Text>
-      <Text style={styles.tags}>{post.tags.map((t) => `#${t}`).join("  ")}</Text>
+      {/* Inline comments */}
+      {commentOpen && (
+        <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+          {localComments.slice(-3).map((c: any, i) => (
+            <View key={c.id || i} style={{ flexDirection: "row", gap: 8, marginBottom: 4 }}>
+              <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 12, color: tk.text }}>{c.author?.name || "User"}</Text>
+              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: tk.textMuted, flex: 1 }}>{c.text}</Text>
+            </View>
+          ))}
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 6, alignItems: "center" }}>
+            <TextInput
+              value={commentText}
+              onChangeText={setCommentText}
+              placeholder="Add a comment…"
+              placeholderTextColor={tk.textMuted}
+              style={{ flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: tk.text, borderBottomWidth: 1, borderColor: tk.border, paddingVertical: 4 }}
+            />
+            <TouchableOpacity onPress={handleComment} disabled={submitting}>
+              <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 13, color: colors.primary }}>Post</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -393,7 +602,7 @@ const composeOptions = [
   { label: "Add Memory", desc: "Save to Moona's vault", tintColor: "rgba(255,111,207,0.15)", to: "/memory" as const },
 ];
 
-function ComposeSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: () => void; onPublished: () => void }) {
   const router = useRouter();
   const tk = useTokens();
   return (
@@ -420,9 +629,8 @@ function ComposeSheet({ open, onClose }: { open: boolean; onClose: () => void })
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12, paddingTop:10 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12, paddingTop: 10 },
   logoImg: { width: 120, height: 50, alignSelf: "flex-start" },
-  subtitle: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: -4, marginLeft: 2 },
   headerActions: { flexDirection: "row", gap: 8 },
   iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
   notifDot: { position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.coral },
@@ -433,7 +641,7 @@ const styles = StyleSheet.create({
   storyRingGradient: { backgroundColor: colors.coral },
   storyInner: { flex: 1, borderRadius: 30, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#F7F8FA", overflow: "hidden" },
   storyImg: { width: "90%", height: "90%" },
-  storyLabel: { fontSize: 11, fontFamily: "Poppins_600SemiBold", color: colors.foreground + "bb", textAlign: "center" },
+  storyLabel: { fontSize: 11, fontFamily: "Poppins_600SemiBold", textAlign: "center" },
   miniAddBadge: { position: "absolute", bottom: -2, right: -2, width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", borderWidth: 2 },
   remindersContainer: { marginTop: 16, marginBottom: 8 },
   sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, paddingHorizontal: 16, marginBottom: 12 },
@@ -466,4 +674,8 @@ const styles = StyleSheet.create({
   sheetIcon: { width: 48, height: 48, borderRadius: 16 },
   sheetRowTitle: { fontFamily: "Poppins_700Bold", fontSize: 15 },
   sheetRowDesc: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  emptyState: { alignItems: "center", justifyContent: "center", paddingVertical: 60, paddingHorizontal: 40 },
+  emptyImage: { width: 140, height: 140, marginBottom: 16, opacity: 0.8 },
+  emptyTitle: { fontFamily: "Poppins_700Bold", fontSize: 18, marginBottom: 8, textAlign: "center" },
+  emptyText: { fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center", lineHeight: 22 },
 });

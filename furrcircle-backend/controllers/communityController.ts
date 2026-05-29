@@ -295,6 +295,78 @@ export const getMyPosts = async (req: any, res: Response): Promise<void> => {
   }
 };
 
+// @desc    Get user's posts by username
+// @route   GET /api/community/posts/user/:username
+export const getUserPosts = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { users: User, posts: Post, comments: Comment, likes: Like, saved_posts: SavedPost } = db as any;
+    const { username } = req.params;
+
+    const targetUser = await User.findOne({ where: { username: { [Op.iLike]: username } } });
+    if (!targetUser) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const posts = await Post.findAll({
+      where: { userId: targetUser.id, status: "approved" },
+      include: [
+        { model: Comment, as: "comments" },
+        { model: Like, as: "likes", attributes: ["userId", "userType"] },
+        { model: SavedPost, as: "savedPosts", attributes: ["userId", "userType"] },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    const resolveProfile = createProfileResolver();
+    const serialized = await Promise.all(posts.map((post: any) => serializePost(post, resolveProfile)));
+    res.json(serialized);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getSavedPosts = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { posts: Post, comments: Comment, likes: Like, saved_posts: SavedPost } = db as any;
+
+    // Find all savedPost records for this user
+    const savedRecords = await SavedPost.findAll({
+      where: { userId: req.user.id },
+      order: [["createdAt", "DESC"]],
+    });
+    const postIds = savedRecords.map((r: any) => r.postId);
+
+    if (postIds.length === 0) {
+      res.json([]);
+      return;
+    }
+
+    const { Op } = await import("sequelize");
+    const posts = await Post.findAll({
+      where: { id: { [Op.in]: postIds }, status: "approved" },
+      include: [
+        { model: Comment, as: "comments" },
+        { model: Like, as: "likes", attributes: ["userId", "userType"] },
+        { model: SavedPost, as: "savedPosts", attributes: ["userId", "userType"] },
+      ],
+    });
+
+    // Preserve the saved order
+    const postMap: Record<string, any> = {};
+    posts.forEach((p: any) => { postMap[p.id] = p; });
+    const ordered = postIds.map((id: string) => postMap[id]).filter(Boolean);
+
+    const resolveProfile = createProfileResolver();
+    const serialized = await Promise.all(ordered.map((post: any) => serializePost(post, resolveProfile)));
+    res.json(serialized);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+
 
 export const deleteMyPost = async (req: any, res: Response): Promise<void> => {
   const transaction = await db.sequelize.transaction();

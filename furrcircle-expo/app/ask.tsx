@@ -1,49 +1,150 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
-import { X } from "lucide-react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { X, Hash } from "lucide-react-native";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
-import { circles } from "../src/lib/demo-data";
-import { useState } from "react";
+import { circleApi } from "../services/community/circleApi";
+import { questionApi } from "../services/community/questionApi";
+import { useState, useEffect } from "react";
 
 export default function AskScreen() {
   const router = useRouter();
   const tk = useTokens();
+  const params = useLocalSearchParams<{ circleId?: string; circleName?: string }>();
+
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [circle, setCircle] = useState(circles[0].slug);
+  const [tags, setTags] = useState("");
+  const [selectedCircleId, setSelectedCircleId] = useState<string | null>(params.circleId || null);
+  const [circles, setCircles] = useState<any[]>([]);
+  const [loadingCircles, setLoadingCircles] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    circleApi.getMyCircles()
+      .then(data => setCircles(data || []))
+      .catch(() => setCircles([]))
+      .finally(() => setLoadingCircles(false));
+  }, []);
+
+  const handlePost = async () => {
+    if (!title.trim()) {
+      Alert.alert("Required", "Please write your question first.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const tagList = tags.split(",").map(t => t.trim().replace(/^#/, "")).filter(Boolean);
+      await questionApi.createQuestion({
+        title: title.trim(),
+        body: body.trim() || undefined,
+        tags: tagList,
+        circleId: selectedCircleId || undefined,
+      });
+      if (selectedCircleId) {
+        router.navigate({
+          pathname: `/community/${selectedCircleId}` as any,
+          params: { refresh: String(Date.now()) },
+        });
+      } else {
+        router.navigate({
+          pathname: "/(tabs)/community" as any,
+          params: { refresh: String(Date.now()) },
+        });
+      }
+    } catch (err: any) {
+      Alert.alert("Error", err?.response?.data?.message || "Failed to post question.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <PageContainer>
-    <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title="Ask the Community" right={
-        <TouchableOpacity onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: tk.card }]}>
-          <X size={20} color={tk.text} />
-        </TouchableOpacity>
-      } showBack={false} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
-        <Text style={[styles.label, { color: tk.textMuted }]}>Circle</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ marginBottom: 4 }}>
-          {circles.slice(0, 5).map((c) => {
-            const isActive = circle === c.slug;
-            return (
-              <TouchableOpacity key={c.slug} onPress={() => setCircle(c.slug)} style={[styles.circleBtn, { backgroundColor: isActive ? tk.text : tk.card }]}>
-                <Text style={[styles.circleBtnText, { color: isActive ? tk.bg : tk.textMuted }]}>{c.name}</Text>
+      <View style={[styles.container, { backgroundColor: tk.bg }]}>
+        <ScreenHeader
+          title="Ask the Community"
+          right={
+            <TouchableOpacity onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: tk.card }]}>
+              <X size={20} color={tk.text} />
+            </TouchableOpacity>
+          }
+          showBack={false}
+        />
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
+          {/* Circle selector */}
+          <Text style={[styles.label, { color: tk.textMuted }]}>Circle (optional)</Text>
+          {loadingCircles ? (
+            <ActivityIndicator color={colors.primary} style={{ marginBottom: 8 }} />
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ marginBottom: 4 }}>
+              <TouchableOpacity
+                onPress={() => setSelectedCircleId(null)}
+                style={[styles.circleBtn, { backgroundColor: !selectedCircleId ? tk.text : tk.card }]}
+              >
+                <Text style={[styles.circleBtnText, { color: !selectedCircleId ? tk.bg : tk.textMuted }]}>Global</Text>
               </TouchableOpacity>
-            );
-          })}
+              {circles.map((c: any) => {
+                const isActive = selectedCircleId === c.id;
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    onPress={() => setSelectedCircleId(isActive ? null : c.id)}
+                    style={[styles.circleBtn, { backgroundColor: isActive ? tk.text : tk.card }]}
+                  >
+                    <Text style={[styles.circleBtnText, { color: isActive ? tk.bg : tk.textMuted }]}>{c.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
+
+          {/* Question title */}
+          <Text style={[styles.label, { color: tk.textMuted }]}>Question</Text>
+          <TextInput
+            value={title}
+            onChangeText={setTitle}
+            placeholder="What's your question?"
+            placeholderTextColor={tk.textMuted}
+            style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, borderWidth: 1 }]}
+          />
+
+          {/* Details */}
+          <Text style={[styles.label, { color: tk.textMuted }]}>Details (optional)</Text>
+          <TextInput
+            value={body}
+            onChangeText={setBody}
+            multiline
+            numberOfLines={6}
+            placeholder="Share more context…"
+            placeholderTextColor={tk.textMuted}
+            style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, borderWidth: 1 }]}
+          />
+
+          {/* Tags */}
+          <Text style={[styles.label, { color: tk.textMuted }]}>Tags (optional, comma-separated)</Text>
+          <View style={[styles.tagRow, { backgroundColor: tk.inputBg, borderColor: tk.border }]}>
+            <Hash size={16} color={tk.textMuted} />
+            <TextInput
+              value={tags}
+              onChangeText={setTags}
+              placeholder="health, nutrition, training"
+              placeholderTextColor={tk.textMuted}
+              style={{ flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: tk.text, paddingVertical: 8 }}
+              autoCapitalize="none"
+            />
+          </View>
+
+          <TouchableOpacity onPress={handlePost} disabled={submitting} style={[styles.postBtn, submitting && { opacity: 0.6 }]} activeOpacity={0.85}>
+            {submitting
+              ? <ActivityIndicator color={colors.white} />
+              : <Text style={styles.postBtnText}>Post question</Text>
+            }
+          </TouchableOpacity>
         </ScrollView>
-        <Text style={[styles.label, { color: tk.textMuted }]}>Question</Text>
-        <TextInput value={title} onChangeText={setTitle} placeholder="What's your question?" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        <Text style={[styles.label, { color: tk.textMuted }]}>Details (optional)</Text>
-        <TextInput value={body} onChangeText={setBody} multiline numberOfLines={6} placeholder="Share more context…" placeholderTextColor={tk.textMuted} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        <TouchableOpacity onPress={() => router.back()} style={styles.postBtn} activeOpacity={0.85}>
-          <Text style={styles.postBtnText}>Post question</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+      </View>
     </PageContainer>
   );
 }
@@ -51,13 +152,12 @@ export default function AskScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  label: { fontFamily: "Poppins_700Bold", fontSize: 13, color: colors.foreground + "99", marginTop: 20, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 },
+  label: { fontFamily: "Poppins_700Bold", fontSize: 13, marginTop: 20, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 },
   input: { borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, fontFamily: "Inter_400Regular" },
   textarea: { height: 140, textAlignVertical: "top" },
   circleBtn: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
-  circleBtnActive: { backgroundColor: colors.foreground },
-  circleBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 12, color: colors.foreground + "88" },
-  circleBtnTextActive: { color: colors.white },
+  circleBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 12 },
+  tagRow: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14 },
   postBtn: { marginTop: 24, backgroundColor: colors.primary, borderRadius: 24, paddingVertical: 16, alignItems: "center" },
   postBtnText: { fontFamily: "Poppins_700Bold", fontSize: 16, color: colors.white },
 });
