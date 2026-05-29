@@ -119,7 +119,18 @@ export default function AllVetsScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
-          {sorted.length === 0 ? (
+          {!cityLabel ? (
+            <View style={{ alignItems: "center", paddingTop: 60, gap: 12 }}>
+              <MapPin size={40} color={tk.textMuted} />
+              <Text style={{ fontSize: 16, fontFamily: "Inter_600SemiBold", color: tk.text }}>Location not set</Text>
+              <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: tk.textMuted, textAlign: "center", marginBottom: 12 }}>
+                Please set your home city to see nearby vets.
+              </Text>
+              <TouchableOpacity onPress={() => router.push("/edit-profile")} style={{ backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 }}>
+                <Text style={{ color: colors.white, fontFamily: "Inter_600SemiBold", fontSize: 14 }}>Add Location</Text>
+              </TouchableOpacity>
+            </View>
+          ) : sorted.length === 0 ? (
             <View style={{ alignItems: "center", paddingTop: 60, gap: 12 }}>
               <Stethoscope size={40} color={tk.textMuted} />
               <Text style={{ fontSize: 16, fontFamily: "Inter_600SemiBold", color: tk.text }}>No vets found</Text>

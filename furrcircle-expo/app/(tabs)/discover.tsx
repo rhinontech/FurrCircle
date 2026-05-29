@@ -72,35 +72,51 @@ export default function DiscoverScreen() {
       </View>
 
       <View style={styles.vetList}>
-        {nearbyVets.slice(0, 4).map((v) => (
-          <TouchableOpacity key={v.id} onPress={() => router.push(`/vets/${v.id}`)} style={[styles.vetRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+        {!user?.city ? (
+          <TouchableOpacity onPress={() => router.push("/edit-profile")} style={[styles.vetRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
             <View style={[styles.vetIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
-              <Image source={require("../../src/assets/doodle-vet.png")} style={styles.vetImg} resizeMode="contain" />
+              <MapPin size={28} color={colors.primary} />
             </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
+            <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
               <View style={styles.vetNameRow}>
-                <Text style={[styles.vetName, { color: tk.text }]} numberOfLines={1}>{v.name}</Text>
+                <Text style={[styles.vetName, { color: tk.text }]}>Add Location</Text>
               </View>
               <View style={styles.vetSpecRow}>
-                <Stethoscope size={12} color={tk.textMuted} />
-                <Text style={[styles.vetSpec, { color: tk.textMuted }]}>{v.address ? v.address.split(',')[0] : "General"}</Text>
+                <Text style={[styles.vetSpec, { color: tk.textMuted }]}>Set your city to find nearby vets</Text>
               </View>
-              <View style={styles.vetMeta}>
-                <Star size={12} color={colors.sunshine} fill={colors.sunshine} />
-                <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{v.rating || "N/A"}</Text>
-                {user?.city && (
-                  <>
-                    <MapPin size={12} color={tk.textMuted} />
-                    <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{user.city}</Text>
-                  </>
-                )}
-              </View>
-            </View>
-            <View style={styles.callBtn}>
-              <Phone size={16} color={colors.white} />
             </View>
           </TouchableOpacity>
-        ))}
+        ) : (
+          nearbyVets.slice(0, 4).map((v) => (
+            <TouchableOpacity key={v.id} onPress={() => router.push(`/vets/${v.id}`)} style={[styles.vetRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+              <View style={[styles.vetIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
+                <Image source={require("../../src/assets/doodle-vet.png")} style={styles.vetImg} resizeMode="contain" />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={styles.vetNameRow}>
+                  <Text style={[styles.vetName, { color: tk.text }]} numberOfLines={1}>{v.name}</Text>
+                </View>
+                <View style={styles.vetSpecRow}>
+                  <Stethoscope size={12} color={tk.textMuted} />
+                  <Text style={[styles.vetSpec, { color: tk.textMuted }]}>{v.address ? v.address.split(',')[0] : "General"}</Text>
+                </View>
+                <View style={styles.vetMeta}>
+                  <Star size={12} color={colors.sunshine} fill={colors.sunshine} />
+                  <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{v.rating || "N/A"}</Text>
+                  {user?.city && (
+                    <>
+                      <MapPin size={12} color={tk.textMuted} />
+                      <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{user.city}</Text>
+                    </>
+                  )}
+                </View>
+              </View>
+              <View style={styles.callBtn}>
+                <Phone size={16} color={colors.white} />
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
       </View>
 
       <View style={styles.sectionRow}>
