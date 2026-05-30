@@ -1,85 +1,17 @@
-import { useState } from "react";
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState, useCallback, useEffect } from "react";
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, MessageCircle, Sparkles } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { petApi } from "../../services/pet/petApi";
 
 const boyDog = require("../../src/assets/doodle-boy-dog.png");
 const puppy = require("../../src/assets/doodle-puppy.png");
 const cat = require("../../src/assets/doodle-cat.png");
-
-type PetData = {
-  name: string;
-  img: any;
-  tint: string;
-  breed: string;
-  owner: string;
-  ownerHandle: string;
-  bio: string;
-  age: string;
-  weight: string;
-  location: string;
-  tags: string[];
-};
-
-const pets: Record<string, PetData> = {
-  moona: {
-    name: "Moona",
-    img: boyDog,
-    tint: "rgba(255,107,107,0.2)",
-    breed: "Border Collie · ♀ · 2 y",
-    owner: "Goutham R.",
-    ownerHandle: "goutham",
-    bio: "Park enthusiast. Will trade frisbees for cuddles. Adopted from BSPCA, August 2023.",
-    age: "2 y",
-    weight: "14 kg",
-    location: "Mumbai",
-    tags: ["Playful", "Loves water", "Good with kids", "Smart"],
-  },
-  biscuit: {
-    name: "Biscuit",
-    img: puppy,
-    tint: "rgba(255,217,61,0.3)",
-    breed: "Beagle · ♂ · 4 mo",
-    owner: "Rescue & Co.",
-    ownerHandle: "rescueco",
-    bio: "Tiny ears, huge personality. Looking for a forever home with a yard and patient humans.",
-    age: "4 mo",
-    weight: "5 kg",
-    location: "Bandra W",
-    tags: ["Adoptable", "Vaccinated", "House-trained"],
-  },
-  mochi: {
-    name: "Mochi",
-    img: cat,
-    tint: "rgba(255,111,207,0.2)",
-    breed: "Persian · ♀ · 1 y",
-    owner: "Aanya P.",
-    ownerHandle: "aanya",
-    bio: "Professional window patroller. Reports squirrels and pigeons hourly.",
-    age: "1 y",
-    weight: "3.4 kg",
-    location: "Powai",
-    tags: ["Indoor", "Loves brushing", "Quiet"],
-  },
-  kobi: {
-    name: "Kobi",
-    img: cat,
-    tint: "rgba(37,99,235,0.1)",
-    breed: "Tabby · ♂ · 4 y",
-    owner: "Goutham R.",
-    ownerHandle: "goutham",
-    bio: "Gentle giant. Has opinions about cardboard boxes.",
-    age: "4 y",
-    weight: "5.2 kg",
-    location: "Mumbai",
-    tags: ["Cuddly", "Box collector", "Talkative"],
-  },
-};
 
 const traitColors = [
   { bg: "rgba(37,99,235,0.15)", text: colors.primary },
@@ -98,17 +30,63 @@ const galleryTints = [
   "rgba(26,26,46,0.1)",
 ];
 
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 export default function PetPublicProfile() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const tk = useTokens();
   const insets = useSafeAreaInsets();
-  const pet = pets[id ?? "moona"] ?? { ...pets.moona, name: capitalize(id ?? "pet") };
+  const [pet, setPet] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!id) { setLoading(false); return; }
+      setLoading(true);
+      petApi.getPetById(id)
+        .then(data => { setPet(data); setLoading(false); })
+        .catch(err => { console.error("Failed to load pet:", err); setLoading(false); });
+    }, [id])
+  );
+
+  if (loading) {
+    return (
+      <PageContainer>
+        <View style={[styles.container, { backgroundColor: tk.bg, justifyContent: "center", alignItems: "center" }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </PageContainer>
+    );
+  }
+
+  if (!pet) {
+    return (
+      <PageContainer>
+        <View style={[styles.container, { backgroundColor: tk.bg }]}>
+          <ScreenHeader title="Pet Profile" />
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+            <Text style={{ fontFamily: "Inter_400Regular", color: tk.textMuted }}>Pet not found.</Text>
+          </View>
+        </View>
+      </PageContainer>
+    );
+  }
+
+  const TINT: Record<string, string> = {
+    dog: "rgba(255,107,107,0.2)",
+    cat: "rgba(255,111,207,0.2)",
+  };
+  const tintColor = TINT[String(pet.species || "").toLowerCase()] || "rgba(255,217,61,0.3)";
+  const petBreed = pet.breed || pet.species || "Unknown breed";
+  const petGender = pet.gender === "male" ? "♂" : pet.gender === "female" ? "♀" : "";
+  const breedString = `${petBreed} · ${petGender} · ${pet.age ? `${pet.age} y` : "?"}`;
+  const ownerName = pet.owner?.name || "Pet parent";
+  const ownerHandle = pet.owner?.username || pet.owner?.name?.toLowerCase().replace(/[^a-z0-9]/g, "") || "owner";
+  const petBio = pet.description || pet.history || "No bio available.";
+  const petAge = pet.age ? `${pet.age} y` : "?";
+  const petWeight = pet.weight ? `${pet.weight} kg` : "?";
+  const petLocation = pet.city || pet.owner?.city || "Unknown";
+  const traits = Array.isArray(pet.personality) ? pet.personality : [];
 
   return (
     <PageContainer>
@@ -125,8 +103,8 @@ export default function PetPublicProfile() {
         <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
           {/* Hero card */}
           <View style={styles.px5}>
-            <View style={[styles.heroCard, { backgroundColor: pet.tint }]}>
-              <Image source={pet.img} style={styles.heroImg} resizeMode="contain" />
+            <View style={[styles.heroCard, { backgroundColor: tintColor }]}>
+              <Image source={pet.avatar_url ? { uri: pet.avatar_url } : boyDog} style={styles.heroImg} resizeMode="contain" />
               <TouchableOpacity onPress={() => setLiked(!liked)} style={styles.heartBtn}>
                 <Heart size={16} color={liked ? colors.pinky : colors.foreground} fill={liked ? colors.pinky : "transparent"} />
               </TouchableOpacity>
@@ -137,7 +115,7 @@ export default function PetPublicProfile() {
           <View style={styles.nameRow}>
             <View>
               <Text style={[styles.petName, { color: tk.text }]}>{pet.name}</Text>
-              <Text style={[styles.petBreed, { color: tk.textMuted }]}>{pet.breed}</Text>
+              <Text style={[styles.petBreed, { color: tk.textMuted }]}>{breedString}</Text>
             </View>
             <View style={styles.verifiedBadge}>
               <ShieldCheck size={12} color={colors.white} />
@@ -147,33 +125,41 @@ export default function PetPublicProfile() {
 
           {/* Owner chip */}
           <View style={styles.px6}>
-            <TouchableOpacity onPress={() => router.replace(`/user/${pet.ownerHandle}` as any)} style={[styles.ownerChip, { backgroundColor: tk.text + "10" }]}>
+            <TouchableOpacity onPress={() => router.replace(`/u/${ownerHandle}` as any)} style={[styles.ownerChip, { backgroundColor: tk.text + "10" }]}>
               <View style={styles.ownerAvatar}>
-                <Image source={boyDog} style={styles.ownerAvatarImg} resizeMode="cover" />
+                {pet.owner?.avatar_url ? (
+                  <Image source={{ uri: pet.owner.avatar_url }} style={styles.ownerAvatarImg} resizeMode="cover" />
+                ) : (
+                  <Image source={boyDog} style={styles.ownerAvatarImg} resizeMode="cover" />
+                )}
               </View>
-              <Text style={[styles.ownerName, { color: tk.text }]}>{pet.owner}</Text>
-              <Text style={[styles.ownerHandle, { color: tk.textMuted }]}>@{pet.ownerHandle}</Text>
+              <Text style={[styles.ownerName, { color: tk.text }]}>{ownerName}</Text>
+              <Text style={[styles.ownerHandle, { color: tk.textMuted }]}>@{ownerHandle}</Text>
             </TouchableOpacity>
 
-            <Text style={[styles.bio, { color: tk.text + "CC" }]}>{pet.bio}</Text>
+            <Text style={[styles.bio, { color: tk.text + "CC" }]}>{petBio}</Text>
           </View>
 
           {/* Stats */}
           <View style={styles.statsRow}>
-            <StatCard icon={Cake} label="Age" value={pet.age} tk={tk} />
-            <StatCard icon={Ruler} label="Weight" value={pet.weight} tk={tk} />
-            <StatCard icon={MapPin} label="City" value={pet.location} tk={tk} />
+            <StatCard icon={Cake} label="Age" value={petAge} tk={tk} />
+            <StatCard icon={Ruler} label="Weight" value={petWeight} tk={tk} />
+            <StatCard icon={MapPin} label="City" value={petLocation} tk={tk} />
           </View>
 
           {/* Personality */}
           <View style={styles.px6}>
             <Text style={[styles.sectionTitle, { color: tk.text }]}>Personality</Text>
             <View style={styles.tagsRow}>
-              {pet.tags.map((t, i) => (
-                <View key={t} style={[styles.traitChip, { backgroundColor: traitColors[i % 5].bg }]}>
-                  <Text style={[styles.traitText, { color: traitColors[i % 5].text }]}>{t}</Text>
-                </View>
-              ))}
+              {traits.length === 0 ? (
+                <Text style={{ color: tk.textMuted, fontSize: 13, fontFamily: "Inter_400Regular" }}>No traits specified.</Text>
+              ) : (
+                traits.map((t: string, i: number) => (
+                  <View key={t} style={[styles.traitChip, { backgroundColor: traitColors[i % 5].bg }]}>
+                    <Text style={[styles.traitText, { color: traitColors[i % 5].text }]}>{t}</Text>
+                  </View>
+                ))
+              )}
             </View>
           </View>
 
@@ -181,7 +167,7 @@ export default function PetPublicProfile() {
           <View style={styles.px5}>
             <Text style={[styles.sectionTitle, { color: tk.text, paddingHorizontal: 4 }]}>Gallery</Text>
             <View style={styles.galleryGrid}>
-              {galleryTints.map((bg, i) => (
+              {galleryTints.map((bg: string, i: number) => (
                 <View key={i} style={[styles.galleryItem, { backgroundColor: bg }]} />
               ))}
             </View>
@@ -189,7 +175,7 @@ export default function PetPublicProfile() {
 
           {/* CTA buttons */}
           <View style={styles.ctaRow}>
-            <TouchableOpacity style={styles.messageBtn}>
+            <TouchableOpacity onPress={() => router.push(`/chat?recipient=${pet.ownerId || ""}&pet=${pet.id}` as any)} style={styles.messageBtn}>
               <MessageCircle size={16} color={colors.white} />
               <Text style={styles.messageBtnText}>Message owner</Text>
             </TouchableOpacity>

@@ -21,6 +21,7 @@ import { StoryViewer, type Story, type StoryGroup } from "../../src/components/S
 import { StoryEditor } from "../../src/components/StoryEditor";
 import { Video, ResizeMode, Audio } from "expo-av";
 import { useIsFocused } from "@react-navigation/native";
+import Svg, { Path, Circle } from "react-native-svg";
 
 export default function FeedScreen() {
   const { refresh } = useLocalSearchParams<{ refresh?: string }>();
@@ -437,6 +438,103 @@ function FeedHeader() {
   );
 }
 
+function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {
+  var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+  return {
+    x: centerX + (radius * Math.cos(angleInRadians)),
+    y: centerY + (radius * Math.sin(angleInRadians))
+  };
+}
+
+function describeArc(x: number, y: number, radius: number, startAngle: number, endAngle: number) {
+  var start = polarToCartesian(x, y, radius, endAngle);
+  var end = polarToCartesian(x, y, radius, startAngle);
+  var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  var d = [
+    "M", start.x, start.y,
+    "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+  ].join(" ");
+  return d;
+}
+
+function StoryRing({
+  stories,
+  tk,
+  dark,
+}: {
+  stories: any[];
+  tk: any;
+  dark: boolean;
+}) {
+  const N = stories.length;
+  const strokeWidth = 3;
+  const size = 64;
+  const radius = (size - strokeWidth) / 2; // 30.5
+  const center = size / 2; // 32
+
+  if (N === 0) {
+    return (
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke={dark ? tk.border : "rgba(26,26,46,0.1)"}
+          strokeWidth={1}
+        />
+      </Svg>
+    );
+  }
+
+  const hasUnviewed = stories.some((s) => !s.viewedByMe);
+
+  if (N === 1) {
+    const color = hasUnviewed ? colors.coral : (dark ? tk.border : "rgba(26,26,46,0.15)");
+    return (
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+        />
+      </Svg>
+    );
+  }
+
+  const angleStep = 360 / N;
+  const gapAngle = Math.min(15, 360 * 4 / (2 * Math.PI * radius));
+
+  const arcs = [];
+  for (let i = 0; i < N; i++) {
+    const startAngle = i * angleStep + gapAngle / 2;
+    const endAngle = (i + 1) * angleStep - gapAngle / 2;
+    const isViewed = !!stories[i].viewedByMe;
+    const strokeColor = isViewed ? (dark ? tk.border : "rgba(26,26,46,0.15)") : colors.coral;
+
+    const pathData = describeArc(center, center, radius, startAngle, endAngle);
+    arcs.push(
+      <Path
+        key={i}
+        d={pathData}
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+      />
+    );
+  }
+
+  return (
+    <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+      {arcs}
+    </Svg>
+  );
+}
+
 function StoryRail({
   myStories,
   storyGroups,
@@ -463,10 +561,11 @@ function StoryRail({
         style={styles.storyItem}
         activeOpacity={0.8}
       >
-        <View style={[styles.storyRing, myStories.length > 0 ? styles.storyRingGradient : (dark ? { backgroundColor: tk.border } : styles.storyRingGray)]}>
+        <View style={styles.storyRingContainer}>
+          <StoryRing stories={myStories} tk={tk} dark={dark} />
           <View style={[styles.storyInner, { backgroundColor: myStories.length > 0 ? "rgba(255,107,107,0.2)" : (dark ? "rgba(240,240,255,0.08)" : "rgba(26,26,46,0.05)"), borderColor: tk.bg }]}>
             {user?.avatar_url ? (
-              <Image source={{ uri: user.avatar_url }} style={{ width: "100%", height: "100%", borderRadius: 30 }} resizeMode="cover" />
+              <Image source={{ uri: user.avatar_url }} style={{ width: "100%", height: "100%", borderRadius: 27 }} resizeMode="cover" />
             ) : (
               <Image source={require("../../src/assets/doodle-boy-dog.png")} style={styles.storyImg} resizeMode="contain" />
             )}
@@ -493,7 +592,6 @@ function StoryRail({
 
       {/* Others' stories */}
       {storyGroups.map((group) => {
-        const hasUnviewed = group.stories?.some((s: any) => !s.viewedByMe);
         return (
           <TouchableOpacity
             key={group.userId}
@@ -501,10 +599,11 @@ function StoryRail({
             style={styles.storyItem}
             activeOpacity={0.8}
           >
-            <View style={[styles.storyRing, hasUnviewed ? styles.storyRingGradient : (dark ? { backgroundColor: tk.border } : styles.storyRingGray)]}>
+            <View style={styles.storyRingContainer}>
+              <StoryRing stories={group.stories || []} tk={tk} dark={dark} />
               <View style={[styles.storyInner, { backgroundColor: "rgba(255,107,107,0.2)", borderColor: tk.bg }]}>
                 {group.avatar && (group.avatar as any).uri ? (
-                  <Image source={group.avatar} style={{ width: "100%", height: "100%", borderRadius: 30 }} resizeMode="cover" />
+                  <Image source={group.avatar} style={{ width: "100%", height: "100%", borderRadius: 27 }} resizeMode="cover" />
                 ) : (
                   <Image source={require("../../src/assets/doodle-boy-dog.png")} style={styles.storyImg} resizeMode="contain" />
                 )}
@@ -740,7 +839,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
 
 const composeOptions = [
   { label: "New Post", desc: "Share a photo of your pet", tintColor: "rgba(255,107,107,0.15)", to: "/compose" as const },
-  { label: "New Reel", desc: "Quick video moment", tintColor: "rgba(37,99,235,0.1)", to: "/reels" as const },
+  // { label: "New Reel", desc: "Quick video moment", tintColor: "rgba(37,99,235,0.1)", to: "/reels" as const },
   { label: "Ask the Community", desc: "Get help from pet parents", tintColor: "rgba(255,217,61,0.3)", to: "/ask" as const },
   { label: "Add Memory", desc: "Save to Moona's vault", tintColor: "rgba(255,111,207,0.15)", to: "/memory" as const },
 ];
@@ -779,10 +878,8 @@ const styles = StyleSheet.create({
   notifDot: { position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.coral },
   storyRail: { flexGrow: 0 },
   storyItem: { alignItems: "center", width: 64, gap: 6 },
-  storyRing: { width: 64, height: 64, borderRadius: 32, padding: 3 },
-  storyRingGray: { backgroundColor: "rgba(26,26,46,0.15)" },
-  storyRingGradient: { backgroundColor: colors.coral },
-  storyInner: { flex: 1, borderRadius: 30, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#F7F8FA", overflow: "hidden" },
+  storyRingContainer: { width: 64, height: 64, position: "relative", alignItems: "center", justifyContent: "center" },
+  storyInner: { width: 54, height: 54, borderRadius: 27, alignItems: "center", justifyContent: "center", borderWidth: 2, overflow: "hidden" },
   storyImg: { width: "90%", height: "90%" },
   storyLabel: { fontSize: 11, fontFamily: "Poppins_600SemiBold", textAlign: "center" },
   miniAddBadge: { position: "absolute", bottom: -2, right: -2, width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", borderWidth: 2 },

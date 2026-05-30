@@ -258,7 +258,7 @@ export const getPetById = async (req: any, res: Response): Promise<void> => {
 
     const pet = await Pet.findByPk(req.params.id, {
       include: [
-        { model: User, as: "owner", attributes: ["id", "name", "avatar_url", "role", "isVerified", "city", "phone"] },
+        { model: User, as: "owner", attributes: ["id", "name", "avatar_url", "role", "isVerified", "city", "phone", 'username'] },
         { model: Vaccine, as: "Vaccines" },
         { model: Medication, as: "Medications" },
         { model: Allergy, as: "Allergies" },

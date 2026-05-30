@@ -171,7 +171,7 @@ export default function UserProfileScreen() {
                 {(userProfile?.pets || []).length > 0 && (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.petsScroll} contentContainerStyle={styles.petsContent}>
                     {userProfile.pets.map((p: any) => (
-                      <TouchableOpacity key={p.id} onPress={() => router.push({ pathname: "/pet", params: { id: p.id } })} style={[styles.petChip, { backgroundColor: tk.card }]}>
+                      <TouchableOpacity key={p.id} onPress={() => router.replace(isOwnProfile ? { pathname: "/pet", params: { id: p.id } } : { pathname: "/p/[id]", params: { id: p.id } })} style={[styles.petChip, { backgroundColor: tk.card }]}>
                         <View style={styles.petAvatar}>
                           {p.avatar_url
                             ? <Image source={{ uri: p.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
