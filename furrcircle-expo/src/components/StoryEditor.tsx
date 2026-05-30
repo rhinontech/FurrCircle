@@ -51,7 +51,7 @@ export function StoryEditor({ visible, imageUri, onCancel, onSave }: StoryEditor
         </View>
 
         {/* Center Text Overlay Input */}
-        <View style={styles.overlayTextContainer}>
+        {/* <View style={styles.overlayTextContainer}>
           <TextInput
             value={overlayText}
             onChangeText={setOverlayText}
@@ -62,7 +62,7 @@ export function StoryEditor({ visible, imageUri, onCancel, onSave }: StoryEditor
             maxLength={100}
             textAlign="center"
           />
-        </View>
+        </View> */}
 
         {/* Bottom Caption Input */}
         <View style={styles.bottomBar}>

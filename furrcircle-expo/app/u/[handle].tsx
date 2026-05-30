@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Dimensions,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { Share2, MapPin, Grid3x3, Bookmark, Bone } from "lucide-react-native";
+import { Share2, MapPin, Grid3x3, Bookmark, Bone, Play } from "lucide-react-native";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { colors } from "../../src/lib/theme";
@@ -12,6 +12,7 @@ import { useTokens } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { userApi } from "../../services/user/userApi";
 import { feedApi } from "../../services/community/feedApi";
+import { Video, ResizeMode } from "expo-av";
 
 const GRID_SIZE = (Dimensions.get("window").width - 12) / 3;
 const puppy = require("../../src/assets/doodle-puppy.png");
@@ -243,7 +244,22 @@ export default function UserProfileScreen() {
                         activeOpacity={0.85}
                       >
                         {p.imageUrl ? (
-                          <Image source={{ uri: p.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                          p.imageUrl.match(/\.(mp4|mov|quicktime|3gp|mpeg|avi|wmv|flv|mkv|webm)(\?|$)/i) ? (
+                            <View style={{ width: "100%", height: "100%", position: "relative" }}>
+                              <Video
+                                source={{ uri: p.imageUrl }}
+                                style={{ width: "100%", height: "100%" }}
+                                resizeMode={ResizeMode.COVER}
+                                shouldPlay={false}
+                                isMuted={true}
+                              />
+                              <View style={styles.videoBadge}>
+                                <Play size={12} color="#fff" fill="#fff" />
+                              </View>
+                            </View>
+                          ) : (
+                            <Image source={{ uri: p.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                          )
                         ) : (
                           <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 4 }}>
                             <Text style={{ fontFamily: "Inter_400Regular", fontSize: 10, color: tk.textMuted, textAlign: "center" }} numberOfLines={4}>{p.content}</Text>
@@ -295,6 +311,16 @@ const styles = StyleSheet.create({
   // Photo grid
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 2, paddingTop: 2 },
   gridItem: { width: GRID_SIZE, height: GRID_SIZE, overflow: "hidden" },
+  videoBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    borderRadius: 12,
+    padding: 5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   // Pets grid
   petsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, padding: 20 },
   petGridCard: { width: "47%", borderRadius: 22, padding: 14, alignItems: "center" },

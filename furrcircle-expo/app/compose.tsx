@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image,
 import { useRouter } from "expo-router";
 import { Image as ImageIcon, Hash, X, Check } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import { Video, ResizeMode } from "expo-av";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
@@ -18,6 +19,7 @@ export default function ComposeScreen() {
   const [category, setCategory] = useState<string>("General");
   const [caption, setCaption] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
   const [tags, setTags] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -29,12 +31,26 @@ export default function ComposeScreen() {
     }
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsEditing: true,
-        quality: 0.9,
+        quality: 0.8,
+        videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
       });
-      if (!result.canceled && result.assets?.[0]?.uri) {
-        setImageUri(result.assets[0].uri);
+      if (!result.canceled && result.assets?.[0]) {
+        const asset = result.assets[0];
+        const isVideo = asset.type === 'video' || asset.mimeType?.startsWith('video/');
+        if (isVideo) {
+          const duration = asset.duration || 0;
+          const durationInSeconds = duration > 1000 ? duration / 1000 : duration;
+          if (durationInSeconds > 60) {
+            Alert.alert("Video too long", "Please select a video shorter than 60 seconds.");
+            return;
+          }
+          setMediaType("video");
+        } else {
+          setMediaType("image");
+        }
+        setImageUri(asset.uri);
       }
     } catch (err: any) {
       console.error("pickPhoto error:", err);
@@ -93,15 +109,26 @@ export default function ComposeScreen() {
           <TouchableOpacity onPress={pickPhoto} style={[styles.photoZone, { backgroundColor: tk.card, borderColor: tk.border }]} activeOpacity={0.8}>
             {imageUri ? (
               <View style={{ position: "relative", width: "100%", height: 240 }}>
-                <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="cover" />
-                <TouchableOpacity onPress={(e) => { (e as any).stopPropagation?.(); setImageUri(null); }} style={styles.removeImg}>
+                {mediaType === "video" ? (
+                  <Video
+                    source={{ uri: imageUri }}
+                    style={styles.previewImage}
+                    resizeMode={ResizeMode.COVER}
+                    isMuted={true}
+                    shouldPlay
+                    isLooping
+                  />
+                ) : (
+                  <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="cover" />
+                )}
+                <TouchableOpacity onPress={(e) => { (e as any).stopPropagation?.(); setImageUri(null); setMediaType(null); }} style={styles.removeImg}>
                   <X size={14} color={colors.white} />
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={{ alignItems: "center", gap: 8 }}>
                 <ImageIcon size={32} color={tk.textMuted} />
-                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.textMuted }}>Tap to add a photo</Text>
+                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.textMuted }}>Tap to add a photo or video</Text>
               </View>
             )}
           </TouchableOpacity>
