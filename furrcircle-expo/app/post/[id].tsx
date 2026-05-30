@@ -1,10 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
   StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { Heart, MessageCircle, Send, Bookmark } from "lucide-react-native";
+import { Heart, MessageCircle, Send, Bookmark, Volume2, VolumeX } from "lucide-react-native";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Avatar } from "../../src/components/Avatar";
 import { colors } from "../../src/lib/theme";
@@ -13,20 +13,31 @@ import { ShareSheet } from "../../src/components/ShareSheet";
 import { feedApi } from "../../services/community/feedApi";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { posts as dummyPosts, sampleComments } from "../../src/lib/demo-data";
+import { Video, ResizeMode, Audio } from "expo-av";
+import { useIsFocused } from "@react-navigation/native";
 
 export default function PostDetail() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const tk = useTokens();
+  const isScreenFocused = useIsFocused();
   const { user } = useAuthStore();
   const [shareOpen, setShareOpen] = useState(false);
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+    }).catch(() => {});
+  }, []);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
 
   const TINT: Record<string, string> = {
     dogs: "#FF6B6B22", cats: "#FF6FCF22", rescue: "#4CAF5022",
@@ -180,7 +191,44 @@ export default function PostDetail() {
             </View>
           ) : post.imageUrl ? (
             <View style={[styles.imageWrapper, { backgroundColor: tintColor }]}>
-              <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+              {post.imageUrl.match(/\.(mp4|mov|quicktime|3gp|mpeg|avi|wmv|flv|mkv|webm)(\?|$)/i) ? (
+                <View style={{ width: "100%", height: "100%", position: "relative" }}>
+                  <Video
+                    source={{ uri: post.imageUrl }}
+                    style={{ width: "100%", height: "100%" }}
+                    resizeMode={ResizeMode.COVER}
+                    isMuted={isMuted}
+                    shouldPlay={isScreenFocused}
+                    isLooping
+                    useNativeControls={false}
+                    onPlaybackStatusUpdate={(status: any) => {
+                      if (!status.isLoaded) {
+                        setIsVideoLoading(true);
+                      } else {
+                        setIsVideoLoading(status.isBuffering || (status.shouldPlay && !status.isPlaying));
+                      }
+                    }}
+                  />
+                  {isVideoLoading && (
+                    <View style={[StyleSheet.absoluteFillObject, { justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.15)" }]}>
+                      <ActivityIndicator size="small" color="#fff" />
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => setIsMuted(prev => !prev)}
+                    style={styles.muteBtn}
+                    activeOpacity={0.8}
+                  >
+                    {isMuted ? (
+                      <VolumeX size={18} color="#fff" />
+                    ) : (
+                      <Volume2 size={18} color="#fff" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+              )}
             </View>
           ) : null}
 
@@ -282,4 +330,16 @@ const styles = StyleSheet.create({
   replyBar: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1 },
   replyInput: { flex: 1, borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, fontFamily: "Inter_400Regular", borderWidth: 1 },
   sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  muteBtn: {
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    borderRadius: 18,
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+  },
 });

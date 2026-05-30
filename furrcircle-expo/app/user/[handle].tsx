@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Share2, UserPlus, MapPin, Grid3x3, Bookmark, Bone, MessageCircle } from "lucide-react-native";
+import { Share2, UserPlus, MapPin, Grid3x3, Bookmark, Bone, MessageCircle, Play } from "lucide-react-native";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { Video, ResizeMode } from "expo-av";
 
 const boyDog = require("../../src/assets/doodle-boy-dog.png");
 const puppy = require("../../src/assets/doodle-puppy.png");
@@ -131,11 +132,31 @@ export default function PublicUserProfileScreen() {
 
           {/* Post grid */}
           <View style={styles.grid}>
-            {gridItems.map((g, i) => (
-              <TouchableOpacity key={i} style={[styles.gridItem, { backgroundColor: g.tint }]}>
-                <Image source={g.img} style={styles.gridImg} resizeMode="contain" />
-              </TouchableOpacity>
-            ))}
+            {gridItems.map((g: any, i) => {
+              const isVideo = typeof g.img === "string" && g.img.match(/\.(mp4|mov|quicktime|3gp|mpeg|avi|wmv|flv|mkv|webm)(\?|$)/i);
+              return (
+                <TouchableOpacity key={i} style={[styles.gridItem, { backgroundColor: g.tint }]}>
+                  {isVideo ? (
+                    <View style={{ width: "100%", height: "100%", position: "relative" }}>
+                      <Video
+                        source={{ uri: g.img }}
+                        style={{ width: "100%", height: "100%" }}
+                        resizeMode={ResizeMode.COVER}
+                        shouldPlay={false}
+                        isMuted={true}
+                      />
+                      <View style={styles.videoBadge}>
+                        <Play size={12} color="#fff" fill="#fff" />
+                      </View>
+                    </View>
+                  ) : typeof g.img === "string" ? (
+                    <Image source={{ uri: g.img }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                  ) : (
+                    <Image source={g.img} style={styles.gridImg} resizeMode="contain" />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </ScrollView>
       </View>
@@ -183,6 +204,16 @@ const styles = StyleSheet.create({
   tabText: { fontFamily: "Poppins_700Bold", fontSize: 12 },
   tabActiveBar: { position: "absolute", bottom: 0, left: 0, right: 0, height: 2, backgroundColor: colors.coral },
   grid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 4, paddingTop: 4, gap: 4 },
-  gridItem: { width: "32.5%", aspectRatio: 1, alignItems: "center", justifyContent: "center" },
+  gridItem: { width: "32.5%", aspectRatio: 1, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   gridImg: { width: "80%", height: "80%" },
+  videoBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    borderRadius: 12,
+    padding: 5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

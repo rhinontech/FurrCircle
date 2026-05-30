@@ -11,7 +11,12 @@ router.post('/stories', protect, uploadMedia.single('image'), (req: any, _res: a
   next();
 }, uploadImage);
 
-// All other folders: images only up to 5 MB
-router.post('/:folder', protect, upload.single('image'), uploadImage);
+// Support videos for community posts, fall back to images only for other folders
+router.post('/:folder', protect, (req: any, res: any, next: any) => {
+  if (req.params.folder === 'posts') {
+    return uploadMedia.single('image')(req, res, next);
+  }
+  return upload.single('image')(req, res, next);
+}, uploadImage);
 
 export default router;
