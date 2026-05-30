@@ -20,6 +20,7 @@ import { ShareSheet } from "../../src/components/ShareSheet";
 import { StoryViewer, type Story, type StoryGroup } from "../../src/components/StoryViewer";
 import { StoryEditor } from "../../src/components/StoryEditor";
 import { Video, ResizeMode, Audio } from "expo-av";
+import { useIsFocused } from "@react-navigation/native";
 
 export default function FeedScreen() {
   const { refresh } = useLocalSearchParams<{ refresh?: string }>();
@@ -524,10 +525,12 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
 }) {
   const router = useRouter();
   const tk = useTokens();
+  const isScreenFocused = useIsFocused();
   const { user } = useAuthStore();
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
 
   const isDummy = dummyPosts.some(d => d.id === post.id);
   const [localComments, setLocalComments] = useState<any[]>(
@@ -635,9 +638,21 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                 style={{ width: "100%", height: "100%" }}
                 resizeMode={ResizeMode.COVER}
                 isMuted={isMuted}
-                shouldPlay={isActive}
+                shouldPlay={isActive && isScreenFocused}
                 isLooping
+                onPlaybackStatusUpdate={(status: any) => {
+                  if (!status.isLoaded) {
+                    setIsVideoLoading(true);
+                  } else {
+                    setIsVideoLoading(status.isBuffering || (status.shouldPlay && !status.isPlaying));
+                  }
+                }}
               />
+              {isVideoLoading && (
+                <View style={[StyleSheet.absoluteFillObject, { justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.15)" }]}>
+                  <ActivityIndicator size="small" color="#fff" />
+                </View>
+              )}
               <TouchableOpacity
                 onPress={(e) => {
                   e.stopPropagation();
