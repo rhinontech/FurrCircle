@@ -7,6 +7,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import { setupRealtimeServer } from './services/realtimeService.ts';
 import { startCampaignWorker } from './services/campaignService.ts';
+import { startReminderScheduler } from './services/reminderScheduler.ts';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -127,6 +128,7 @@ const startServer = async (attempt = 1) => {
             console.log(`🚀 FurrCircle API Live on Network -> http://0.0.0.0:${PORT}`);
         });
         startCampaignWorker();
+        startReminderScheduler();
     } catch (error) {
         console.error('Unable to connect to the database:', error);
         const retryDelayMs = Math.min(30000, 5000 * attempt);

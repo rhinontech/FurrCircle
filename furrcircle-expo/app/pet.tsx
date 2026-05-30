@@ -38,13 +38,11 @@ export default function PetScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (id && id !== "moona") {
-        petApi.getPetById(id)
-          .then(data => { setPet(data); setLoading(false); })
-          .catch(err => { console.error("Failed to load pet:", err); setLoading(false); });
-      } else {
-        setLoading(false); // fallback for seed pets
-      }
+      if (!id) { setLoading(false); return; }
+      setLoading(true);
+      petApi.getPetById(id)
+        .then(data => { setPet(data); setLoading(false); })
+        .catch(err => { console.error("Failed to load pet:", err); setLoading(false); });
     }, [id])
   );
 
@@ -58,10 +56,10 @@ export default function PetScreen() {
     );
   }
 
-  const petName = pet?.name || "Moona";
-  const petBreed = pet?.breed || pet?.species || "Border Collie";
-  const petGender = pet?.gender === "male" ? "♂" : "♀";
-  const petAge = pet?.age || "2";
+  const petName = pet?.name || "Unknown";
+  const petBreed = pet?.breed || pet?.species || "Unknown breed";
+  const petGender = pet?.gender === "male" ? "♂" : pet?.gender === "female" ? "♀" : "";
+  const petAge = pet?.age ? String(pet.age) : "?";
 
   return (
     <PageContainer>
@@ -124,11 +122,12 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
   const tk = useTokens();
   const [adoption, setAdoption] = useState(pet?.isAdoptionOpen || false);
   const [foster, setFoster] = useState(pet?.isFosterOpen || false);
+  const petName = pet?.name || "this pet";
   
   const toggleAdoption = async () => {
     const newVal = !adoption;
     setAdoption(newVal);
-    if (!pet?.id || pet.id === "moona") return;
+    if (!pet?.id || !pet.canManage) return;
     try {
       await petApi.updateListing(pet.id, { isAdoptionOpen: newVal });
     } catch (err: any) {
@@ -140,7 +139,7 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
   const toggleFoster = async () => {
     const newVal = !foster;
     setFoster(newVal);
-    if (!pet?.id || pet.id === "moona") return;
+    if (!pet?.id || !pet.canManage) return;
     try {
       await petApi.updateListing(pet.id, { isFosterOpen: newVal });
     } catch (err: any) {
@@ -156,15 +155,15 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
     <View style={{ gap: 20 }}>
       {/* Stats */}
       <View style={styles.statsGrid}>
-        <StatCard icon={Cake} label="Age" value={pet?.age ? `${pet.age} y` : "2 y"} />
-        <StatCard icon={Ruler} label="Weight" value={pet?.weight ? `${pet.weight} kg` : "14 kg"} />
-        <StatCard icon={MapPin} label={pet?.city || "Mumbai"} value="-" />
+        <StatCard icon={Cake} label="Age" value={pet?.age ? `${pet.age} y` : "?"} />
+        <StatCard icon={Ruler} label="Weight" value={pet?.weight ? `${pet.weight} kg` : "?"} />
+        <StatCard icon={MapPin} label="City" value={pet?.city || "?"} />
       </View>
 
       {/* Availability */}
       <View>
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Availability</Text>
-        <Text style={[styles.sectionSub, { color: tk.textMuted }]}>Show Moona on Discover for matching families.</Text>
+        <Text style={[styles.sectionSub, { color: tk.textMuted }]}>Show {petName} on Discover for matching families.</Text>
         <View style={styles.availGrid}>
           <TouchableOpacity onPress={toggleAdoption} disabled={!pet?.canManage}
             style={[styles.availCard, adoption ? { backgroundColor: colors.success } : { backgroundColor: colors.white }, !pet?.canManage && { opacity: 0.8 }]}>

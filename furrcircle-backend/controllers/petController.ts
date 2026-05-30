@@ -284,8 +284,22 @@ export const getPetById = async (req: any, res: Response): Promise<void> => {
     const hasPrivateAccess = isOwner || await canViewPrivatePet(req.params.id, req);
 
     if (!hasPrivateAccess) {
-      if (isPublicListing) {
-        res.json(toPublicPetPayload(pet, req.user?.id));
+      // Check if viewer follows the pet owner (accepted) — followers can see the public pet profile
+      const { follows: Follow } = db as any;
+      const followRecord = await Follow.findOne({
+        where: { followerId: req.user.id, followingId: payload.ownerId, status: 'accepted' },
+      });
+      const isFollower = !!followRecord;
+
+      if (isPublicListing || isFollower) {
+        // Return public-safe profile — basic info, personality, vaccines shown to followers
+        const publicPayload = toPublicPetPayload(pet, req.user?.id);
+        if (isFollower) {
+          publicPayload.Vaccines = payload.Vaccines;
+          publicPayload.Allergies = payload.Allergies;
+          publicPayload.personality = payload.personality;
+        }
+        res.json(publicPayload);
       } else {
         res.status(403).json({ message: "Not authorized to view this pet" });
       }

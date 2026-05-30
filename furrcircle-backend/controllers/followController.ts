@@ -55,13 +55,14 @@ export const followUser = async (req: any, res: Response): Promise<void> => {
         actorId: followingId,
         actorType: "user",
         category: "social",
-        type: "follow",
+        type: "follow_request",
         title: "Follow Request",
         message: `${req.user.name || "Someone"} requested to follow you`,
         relatedId: followerId,
         relatedType: "user",
         actionType: "notifications",
-        actionPayload: { id: follow.id },
+        actionPayload: { followId: follow.id, followerId },
+        sendPush: true,
       });
     }
 
@@ -122,6 +123,7 @@ export const acceptRequest = async (req: any, res: Response): Promise<void> => {
       relatedType: "user",
       actionType: "profile",
       actionPayload: { id: followingId },
+      sendPush: true,
     });
 
     res.json({ success: true, follow });
@@ -146,6 +148,22 @@ export const rejectRequest = async (req: any, res: Response): Promise<void> => {
     }
 
     await follow.destroy();
+
+    // Notify the requester their request was declined
+    await createRichNotification({
+      actorId: followerId,
+      actorType: "user",
+      category: "social",
+      type: "follow_request",
+      title: "Follow Request",
+      message: `${req.user.name || "Someone"} couldn't accept your follow request`,
+      relatedId: followingId,
+      relatedType: "user",
+      actionType: "profile",
+      actionPayload: { id: followingId },
+      sendPush: false, // Quiet — no push for rejection, just in-app
+    }).catch(() => {}); // fire and forget
+
     res.json({ success: true, message: "Follow request rejected" });
   } catch (error: any) {
     res.status(500).json({ message: error.message });

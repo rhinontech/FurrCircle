@@ -5,10 +5,14 @@ import { useFonts, Poppins_700Bold, Poppins_600SemiBold, Poppins_500Medium } fro
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from "@expo-google-fonts/inter";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { View } from "react-native";
-import { useEffect } from "react";
+import { View, Platform } from "react-native";
+import { useEffect, useRef } from "react";
 import { useThemeStore, useTokens } from "../src/lib/theme-store";
 import { useAuthStore } from "../src/lib/auth-store";
+import messaging from "@react-native-firebase/messaging";
+import * as SecureStore from "expo-secure-store";
+import Constants from "expo-constants";
+import { notificationApi } from "../services/notification/notificationApi";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +37,52 @@ export default function RootLayout() {
   const segments = useSegments();
 
   useEffect(() => { load(); hydrate(); }, []);
+
+  // ── Push notification bootstrap ─────────────────────────────────────────────
+  // Run only once after the user is authenticated
+  useEffect(() => {
+    if (!user) return;
+
+    const bootstrapPush = async () => {
+      try {
+        // 1. Request permission (iOS prompts; Android 13+ also needs this)
+        const authStatus = await messaging().requestPermission();
+        const enabled =
+          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+        if (!enabled) {
+          console.log("[Push] Permission denied");
+          return;
+        }
+
+        // 2. Get FCM token
+        const fcmToken = await messaging().getToken();
+        console.log("[Push] FCM token:", fcmToken?.slice(0, 20) + "...");
+
+        // 3. Stable installation ID (persisted across app restarts)
+        let installationId = await SecureStore.getItemAsync("push_installation_id");
+        if (!installationId) {
+          installationId = `${Platform.OS}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+          await SecureStore.setItemAsync("push_installation_id", installationId);
+        }
+
+        // 4. Register device with backend
+        await notificationApi.registerDevice({
+          installationId,
+          expoPushToken: fcmToken,
+          platform: Platform.OS as "ios" | "android",
+          pushEnabled: true,
+        });
+
+        console.log("[Push] Device registered");
+      } catch (err) {
+        console.warn("[Push] Bootstrap failed:", err);
+      }
+    };
+
+    bootstrapPush();
+  }, [user?.id]); // Re-run only if the logged-in user changes
 
   // Auth guard: redirect based on login state once both fonts + auth are ready
   useEffect(() => {
