@@ -47,6 +47,7 @@ const createProfileResolver = () => {
     const profile = {
       id: payload.id,
       name: payload.name,
+      username: payload.username,
       email: payload.email,
       role: resolvedType === "vet" ? "veterinarian" : payload.role || "owner",
       avatar_url: payload.avatar_url,

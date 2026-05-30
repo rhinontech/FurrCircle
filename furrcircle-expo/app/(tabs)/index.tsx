@@ -1,11 +1,11 @@
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
-  StyleSheet, Modal, Pressable, Alert, ActivityIndicator, TextInput,
+  StyleSheet, Modal, Pressable, Alert, ActivityIndicator, TextInput, FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown } from "lucide-react-native";
-import { useState, useEffect, useCallback } from "react";
+import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX } from "lucide-react-native";
+import { useState, useEffect, useCallback, useRef } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { posts as dummyPosts, sampleComments, type Post } from "../../src/lib/demo-data";
 import { colors } from "../../src/lib/theme";
@@ -14,10 +14,12 @@ import { useTokens, useThemeStore } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { userApi } from "../../services/user/userApi";
 import { feedApi } from "../../services/community/feedApi";
+import { storyApi } from "../../services/community/storyApi";
 import { LocationPickerModal, LocationResult } from "../../src/components/LocationPickerModal";
 import { ShareSheet } from "../../src/components/ShareSheet";
 import { StoryViewer, type Story, type StoryGroup } from "../../src/components/StoryViewer";
 import { StoryEditor } from "../../src/components/StoryEditor";
+import { Video, ResizeMode, Audio } from "expo-av";
 
 export default function FeedScreen() {
   const { refresh } = useLocalSearchParams<{ refresh?: string }>();
@@ -26,8 +28,27 @@ export default function FeedScreen() {
   const [shareOpen, setShareOpen] = useState(false);
   const [sharingPostId, setSharingPostId] = useState<string | null>(null);
   const tk = useTokens();
+  const [feedVideoMuted, setFeedVideoMuted] = useState(true);
+  const [activePostId, setActivePostId] = useState<string | null>(null);
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems && viewableItems.length > 0) {
+      setActivePostId(viewableItems[0].key);
+    }
+  }).current;
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 60,
+  }).current;
+
+  useEffect(() => {
+    Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+    }).catch(() => {});
+  }, []);
 
   // Story states
+  const [storyGroups, setStoryGroups] = useState<any[]>([]);
   const [myStories, setMyStories] = useState<Story[]>([]);
   const [storyViewerVisible, setStoryViewerVisible] = useState(false);
   const [selectedStoryGroupIndex, setSelectedStoryGroupIndex] = useState(0);
@@ -38,6 +59,25 @@ export default function FeedScreen() {
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const user = useAuthStore(s => s.user);
+
+  const loadStories = useCallback(async () => {
+    try {
+      const [groups, mine] = await Promise.all([
+        storyApi.getStories(),
+        storyApi.getMyStory(),
+      ]);
+      setStoryGroups(groups || []);
+      const formattedMine: Story[] = (mine?.stories || []).map((s) => ({
+        id: s.id,
+        mediaUrl: s.mediaUrl,
+        mediaType: s.mediaType,
+        caption: s.caption || undefined,
+      }));
+      setMyStories(formattedMine);
+    } catch (err) {
+      console.error("Failed to load stories:", err);
+    }
+  }, []);
 
   const loadFeed = useCallback(async () => {
     try {
@@ -63,13 +103,15 @@ export default function FeedScreen() {
 
   useFocusEffect(useCallback(() => {
     loadFeed();
-  }, [loadFeed]));
+    loadStories();
+  }, [loadFeed, loadStories]));
 
   useEffect(() => {
     if (refresh) {
       loadFeed();
+      loadStories();
     }
-  }, [refresh]);
+  }, [refresh, loadStories]);
 
   const handleLike = async (postId: string) => {
     const isDummy = dummyPosts.some(p => p.id === postId);
@@ -79,7 +121,7 @@ export default function FeedScreen() {
       isLiked ? next.delete(postId) : next.add(postId);
       return next;
     });
-    
+
     // Update count in state
     setFeedPosts(prev => prev.map(p => {
       if (p.id === postId) {
@@ -89,7 +131,7 @@ export default function FeedScreen() {
           const currentLikes = p.likes || [];
           return {
             ...p,
-            likes: isLiked 
+            likes: isLiked
               ? currentLikes.filter((l: any) => l.userId !== user?.id)
               : [...currentLikes, { userId: user?.id }]
           };
@@ -99,7 +141,7 @@ export default function FeedScreen() {
     }));
 
     if (!isDummy) {
-      try { await feedApi.likePost(postId); } catch {}
+      try { await feedApi.likePost(postId); } catch { }
     }
   };
 
@@ -112,22 +154,66 @@ export default function FeedScreen() {
       return next;
     });
     if (!isDummy) {
-      try { await feedApi.savePost(postId); } catch {}
+      try { await feedApi.savePost(postId); } catch { }
     }
   };
 
+  const mappedMyStoryGroup = myStories.length > 0
+    ? {
+        userId: "me",
+        username: "Your Story",
+        avatar: user?.avatar_url ? { uri: user.avatar_url } : require("../../src/assets/doodle-boy-dog.png"),
+        stories: myStories.map((s: any) => {
+          let overlayText = undefined;
+          let caption = s.caption || undefined;
+          if (s.caption?.startsWith('{"overlayText":')) {
+            try {
+              const parsed = JSON.parse(s.caption);
+              overlayText = parsed.overlayText || undefined;
+              caption = parsed.caption || undefined;
+            } catch (e) {}
+          }
+          return {
+            id: s.id,
+            mediaUrl: s.mediaUrl,
+            mediaType: s.mediaType,
+            caption,
+            overlayText,
+          };
+        }),
+      }
+    : null;
+
+  const mappedOtherGroups = storyGroups
+    .filter((g: any) => g.userId !== user?.id)
+    .map((g: any) => ({
+      userId: g.userId,
+      username: g.author?.name || "User",
+      avatar: g.author?.avatar_url ? { uri: g.author.avatar_url } : require("../../src/assets/doodle-boy-dog.png"),
+      stories: g.stories.map((s: any) => {
+        let overlayText = undefined;
+        let caption = s.caption || undefined;
+        if (s.caption?.startsWith('{"overlayText":')) {
+          try {
+            const parsed = JSON.parse(s.caption);
+            overlayText = parsed.overlayText || undefined;
+            caption = parsed.caption || undefined;
+          } catch (e) {}
+        }
+        return {
+          id: s.id,
+          mediaUrl: s.mediaUrl,
+          mediaType: s.mediaType,
+          caption,
+          overlayText,
+          viewedByMe: s.viewedByMe,
+        };
+      }),
+    }));
+
   const allStoryGroups: StoryGroup[] = [
-    ...(myStories.length > 0
-      ? [
-          {
-            userId: "me",
-            username: "Your Story",
-            avatar: require("../../src/assets/doodle-boy-dog.png"),
-            stories: myStories,
-          },
-        ]
-      : []),
-    ...mockStoryGroups,
+    ...(mappedMyStoryGroup ? [mappedMyStoryGroup] : []),
+    ...mappedOtherGroups,
   ];
 
   const handlePressStory = (userId: string) => {
@@ -157,60 +243,88 @@ export default function FeedScreen() {
     }
   };
 
-  const handleSaveStory = (overlayText: string, caption: string) => {
-    if (pickedImageUri) {
-      const newStory: Story = {
-        id: `my-${Date.now()}`,
-        mediaUrl: pickedImageUri,
+  const handleSaveStory = async (overlayText: string, caption: string) => {
+    if (!pickedImageUri) return;
+    try {
+      setFeedLoading(true);
+      const uploadRes = await userApi.uploadImage(pickedImageUri, "stories");
+      if (!uploadRes?.url) {
+        throw new Error("Failed to upload image.");
+      }
+
+      const storyCaption = JSON.stringify({
+        overlayText: overlayText || "",
+        caption: caption || "",
+      });
+
+      await storyApi.createStory({
+        mediaUrl: uploadRes.url,
         mediaType: "image",
-        caption: caption || undefined,
-        overlayText: overlayText || undefined,
-      };
-      setMyStories((prev) => [...prev, newStory]);
+        caption: storyCaption,
+      });
+
       setEditorVisible(false);
       setPickedImageUri(null);
       Alert.alert("Success", "Story added to Your Story!");
+      loadStories();
+    } catch (err: any) {
+      console.error("Failed to add story:", err);
+      Alert.alert("Error", err?.message || "Could not publish story. Please try again.");
+    } finally {
+      setFeedLoading(false);
     }
   };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: tk.bg }]}>
       <FeedHeader />
-      <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120, flexGrow: 1 }}>
-        <StoryRail
-          myStories={myStories}
-          onPressStory={handlePressStory}
-          onAddStory={handleAddStory}
-        />
-        
-        {/* Feed List */}
-        <View style={styles.feedList}>
-          {feedLoading && feedPosts.length === 0 ? (
-            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
-          ) : feedPosts.length === 0 ? (
-            <View style={styles.emptyState}>
+      <FlatList
+        data={feedPosts}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item: p }) => (
+          <View style={{ paddingHorizontal: 16 }}>
+            <PostCard
+              post={p}
+              isLiked={likedIds.has(p.id)}
+              isSaved={savedIds.has(p.id)}
+              onLike={() => handleLike(p.id)}
+              onSave={() => handleSave(p.id)}
+              onShare={(id) => {
+                setSharingPostId(id);
+                setShareOpen(true);
+              }}
+              isMuted={feedVideoMuted}
+              onToggleMute={() => setFeedVideoMuted(prev => !prev)}
+              isActive={activePostId === p.id}
+            />
+          </View>
+        )}
+        ListHeaderComponent={
+          <StoryRail
+            myStories={myStories}
+            storyGroups={mappedOtherGroups}
+            onPressStory={handlePressStory}
+            onAddStory={handleAddStory}
+          />
+        }
+        ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
+        ListEmptyComponent={
+          !feedLoading ? (
+            <View style={[styles.emptyState, { paddingHorizontal: 16 }]}>
               <Image source={require("../../src/assets/doodle-puppy.png")} style={styles.emptyImage} resizeMode="contain" />
               <Text style={[styles.emptyTitle, { color: tk.text }]}>No posts yet</Text>
               <Text style={[styles.emptyText, { color: tk.textMuted }]}>Be the first to share a moment of your pet!</Text>
             </View>
           ) : (
-            feedPosts.map((p) => (
-              <PostCard
-                key={p.id}
-                post={p}
-                isLiked={likedIds.has(p.id)}
-                isSaved={savedIds.has(p.id)}
-                onLike={() => handleLike(p.id)}
-                onSave={() => handleSave(p.id)}
-                onShare={(id) => {
-                  setSharingPostId(id);
-                  setShareOpen(true);
-                }}
-              />
-            ))
-          )}
-        </View>
-      </ScrollView>
+            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+          )
+        }
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 120, paddingTop: 12 }}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+      />
 
       <TouchableOpacity onPress={() => setComposeOpen(true)} style={styles.fab} activeOpacity={0.85}>
         <Plus size={28} color="#fff" strokeWidth={2.4} />
@@ -230,6 +344,26 @@ export default function FeedScreen() {
         onClose={() => setStoryViewerVisible(false)}
         storyGroups={allStoryGroups}
         initialGroupIndex={selectedStoryGroupIndex}
+        onStoryDeleted={(storyId) => {
+          setStoryViewerVisible(false);
+          setMyStories((prev) => prev.filter((s) => s.id !== storyId));
+          loadStories();
+        }}
+        onStoryViewed={(storyId, userId) => {
+          setStoryGroups((prev) =>
+            prev.map((g) => {
+              if (g.userId === userId) {
+                return {
+                  ...g,
+                  stories: g.stories.map((s: any) =>
+                    s.id === storyId ? { ...s, viewedByMe: true } : s
+                  ),
+                };
+              }
+              return g;
+            })
+          );
+        }}
       />
       <StoryEditor
         visible={editorVisible}
@@ -302,66 +436,26 @@ function FeedHeader() {
   );
 }
 
-const mockStoryGroups: StoryGroup[] = [
-  {
-    userId: "moona",
-    username: "Moona",
-    avatar: require("../../src/assets/doodle-boy-dog.png"),
-    stories: [
-      { id: "moona-1", mediaUrl: require("../../src/assets/doodle-boy-dog.png"), mediaType: "image", caption: "Sunbathing in the lawn ☀️" },
-      { id: "moona-2", mediaUrl: require("../../src/assets/doodle-birthday.png"), mediaType: "image", caption: "Happy birthday to me! 🎂" },
-    ]
-  },
-  {
-    userId: "mochi",
-    username: "Mochi",
-    avatar: require("../../src/assets/doodle-cat.png"),
-    stories: [
-      { id: "mochi-1", mediaUrl: require("../../src/assets/doodle-cat.png"), mediaType: "image", caption: "Just took a long nap. Feeling cute!" }
-    ]
-  },
-  {
-    userId: "kobi",
-    username: "Kobi",
-    avatar: require("../../src/assets/doodle-birthday.png"),
-    stories: [
-      { id: "kobi-1", mediaUrl: require("../../src/assets/doodle-walk.png"), mediaType: "image", caption: "Evening walks are the best!" }
-    ]
-  },
-  {
-    userId: "biscuit",
-    username: "Biscuit",
-    avatar: require("../../src/assets/doodle-puppy.png"),
-    stories: [
-      { id: "biscuit-1", mediaUrl: require("../../src/assets/doodle-puppy.png"), mediaType: "image", caption: "Exploring the backyard 🐕" }
-    ]
-  },
-  {
-    userId: "rocky",
-    username: "Rocky",
-    avatar: require("../../src/assets/doodle-rescue.png"),
-    stories: [
-      { id: "rocky-1", mediaUrl: require("../../src/assets/doodle-rescue.png"), mediaType: "image", caption: "Found my forever home today! ❤️" }
-    ]
-  }
-];
-
 function StoryRail({
   myStories,
+  storyGroups,
   onPressStory,
   onAddStory,
 }: {
   myStories: Story[];
+  storyGroups: any[];
   onPressStory: (userId: string) => void;
   onAddStory: () => void;
 }) {
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
+  const user = useAuthStore(s => s.user);
+
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}
       style={styles.storyRail}
       contentContainerStyle={{ paddingHorizontal: 8, paddingVertical: 8, gap: 14 }}>
-      
+
       {/* Your Story Bubble */}
       <TouchableOpacity
         onPress={() => (myStories.length > 0 ? onPressStory("me") : onAddStory())}
@@ -370,56 +464,63 @@ function StoryRail({
       >
         <View style={[styles.storyRing, myStories.length > 0 ? styles.storyRingGradient : (dark ? { backgroundColor: tk.border } : styles.storyRingGray)]}>
           <View style={[styles.storyInner, { backgroundColor: myStories.length > 0 ? "rgba(255,107,107,0.2)" : (dark ? "rgba(240,240,255,0.08)" : "rgba(26,26,46,0.05)"), borderColor: tk.bg }]}>
-            {myStories.length > 0 ? (
-              <Image source={require("../../src/assets/doodle-boy-dog.png")} style={styles.storyImg} resizeMode="contain" />
+            {user?.avatar_url ? (
+              <Image source={{ uri: user.avatar_url }} style={{ width: "100%", height: "100%", borderRadius: 30 }} resizeMode="cover" />
             ) : (
-              <Plus size={20} color={tk.textMuted} />
+              <Image source={require("../../src/assets/doodle-boy-dog.png")} style={styles.storyImg} resizeMode="contain" />
             )}
           </View>
-          {myStories.length > 0 && (
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                onAddStory();
-              }}
-              style={[
-                styles.miniAddBadge,
-                {
-                  backgroundColor: colors.coral,
-                  borderColor: tk.bg,
-                },
-              ]}
-            >
-              <Plus size={10} color="#fff" strokeWidth={3} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation();
+              onAddStory();
+            }}
+            style={[
+              styles.miniAddBadge,
+              {
+                backgroundColor: colors.coral,
+                borderColor: tk.bg,
+              },
+            ]}
+            activeOpacity={0.9}
+          >
+            <Plus size={10} color="#fff" strokeWidth={3} />
+          </TouchableOpacity>
         </View>
         <Text style={[styles.storyLabel, { color: tk.text }]} numberOfLines={1}>Your Story</Text>
       </TouchableOpacity>
 
       {/* Others' stories */}
-      {mockStoryGroups.map((group) => (
-        <TouchableOpacity
-          key={group.userId}
-          onPress={() => onPressStory(group.userId)}
-          style={styles.storyItem}
-          activeOpacity={0.8}
-        >
-          <View style={[styles.storyRing, styles.storyRingGradient]}>
-            <View style={[styles.storyInner, { backgroundColor: "rgba(255,107,107,0.2)", borderColor: tk.bg }]}>
-              <Image source={group.avatar} style={styles.storyImg} resizeMode="contain" />
+      {storyGroups.map((group) => {
+        const hasUnviewed = group.stories?.some((s: any) => !s.viewedByMe);
+        return (
+          <TouchableOpacity
+            key={group.userId}
+            onPress={() => onPressStory(group.userId)}
+            style={styles.storyItem}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.storyRing, hasUnviewed ? styles.storyRingGradient : (dark ? { backgroundColor: tk.border } : styles.storyRingGray)]}>
+              <View style={[styles.storyInner, { backgroundColor: "rgba(255,107,107,0.2)", borderColor: tk.bg }]}>
+                {group.avatar && (group.avatar as any).uri ? (
+                  <Image source={group.avatar} style={{ width: "100%", height: "100%", borderRadius: 30 }} resizeMode="cover" />
+                ) : (
+                  <Image source={require("../../src/assets/doodle-boy-dog.png")} style={styles.storyImg} resizeMode="contain" />
+                )}
+              </View>
             </View>
-          </View>
-          <Text style={[styles.storyLabel, { color: tk.text }]} numberOfLines={1}>{group.username}</Text>
-        </TouchableOpacity>
-      ))}
+            <Text style={[styles.storyLabel, { color: tk.text }]} numberOfLines={1}>{group.username}</Text>
+          </TouchableOpacity>
+        );
+      })}
     </ScrollView>
   );
 }
 
-function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare }: {
+function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, onToggleMute, isActive }: {
   post: any; isLiked: boolean; isSaved: boolean;
   onLike: () => void; onSave: () => void; onShare: (id: string) => void;
+  isMuted: boolean; onToggleMute: () => void; isActive: boolean;
 }) {
   const router = useRouter();
   const tk = useTokens();
@@ -434,10 +535,10 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare }: {
       ? post.comments
       : isDummy
         ? sampleComments.map(c => ({
-            id: c.id,
-            text: c.body,
-            author: { name: c.author }
-          }))
+          id: c.id,
+          text: c.body,
+          author: { name: c.author }
+        }))
         : []
   );
 
@@ -449,7 +550,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare }: {
 
   const displayName = author.name || "Pet parent";
   const avatarSource = post.avatar || (author.avatar_url ? { uri: author.avatar_url } : null);
-  
+
   const TINT: Record<string, string> = {
     dogs: "#FF6B6B22", cats: "#FF6FCF22", rescue: "#4CAF5022",
     health: "#2563EB18", training: "#FFD93D44", milestone: "#FF6FCF22",
@@ -508,7 +609,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare }: {
             </Text>
           </View>
         </TouchableOpacity>
-        
+
         {/* Type badges */}
         {post.type === "rescue" && <View style={[styles.typeBadge, { backgroundColor: colors.success }]}><Text style={styles.typeBadgeText}>RESCUE</Text></View>}
         {post.type === "milestone" && <View style={[styles.typeBadge, { backgroundColor: colors.pinky }]}><Text style={styles.typeBadgeText}>MILESTONE</Text></View>}
@@ -527,7 +628,34 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare }: {
         {post.image ? (
           <Image source={post.image} style={styles.postImage} resizeMode="contain" />
         ) : post.imageUrl ? (
-          <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+          post.imageUrl.match(/\.(mp4|mov|quicktime|3gp|mpeg|avi|wmv|flv|mkv|webm)(\?|$)/i) ? (
+            <View style={{ width: "100%", height: "100%", position: "relative" }}>
+              <Video
+                source={{ uri: post.imageUrl }}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode={ResizeMode.COVER}
+                isMuted={isMuted}
+                shouldPlay={isActive}
+                isLooping
+              />
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onToggleMute();
+                }}
+                style={styles.muteBtn}
+                activeOpacity={0.8}
+              >
+                {isMuted ? (
+                  <VolumeX size={16} color="#fff" />
+                ) : (
+                  <Volume2 size={16} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+          )
         ) : (
           <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.text, padding: 20, textAlign: "center", lineHeight: 22 }}>
             {post.content}
@@ -551,7 +679,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare }: {
       ) : null}
 
       {/* Actions */}
-      <View style={styles.actions}>
+      <View style={[styles.actions, { paddingBottom: 12 }]} >
         <TouchableOpacity onPress={onLike} style={styles.actionBtn}>
           <Heart size={24} color={isLiked ? colors.coral : tk.text} fill={isLiked ? colors.coral : "none"} />
           <Text style={[styles.actionCount, { color: tk.text }]}>{likeCount}</Text>
@@ -678,4 +806,16 @@ const styles = StyleSheet.create({
   emptyImage: { width: 140, height: 140, marginBottom: 16, opacity: 0.8 },
   emptyTitle: { fontFamily: "Poppins_700Bold", fontSize: 18, marginBottom: 8, textAlign: "center" },
   emptyText: { fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center", lineHeight: 22 },
+  muteBtn: {
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+  },
 });

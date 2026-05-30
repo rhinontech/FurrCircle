@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
   StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
@@ -13,6 +13,7 @@ import { ShareSheet } from "../../src/components/ShareSheet";
 import { feedApi } from "../../services/community/feedApi";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { posts as dummyPosts, sampleComments } from "../../src/lib/demo-data";
+import { Video, ResizeMode, Audio } from "expo-av";
 
 export default function PostDetail() {
   const router = useRouter();
@@ -22,6 +23,12 @@ export default function PostDetail() {
   const [shareOpen, setShareOpen] = useState(false);
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+    }).catch(() => {});
+  }, []);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
@@ -180,7 +187,18 @@ export default function PostDetail() {
             </View>
           ) : post.imageUrl ? (
             <View style={[styles.imageWrapper, { backgroundColor: tintColor }]}>
-              <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+              {post.imageUrl.match(/\.(mp4|mov|quicktime|3gp|mpeg|avi|wmv|flv|mkv|webm)(\?|$)/i) ? (
+                <Video
+                  source={{ uri: post.imageUrl }}
+                  style={{ width: "100%", height: "100%" }}
+                  resizeMode={ResizeMode.COVER}
+                  isMuted={false}
+                  shouldPlay
+                  useNativeControls
+                />
+              ) : (
+                <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+              )}
             </View>
           ) : null}
 

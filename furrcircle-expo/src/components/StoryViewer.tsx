@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   View, Text, Image, Modal, StyleSheet, Dimensions,
-  TouchableOpacity, Animated, Pressable, SafeAreaView, PanResponder,
+  TouchableOpacity, Animated, Pressable, SafeAreaView, PanResponder, Alert,
 } from "react-native";
-import { X } from "lucide-react-native";
+import { X, Trash2 } from "lucide-react-native";
 import { useTokens } from "../lib/theme-store";
+import { storyApi } from "../../services/community/storyApi";
+
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const STORY_DURATION = 4000; // 4 seconds per story
@@ -29,9 +31,11 @@ interface StoryViewerProps {
   onClose: () => void;
   storyGroups: StoryGroup[];
   initialGroupIndex: number;
+  onStoryDeleted?: (storyId: string) => void;
+  onStoryViewed?: (storyId: string, userId: string) => void;
 }
 
-export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex }: StoryViewerProps) {
+export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, onStoryDeleted, onStoryViewed }: StoryViewerProps) {
   const tk = useTokens();
   const [groupIndex, setGroupIndex] = useState(initialGroupIndex);
   const [storyIndex, setStoryIndex] = useState(0);
@@ -104,9 +108,49 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex }
     }
   };
 
+  const handleDeleteStory = () => {
+    if (animationRef.current) {
+      animationRef.current.stop();
+    }
+    Alert.alert(
+      "Delete Story",
+      "Are you sure you want to delete this story?",
+      [
+        {
+          text: "Cancel",
+          onPress: () => {
+            startProgress();
+          },
+          style: "cancel"
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await storyApi.deleteStory(currentStory.id);
+              if (onStoryDeleted) {
+                onStoryDeleted(currentStory.id);
+              }
+            } catch (err: any) {
+              Alert.alert("Error", err.message || "Failed to delete story.");
+              startProgress();
+            }
+          }
+        }
+      ]
+    );
+  };
+
   useEffect(() => {
     if (visible && currentStory) {
       startProgress();
+      if (currentStory.id && !currentStory.id.startsWith("my-")) {
+        storyApi.viewStory(currentStory.id).catch(() => {});
+        if (onStoryViewed) {
+          onStoryViewed(currentStory.id, currentGroup.userId);
+        }
+      }
     }
     return () => {
       if (animationRef.current) {
@@ -162,9 +206,16 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex }
           <View style={styles.header}>
             <Image source={currentGroup.avatar} style={styles.avatar} />
             <Text style={styles.username}>{currentGroup.username}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <X size={24} color="#fff" />
-            </TouchableOpacity>
+            <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 12 }}>
+              {currentGroup.userId === "me" && (
+                <TouchableOpacity onPress={handleDeleteStory} style={styles.deleteButton}>
+                  <Trash2 size={22} color="#ff4d4d" />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <X size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
           </View>
         </SafeAreaView>
 
@@ -203,7 +254,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, marginTop: 12, gap: 10 },
   avatar: { width: 36, height: 36, borderRadius: 18, borderWidth: 1.5, borderColor: "#fff" },
   username: { color: "#fff", fontFamily: "Poppins_700Bold", fontSize: 14 },
-  closeButton: { marginLeft: "auto", padding: 4 },
+  closeButton: { padding: 4 },
+  deleteButton: { padding: 4 },
   touchZones: { ...StyleSheet.absoluteFillObject, flexDirection: "row", zIndex: 5 },
   leftTouch: { flex: 1 },
   rightTouch: { flex: 2 },
