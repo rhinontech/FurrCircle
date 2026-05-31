@@ -87,6 +87,9 @@ import userRoutes from './routes/userRoutes.ts';
 import followRoutes from './routes/followRoutes.ts';
 import circleRoutes from './routes/circleRoutes.ts';
 import questionRoutes from './routes/questionRoutes.ts';
+import playdateRoutes from './routes/playdateRoutes.ts';
+import ownerMatchRoutes from './routes/ownerMatchRoutes.ts';
+import breedRoutes from './routes/breedRoutes.ts';
 
 // Routes
 app.get('/', (req: Request, res: Response) => {
@@ -113,6 +116,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/follows', followRoutes);
 app.use('/api/circles', circleRoutes);
 app.use('/api/questions', questionRoutes);
+app.use('/api/playdate', playdateRoutes);
+app.use('/api/owner-match', ownerMatchRoutes);
+app.use('/api/breed', breedRoutes);
 
 // Test DB Connection and Start Server
 const startServer = async (attempt = 1) => {

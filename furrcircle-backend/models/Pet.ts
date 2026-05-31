@@ -23,7 +23,7 @@ export default (sequelize: Sequelize) => {
             },
             // Maps to existing 'profile_photo' column in DB
             avatar_url: {
-                type: DataTypes.STRING,
+                type: DataTypes.TEXT,
                 allowNull: true,
                 field: 'profile_photo',
             },
@@ -109,6 +109,12 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.JSON,
                 allowNull: true,
                 defaultValue: [],
+            },
+            isBreedingOpen: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+                field: 'is_breeding_open',
             },
         },
         {
