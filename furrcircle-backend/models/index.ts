@@ -143,6 +143,10 @@ db.users.hasMany(db.stories, { foreignKey: 'userId', as: 'stories', constraints:
 db.stories.hasMany(db.story_views, { foreignKey: 'storyId', as: 'views' });
 db.story_views.belongsTo(db.stories, { foreignKey: 'storyId' });
 
+// Lost & Found Pets
+db.lost_pets.belongsTo(db.users, { foreignKey: 'userId', as: 'author', constraints: false });
+db.users.hasMany(db.lost_pets, { foreignKey: 'userId', as: 'lostPets', constraints: false });
+
 // Circles
 db.circles.belongsTo(db.users, { foreignKey: 'createdBy', as: 'creator' });
 db.circles.hasMany(db.circle_members, { foreignKey: 'circleId', as: 'members' });
@@ -209,6 +213,7 @@ export const questions = db.questions;
 export const question_answers = db.question_answers;
 export const playdate_likes = db.playdate_likes;
 export const owner_likes = db.owner_likes;
+export const lost_pets = db.lost_pets;
 
 export { sequelize, Sequelize };
 export default db;

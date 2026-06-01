@@ -90,6 +90,8 @@ import questionRoutes from './routes/questionRoutes.ts';
 import playdateRoutes from './routes/playdateRoutes.ts';
 import ownerMatchRoutes from './routes/ownerMatchRoutes.ts';
 import breedRoutes from './routes/breedRoutes.ts';
+import lostPetRoutes from './routes/lostPetRoutes.ts';
+
 
 // Routes
 app.get('/', (req: Request, res: Response) => {
@@ -119,6 +121,8 @@ app.use('/api/questions', questionRoutes);
 app.use('/api/playdate', playdateRoutes);
 app.use('/api/owner-match', ownerMatchRoutes);
 app.use('/api/breed', breedRoutes);
+app.use('/api/lost-pets', lostPetRoutes);
+
 
 // Test DB Connection and Start Server
 const startServer = async (attempt = 1) => {

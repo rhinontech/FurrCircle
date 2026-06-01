@@ -2,24 +2,36 @@ import React, { useState } from "react";
 import {
   View, Text, Image, Modal, StyleSheet, Dimensions,
   TextInput, TouchableOpacity, KeyboardAvoidingView, Platform,
+  ActivityIndicator,
 } from "react-native";
-import { X, Check } from "lucide-react-native";
+import { X, Check, Volume2, VolumeX } from "lucide-react-native";
 import { useTokens } from "../lib/theme-store";
 import { colors } from "../lib/theme";
+import { Video, ResizeMode } from "expo-av";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 interface StoryEditorProps {
   visible: boolean;
   imageUri: string | null;
+  mediaType: "image" | "video";
+  loading?: boolean;
   onCancel: () => void;
   onSave: (overlayText: string, caption: string) => void;
 }
 
-export function StoryEditor({ visible, imageUri, onCancel, onSave }: StoryEditorProps) {
+export function StoryEditor({ visible, imageUri, mediaType, loading = false, onCancel, onSave }: StoryEditorProps) {
   const tk = useTokens();
   const [overlayText, setOverlayText] = useState("");
   const [caption, setCaption] = useState("");
+  const [mediaLoading, setMediaLoading] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+
+  React.useEffect(() => {
+    if (visible) {
+      setMediaLoading(true);
+    }
+  }, [visible, imageUri]);
 
   if (!visible || !imageUri) return null;
 
@@ -29,12 +41,48 @@ export function StoryEditor({ visible, imageUri, onCancel, onSave }: StoryEditor
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
       >
-        {/* Background Image Preview */}
-        <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="cover" />
+        {/* Background Media Preview */}
+        {mediaType === "video" ? (
+          <Video
+            source={{ uri: imageUri }}
+            style={styles.previewImage}
+            resizeMode={ResizeMode.COVER}
+            shouldPlay={true}
+            isLooping={true}
+            isMuted={isMuted}
+            onLoadStart={() => setMediaLoading(true)}
+            onLoad={() => setMediaLoading(false)}
+            onError={() => setMediaLoading(false)}
+          />
+        ) : (
+          <Image
+            source={{ uri: imageUri }}
+            style={styles.previewImage}
+            resizeMode="cover"
+            onLoadStart={() => setMediaLoading(true)}
+            onLoad={() => setMediaLoading(false)}
+            onError={() => setMediaLoading(false)}
+          />
+        )}
+
+        {mediaLoading && (
+          <View style={styles.mediaLoadingContainer}>
+            <ActivityIndicator size="large" color="#fff" />
+          </View>
+        )}
+
+        {mediaType === "video" && (
+          <TouchableOpacity
+            onPress={() => setIsMuted(!isMuted)}
+            style={styles.muteFloatingBtn}
+          >
+            {isMuted ? <VolumeX size={20} color="#fff" /> : <Volume2 size={20} color="#fff" />}
+          </TouchableOpacity>
+        )}
 
         {/* Top Controls */}
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={onCancel} style={styles.iconBtn}>
+          <TouchableOpacity onPress={onCancel} disabled={loading} style={[styles.iconBtn, loading && { opacity: 0.5 }]}>
             <X size={24} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.title}>Edit Story</Text>
@@ -44,9 +92,14 @@ export function StoryEditor({ visible, imageUri, onCancel, onSave }: StoryEditor
               setOverlayText("");
               setCaption("");
             }}
-            style={[styles.iconBtn, { backgroundColor: colors.coral }]}
+            disabled={loading}
+            style={[styles.iconBtn, { backgroundColor: colors.coral }, loading && { opacity: 0.5 }]}
           >
-            <Check size={24} color="#fff" />
+            {loading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Check size={24} color="#fff" />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -61,6 +114,7 @@ export function StoryEditor({ visible, imageUri, onCancel, onSave }: StoryEditor
             multiline
             maxLength={100}
             textAlign="center"
+            editable={!loading}
           />
         </View> */}
 
@@ -73,9 +127,18 @@ export function StoryEditor({ visible, imageUri, onCancel, onSave }: StoryEditor
               placeholder="Add a caption..."
               placeholderTextColor="rgba(255,255,255,0.7)"
               style={styles.captionInput}
+              editable={!loading}
             />
           </View>
         </View>
+
+        {/* Uploading Overlay */}
+        {loading && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#fff" />
+            <Text style={styles.loadingText}>Uploading story...</Text>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -140,5 +203,37 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     fontFamily: "Inter_400Regular",
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
+  },
+  loadingText: {
+    color: "#fff",
+    marginTop: 12,
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 16,
+  },
+  mediaLoadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  muteFloatingBtn: {
+    position: "absolute",
+    right: 16,
+    top: Platform.OS === "ios" ? 110 : 80,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 20,
   },
 });

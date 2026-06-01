@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   View, Text, Image, Modal, StyleSheet, Dimensions,
   TouchableOpacity, Animated, Pressable, SafeAreaView, PanResponder, Alert,
+  ActivityIndicator,
 } from "react-native";
 import { X, Trash2 } from "lucide-react-native";
 import { useTokens } from "../lib/theme-store";
 import { storyApi } from "../../services/community/storyApi";
-
+import { Video, ResizeMode } from "expo-av";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const STORY_DURATION = 4000; // 4 seconds per story
@@ -17,6 +18,7 @@ export interface Story {
   mediaType: "image" | "video";
   caption?: string;
   overlayText?: string;
+  viewCount?: number;
 }
 
 export interface StoryGroup {
@@ -39,6 +41,7 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
   const tk = useTokens();
   const [groupIndex, setGroupIndex] = useState(initialGroupIndex);
   const [storyIndex, setStoryIndex] = useState(0);
+  const [mediaLoading, setMediaLoading] = useState(true);
   const progress = useRef(new Animated.Value(0)).current;
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -65,7 +68,7 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
   const currentGroup = storyGroups[groupIndex];
   const currentStory = currentGroup?.stories[storyIndex];
 
-  const startProgress = () => {
+  const startProgress = (duration = STORY_DURATION) => {
     progress.setValue(0);
     if (animationRef.current) {
       animationRef.current.stop();
@@ -73,7 +76,7 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
     
     animationRef.current = Animated.timing(progress, {
       toValue: 1,
-      duration: STORY_DURATION,
+      duration: duration,
       useNativeDriver: false,
     });
 
@@ -144,7 +147,12 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
 
   useEffect(() => {
     if (visible && currentStory) {
-      startProgress();
+      setMediaLoading(true);
+      progress.setValue(0);
+      if (animationRef.current) {
+        animationRef.current.stop();
+      }
+
       if (currentStory.id && !currentStory.id.startsWith("my-")) {
         storyApi.viewStory(currentStory.id).catch(() => {});
         if (onStoryViewed) {
@@ -165,7 +173,56 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
     <Modal visible={visible} transparent={false} animationType="fade" onRequestClose={onClose}>
       <View style={styles.container} {...panResponder.panHandlers}>
         {/* Fullscreen media */}
-        <Image source={typeof currentStory.mediaUrl === "string" ? { uri: currentStory.mediaUrl } : currentStory.mediaUrl} style={styles.media} resizeMode="cover" />
+        {currentStory.mediaType === "video" ? (
+          <Video
+            key={currentStory.id}
+            source={typeof currentStory.mediaUrl === "string" ? { uri: currentStory.mediaUrl } : currentStory.mediaUrl}
+            style={styles.media}
+            resizeMode={ResizeMode.COVER}
+            shouldPlay={visible}
+            isMuted={false}
+            progressUpdateIntervalMillis={50}
+            onPlaybackStatusUpdate={(status: any) => {
+              if (!status.isLoaded) return;
+
+              // Toggle loader container on buffering
+              setMediaLoading(status.isBuffering);
+
+              if (status.durationMillis && status.positionMillis !== undefined) {
+                // If not buffering, synchronize progress bar with video duration ratio
+                if (!status.isBuffering) {
+                  const ratio = status.positionMillis / status.durationMillis;
+                  progress.setValue(ratio);
+                }
+              }
+
+              if (status.didJustFinish) {
+                handleNext();
+              }
+            }}
+          />
+        ) : (
+          <Image
+            key={currentStory.id}
+            source={typeof currentStory.mediaUrl === "string" ? { uri: currentStory.mediaUrl } : currentStory.mediaUrl}
+            style={styles.media}
+            resizeMode="cover"
+            onLoad={() => {
+              setMediaLoading(false);
+              startProgress(STORY_DURATION);
+            }}
+            onError={() => {
+              setMediaLoading(false);
+              startProgress(STORY_DURATION);
+            }}
+          />
+        )}
+
+        {mediaLoading && (
+          <View style={styles.loaderContainer}>
+            <ActivityIndicator size="large" color="#fff" />
+          </View>
+        )}
 
         {/* Dark overlay at top for readability */}
         <View style={styles.topOverlay} />
@@ -226,10 +283,17 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
           </View>
         ) : null}
 
-        {/* Caption */}
-        {currentStory.caption && (
+        {/* Caption & View Count */}
+        {(currentStory.caption || currentStory.viewCount !== undefined) && (
           <View style={styles.captionContainer}>
-            <Text style={styles.captionText}>{currentStory.caption}</Text>
+            {currentStory.caption ? (
+              <Text style={styles.captionText}>{currentStory.caption}</Text>
+            ) : null}
+            {currentStory.viewCount !== undefined && (
+              <Text style={[styles.viewCountText, { textAlign: "center", marginTop: currentStory.caption ? 6 : 0 }]}>
+                👁️ {currentStory.viewCount} {currentStory.viewCount === 1 ? "view" : "views"}
+              </Text>
+            )}
           </View>
         )}
 
@@ -279,5 +343,18 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_700Bold",
     fontSize: 24,
     textAlign: "center",
+  },
+  viewCountText: {
+    color: "rgba(255, 255, 255, 0.75)",
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    marginTop: 1,
+  },
+  loaderContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    zIndex: 2,
   },
 });

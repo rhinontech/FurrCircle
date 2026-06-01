@@ -1,15 +1,16 @@
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
-import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut } from "lucide-react-native";
+import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut, Clock, Trash2, Syringe, Pill } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { getPets, type Pet } from "../../src/lib/pets-store";
 import { colors } from "../../src/lib/theme";
-import { useTokens } from "../../src/lib/theme-store";
+import { useThemeStore, useTokens } from "../../src/lib/theme-store";
 import { Avatar } from "../../src/components/Avatar";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { petApi } from "../../services/pet/petApi";
 import { userApi } from "../../services/user/userApi";
+import { reminderApi } from "../../services/reminder/reminderApi";
 
 const TINT_COLORS = ["rgba(255,107,107,0.15)", "rgba(37,99,235,0.1)", "rgba(255,217,61,0.3)", "rgba(255,111,207,0.15)", "rgba(76,175,80,0.15)"];
 
@@ -17,13 +18,16 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const tk = useTokens();
+  const dark = useThemeStore((s) => s.dark);
   const { user, logout } = useAuthStore();
   const [pets, setPets] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [reminders, setReminders] = useState<any[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       petApi.getMyPets().then(setPets).catch(console.error);
+      reminderApi.getMyReminders().then(setReminders).catch(console.error);
 
       if (user?.username) {
         userApi.getUserProfile(user.username)
@@ -34,6 +38,29 @@ export default function ProfileScreen() {
       }
     }, [user?.username])
   );
+
+  const handleDeleteReminder = (id: string) => {
+    Alert.alert(
+      "Delete Reminder",
+      "Are you sure you want to delete this reminder?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await reminderApi.deleteReminder(id);
+              const data = await reminderApi.getMyReminders();
+              setReminders(data || []);
+            } catch (err) {
+              console.error(err);
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -112,6 +139,71 @@ export default function ProfileScreen() {
             <Text style={[styles.addPetCardText, { color: tk.textMuted }]}>Add pet</Text>
           </TouchableOpacity>
         </ScrollView>
+
+        {(() => {
+          const upcoming = [...reminders].filter(r => {
+            const rDate = new Date(`${r.date}T${r.time || "00:00"}`);
+            return rDate >= new Date();
+          });
+
+          if (upcoming.length === 0) return null;
+
+          const sortedReminders = upcoming.sort((a, b) => {
+            const dateA = new Date(`${a.date}T${a.time || "00:00"}`).getTime();
+            const dateB = new Date(`${b.date}T${b.time || "00:00"}`).getTime();
+            return dateA - dateB;
+          });
+
+          return (
+            <>
+              {/* Upcoming Reminders */}
+              <View style={styles.sectionRow}>
+                <Text style={[styles.sectionTitle, { color: tk.text }]}>Upcoming Reminders</Text>
+              </View>
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 8 }}>
+                {sortedReminders.map((r, i) => {
+                  const pet = pets.find(p => p.id === r.petId);
+                  const IconComponent = r.type === "appointment" ? Stethoscope : r.type === "vaccination" ? Syringe : r.type === "medication" ? Pill : Bell;
+                  
+                  const dt = new Date(`${r.date}T${r.time || "00:00"}`);
+                  const dateText = dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                  const timeText = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  
+                  const tintBg = TINT_COLORS[(i + 1) % TINT_COLORS.length];
+
+                  return (
+                    <TouchableOpacity 
+                      key={r.id} 
+                      onPress={() => router.push(`/vets/reminder?id=${r.id}`)}
+                      style={[styles.reminderCardHorizontal, { backgroundColor: tintBg }]}
+                      activeOpacity={0.85}
+                    >
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", width: "100%" }}>
+                        <View style={[styles.reminderIconBgHorizontal, { backgroundColor: dark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.06)" }]}>
+                          <IconComponent size={16} color={tk.text} />
+                        </View>
+                        <TouchableOpacity onPress={() => handleDeleteReminder(r.id)} style={{ padding: 4 }}>
+                          <Trash2 size={14} color="#ff4d4d" />
+                        </TouchableOpacity>
+                      </View>
+                      
+                      <View style={{ marginTop: 8 }}>
+                        <Text style={[styles.reminderTitleHorizontal, { color: tk.text }]} numberOfLines={1}>{r.title}</Text>
+                        <Text style={{ fontSize: 11, fontFamily: "Poppins_600SemiBold", color: tk.text, opacity: 0.85, marginTop: 2 }}>
+                          {pet?.name || "Pet"}
+                        </Text>
+                        <Text style={{ fontSize: 10, fontFamily: "Inter_400Regular", color: tk.textMuted, marginTop: 2 }}>
+                          {dateText} · {timeText}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </>
+          );
+        })()}
 
         {/* Quick access */}
         <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Quick access</Text>
@@ -245,5 +337,38 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_700Bold",
     fontSize: 16,
     color: "#EF4444",
+  },
+  emptyReminderCardHorizontal: {
+    width: 200,
+    height: 125,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 14,
+  },
+  reminderCardHorizontal: {
+    width: 170,
+    height: 125,
+    borderRadius: 22,
+    padding: 14,
+    justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  reminderIconBgHorizontal: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reminderTitleHorizontal: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 13,
   },
 });
