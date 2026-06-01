@@ -3,6 +3,9 @@ import type { Server, Socket } from "socket.io";
 
 let io: Server | null = null;
 
+// Map to track user presence: userId -> Set of socketIds
+const onlineUsers = new Map<string, Set<string>>();
+
 export const getActorRoom = (actorType: string, actorId: string) => `actor:${actorType}:${actorId}`;
 
 export const setRealtimeServer = (server: Server) => {
@@ -10,6 +13,11 @@ export const setRealtimeServer = (server: Server) => {
 };
 
 export const getRealtimeServer = () => io;
+
+export const isUserOnline = (userId: string): boolean => {
+  const sockets = onlineUsers.get(userId);
+  return !!sockets && sockets.size > 0;
+};
 
 export const setupRealtimeServer = (server: Server) => {
   setRealtimeServer(server);
@@ -50,7 +58,30 @@ export const setupRealtimeServer = (server: Server) => {
     const actorType = socket.data.actorType as string | undefined;
 
     if (actorId && actorType) {
-      socket.join(getActorRoom(actorType, actorId));
+      const room = getActorRoom(actorType, actorId);
+      socket.join(room);
+
+      // Presence tracking
+      if (!onlineUsers.has(actorId)) {
+        onlineUsers.set(actorId, new Set());
+      }
+      const userSockets = onlineUsers.get(actorId)!;
+      userSockets.add(socket.id);
+
+      // Broadcast online status to anyone interested (could be broadcast globally or just room)
+      // For now, we mainly need the isUserOnline helper for the backend to decide on push notifications
+      io?.emit("presence:online", { userId: actorId, userType: actorType });
+
+      socket.on("disconnect", () => {
+        if (onlineUsers.has(actorId)) {
+          const sockets = onlineUsers.get(actorId)!;
+          sockets.delete(socket.id);
+          if (sockets.size === 0) {
+            onlineUsers.delete(actorId);
+            io?.emit("presence:offline", { userId: actorId, userType: actorType });
+          }
+        }
+      });
     }
   });
 };

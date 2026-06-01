@@ -8,14 +8,9 @@ import { Search, Check } from "lucide-react-native";
 import { Avatar } from "./Avatar";
 import { colors } from "../lib/theme";
 import { useTokens } from "../lib/theme-store";
-
-export const shareMembers = [
-  { id: "1", name: "Aanya P.", handle: "aanya", avatar: require("../assets/doodle-cat.png") },
-  { id: "2", name: "Mehul S.", handle: "mehul", avatar: require("../assets/doodle-birthday.png") },
-  { id: "3", name: "Priya M.", handle: "priya", avatar: require("../assets/doodle-walk.png") },
-  { id: "4", name: "Indie Dogs India", handle: "indiedogs", avatar: require("../assets/doodle-group.png") },
-  { id: "5", name: "Rescue & Co.", handle: "rescueco", avatar: require("../assets/doodle-rescue.png") },
-];
+import { chatApi } from "../../services/chat/chatApi";
+import { userApi } from "../../services/user/userApi";
+import { useAuthStore } from "../lib/auth-store";
 
 interface ShareSheetProps {
   open: boolean;
@@ -25,21 +20,42 @@ interface ShareSheetProps {
 
 export function ShareSheet({ open, onClose, postId }: ShareSheetProps) {
   const tk = useTokens();
+  const { user } = useAuthStore();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
+  
+  // Real users state
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
       setSearch("");
       setSelected([]);
+      fetchUsers("");
     }
   }, [open]);
 
-  const filtered = shareMembers.filter(
-    (m) =>
-      m.name.toLowerCase().includes(search.toLowerCase()) ||
-      m.handle.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    if (open) {
+      const delaySearch = setTimeout(() => {
+        fetchUsers(search);
+      }, 300);
+      return () => clearTimeout(delaySearch);
+    }
+  }, [search]);
+
+  const fetchUsers = async (query: string) => {
+    setLoading(true);
+    try {
+      const results = await userApi.searchUsers(query || "a"); // "a" just to populate something if empty
+      setUsers(results.filter((u: any) => u.id !== user?.id));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleSelect = (id: string) => {
     setSelected((prev) =>
@@ -47,13 +63,21 @@ export function ShareSheet({ open, onClose, postId }: ShareSheetProps) {
     );
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (selected.length === 0) return;
-    const names = shareMembers
-      .filter((m) => selected.includes(m.id))
-      .map((m) => m.name)
-      .join(", ");
-    Alert.alert("Success", `Post shared with: ${names}`);
+    
+    // In a real scenario, this would likely be a universal deep link
+    const postLink = `Check out this post! furrcircle://post/${postId}`;
+    
+    try {
+      await Promise.all(
+        selected.map(recipientId => chatApi.startChat(recipientId, postLink))
+      );
+      Alert.alert("Success", "Post shared to chat!");
+    } catch (err) {
+      Alert.alert("Error", "Failed to share post.");
+    }
+    
     onClose();
   };
 
@@ -78,10 +102,12 @@ export function ShareSheet({ open, onClose, postId }: ShareSheetProps) {
 
           {/* Members list */}
           <ScrollView style={styles.membersList} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            {filtered.length === 0 ? (
-              <Text style={[styles.emptyText, { color: tk.textMuted }]}>No members found</Text>
+            {loading ? (
+              <Text style={[styles.emptyText, { color: tk.textMuted }]}>Loading...</Text>
+            ) : users.length === 0 ? (
+              <Text style={[styles.emptyText, { color: tk.textMuted }]}>No users found</Text>
             ) : (
-              filtered.map((m) => {
+              users.map((m) => {
                 const isSelected = selected.includes(m.id);
                 return (
                   <TouchableOpacity
@@ -90,10 +116,10 @@ export function ShareSheet({ open, onClose, postId }: ShareSheetProps) {
                     style={styles.memberRow}
                     activeOpacity={0.7}
                   >
-                    <Avatar source={m.avatar} name={m.name} size={40} />
+                    <Avatar source={m.avatar_url ? { uri: m.avatar_url } : require("../assets/doodle-puppy.png")} name={m.name} size={40} />
                     <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text style={[styles.memberName, { color: tk.text }]}>{m.name}</Text>
-                      <Text style={[styles.memberHandle, { color: tk.textMuted }]}>@{m.handle}</Text>
+                      <Text style={[styles.memberHandle, { color: tk.textMuted }]}>@{m.username}</Text>
                     </View>
                     <View
                       style={[

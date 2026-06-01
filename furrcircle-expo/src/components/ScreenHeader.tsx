@@ -11,9 +11,11 @@ type Props = {
   right?: React.ReactNode;
   /** Show the back chevron. Defaults true on mobile, false on tablet (side nav handles nav). */
   showBack?: boolean;
+  /** Optional custom back handler. If not provided, uses router.back() */
+  onBack?: () => void;
 };
 
-export function ScreenHeader({ title, right, showBack }: Props) {
+export function ScreenHeader({ title, right, showBack, onBack }: Props) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const tk = useTokens();
@@ -22,6 +24,14 @@ export function ScreenHeader({ title, right, showBack }: Props) {
   // Default: show back on mobile, hide on tablet
   const shouldShowBack = showBack ?? !isTablet;
 
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      router.back();
+    }
+  };
+
   return (
     <View style={[
       styles.container,
@@ -29,7 +39,7 @@ export function ScreenHeader({ title, right, showBack }: Props) {
       isTablet && styles.containerTablet,
     ]}>
       {shouldShowBack ? (
-        <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: tk.bg }]}>
+        <TouchableOpacity onPress={handleBack} style={[styles.backBtn, { backgroundColor: tk.bg }]}>
           <ChevronLeft size={24} color={tk.text} strokeWidth={2} />
         </TouchableOpacity>
       ) : (

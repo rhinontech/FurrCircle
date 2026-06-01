@@ -40,6 +40,7 @@ export default function RootLayout() {
 
   const setUnreadCounts = useNotificationStore((s) => s.setUnreadCounts);
   const prependNotification = useNotificationStore((s) => s.prependNotification);
+  const incrementChatUnread = useNotificationStore((s) => s.incrementChatUnread);
 
   useEffect(() => { load(); hydrate(); }, []);
 
@@ -87,10 +88,19 @@ export default function RootLayout() {
           }
         );
 
+        const unsubChat = socketService.on<any>(
+          "chat:message",
+          () => {
+            // Increment the chat badge when a new message arrives
+            incrementChatUnread();
+          }
+        );
+
         // Store cleanup refs on the cancel closure
         return () => {
           unsubNew();
           unsubCounts();
+          unsubChat();
         };
       } catch (err) {
         console.warn("[Socket] Bootstrap failed:", err);

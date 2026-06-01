@@ -398,6 +398,9 @@ function FeedHeader() {
   const unreadCount = useNotificationStore((s) => s.unreadCount);
   const badgeLabel = unreadCount > 99 ? "99+" : String(unreadCount);
 
+  const chatUnreadCount = useNotificationStore((s) => s.chatUnreadCount);
+  const chatBadgeLabel = chatUnreadCount > 99 ? "99+" : String(chatUnreadCount);
+
   const handleLocationSelect = async (loc: LocationResult) => {
     setLocationModalVisible(false);
     try {
@@ -427,7 +430,12 @@ function FeedHeader() {
       </View>
       <View style={styles.headerActions}>
         <TouchableOpacity onPress={() => router.push("/chat")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
-          <MessageCircle size={20} color={tk.text} strokeWidth={2} />
+          <MessageCircle size={20} color={chatUnreadCount > 0 ? colors.coral : tk.text} strokeWidth={2} />
+          {chatUnreadCount > 0 && (
+            <View style={styles.notifBadge}>
+              <Text style={styles.notifBadgeText}>{chatBadgeLabel}</Text>
+            </View>
+          )}
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => router.push("/notifications")}

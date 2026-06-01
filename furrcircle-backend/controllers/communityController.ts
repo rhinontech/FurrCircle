@@ -3,6 +3,7 @@ import { Op } from "sequelize";
 import db from "../models/index.ts";
 import { createNotification, createRichNotification } from "../services/notificationService.ts";
 import { sendEmail } from "../services/emailService.ts";
+import { emitToActor, isUserOnline } from "../services/realtimeService.ts";
 
 const toPlain = (value: any) => (value && typeof value.toJSON === "function" ? value.toJSON() : value);
 
@@ -992,7 +993,17 @@ export const getChats = async (req: any, res: Response): Promise<void> => {
       return `${bDate || ""}`.localeCompare(`${aDate || ""}`);
     });
 
-    res.json(serialized);
+    // Deduplicate conversations so we only show one thread per user pair (the newest one)
+    const seenUsers = new Set();
+    const deduplicated = serialized.filter((conv: any) => {
+      const otherUser = conv.otherParticipants?.[0];
+      if (!otherUser) return false;
+      if (seenUsers.has(otherUser.id)) return false;
+      seenUsers.add(otherUser.id);
+      return true;
+    });
+
+    res.json(deduplicated);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -1044,10 +1055,30 @@ export const sendMessage = async (req: any, res: Response): Promise<void> => {
 
     await conversation.update({ updatedAt: new Date() } as any);
 
-    // Notify the other participant about the new message
     const recipientId = conversation.initiatorId === req.user.id ? conversation.recipientId : conversation.initiatorId;
     const recipientType = conversation.initiatorId === req.user.id ? conversation.recipientType : conversation.initiatorType;
+
+    const refreshedConversation = await fetchConversation(conversation.id);
+    const resolveProfile = createProfileResolver();
+    const serializedMessage = await serializeMessage(message, resolveProfile);
+    const serializedConversation = await serializeConversation(refreshedConversation, req.user.id, resolveProfile);
+
+    // Emit real-time event to recipient
     if (recipientId) {
+      emitToActor(recipientId, recipientType, "chat:message", {
+        conversationId: conversation.id,
+        message: serializedMessage,
+      });
+    }
+
+    // Emit real-time event to sender (for multi-device sync)
+    emitToActor(req.user.id, req.userType || "user", "chat:message", {
+      conversationId: conversation.id,
+      message: serializedMessage,
+    });
+
+    // Notify the other participant about the new message via push (smart push: skip if online)
+    if (recipientId && !isUserOnline(recipientId)) {
       await createNotification(
         recipientId,
         recipientType,
@@ -1059,11 +1090,9 @@ export const sendMessage = async (req: any, res: Response): Promise<void> => {
       );
     }
 
-    const refreshedConversation = await fetchConversation(conversation.id);
-    const resolveProfile = createProfileResolver();
     res.status(201).json({
-      message: await serializeMessage(message, resolveProfile),
-      conversation: await serializeConversation(refreshedConversation, req.user.id, resolveProfile),
+      message: serializedMessage,
+      conversation: serializedConversation,
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -1115,11 +1144,14 @@ export const startChat = async (req: any, res: Response): Promise<void> => {
       ],
     };
 
-    if (petId) {
-      where.petId = petId;
-    }
-
+    // We removed petId from the 'where' clause so that 1-on-1 chats 
+    // are ALWAYS reused, preventing duplicate conversation threads.
+    
     let conversation = await Conversation.findOne({ where });
+    if (conversation && petId && conversation.petId !== petId) {
+      // Optionally update the petId if a new one is provided and we are reusing a chat
+      await conversation.update({ petId } as any);
+    }
     if (!conversation) {
       conversation = await Conversation.create({
         initiatorId: req.user.id,
@@ -1132,7 +1164,7 @@ export const startChat = async (req: any, res: Response): Promise<void> => {
     }
 
     if (firstMessage) {
-      await Message.create({
+      const message = await Message.create({
         conversationId: conversation.id,
         senderId: req.user.id,
         senderType: req.userType || "user",
@@ -1141,16 +1173,32 @@ export const startChat = async (req: any, res: Response): Promise<void> => {
       });
       await conversation.update({ updatedAt: new Date() } as any);
 
-      // Notify recipient
-      await createNotification(
-        recipientId,
-        recipientType,
-        "chat",
-        `New message from ${req.user.name || "Someone"}`,
-        firstMessage.length > 80 ? firstMessage.substring(0, 80) + "…" : firstMessage,
-        conversation.id,
-        "chat"
-      );
+      const serializedMessage = await serializeMessage(message, resolveProfile);
+
+      // Emit real-time event to recipient
+      emitToActor(recipientId, recipientType, "chat:message", {
+        conversationId: conversation.id,
+        message: serializedMessage,
+      });
+
+      // Emit real-time event to sender
+      emitToActor(req.user.id, req.userType || "user", "chat:message", {
+        conversationId: conversation.id,
+        message: serializedMessage,
+      });
+
+      // Notify recipient via push (smart push)
+      if (!isUserOnline(recipientId)) {
+        await createNotification(
+          recipientId,
+          recipientType,
+          "chat",
+          `New message from ${req.user.name || "Someone"}`,
+          firstMessage.length > 80 ? firstMessage.substring(0, 80) + "…" : firstMessage,
+          conversation.id,
+          "chat"
+        );
+      }
     }
 
     const refreshedConversation = await fetchConversation(conversation.id);

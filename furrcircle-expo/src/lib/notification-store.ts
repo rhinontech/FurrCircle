@@ -23,6 +23,9 @@ type NotificationState = {
   activityCount: number;
   campaignCount: number;
 
+  /** Unread chat conversations count — drives the message badge */
+  chatUnreadCount: number;
+
   /**
    * Notifications received in real-time via WebSocket.
    * These are prepended to the REST-fetched list in the notifications screen.
@@ -48,12 +51,18 @@ type NotificationState = {
    * so realtime notifs that were already fetched via REST aren't shown twice.
    */
   resetRealtimeNotifs: () => void;
+
+  // ── Chat setters ───────────────────────────────────────────────────────────
+  setChatUnreadCount: (count: number) => void;
+  incrementChatUnread: () => void;
+  clearChatUnread: () => void;
 };
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
   unreadCount: 0,
   activityCount: 0,
   campaignCount: 0,
+  chatUnreadCount: 0,
   realtimeNotifs: [],
 
   setUnreadCounts: ({ activity, campaign, total }) => {
@@ -79,5 +88,17 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
   resetRealtimeNotifs: () => {
     set({ realtimeNotifs: [] });
+  },
+
+  setChatUnreadCount: (count) => {
+    set({ chatUnreadCount: count });
+  },
+
+  incrementChatUnread: () => {
+    set((state) => ({ chatUnreadCount: state.chatUnreadCount + 1 }));
+  },
+
+  clearChatUnread: () => {
+    set({ chatUnreadCount: 0 });
   },
 }));
