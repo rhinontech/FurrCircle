@@ -46,7 +46,7 @@ export default function FeedScreen() {
   useEffect(() => {
     Audio.setAudioModeAsync({
       playsInSilentModeIOS: true,
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   // Story states
@@ -56,6 +56,9 @@ export default function FeedScreen() {
   const [selectedStoryGroupIndex, setSelectedStoryGroupIndex] = useState(0);
   const [editorVisible, setEditorVisible] = useState(false);
   const [pickedImageUri, setPickedImageUri] = useState<string | null>(null);
+  const [pickedMediaType, setPickedMediaType] = useState<"image" | "video">("image");
+  const [compressing, setCompressing] = useState(false);
+  const [storyUploading, setStoryUploading] = useState(false);
   const [feedPosts, setFeedPosts] = useState<any[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
@@ -69,11 +72,13 @@ export default function FeedScreen() {
         storyApi.getMyStory(),
       ]);
       setStoryGroups(groups || []);
+
       const formattedMine: Story[] = (mine?.stories || []).map((s) => ({
         id: s.id,
         mediaUrl: s.mediaUrl,
         mediaType: s.mediaType,
         caption: s.caption || undefined,
+        viewCount: s.viewCount || 0,
       }));
       setMyStories(formattedMine);
     } catch (err) {
@@ -162,28 +167,29 @@ export default function FeedScreen() {
 
   const mappedMyStoryGroup = myStories.length > 0
     ? {
-        userId: "me",
-        username: "Your Story",
-        avatar: user?.avatar_url ? { uri: user.avatar_url } : require("../../src/assets/doodle-boy-dog.png"),
-        stories: myStories.map((s: any) => {
-          let overlayText = undefined;
-          let caption = s.caption || undefined;
-          if (s.caption?.startsWith('{"overlayText":')) {
-            try {
-              const parsed = JSON.parse(s.caption);
-              overlayText = parsed.overlayText || undefined;
-              caption = parsed.caption || undefined;
-            } catch (e) {}
-          }
-          return {
-            id: s.id,
-            mediaUrl: s.mediaUrl,
-            mediaType: s.mediaType,
-            caption,
-            overlayText,
-          };
-        }),
-      }
+      userId: "me",
+      username: "Your Story",
+      avatar: user?.avatar_url ? { uri: user.avatar_url } : require("../../src/assets/doodle-boy-dog.png"),
+      stories: myStories.map((s: any) => {
+        let overlayText = undefined;
+        let caption = s.caption || undefined;
+        if (s.caption?.startsWith('{"overlayText":')) {
+          try {
+            const parsed = JSON.parse(s.caption);
+            overlayText = parsed.overlayText || undefined;
+            caption = parsed.caption || undefined;
+          } catch (e) { }
+        }
+        return {
+          id: s.id,
+          mediaUrl: s.mediaUrl,
+          mediaType: s.mediaType,
+          caption,
+          overlayText,
+          viewCount: s.viewCount,
+        };
+      }),
+    }
     : null;
 
   const mappedOtherGroups = storyGroups
@@ -200,7 +206,7 @@ export default function FeedScreen() {
             const parsed = JSON.parse(s.caption);
             overlayText = parsed.overlayText || undefined;
             caption = parsed.caption || undefined;
-          } catch (e) {}
+          } catch (e) { }
         }
         return {
           id: s.id,
@@ -209,6 +215,7 @@ export default function FeedScreen() {
           caption,
           overlayText,
           viewedByMe: s.viewedByMe,
+          viewCount: s.viewCount,
         };
       }),
     }));
@@ -233,25 +240,49 @@ export default function FeedScreen() {
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 0.8,
-    });
+    try {
+      setCompressing(true);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: false,
+        quality: 0.8,
+        videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
+      });
 
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      setPickedImageUri(result.assets[0].uri);
-      setEditorVisible(true);
+      setCompressing(false);
+
+      if (!result.canceled && result.assets?.[0]) {
+        const asset = result.assets[0];
+        const isVideo = asset.type === 'video' || asset.mimeType?.startsWith('video/');
+
+        if (isVideo) {
+          const duration = asset.duration || 0;
+          const durationInSeconds = duration > 1000 ? duration / 1000 : duration;
+          if (durationInSeconds > 30) {
+            Alert.alert("Video too long", "Please select a video shorter than 30 seconds.");
+            return;
+          }
+          setPickedMediaType("video");
+        } else {
+          setPickedMediaType("image");
+        }
+
+        setPickedImageUri(asset.uri);
+        setEditorVisible(true);
+      }
+    } catch (err) {
+      setCompressing(false);
+      console.error("ImagePicker error:", err);
     }
   };
 
   const handleSaveStory = async (overlayText: string, caption: string) => {
     if (!pickedImageUri) return;
     try {
-      setFeedLoading(true);
+      setStoryUploading(true);
       const uploadRes = await userApi.uploadImage(pickedImageUri, "stories");
       if (!uploadRes?.url) {
-        throw new Error("Failed to upload image.");
+        throw new Error("Failed to upload story media.");
       }
 
       const storyCaption = JSON.stringify({
@@ -261,7 +292,7 @@ export default function FeedScreen() {
 
       await storyApi.createStory({
         mediaUrl: uploadRes.url,
-        mediaType: "image",
+        mediaType: pickedMediaType,
         caption: storyCaption,
       });
 
@@ -273,7 +304,7 @@ export default function FeedScreen() {
       console.error("Failed to add story:", err);
       Alert.alert("Error", err?.message || "Could not publish story. Please try again.");
     } finally {
-      setFeedLoading(false);
+      setStoryUploading(false);
     }
   };
 
@@ -370,12 +401,20 @@ export default function FeedScreen() {
       <StoryEditor
         visible={editorVisible}
         imageUri={pickedImageUri}
+        mediaType={pickedMediaType}
+        loading={storyUploading}
         onCancel={() => {
           setEditorVisible(false);
           setPickedImageUri(null);
         }}
         onSave={handleSaveStory}
       />
+      {compressing && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.loadingText}>Compressing video...</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -414,11 +453,11 @@ function FeedHeader() {
           style={styles.logoImg}
           resizeMode="contain"
         />
-        <TouchableOpacity onPress={() => setLocationModalVisible(true)} style={{ flexDirection: 'row', alignItems: 'center', marginTop: -4, marginLeft: 2 }}>
+        {/* <TouchableOpacity onPress={() => setLocationModalVisible(true)} style={{ flexDirection: 'row', alignItems: 'center', marginTop: -4, marginLeft: 2 }}>
           <MapPin size={12} color={tk.textMuted} style={{ marginRight: 2 }} />
           <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted }}>{user?.city || "Select Location"}</Text>
           <ChevronDown size={12} color={tk.textMuted} style={{ marginLeft: 2 }} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
       <View style={styles.headerActions}>
         <TouchableOpacity onPress={() => router.push("/chat")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
@@ -871,7 +910,7 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12, paddingTop: 10 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 0, paddingTop: 10 },
   logoImg: { width: 120, height: 50, alignSelf: "flex-start" },
   headerActions: { flexDirection: "row", gap: 8 },
   iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
@@ -929,5 +968,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 9999,
+    elevation: 10,
+  },
+  loadingText: {
+    color: "#fff",
+    marginTop: 12,
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 16,
   },
 });

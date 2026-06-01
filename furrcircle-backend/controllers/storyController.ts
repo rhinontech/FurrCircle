@@ -22,14 +22,23 @@ const serializeStory = (story: any, viewerIds: Set<string>) => {
 // @route   GET /api/community/stories
 export const getStoriesForCity = async (req: any, res: Response): Promise<void> => {
     try {
-        const { stories: Story, story_views: StoryView, users: User } = db as any;
-        const userCity = (req.user?.city || "").trim().toLowerCase();
+        const { follows: Follow, stories: Story, story_views: StoryView, users: User } = db as any;
         const now = new Date();
 
-        const whereClause: any = { expiresAt: { [Op.gt]: now } };
-        if (userCity) {
-            whereClause.city = userCity;
-        }
+        // Fetch accepted follows for the logged in user
+        const following = await Follow.findAll({
+            where: { followerId: req.user.id, status: 'accepted' },
+            attributes: ['followingId']
+        });
+
+        const followingIds = following.map((f: any) => f.followingId);
+        // Include the user's own stories as well
+        const allowedUserIds = [...followingIds, req.user.id];
+
+        const whereClause: any = {
+            expiresAt: { [Op.gt]: now },
+            userId: { [Op.in]: allowedUserIds }
+        };
 
         const allStories = await Story.findAll({
             where: whereClause,
@@ -47,9 +56,9 @@ export const getStoriesForCity = async (req: any, res: Response): Promise<void> 
         const storyIds = allStories.map((s: any) => s.id);
         const myViews = storyIds.length
             ? await StoryView.findAll({
-                  where: { storyId: { [Op.in]: storyIds }, viewerId: req.user.id },
-                  attributes: ["storyId"],
-              })
+                where: { storyId: { [Op.in]: storyIds }, viewerId: req.user.id },
+                attributes: ["storyId"],
+            })
             : [];
         const viewedIds = new Set<string>(myViews.map((v: any) => v.storyId));
 
@@ -63,10 +72,10 @@ export const getStoriesForCity = async (req: any, res: Response): Promise<void> 
                     userId: uid,
                     author: payload.author
                         ? {
-                              id: payload.author.id,
-                              name: payload.author.name,
-                              avatar_url: payload.author.avatar_url || null,
-                          }
+                            id: payload.author.id,
+                            name: payload.author.name,
+                            avatar_url: payload.author.avatar_url || null,
+                        }
                         : null,
                     stories: [],
                 };

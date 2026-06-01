@@ -140,9 +140,9 @@ export default function VetProfileScreen() {
           <TouchableOpacity 
             style={styles.bookBtn} 
             activeOpacity={0.8}
-            onPress={() => router.push(`/vets/book?vetId=${id}`)}
+            onPress={() => router.push(`/vets/reminder?vetId=${id}`)}
           >
-            <Text style={styles.bookBtnText}>Book Appointment</Text>
+            <Text style={styles.bookBtnText}>Set Reminder</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -44,7 +44,12 @@ export const uploadImage = async (uri: string, folder: string = 'profiles') => {
     const formData = new FormData();
     const filename = uri.split('/').pop() || 'upload.jpg';
     const match = /\.(\w+)$/.exec(filename);
-    const type = match ? `image/${match[1]}` : 'image/jpeg';
+    const ext = match ? match[1].toLowerCase() : 'jpg';
+    
+    const isVideo = ['mp4', 'm4v', 'mov', '3gp', 'avi'].includes(ext);
+    const type = isVideo 
+        ? `video/${ext === 'mov' ? 'quicktime' : ext}`
+        : `image/${ext === 'png' ? 'png' : ext === 'gif' ? 'gif' : 'jpeg'}`;
     
     formData.append('image', {
         uri,
@@ -52,7 +57,9 @@ export const uploadImage = async (uri: string, folder: string = 'profiles') => {
         type,
     } as any);
 
-    const response = await PrivateAxios.post(`/upload/${folder}`, formData, {
+    const endpoint = folder === 'stories' ? '/upload/stories' : `/upload/${folder}`;
+
+    const response = await PrivateAxios.post(endpoint, formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
