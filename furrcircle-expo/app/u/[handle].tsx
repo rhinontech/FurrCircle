@@ -12,6 +12,7 @@ import { useTokens } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { userApi } from "../../services/user/userApi";
 import { feedApi } from "../../services/community/feedApi";
+import { chatApi } from "../../services/chat/chatApi";
 import { Video, ResizeMode } from "expo-av";
 
 const GRID_SIZE = (Dimensions.get("window").width - 12) / 3;
@@ -57,6 +58,16 @@ export default function UserProfileScreen() {
       }
     } catch (err) {
       console.error("Failed to toggle follow", err);
+    }
+  };
+
+  const handleMessage = async () => {
+    if (!userProfile) return;
+    try {
+      const conv = await chatApi.startChat(userProfile.id);
+      router.push({ pathname: '/chat', params: { id: conv.id } });
+    } catch (err) {
+      console.error("Failed to start chat", err);
     }
   };
 
@@ -148,9 +159,14 @@ export default function UserProfileScreen() {
                     </TouchableOpacity>
                   )}
                   {userProfile?.followStatus === "accepted" && (
-                    <TouchableOpacity onPress={handleFollowToggle} style={[styles.editProfileBtn, { backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border }]}>
-                      <Text style={[styles.editProfileBtnText, { color: tk.text }]}>Following</Text>
-                    </TouchableOpacity>
+                    <>
+                      <TouchableOpacity onPress={handleFollowToggle} style={[styles.editProfileBtn, { backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border }]}>
+                        <Text style={[styles.editProfileBtnText, { color: tk.text }]}>Following</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={handleMessage} style={[styles.editProfileBtn, { backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border }]}>
+                        <Text style={[styles.editProfileBtnText, { color: tk.text }]}>Message</Text>
+                      </TouchableOpacity>
+                    </>
                   )}
                 </View>
               </View>

@@ -9,10 +9,12 @@ import { View, Platform } from "react-native";
 import { useEffect, useRef } from "react";
 import { useThemeStore, useTokens } from "../src/lib/theme-store";
 import { useAuthStore } from "../src/lib/auth-store";
-// import messaging from "@react-native-firebase/messaging";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { notificationApi } from "../services/notification/notificationApi";
+import { socketService } from "../services/socket/socketService";
+import { useNotificationStore } from "../src/lib/notification-store";
+import type { AppNotification, UnreadCounts } from "../services/notification/notificationApi";
 
 const queryClient = new QueryClient();
 
@@ -36,53 +38,113 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
 
+  const setUnreadCounts = useNotificationStore((s) => s.setUnreadCounts);
+  const prependNotification = useNotificationStore((s) => s.prependNotification);
+  const incrementChatUnread = useNotificationStore((s) => s.incrementChatUnread);
+
   useEffect(() => { load(); hydrate(); }, []);
 
+  // ── WebSocket connection lifecycle ─────────────────────────────────────────
+  // Connect when the user logs in, disconnect when they log out.
+  // Handlers registered here keep the global badge count and realtime
+  // notification list in sync for the entire app session.
+  useEffect(() => {
+    if (!user) {
+      // User logged out — close socket
+      socketService.disconnect();
+      return;
+    }
+
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      try {
+        const token = await SecureStore.getItemAsync("token");
+        if (!token || cancelled) return;
+
+        socketService.connect(token);
+
+        // Pull the initial unread counts via REST so the badge is accurate
+        // even before the first socket event arrives.
+        try {
+          const counts = await notificationApi.getUnreadCounts();
+          if (!cancelled) setUnreadCounts(counts);
+        } catch {
+          // non-fatal — WS will sync counts on next notification
+        }
+
+        // Register WebSocket event handlers
+        const unsubNew = socketService.on<AppNotification>(
+          "notification:new",
+          (notif) => {
+            prependNotification(notif);
+          }
+        );
+
+        const unsubCounts = socketService.on<UnreadCounts>(
+          "notification:counts",
+          (counts) => {
+            setUnreadCounts(counts);
+          }
+        );
+
+        const unsubChat = socketService.on<any>(
+          "chat:message",
+          () => {
+            // Increment the chat badge when a new message arrives
+            incrementChatUnread();
+          }
+        );
+
+        // Store cleanup refs on the cancel closure
+        return () => {
+          unsubNew();
+          unsubCounts();
+          unsubChat();
+        };
+      } catch (err) {
+        console.warn("[Socket] Bootstrap failed:", err);
+      }
+    };
+
+    let cleanup: (() => void) | undefined;
+    bootstrap().then((fn) => { cleanup = fn; });
+
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
+  }, [user?.id]);
+
   // ── Push notification bootstrap ─────────────────────────────────────────────
-  // Run only once after the user is authenticated
+  // Uncomment when Firebase Messaging native module is configured:
   // useEffect(() => {
   //   if (!user) return;
-  // 
   //   const bootstrapPush = async () => {
   //     try {
-  //       // 1. Request permission (iOS prompts; Android 13+ also needs this)
   //       const authStatus = await messaging().requestPermission();
   //       const enabled =
   //         authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
   //         authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-  // 
-  //       if (!enabled) {
-  //         console.log("[Push] Permission denied");
-  //         return;
-  //       }
-  // 
-  //       // 2. Get FCM token
+  //       if (!enabled) return;
   //       const fcmToken = await messaging().getToken();
-  //       console.log("[Push] FCM token:", fcmToken?.slice(0, 20) + "...");
-  // 
-  //       // 3. Stable installation ID (persisted across app restarts)
   //       let installationId = await SecureStore.getItemAsync("push_installation_id");
   //       if (!installationId) {
   //         installationId = `${Platform.OS}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   //         await SecureStore.setItemAsync("push_installation_id", installationId);
   //       }
-  // 
-  //       // 4. Register device with backend
   //       await notificationApi.registerDevice({
   //         installationId,
   //         expoPushToken: fcmToken,
   //         platform: Platform.OS as "ios" | "android",
   //         pushEnabled: true,
   //       });
-  // 
-  //       console.log("[Push] Device registered");
   //     } catch (err) {
   //       console.warn("[Push] Bootstrap failed:", err);
   //     }
   //   };
-  // 
   //   bootstrapPush();
-  // }, [user?.id]); // Re-run only if the logged-in user changes
+  // }, [user?.id]);
 
   // Auth guard: redirect based on login state once both fonts + auth are ready
   useEffect(() => {
