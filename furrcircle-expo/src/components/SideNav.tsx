@@ -1,17 +1,19 @@
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
-import { Home, Users, Bone, Compass, LayoutGrid, PawPrint, Plus } from "lucide-react-native";
+import { Home, Users, Bone, Compass, LayoutGrid, PawPrint, Plus, Bell } from "lucide-react-native";
 import { colors } from "../lib/theme";
 import { useTokens } from "../lib/theme-store";
 import { useBreakpoint } from "../lib/breakpoints";
 import { Avatar } from "./Avatar";
+import { useNotificationStore } from "../lib/notification-store";
 
 const NAV_ITEMS = [
-  { key: "feed",      icon: Home,       label: "Feed",      path: "/(tabs)/" },
-  { key: "community", icon: Users,      label: "Circles",   path: "/(tabs)/community" },
-  { key: "match",     icon: Bone,       label: "Match",     path: "/(tabs)/match" },
-  { key: "discover",  icon: Compass,    label: "Discover",  path: "/(tabs)/discover" },
-  { key: "profile",   icon: LayoutGrid, label: "Profile",   path: "/(tabs)/profile" },
+  { key: "feed",          icon: Home,       label: "Feed",          path: "/(tabs)/" },
+  { key: "community",    icon: Users,      label: "Circles",       path: "/(tabs)/community" },
+  { key: "match",        icon: Bone,       label: "Match",         path: "/(tabs)/match" },
+  { key: "discover",     icon: Compass,    label: "Discover",      path: "/(tabs)/discover" },
+  { key: "profile",      icon: LayoutGrid, label: "Profile",       path: "/(tabs)/profile" },
+  { key: "notifications",icon: Bell,       label: "Notifications", path: "/notifications" },
 ];
 
 export function SideNav() {
@@ -19,6 +21,7 @@ export function SideNav() {
   const pathname = usePathname();
   const tk       = useTokens();
   const { isDesktop } = useBreakpoint();
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
 
   const wide = isDesktop;               // show labels + user card
   const navW = wide ? 240 : 84;
@@ -42,6 +45,8 @@ export function SideNav() {
       <View style={styles.navList}>
         {NAV_ITEMS.map(({ key, icon: Icon, label, path }) => {
           const active = isActive(path);
+          const isNotifItem = key === "notifications";
+          const badgeLabel = unreadCount > 99 ? "99+" : String(unreadCount);
           return (
             <TouchableOpacity
               key={key}
@@ -53,15 +58,28 @@ export function SideNav() {
               ]}
               activeOpacity={0.75}
             >
-              <Icon
-                size={24}
-                color={active ? colors.primary : tk.textMuted}
-                strokeWidth={active ? 2.4 : 2}
-              />
+              <View style={{ position: "relative" }}>
+                <Icon
+                  size={24}
+                  color={active ? colors.primary : tk.textMuted}
+                  strokeWidth={active ? 2.4 : 2}
+                />
+                {isNotifItem && unreadCount > 0 && (
+                  <View style={styles.sideNavBadge}>
+                    <Text style={styles.sideNavBadgeText}>{badgeLabel}</Text>
+                  </View>
+                )}
+              </View>
               {wide && (
                 <Text style={[styles.navLabel, { color: active ? colors.primary : tk.textMuted }]}>
                   {label}
                 </Text>
+              )}
+              {/* Badge in wide mode: show count next to label */}
+              {wide && isNotifItem && unreadCount > 0 && (
+                <View style={[styles.sideNavBadgeWide, { marginLeft: "auto" }]}>
+                  <Text style={styles.sideNavBadgeText}>{badgeLabel}</Text>
+                </View>
               )}
             </TouchableOpacity>
           );
@@ -183,5 +201,34 @@ const styles = StyleSheet.create({
   userHandle: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
+  },
+  sideNavBadge: {
+    position: "absolute",
+    top: -5,
+    right: -7,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.coral,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
+  sideNavBadgeWide: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.coral,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+  },
+  sideNavBadgeText: {
+    color: "#fff",
+    fontSize: 9,
+    fontFamily: "Poppins_700Bold",
+    lineHeight: 12,
   },
 });

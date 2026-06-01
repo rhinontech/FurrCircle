@@ -12,6 +12,7 @@ import { useState, useCallback } from "react";
 import { userApi } from "../services/user/userApi";
 import { notificationApi } from "../services/notification/notificationApi";
 import type { AppNotification } from "../services/notification/notificationApi";
+import { useNotificationStore } from "../src/lib/notification-store";
 import {
   Heart, MessageCircle, UserPlus, Bell, Clock, Calendar,
   CheckCheck, ShieldCheck, Megaphone, Info,
@@ -61,16 +62,28 @@ export default function NotificationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
 
+  // Real-time notifications prepended from WebSocket
+  const realtimeNotifs = useNotificationStore((s) => s.realtimeNotifs);
+  const setUnreadCounts = useNotificationStore((s) => s.setUnreadCounts);
+  const clearUnread = useNotificationStore((s) => s.clearUnread);
+  const resetRealtimeNotifs = useNotificationStore((s) => s.resetRealtimeNotifs);
+
   // ── Fetch ────────────────────────────────────────────────────────────────────
 
   const fetchAll = useCallback(async () => {
     try {
-      const [notifs, requests] = await Promise.all([
+      const [notifs, requests, counts] = await Promise.all([
         notificationApi.listNotifications("activity"),
         userApi.getPendingFollowRequests(),
+        notificationApi.getUnreadCounts(),
       ]);
       setNotifications(notifs);
       setPendingRequests(requests);
+      // Sync REST counts into global store so badge stays accurate
+      setUnreadCounts(counts);
+      // Once we've fetched the full REST list, clear the realtime prepend
+      // buffer (they're now included in the REST response)
+      resetRealtimeNotifs();
     } catch (e) {
       console.error("[Notifications] fetch error:", e);
     } finally {
@@ -114,6 +127,8 @@ export default function NotificationsScreen() {
     try {
       await notificationApi.markAllRead("activity");
       setNotifications(ns => ns.map(n => ({ ...n, isRead: true })));
+      // Also zero out the global badge counter
+      clearUnread();
     } finally {
       setMarkingAll(false);
     }
@@ -150,15 +165,20 @@ export default function NotificationsScreen() {
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
-  const hasUnread = notifications.some(n => !n.isRead);
+  // Merge realtime WebSocket notifications at the top (deduplicated)
+  const restIds = new Set(notifications.map((n) => n.id));
+  const newRealtime = realtimeNotifs.filter((n) => !restIds.has(n.id));
+  const mergedNotifications = [...newRealtime, ...notifications];
+
+  const hasUnread = mergedNotifications.some(n => !n.isRead);
 
   // ── Section grouping ─────────────────────────────────────────────────────────
   // Group reminder notifications separately from social activity
 
-  const reminderNotifs = notifications.filter(n =>
+  const reminderNotifs = mergedNotifications.filter(n =>
     ["reminder", "vaccine", "medication"].includes(n.type)
   );
-  const activityNotifs = notifications.filter(n =>
+  const activityNotifs = mergedNotifications.filter(n =>
     !["reminder", "vaccine", "medication"].includes(n.type)
   );
 
@@ -248,7 +268,7 @@ export default function NotificationsScreen() {
           )}
 
           {/* ── Empty state ──────────────────────────────────────────────── */}
-          {pendingRequests.length === 0 && notifications.length === 0 && (
+          {pendingRequests.length === 0 && mergedNotifications.length === 0 && (
             <View style={[styles.emptyBox, { backgroundColor: tk.card, borderColor: tk.border }]}>
               <View style={[styles.emptyIcon, { backgroundColor: tk.border }]}>
                 <Bell size={28} color={tk.textMuted} />

@@ -22,6 +22,7 @@ import { StoryEditor } from "../../src/components/StoryEditor";
 import { Video, ResizeMode, Audio } from "expo-av";
 import { useIsFocused } from "@react-navigation/native";
 import Svg, { Path, Circle } from "react-native-svg";
+import { useNotificationStore } from "../../src/lib/notification-store";
 
 export default function FeedScreen() {
   const { refresh } = useLocalSearchParams<{ refresh?: string }>();
@@ -393,6 +394,10 @@ function FeedHeader() {
   const setSession = useAuthStore(s => s.setSession);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
 
+  // Live unread count from WebSocket-backed store
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const badgeLabel = unreadCount > 99 ? "99+" : String(unreadCount);
+
   const handleLocationSelect = async (loc: LocationResult) => {
     setLocationModalVisible(false);
     try {
@@ -424,9 +429,17 @@ function FeedHeader() {
         <TouchableOpacity onPress={() => router.push("/chat")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
           <MessageCircle size={20} color={tk.text} strokeWidth={2} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push("/notifications")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
-          <Bell size={20} color={tk.text} strokeWidth={2} />
-          <View style={styles.notifDot} />
+        <TouchableOpacity
+          onPress={() => router.push("/notifications")}
+          style={[styles.iconBtn, { backgroundColor: tk.card }]}
+          activeOpacity={0.8}
+        >
+          <Bell size={20} color={unreadCount > 0 ? colors.coral : tk.text} strokeWidth={2} />
+          {unreadCount > 0 && (
+            <View style={styles.notifBadge}>
+              <Text style={styles.notifBadgeText}>{badgeLabel}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
       <LocationPickerModal
@@ -876,6 +889,26 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8 },
   iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
   notifDot: { position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.coral },
+  notifBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.coral,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  notifBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontFamily: "Poppins_700Bold",
+    lineHeight: 13,
+  },
   storyRail: { flexGrow: 0 },
   storyItem: { alignItems: "center", width: 64, gap: 6 },
   storyRingContainer: { width: 64, height: 64, position: "relative", alignItems: "center", justifyContent: "center" },

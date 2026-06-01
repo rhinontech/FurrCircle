@@ -462,28 +462,106 @@ export const getCommunityFeed = async (req: any, res: Response): Promise<void> =
         order: [["createdAt", "DESC"]],
       });
     } else {
-      // for_you: score = engagementScore + topicMatch(30) + cityMatch(20) + recencyDecay
+      // ═══════════════════════════════════════════════════════════════════════
+      // FOR YOU — Two-tier feed algorithm
+      //
+      // Tier 1 – Following feed (top slots, chronological newest-first):
+      //   • Posts from users the current user follows (accepted status only)
+      //   • Max age: 72 hours (3 days) — keeps the following feed fresh
+      //   • Sorted purely by createdAt DESC (latest follower post at very top)
+      //
+      // Tier 2 – Discovery feed (shown after following posts):
+      //   • All other approved posts, max age: 7 days
+      //   • Scored: engagementScore + topicBonus(30) + cityBonus(20) + recencyDecay
+      //   • recencyDecay = max(0, 100 − hoursOld × 1.5)  → 0 after ~67 hours
+      //   • Posts already in Tier 1 are excluded (deduplicated by post id)
+      //   • Followed-user posts older than 72 h get a +40 followBonus so they
+      //     still rank above random strangers even after leaving Tier 1
+      // ═══════════════════════════════════════════════════════════════════════
+
+      const currentUserId = req.user?.id;
       const userCity = (req.user?.city || "").trim().toLowerCase();
       const userTopics: string[] = req.user?.topicInterests || [];
 
-      allPosts = await Post.findAll({
-        where: { status: "approved" },
+      // ── Step 1: Resolve the current user's followed user IDs ─────────────
+      const followedUserIds: Set<string> = new Set();
+      if (currentUserId) {
+        const { follows: Follow } = db as any;
+        const myFollows = await Follow.findAll({
+          where: { followerId: currentUserId, status: "accepted" },
+          attributes: ["followingId"],
+        });
+        myFollows.forEach((f: any) => followedUserIds.add(f.followingId));
+      }
+
+      // ── Step 2: Tier 1 — Following posts (≤ 72 h, newest-first) ─────────
+      const tier1Cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000);
+
+      let tier1Posts: any[] = [];
+      if (followedUserIds.size > 0) {
+        tier1Posts = await Post.findAll({
+          where: {
+            status: "approved",
+            userId: { [Op.in]: Array.from(followedUserIds) },
+            createdAt: { [Op.gte]: tier1Cutoff },
+          },
+          include: postIncludes,
+          order: [["createdAt", "DESC"]],
+        });
+      }
+
+      // Build a Set of IDs already in Tier 1 to prevent duplicates in Tier 2
+      const tier1Ids = new Set(tier1Posts.map((p: any) => p.id));
+
+      // ── Step 3: Tier 2 — Discovery posts (≤ 7 days, excluding Tier 1) ───
+      const tier2Cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+      const discoveryWhere: any = {
+        status: "approved",
+        createdAt: { [Op.gte]: tier2Cutoff },
+      };
+      if (tier1Ids.size > 0) {
+        discoveryWhere.id = { [Op.notIn]: Array.from(tier1Ids) };
+      }
+
+      const discoveryPosts = await Post.findAll({
+        where: discoveryWhere,
         include: postIncludes,
         order: [["createdAt", "DESC"]],
       });
 
-      allPosts = allPosts
+      // Score each discovery post
+      const scoredDiscovery = discoveryPosts
         .map((post: any) => {
           const payload = toPlain(post);
-          const hoursOld = (Date.now() - new Date(payload.createdAt).getTime()) / 3600000;
-          const recencyDecay = Math.max(0, 100 - hoursOld * 2);
-          const topicBonus = userTopics.length > 0 && userTopics.includes(payload.category) ? 30 : 0;
-          const cityBonus = userCity && (payload.city || "").trim().toLowerCase() === userCity ? 20 : 0;
-          const score = (payload.engagementScore || 0) + topicBonus + cityBonus + recencyDecay;
+          const hoursOld =
+            (Date.now() - new Date(payload.createdAt).getTime()) / 3600000;
+
+          // Steep recency decay: 0 h → +100, 24 h → +64, 48 h → +28, 67 h → 0
+          const recencyDecay = Math.max(0, 100 - hoursOld * 1.5);
+
+          // Followed users' older posts still rank above strangers
+          const followBonus = followedUserIds.has(payload.userId) ? 40 : 0;
+
+          const topicBonus =
+            userTopics.length > 0 && userTopics.includes(payload.category) ? 30 : 0;
+          const cityBonus =
+            userCity && (payload.city || "").trim().toLowerCase() === userCity ? 20 : 0;
+
+          const score =
+            (payload.engagementScore || 0) +
+            topicBonus +
+            cityBonus +
+            recencyDecay +
+            followBonus;
+
           return { post, score };
         })
         .sort((a: any, b: any) => b.score - a.score)
         .map((item: any) => item.post);
+
+      // ── Step 4: Merge — Tier 1 (following, newest-first) + Tier 2 ───────
+      allPosts = [...tier1Posts, ...scoredDiscovery];
     }
 
     const total = allPosts.length;
