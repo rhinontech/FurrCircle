@@ -3,8 +3,6 @@ import {
   createCommunityPost,
   getCommunityFeed,
   getMyPosts,
-  getUserPosts,
-  getSavedPosts,
   getPostById,
   getPublicPostById,
   getSpotlightPost,
@@ -64,8 +62,6 @@ router.get("/spotlight", protect, getSpotlightPost);
 router.get("/feed", protect, getCommunityFeed);
 router.post("/posts", protect, createCommunityPost);
 router.get("/posts/me", protect, getMyPosts);
-router.get("/posts/user/:username", protect, getUserPosts);
-router.get("/posts/saved", protect, getSavedPosts);
 router.get("/posts/:id", protect, getPostById);
 router.post("/posts/:id/like", protect, toggleLike);
 router.post("/posts/:id/save", protect, toggleSave);

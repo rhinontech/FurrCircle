@@ -56,29 +56,6 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
   }
 };
 
-export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-  if (!req.headers.authorization || !req.headers.authorization.startsWith("Bearer")) {
-    next();
-    return;
-  }
-  try {
-    const token = req.headers.authorization.split(" ")[1];
-    const secret = process.env.JWT_SECRET;
-    if (!secret) return next();
-    const decoded = jwt.verify(token, secret) as any;
-    const { users: User, vets: Vet } = db as any;
-    req.userType = decoded.userType || 'user';
-    if (req.userType === 'vet') {
-      req.user = await Vet.findByPk(decoded.id, { attributes: { exclude: ['password'] } });
-    } else {
-      req.user = await User.findByPk(decoded.id, { attributes: { exclude: ['password'] } });
-    }
-    next();
-  } catch (error: any) {
-    next();
-  }
-};
-
 export const adminAndVetOnly = (req: AuthRequest, res: Response, next: NextFunction): void => {
   if (req.user && (req.user.role === 'admin' || req.user.role === 'veterinarian')) {
     next();

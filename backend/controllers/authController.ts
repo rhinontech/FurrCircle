@@ -5,6 +5,8 @@ import crypto from "crypto";
 import { Op } from "sequelize";
 import db from "../models/index.ts";
 import { sendEmail } from "../services/emailService.ts";
+import { sendSmsOtp } from "../services/smsService.ts";
+
 
 const SELF_SERVICE_USER_ROLES = new Set(["owner", "shelter"]);
 const PROFILE_IMAGE_FIELDS = ["avatar_url", "phone", "bio", "city", "address", "hasCompletedOnboarding"] as const;
@@ -35,6 +37,7 @@ const buildAuthPayload = async (subject: any, userType: 'user' | 'vet', token?: 
   const payload: Record<string, any> = {
     id: subject.id,
     name: subject.name,
+    username: subject.username,
     email: subject.email,
     role: isVet ? 'veterinarian' : subject.role,
     isVerified: subject.isVerified,
@@ -44,6 +47,7 @@ const buildAuthPayload = async (subject: any, userType: 'user' | 'vet', token?: 
     bio: subject.bio,
     city: subject.city,
     address: subject.address,
+    isPrivate: subject.isPrivate,
     memberSince: toMemberSince(subject.createdAt),
   };
 
@@ -66,79 +70,193 @@ const buildAuthPayload = async (subject: any, userType: 'user' | 'vet', token?: 
   return payload;
 };
 
+// Helper to generate a 6-digit OTP
+const generateOtp = (): string => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// @desc    Check username availability and format (Instagram style)
+// @route   GET /api/auth/check-username
+export const checkUsername = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { users: User, vets: Vet } = db as any;
+    const username = String(req.query.username || "").trim().toLowerCase();
+
+    if (!username) {
+      res.status(400).json({ available: false, message: "Username is required" });
+      return;
+    }
+
+    if (username.length < 3 || username.length > 30) {
+      res.status(400).json({ available: false, message: "Username must be between 3 and 30 characters" });
+      return;
+    }
+
+    const usernameRegex = /^[a-zA-Z0-9._]+$/;
+    if (!usernameRegex.test(username)) {
+      res.status(400).json({ available: false, message: "Only letters, numbers, underscores, and periods are allowed" });
+      return;
+    }
+
+    const [userExists, vetExists] = await Promise.all([
+      User.findOne({ where: { username } }),
+      Vet.findOne({ where: { username } }),
+    ]);
+
+    if (userExists || vetExists) {
+      res.json({ available: false, message: "Username is already taken" });
+      return;
+    }
+
+    res.json({ available: true, message: "Username is available" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Register a new user (owner/shelter/admin) OR veterinarian
 // @route   POST /api/auth/register
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { users: User, vets: Vet } = db as any;
     const { name, password, role } = req.body;
-    const email = req.body.email?.trim().toLowerCase();
+    const username = req.body.username?.trim().toLowerCase();
+    const emailOrPhone = req.body.emailOrPhone?.trim();
 
-    // Vets register into the Vet table
-    if (role === 'veterinarian') {
-      const vetExists = await Vet.findOne({ where: { email: { [Op.iLike]: email } } });
-      if (vetExists) {
-        res.status(400).json({ message: "Veterinarian already exists" });
-        return;
-      }
-
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      const { hospital_name, profession, phone, city, address } = req.body;
-
-      const vet = await Vet.create({
-        name,
-        email,
-        password: hashedPassword,
-        isVerified: false, // requires admin approval
-        ...(hospital_name && { hospital_name }),
-        ...(profession && { profession }),
-        ...(phone && { phone }),
-        ...(city && { city }),
-        ...(address && { address }),
-      });
-
-      const token = generateToken(vet.id, 'vet');
-      res.status(201).json(await buildAuthPayload(vet, 'vet', token));
-      sendEmail(vet.email, "Welcome to FurrCircle!", "welcome", { name: vet.name });
+    if (!username || !emailOrPhone || !password) {
+      res.status(400).json({ message: "Username, email/phone, and password are required" });
       return;
     }
 
-    // Owners, shelters, admins register into the User table
+    const usernameRegex = /^[a-zA-Z0-9._]+$/;
+    if (!usernameRegex.test(username)) {
+      res.status(400).json({ message: "Invalid username format" });
+      return;
+    }
+
+    // Check username duplicates
+    const [userByUsername, vetByUsername] = await Promise.all([
+      User.findOne({ where: { username } }),
+      Vet.findOne({ where: { username } }),
+    ]);
+
+    if (userByUsername || vetByUsername) {
+      res.status(400).json({ message: "Username is already taken" });
+      return;
+    }
+
+    // Parse emailOrPhone
+    const isEmail = emailOrPhone.includes("@");
+    const email = isEmail ? emailOrPhone.toLowerCase() : null;
+    const phone = isEmail ? null : emailOrPhone;
+
+    // Check email/phone duplicates
+    if (isEmail) {
+      const [userByEmail, vetByEmail] = await Promise.all([
+        User.findOne({ where: { email: { [Op.iLike]: email } } }),
+        Vet.findOne({ where: { email: { [Op.iLike]: email } } }),
+      ]);
+      if (userByEmail || vetByEmail) {
+        res.status(400).json({ message: "An account with this email already exists" });
+        return;
+      }
+    } else {
+      const [userByPhone, vetByPhone] = await Promise.all([
+        User.findOne({ where: { phone } }),
+        Vet.findOne({ where: { phone } }),
+      ]);
+      if (userByPhone || vetByPhone) {
+        res.status(400).json({ message: "An account with this phone number already exists" });
+        return;
+      }
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const useBackendOtp = req.body.useBackendOtp === true;
+    const isVet = role === 'veterinarian';
+
+    if (isVet) {
+      const { hospital_name, profession, city, address } = req.body;
+
+      const vet = await Vet.create({
+        username,
+        name,
+        email,
+        phone,
+        password: hashedPassword,
+        isVerified: isEmail ? false : !useBackendOtp,
+        hospital_name,
+        profession,
+        city,
+        address,
+        isPrivate: false,
+      });
+
+      if (isEmail || useBackendOtp) {
+        const otpCode = generateOtp();
+        const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+        vet.otpCode = otpCode;
+        vet.otpExpiry = otpExpiry;
+        await vet.save();
+
+        if (isEmail) {
+          await sendEmail(vet.email, "Verify Your FurrCircle Account", "email-otp", { name: vet.name, otp: otpCode });
+          res.status(201).json({ success: true, isVerified: false, userId: vet.id, emailOrPhone: vet.email, role: 'veterinarian' });
+        } else {
+          await sendSmsOtp(vet.phone, otpCode);
+          res.status(201).json({ success: true, isVerified: false, userId: vet.id, emailOrPhone: vet.phone, role: 'veterinarian' });
+        }
+      } else {
+        const token = generateToken(vet.id, 'vet');
+        res.status(201).json(await buildAuthPayload(vet, 'vet', token));
+        sendEmail(vet.email || '', "Welcome to FurrCircle!", "welcome", { name: vet.name });
+      }
+      return;
+    }
+
+    // Owner or Shelter
     const requestedRole = role || 'owner';
     if (!SELF_SERVICE_USER_ROLES.has(requestedRole)) {
       res.status(403).json({ message: "This role cannot be created through public registration" });
       return;
     }
 
-    // Also check vets table so same email can't exist in both tables
-    const [userExists, vetExists2] = await Promise.all([
-      User.findOne({ where: { email: { [Op.iLike]: email } } }),
-      Vet.findOne({ where: { email: { [Op.iLike]: email } } }),
-    ]);
-    if (userExists || vetExists2) {
-      res.status(400).json({ message: "An account with this email already exists" });
-      return;
-    }
+    const { city, address } = req.body;
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = password ? await bcrypt.hash(password, salt) : await bcrypt.hash(crypto.randomBytes(16).toString('hex'), salt);
-
-    const { phone_number, city, address } = req.body;
     const user = await User.create({
+      username,
       name,
       email,
+      phone,
       password: hashedPassword,
       role: requestedRole,
-      isVerified: true,
-      phone: phone_number,
-      ...(city && { city }),
-      ...(address && { address }),
+      isVerified: isEmail ? false : !useBackendOtp,
+      city,
+      address,
+      isPrivate: false,
     });
 
-    const token = generateToken(user.id, 'user');
-    res.status(201).json(await buildAuthPayload(user, 'user', token));
-    sendEmail(user.email, "Welcome to FurrCircle!", "welcome", { name: user.name });
+    if (isEmail || useBackendOtp) {
+      const otpCode = generateOtp();
+      const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+      user.otpCode = otpCode;
+      user.otpExpiry = otpExpiry;
+      await user.save();
+
+      if (isEmail) {
+        await sendEmail(user.email, "Verify Your FurrCircle Account", "email-otp", { name: user.name, otp: otpCode });
+        res.status(201).json({ success: true, isVerified: false, userId: user.id, emailOrPhone: user.email, role: requestedRole });
+      } else {
+        await sendSmsOtp(user.phone, otpCode);
+        res.status(201).json({ success: true, isVerified: false, userId: user.id, emailOrPhone: user.phone, role: requestedRole });
+      }
+    } else {
+      const token = generateToken(user.id, 'user');
+      res.status(201).json(await buildAuthPayload(user, 'user', token));
+      sendEmail(user.email || '', "Welcome to FurrCircle!", "welcome", { name: user.name });
+    }
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -178,31 +296,224 @@ export const loginOtp = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// @desc    Login — checks User table first, then Vet table
+// @desc    Login — checks User table first, then Vet table (username, email, or phone)
 // @route   POST /api/auth/login
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { users: User, vets: Vet } = db as any;
-    const email = req.body.email?.trim().toLowerCase();
+    const identifier = req.body.identifier?.trim().toLowerCase(); // Can be username, email, or phone
     const { password } = req.body;
 
+    if (!identifier || !password) {
+      res.status(400).json({ message: "Username/email/phone and password are required" });
+      return;
+    }
+
+    const isEmail = identifier.includes("@");
+    const whereClause: Record<string, any> = {};
+
+    if (isEmail) {
+      whereClause.email = { [Op.iLike]: identifier };
+    } else {
+      const isPhone = /^[+0-9]+$/.test(identifier);
+      if (isPhone) {
+        whereClause.phone = identifier;
+      } else {
+        whereClause.username = identifier;
+      }
+    }
+
     // Try User table first
-    const user = await User.findOne({ where: { email: { [Op.iLike]: email } } });
+    const user = await User.findOne({ where: whereClause });
     if (user && (await bcrypt.compare(password, user.password))) {
+      if (!user.isVerified) {
+        // Generate and send new OTP
+        const otpCode = generateOtp();
+        user.otpCode = otpCode;
+        user.otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
+        await user.save();
+
+        if (user.email) {
+          await sendEmail(user.email, "Verify Your FurrCircle Account", "email-otp", { name: user.name, otp: otpCode });
+        } else if (user.phone) {
+          await sendSmsOtp(user.phone, otpCode);
+        }
+        res.status(403).json({
+          success: false,
+          isVerified: false,
+          userId: user.id,
+          emailOrPhone: user.email || user.phone,
+          message: user.email 
+            ? "Account is not verified. A verification code has been sent to your email."
+            : "Account is not verified. A verification code has been sent to your phone."
+        });
+        return;
+      }
+
       const token = generateToken(user.id, 'user');
       res.json(await buildAuthPayload(user, 'user', token));
       return;
     }
 
     // Try Vet table
-    const vet = await Vet.findOne({ where: { email: { [Op.iLike]: email } } });
+    const vet = await Vet.findOne({ where: whereClause });
     if (vet && (await bcrypt.compare(password, vet.password))) {
+      if (!vet.isVerified) {
+        // Generate and send new OTP
+        const otpCode = generateOtp();
+        vet.otpCode = otpCode;
+        vet.otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
+        await vet.save();
+
+        if (vet.email) {
+          await sendEmail(vet.email, "Verify Your FurrCircle Account", "email-otp", { name: vet.name, otp: otpCode });
+        } else if (vet.phone) {
+          await sendSmsOtp(vet.phone, otpCode);
+        }
+        res.status(403).json({
+          success: false,
+          isVerified: false,
+          userId: vet.id,
+          emailOrPhone: vet.email || vet.phone,
+          message: vet.email 
+            ? "Account is not verified. A verification code has been sent to your email."
+            : "Account is not verified. A verification code has been sent to your phone."
+        });
+        return;
+      }
+
       const token = generateToken(vet.id, 'vet');
       res.json(await buildAuthPayload(vet, 'vet', token));
       return;
     }
 
-    res.status(401).json({ message: "Invalid email or password" });
+    res.status(401).json({ message: "Invalid username/email/phone or password" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Send/Resend email OTP
+// @route   POST /api/auth/send-email-otp
+export const sendEmailOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { users: User, vets: Vet } = db as any;
+    const { userId } = req.body;
+
+    if (!userId) {
+      res.status(400).json({ message: "User ID is required" });
+      return;
+    }
+
+    const account =
+      await User.findByPk(userId) ||
+      await Vet.findByPk(userId);
+
+    if (!account) {
+      res.status(404).json({ message: "Account not found" });
+      return;
+    }
+
+    if (!account.email) {
+      res.status(400).json({ message: "This account does not have a registered email address" });
+      return;
+    }
+
+    const otpCode = generateOtp();
+    const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+    account.otpCode = otpCode;
+    account.otpExpiry = otpExpiry;
+    await account.save();
+
+    await sendEmail(account.email, "Verify Your FurrCircle Account", "email-otp", { name: account.name, otp: otpCode });
+    res.json({ success: true, message: "Verification OTP sent to your email" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Generate and send a phone OTP (for passwordless login / verification fallback)
+// @route   POST /api/auth/send-phone-otp
+export const sendPhoneOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { users: User, vets: Vet } = db as any;
+    const { phone } = req.body;
+
+    if (!phone) {
+      res.status(400).json({ message: "Phone number is required" });
+      return;
+    }
+
+    const account =
+      await User.findOne({ where: { phone } }) ||
+      await Vet.findOne({ where: { phone } });
+
+    if (!account) {
+      res.status(404).json({ message: "No account found with this phone number" });
+      return;
+    }
+
+    const otpCode = generateOtp();
+    const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+    account.otpCode = otpCode;
+    account.otpExpiry = otpExpiry;
+    await account.save();
+
+    await sendSmsOtp(account.phone, otpCode);
+    res.json({ success: true, userId: account.id, message: "Verification OTP sent to your phone" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+// @desc    Verify email OTP
+// @route   POST /api/auth/verify-email-otp
+export const verifyEmailOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { users: User, vets: Vet } = db as any;
+    const { userId, otp } = req.body;
+
+    if (!userId || !otp) {
+      res.status(400).json({ message: "User ID and OTP are required" });
+      return;
+    }
+
+    const user = await User.findByPk(userId);
+    if (user) {
+      if (user.otpCode !== otp || new Date() > new Date(user.otpExpiry)) {
+        res.status(400).json({ message: "Invalid or expired OTP code" });
+        return;
+      }
+      user.isVerified = true;
+      user.otpCode = null;
+      user.otpExpiry = null;
+      await user.save();
+
+      const token = generateToken(user.id, 'user');
+      res.json(await buildAuthPayload(user, 'user', token));
+      return;
+    }
+
+    const vet = await Vet.findByPk(userId);
+    if (vet) {
+      if (vet.otpCode !== otp || new Date() > new Date(vet.otpExpiry)) {
+        res.status(400).json({ message: "Invalid or expired OTP code" });
+        return;
+      }
+      vet.isVerified = true;
+      vet.otpCode = null;
+      vet.otpExpiry = null;
+      await vet.save();
+
+      const token = generateToken(vet.id, 'vet');
+      res.json(await buildAuthPayload(vet, 'vet', token));
+      return;
+    }
+
+    res.status(404).json({ message: "Account not found" });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -244,8 +555,6 @@ export const completeOnboarding = async (req: any, res: Response): Promise<void>
 // @desc    Update profile (user or vet)
 // @route   PUT /api/auth/profile
 export const updateUserProfile = async (req: any, res: Response): Promise<void> => {
-
-
   console.log("update body->", req.body);
   try {
     const { users: User, vets: Vet } = db as any;
@@ -258,12 +567,10 @@ export const updateUserProfile = async (req: any, res: Response): Promise<void> 
         return;
       }
 
-      const vetFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email', 'hospital_name', 'profession', 'experience', 'working_hours', 'clinicStampUrl', 'licenseNumber'];
+      const vetFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email', 'hospital_name', 'profession', 'experience', 'working_hours', 'clinicStampUrl', 'licenseNumber', 'username'];
       vetFields.forEach(field => {
         if (req.body[field] !== undefined) vet[field] = req.body[field];
       });
-
-      // removed password update from profile - use /change-password instead
 
       await vet.save();
       const token = generateToken(vet.id, 'vet');
@@ -277,12 +584,10 @@ export const updateUserProfile = async (req: any, res: Response): Promise<void> 
       return;
     }
 
-    const userFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email'];
+    const userFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email', 'username'];
     userFields.forEach(field => {
       if (req.body[field] !== undefined) user[field] = req.body[field];
     });
-
-    // removed password update from profile - use /change-password instead
 
     await user.save();
     const token = generateToken(user.id, 'user');
@@ -309,7 +614,7 @@ export const getUsersByRole = async (req: Request, res: Response): Promise<void>
 
       const vets = await Vet.findAll({
         where,
-        attributes: ['id', 'name', 'email', 'hospital_name', 'profession', 'city', 'avatar_url', 'rating', 'bio', 'phone', 'working_hours', 'isVerified'],
+        attributes: ['id', 'name', 'email', 'username', 'hospital_name', 'profession', 'city', 'avatar_url', 'rating', 'bio', 'phone', 'working_hours', 'isVerified'],
         order: [["rating", "DESC"], ["name", "ASC"]],
       });
       return res.json(vets) as any;
@@ -317,7 +622,7 @@ export const getUsersByRole = async (req: Request, res: Response): Promise<void>
 
     const users = await User.findAll({
       where: { role },
-      attributes: ['id', 'name', 'email', 'role', 'avatar_url', 'city', 'bio', 'isVerified'],
+      attributes: ['id', 'name', 'email', 'username', 'role', 'avatar_url', 'city', 'bio', 'isVerified'],
     });
 
     res.json(users);
@@ -326,41 +631,84 @@ export const getUsersByRole = async (req: Request, res: Response): Promise<void>
   }
 };
 
-// @desc    Request a password reset token (no email provider — token logged to console)
+// @desc    Request a password reset OTP (email or phone)
 // @route   POST /api/auth/forgot-password
 export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { users: User, vets: Vet } = db as any;
-    const email = req.body.email?.trim().toLowerCase();
+    const identifier = req.body.identifier?.trim().toLowerCase();
 
-    if (!email) {
-      res.status(400).json({ message: "Email is required" });
+    if (!identifier) {
+      res.status(400).json({ message: "Identifier (username/email/phone) is required" });
       return;
     }
 
-    const account =
-      await User.findOne({ where: { email: { [Op.iLike]: email } } }) ||
-      await Vet.findOne({ where: { email: { [Op.iLike]: email } } });
+    const isEmail = identifier.includes("@");
+    const whereClause: Record<string, any> = {};
 
-    if (account) {
-      return res.json({ success: true, message: "Email verified." }) as any;
+    if (isEmail) {
+      whereClause.email = { [Op.iLike]: identifier };
+    } else {
+      const isPhone = /^[+0-9]+$/.test(identifier);
+      if (isPhone) {
+        whereClause.phone = identifier;
+      } else {
+        whereClause.username = identifier;
+      }
     }
 
-    res.status(404).json({ success: false, message: "No account found with this email." });
+    const account =
+      await User.findOne({ where: whereClause }) ||
+      await Vet.findOne({ where: whereClause });
+
+    if (!account) {
+      res.status(404).json({ success: false, message: "No account found with this identifier." });
+      return;
+    }
+
+    const useBackendOtp = req.body.useBackendOtp === true;
+
+    // Check if account has an email
+    if (account.email) {
+      const otpCode = generateOtp();
+      const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+      account.otpCode = otpCode;
+      account.otpExpiry = otpExpiry;
+      await account.save();
+
+      await sendEmail(account.email, "FurrCircle Password Reset OTP", "email-otp", { name: account.name, otp: otpCode });
+      res.json({ success: true, method: "email", userId: account.id, emailOrPhone: account.email, message: "A password reset code has been sent to your email." });
+    } else if (account.phone) {
+      if (useBackendOtp) {
+        const otpCode = generateOtp();
+        const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+        account.otpCode = otpCode;
+        account.otpExpiry = otpExpiry;
+        await account.save();
+
+        await sendSmsOtp(account.phone, otpCode);
+        res.json({ success: true, method: "phone", useBackendOtp: true, userId: account.id, emailOrPhone: account.phone, message: "A password reset code has been sent to your phone." });
+      } else {
+        // If it only has a phone, let the frontend trigger Firebase SMS OTP to verify the phone.
+        res.json({ success: true, method: "phone", useBackendOtp: false, userId: account.id, emailOrPhone: account.phone, message: "Please verify via phone OTP." });
+      }
+    } else {
+      res.status(400).json({ message: "No contact info available on this account for verification." });
+    }
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Reset password using email directly (Insecure - as requested)
+// @desc    Reset password using email/phone directly (after client-side Firebase verification)
 // @route   POST /api/auth/reset-password-direct
 export const resetPasswordByEmail = async (req: Request, res: Response): Promise<void> => {
   try {
     const { users: User, vets: Vet } = db as any;
-    const { email, newPassword } = req.body;
+    const { emailOrPhone, newPassword } = req.body;
 
-    if (!email || !newPassword) {
-      res.status(400).json({ message: "Email and new password are required" });
+    if (!emailOrPhone || !newPassword) {
+      res.status(400).json({ message: "Identifier and new password are required" });
       return;
     }
 
@@ -369,9 +717,14 @@ export const resetPasswordByEmail = async (req: Request, res: Response): Promise
       return;
     }
 
+    const isEmail = emailOrPhone.includes("@");
+    const whereClause: Record<string, any> = isEmail
+      ? { email: { [Op.iLike]: emailOrPhone.trim().toLowerCase() } }
+      : { phone: emailOrPhone.trim() };
+
     const account =
-      await User.findOne({ where: { email: { [Op.iLike]: email.trim().toLowerCase() } } }) ||
-      await Vet.findOne({ where: { email: { [Op.iLike]: email.trim().toLowerCase() } } });
+      await User.findOne({ where: whereClause }) ||
+      await Vet.findOne({ where: whereClause });
 
     if (!account) {
       res.status(404).json({ message: "Account not found" });
@@ -379,8 +732,8 @@ export const resetPasswordByEmail = async (req: Request, res: Response): Promise
     }
 
     account.password = await bcrypt.hash(String(newPassword), 10);
-    account.resetToken = null;
-    account.resetTokenExpiry = null;
+    account.otpCode = null;
+    account.otpExpiry = null;
     await account.save();
 
     res.json({ message: "Password has been reset successfully" });
@@ -389,15 +742,15 @@ export const resetPasswordByEmail = async (req: Request, res: Response): Promise
   }
 };
 
-// @desc    Reset password using a valid token
+// @desc    Reset password using a valid email OTP
 // @route   POST /api/auth/reset-password
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { users: User, vets: Vet } = db as any;
-    const { token, newPassword } = req.body;
+    const { userId, otp, newPassword } = req.body;
 
-    if (!token || !newPassword) {
-      res.status(400).json({ message: "Token and new password are required" });
+    if (!userId || !otp || !newPassword) {
+      res.status(400).json({ message: "User ID, OTP, and new password are required" });
       return;
     }
 
@@ -406,21 +759,23 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const hashedToken = crypto.createHash("sha256").update(String(token)).digest("hex");
-    const now = new Date();
-
     const account =
-      await User.findOne({ where: { resetToken: hashedToken, resetTokenExpiry: { [Op.gt]: now } } }) ||
-      await Vet.findOne({ where: { resetToken: hashedToken, resetTokenExpiry: { [Op.gt]: now } } });
+      await User.findByPk(userId) ||
+      await Vet.findByPk(userId);
 
     if (!account) {
-      res.status(400).json({ message: "Reset token is invalid or has expired" });
+      res.status(404).json({ message: "Account not found" });
+      return;
+    }
+
+    if (account.otpCode !== otp || new Date() > new Date(account.otpExpiry)) {
+      res.status(400).json({ message: "Invalid or expired OTP" });
       return;
     }
 
     account.password = await bcrypt.hash(String(newPassword), 10);
-    account.resetToken = null;
-    account.resetTokenExpiry = null;
+    account.otpCode = null;
+    account.otpExpiry = null;
     await account.save();
 
     res.json({ message: "Password has been reset successfully" });

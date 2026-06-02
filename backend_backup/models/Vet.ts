@@ -2,8 +2,8 @@ import { DataTypes } from "sequelize";
 import type { Sequelize } from "sequelize";
 
 export default (sequelize: Sequelize) => {
-    const User = sequelize.define(
-        "users",
+    const Vet = sequelize.define(
+        "vets",
         {
             id: {
                 allowNull: false,
@@ -24,18 +24,28 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
-            // New fields — alter:true will ADD these columns to the existing table
-            role: {
-                type: DataTypes.STRING,
-                allowNull: false,
-                defaultValue: 'owner', // owner | shelter | admin
-            },
             // Maps to existing 'verified' column in DB
             isVerified: {
                 type: DataTypes.BOOLEAN,
                 allowNull: false,
-                defaultValue: true,
+                defaultValue: false,
                 field: 'verified',
+            },
+            hospital_name: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            profession: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            experience: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            working_hours: {
+                type: DataTypes.STRING,
+                allowNull: true,
             },
             // Maps to existing 'profile_photo' column in DB
             avatar_url: {
@@ -53,11 +63,7 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
-            // New fields
-            bio: {
-                type: DataTypes.TEXT,
-                allowNull: true,
-            },
+            // New fields — alter:true will ADD these columns
             city: {
                 type: DataTypes.STRING,
                 allowNull: true,
@@ -75,34 +81,21 @@ export default (sequelize: Sequelize) => {
                 allowNull: false,
                 defaultValue: false,
             },
-            isPrivate: {
-                type: DataTypes.BOOLEAN,
-                allowNull: false,
-                defaultValue: false,
-            },
-            petTypeInterests: {
-                type: DataTypes.ARRAY(DataTypes.STRING),
+            bio: {
+                type: DataTypes.TEXT,
                 allowNull: true,
-                defaultValue: [],
-                // Values: 'Dog' | 'Cat' | 'Bird' | 'Rabbit' | 'Fish' | 'Other'
             },
-            topicInterests: {
-                type: DataTypes.ARRAY(DataTypes.STRING),
+            rating: {
+                type: DataTypes.FLOAT,
                 allowNull: true,
-                defaultValue: [],
-                // Values: 'Health' | 'Adoption' | 'Training' | 'Nutrition' | 'Lost & Found'
+                defaultValue: 0,
             },
-            username: {
+            clinicStampUrl: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            licenseNumber: {
                 type: DataTypes.STRING,
-                allowNull: true, // Make nullable to avoid breaking if existing users lack username initially, but we enforce it in DB / API checks
-                unique: true,
-            },
-            otpCode: {
-                type: DataTypes.STRING,
-                allowNull: true,
-            },
-            otpExpiry: {
-                type: DataTypes.DATE,
                 allowNull: true,
             },
             resetToken: {
@@ -115,20 +108,15 @@ export default (sequelize: Sequelize) => {
             },
         },
         {
-            tableName: "users",
+            tableName: "vets",
             timestamps: true,
         }
     );
 
-    (User as any).associate = (models: any) => {
-        if (models.pets) User.hasMany(models.pets, { foreignKey: 'ownerId', as: 'pets' });
-        if (models.vet_reviews) User.hasMany(models.vet_reviews, { foreignKey: 'userId', as: 'vetReviews' });
-        if (models.appointments) User.hasMany(models.appointments, { foreignKey: 'ownerId', as: 'ownerAppointments' });
-        if (models.follows) {
-            User.hasMany(models.follows, { foreignKey: 'followerId', as: 'following' });
-            User.hasMany(models.follows, { foreignKey: 'followingId', as: 'followers' });
-        }
+    (Vet as any).associate = (models: any) => {
+        if (models.vet_reviews) Vet.hasMany(models.vet_reviews, { foreignKey: 'vetId', as: 'reviews' });
+        if (models.appointments) Vet.hasMany(models.appointments, { foreignKey: 'vetId', as: 'appointments' });
     };
 
-    return User;
+    return Vet;
 };

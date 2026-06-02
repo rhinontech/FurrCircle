@@ -98,6 +98,19 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
+            username: {
+                type: DataTypes.STRING,
+                allowNull: true, // Make nullable to avoid breaking if existing vets lack username initially
+                unique: true,
+            },
+            otpCode: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            otpExpiry: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
             resetToken: {
                 type: DataTypes.STRING,
                 allowNull: true,

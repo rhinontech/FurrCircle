@@ -19,8 +19,7 @@ export const uploadFileToS3 = async (
   mimeType: string,
   folder: UploadFolder
 ): Promise<string> => {
-  let ext = (mimeType.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
-  if (ext === 'quicktime') ext = 'mov';
+  const ext = (mimeType.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
   const key = `${FOLDER}/${folder}/${uuidv4()}.${ext}`;
 
   await s3.send(
