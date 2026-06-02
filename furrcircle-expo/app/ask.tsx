@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { X, Hash } from "lucide-react-native";
 import { ScreenHeader } from "../src/components/ScreenHeader";
@@ -63,7 +63,11 @@ export default function AskScreen() {
 
   return (
     <PageContainer>
-      <View style={[styles.container, { backgroundColor: tk.bg }]}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
           title="Ask the Community"
           right={
@@ -144,7 +148,8 @@ export default function AskScreen() {
             }
           </TouchableOpacity>
         </ScrollView>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </PageContainer>
   );
 }

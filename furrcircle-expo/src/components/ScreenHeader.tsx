@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
@@ -35,7 +35,7 @@ export function ScreenHeader({ title, right, showBack, onBack }: Props) {
   return (
     <View style={[
       styles.container,
-      { paddingTop: insets.top + 8, backgroundColor: tk.card, borderBottomColor: tk.border },
+      { paddingTop: (title === 'Ask the Community') || (title === 'Add a pet') ? Platform.OS === "ios" ? 20 : insets.top + 10 : insets.top + 8, backgroundColor: tk.card, borderBottomColor: tk.border },
       isTablet && styles.containerTablet,
     ]}>
       {shouldShowBack ? (

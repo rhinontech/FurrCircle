@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   View, Text, Image, Modal, StyleSheet, Dimensions,
   TextInput, TouchableOpacity, KeyboardAvoidingView, Platform,
-  ActivityIndicator,
+  ActivityIndicator, Pressable, Keyboard,
 } from "react-native";
 import { X, Check, Volume2, VolumeX } from "lucide-react-native";
 import { useTokens } from "../lib/theme-store";
@@ -41,96 +41,101 @@ export function StoryEditor({ visible, imageUri, mediaType, loading = false, onC
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
       >
-        {/* Background Media Preview */}
-        {mediaType === "video" ? (
-          <Video
-            source={{ uri: imageUri }}
-            style={styles.previewImage}
-            resizeMode={ResizeMode.COVER}
-            shouldPlay={true}
-            isLooping={true}
-            isMuted={isMuted}
-            onLoadStart={() => setMediaLoading(true)}
-            onLoad={() => setMediaLoading(false)}
-            onError={() => setMediaLoading(false)}
-          />
-        ) : (
-          <Image
-            source={{ uri: imageUri }}
-            style={styles.previewImage}
-            resizeMode="cover"
-            onLoadStart={() => setMediaLoading(true)}
-            onLoad={() => setMediaLoading(false)}
-            onError={() => setMediaLoading(false)}
-          />
-        )}
+        <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
+          {/* Background Media Preview */}
+          {mediaType === "video" ? (
+            <Video
+              source={{ uri: imageUri }}
+              style={styles.previewImage}
+              resizeMode={ResizeMode.COVER}
+              shouldPlay={true}
+              isLooping={true}
+              isMuted={isMuted}
+              onLoadStart={() => setMediaLoading(true)}
+              onLoad={() => setMediaLoading(false)}
+              onError={() => setMediaLoading(false)}
+            />
+          ) : (
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.previewImage}
+              resizeMode="cover"
+              onLoadStart={() => setMediaLoading(true)}
+              onLoad={() => setMediaLoading(false)}
+              onError={() => setMediaLoading(false)}
+            />
+          )}
 
-        {mediaLoading && (
-          <View style={styles.mediaLoadingContainer}>
-            <ActivityIndicator size="large" color="#fff" />
+          {mediaLoading && (
+            <View style={styles.mediaLoadingContainer}>
+              <ActivityIndicator size="large" color="#fff" />
+            </View>
+          )}
+
+          {mediaType === "video" && (
+            <TouchableOpacity
+              onPress={() => setIsMuted(!isMuted)}
+              style={styles.muteFloatingBtn}
+            >
+              {isMuted ? <VolumeX size={20} color="#fff" /> : <Volume2 size={20} color="#fff" />}
+            </TouchableOpacity>
+          )}
+
+          {/* Top Controls */}
+          <View style={styles.topBar}>
+            <TouchableOpacity onPress={onCancel} disabled={loading} style={[styles.iconBtn, loading && { opacity: 0.5 }]}>
+              <X size={24} color="#fff" />
+            </TouchableOpacity>
+            <Text style={styles.title}>Edit Story</Text>
+            <TouchableOpacity
+              onPress={() => {
+                onSave(overlayText, caption);
+                setOverlayText("");
+                setCaption("");
+              }}
+              disabled={loading}
+              style={[styles.iconBtn, { backgroundColor: colors.coral }, loading && { opacity: 0.5 }]}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Check size={24} color="#fff" />
+              )}
+            </TouchableOpacity>
           </View>
-        )}
 
-        {mediaType === "video" && (
-          <TouchableOpacity
-            onPress={() => setIsMuted(!isMuted)}
-            style={styles.muteFloatingBtn}
-          >
-            {isMuted ? <VolumeX size={20} color="#fff" /> : <Volume2 size={20} color="#fff" />}
-          </TouchableOpacity>
-        )}
-
-        {/* Top Controls */}
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={onCancel} disabled={loading} style={[styles.iconBtn, loading && { opacity: 0.5 }]}>
-            <X size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Edit Story</Text>
-          <TouchableOpacity
-            onPress={() => {
-              onSave(overlayText, caption);
-              setOverlayText("");
-              setCaption("");
-            }}
-            disabled={loading}
-            style={[styles.iconBtn, { backgroundColor: colors.coral }, loading && { opacity: 0.5 }]}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Check size={24} color="#fff" />
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Center Text Overlay Input */}
-        {/* <View style={styles.overlayTextContainer}>
-          <TextInput
-            value={overlayText}
-            onChangeText={setOverlayText}
-            placeholder="Tap to add text..."
-            placeholderTextColor="rgba(255,255,255,0.6)"
-            style={styles.overlayInput}
-            multiline
-            maxLength={100}
-            textAlign="center"
-            editable={!loading}
-          />
-        </View> */}
-
-        {/* Bottom Caption Input */}
-        <View style={styles.bottomBar}>
-          <View style={styles.captionContainer}>
+          {/* Center Text Overlay Input */}
+          {/* <View style={styles.overlayTextContainer}>
             <TextInput
-              value={caption}
-              onChangeText={setCaption}
-              placeholder="Add a caption..."
-              placeholderTextColor="rgba(255,255,255,0.7)"
-              style={styles.captionInput}
+              value={overlayText}
+              onChangeText={setOverlayText}
+              placeholder="Tap to add text..."
+              placeholderTextColor="rgba(255,255,255,0.6)"
+              style={styles.overlayInput}
+              multiline
+              maxLength={100}
+              textAlign="center"
               editable={!loading}
             />
+          </View> */}
+
+          {/* Spacer to push bottomBar to the bottom */}
+          <View style={{ flex: 1 }} />
+
+          {/* Bottom Caption Input */}
+          <View style={styles.bottomBar}>
+            <View style={styles.captionContainer}>
+              <TextInput
+                value={caption}
+                onChangeText={setCaption}
+                placeholder="Add a caption..."
+                placeholderTextColor="rgba(255,255,255,0.7)"
+                style={styles.captionInput}
+                editable={!loading}
+              />
+            </View>
           </View>
-        </View>
+        </Pressable>
 
         {/* Uploading Overlay */}
         {loading && (
@@ -186,10 +191,8 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
   bottomBar: {
-    position: "absolute",
-    bottom: Platform.OS === "ios" ? 40 : 20,
-    left: 16,
-    right: 16,
+    marginBottom: Platform.OS === "ios" ? 40 : 20,
+    marginHorizontal: 16,
     zIndex: 10,
   },
   captionContainer: {

@@ -1,6 +1,7 @@
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
   TextInput, StyleSheet, Modal, Pressable, Alert, ActivityIndicator,
+  KeyboardAvoidingView, Platform, Keyboard,
 } from "react-native";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -510,44 +511,53 @@ function CreateCircleSheet({ open, onClose, onCreate, tk }: any) {
 
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={[styles.sheet, { backgroundColor: tk.card }]} onPress={e => e.stopPropagation()}>
-          <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
-          <Text style={[styles.sheetTitle, { color: tk.text }]}>Create new Circle</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <Pressable style={styles.overlay} onPress={() => { Keyboard.dismiss(); onClose(); }}>
+          <Pressable style={[styles.sheet, { backgroundColor: tk.card, maxHeight: "85%" }]} onPress={Keyboard.dismiss}>
+            <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+            <Text style={[styles.sheetTitle, { color: tk.text }]}>Create new Circle</Text>
 
-          {/* Cover image */}
-          <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Cover Image</Text>
-          <TouchableOpacity onPress={pickCover} style={[styles.coverPicker, { backgroundColor: tk.inputBg, borderColor: tk.border }]} activeOpacity={0.8}>
-            {coverUri ? (
-              <Image source={{ uri: coverUri }} style={{ width: "100%", height: "100%", borderRadius: 12 }} resizeMode="cover" />
-            ) : (
-              <View style={{ alignItems: "center", gap: 6 }}>
-                <Camera size={24} color={tk.textMuted} />
-                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: tk.textMuted }}>Tap to add cover photo</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Pressable onPress={Keyboard.dismiss}>
+                {/* Cover image */}
+                <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Cover Image</Text>
+                <TouchableOpacity onPress={pickCover} style={[styles.coverPicker, { backgroundColor: tk.inputBg, borderColor: tk.border }]} activeOpacity={0.8}>
+                  {coverUri ? (
+                    <Image source={{ uri: coverUri }} style={{ width: "100%", height: "100%", borderRadius: 12 }} resizeMode="cover" />
+                  ) : (
+                    <View style={{ alignItems: "center", gap: 6 }}>
+                      <Camera size={24} color={tk.textMuted} />
+                      <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: tk.textMuted }}>Tap to add cover photo</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
 
-          <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Name</Text>
-          <TextInput value={name} onChangeText={setName} placeholder="e.g. Beagle Buddies" placeholderTextColor={tk.textMuted} style={[styles.modalInput, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border }]} />
+                <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Name</Text>
+                <TextInput value={name} onChangeText={setName} placeholder="e.g. Beagle Buddies" placeholderTextColor={tk.textMuted} style={[styles.modalInput, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border }]} />
 
-          <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Description</Text>
-          <TextInput value={description} onChangeText={setDescription} placeholder="What is this circle about?" placeholderTextColor={tk.textMuted} style={[styles.modalInput, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, height: 80, textAlignVertical: "top" }]} multiline />
+                <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Description</Text>
+                <TextInput value={description} onChangeText={setDescription} placeholder="What is this circle about?" placeholderTextColor={tk.textMuted} style={[styles.modalInput, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, height: 80, textAlignVertical: "top" }]} multiline />
 
-          <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Category</Text>
-          <View style={styles.categoryRow}>
-            {CATEGORY_PRESETS.map((cat) => (
-              <TouchableOpacity key={cat.id} onPress={() => setCategory(cat.id)} style={[styles.categoryBtn, { backgroundColor: category === cat.id ? tk.text : tk.bg }]} activeOpacity={0.8}>
-                <Text style={[styles.categoryBtnText, { color: category === cat.id ? tk.bg : tk.textMuted }]}>{cat.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Category</Text>
+                <View style={styles.categoryRow}>
+                  {CATEGORY_PRESETS.map((cat) => (
+                    <TouchableOpacity key={cat.id} onPress={() => setCategory(cat.id)} style={[styles.categoryBtn, { backgroundColor: category === cat.id ? tk.text : tk.bg }]} activeOpacity={0.8}>
+                      <Text style={[styles.categoryBtnText, { color: category === cat.id ? tk.bg : tk.textMuted }]}>{cat.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
 
-          <TouchableOpacity onPress={handleSubmit} disabled={loading} style={[styles.createBtn, loading && { opacity: 0.6 }]} activeOpacity={0.85}>
-            {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.createBtnText}>Create Circle</Text>}
-          </TouchableOpacity>
+                <TouchableOpacity onPress={handleSubmit} disabled={loading} style={[styles.createBtn, loading && { opacity: 0.6 }]} activeOpacity={0.85}>
+                  {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.createBtnText}>Create Circle</Text>}
+                </TouchableOpacity>
+              </Pressable>
+            </ScrollView>
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

@@ -228,7 +228,7 @@ export default function UserProfileScreen() {
                   // Pets tab — large cards
                   <View style={styles.petsGrid}>
                     {(userProfile?.pets || []).map((p: any, i: number) => (
-                      <TouchableOpacity key={p.id} onPress={() => router.push({ pathname: "/pet", params: { id: p.id } })} style={[styles.petGridCard, { backgroundColor: i % 2 === 0 ? "rgba(255,107,107,0.12)" : "rgba(37,99,235,0.08)" }]} activeOpacity={0.85}>
+                      <TouchableOpacity key={p.id} onPress={() => router.replace(isOwnProfile ? { pathname: "/pet", params: { id: p.id } } : { pathname: "/p/[id]", params: { id: p.id } })} style={[styles.petGridCard, { backgroundColor: i % 2 === 0 ? "rgba(255,107,107,0.12)" : "rgba(37,99,235,0.08)" }]} activeOpacity={0.85}>
                         <View style={styles.petGridImgWrap}>
                           {p.avatar_url
                             ? <Image source={{ uri: p.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />

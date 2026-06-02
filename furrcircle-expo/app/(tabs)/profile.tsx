@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, Modal, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut, Clock, Trash2, Syringe, Pill } from "lucide-react-native";
@@ -23,6 +23,7 @@ export default function ProfileScreen() {
   const [pets, setPets] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [reminders, setReminders] = useState<any[]>([]);
+  const [petPickerOpen, setPetPickerOpen] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -217,10 +218,10 @@ export default function ProfileScreen() {
         {/* Activity */}
         <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Activity</Text>
         <View style={styles.activityList}>
-          <Row onPress={() => router.push("/notifications")} icon={Bell} label="Notifications" meta="3 new" tintColor="rgba(255,217,61,0.3)" tk={tk} />
-          <Row onPress={() => router.push("/chat")} icon={MessageCircle} label="Messages" meta="2 unread" tintColor="rgba(37,99,235,0.1)" tk={tk} />
-          <Row onPress={() => router.push("/pet")} icon={Award} label="Badges & Achievements" meta="12" tintColor="rgba(255,111,207,0.15)" tk={tk} />
-          <Row onPress={() => router.push("/discover")} icon={MapPin} label="Places visited" meta="8" tintColor="rgba(76,175,80,0.15)" tk={tk} />
+          <Row onPress={() => router.push("/notifications")} icon={Bell} label="Notifications" meta="" tintColor="rgba(255,217,61,0.3)" tk={tk} />
+          <Row onPress={() => router.push("/chat")} icon={MessageCircle} label="Messages" meta="" tintColor="rgba(37,99,235,0.1)" tk={tk} />
+          <Row onPress={() => setPetPickerOpen(true)} icon={Award} label="Badges & Achievements" meta="" tintColor="rgba(255,111,207,0.15)" tk={tk} />
+          <Row onPress={() => router.push("/discover")} icon={MapPin} label="Places visited" meta="" tintColor="rgba(76,175,80,0.15)" tk={tk} />
         </View>
 
         {/* Log Out */}
@@ -235,8 +236,56 @@ export default function ProfileScreen() {
           </View>
           <ChevronRight size={16} color={tk.textMuted} />
         </TouchableOpacity>
+        <PetPickerModal
+          open={petPickerOpen}
+          onClose={() => setPetPickerOpen(false)}
+          pets={pets}
+          onSelect={(petId: string) => {
+            router.push({ pathname: "/pet", params: { id: petId } });
+          }}
+          tk={tk}
+        />
       </ScrollView>
     </View>
+  );
+}
+
+function PetPickerModal({ open, onClose, pets, onSelect, tk }: any) {
+  return (
+    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <Pressable style={[styles.modalSheet, { backgroundColor: tk.card }]} onPress={e => e.stopPropagation()}>
+          <View style={[styles.modalHandle, { backgroundColor: tk.textMuted }]} />
+          <Text style={[styles.modalTitle, { color: tk.text }]}>Choose a Pet</Text>
+          
+          <ScrollView style={styles.petListScroll} showsVerticalScrollIndicator={false}>
+            {pets.length === 0 ? (
+              <Text style={{ textAlign: "center", marginVertical: 20, color: tk.textMuted, fontFamily: "Inter_400Regular" }}>
+                Please add a pet first.
+              </Text>
+            ) : (
+              pets.map((pet: any) => (
+                <TouchableOpacity
+                  key={pet.id}
+                  onPress={() => {
+                    onSelect(pet.id);
+                    onClose();
+                  }}
+                  style={[styles.petRow, { borderBottomColor: tk.border }]}
+                >
+                  <Avatar source={pet.avatar_url ? { uri: pet.avatar_url } : require("../../src/assets/doodle-puppy.png")} name={pet.name} size={40} />
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={[styles.petNameText, { color: tk.text }]}>{pet.name}</Text>
+                    <Text style={[styles.petBreedText, { color: tk.textMuted }]}>{pet.breed || pet.species}</Text>
+                  </View>
+                  <ChevronRight size={16} color={tk.textMuted} />
+                </TouchableOpacity>
+              ))
+            )}
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -371,4 +420,12 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_700Bold",
     fontSize: 13,
   },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  modalSheet: { borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 20, paddingBottom: 40, maxHeight: "60%" },
+  modalHandle: { width: 48, height: 6, borderRadius: 3, alignSelf: "center", marginBottom: 16, opacity: 0.2 },
+  modalTitle: { fontFamily: "Poppins_700Bold", fontSize: 20, paddingHorizontal: 4, marginBottom: 16 },
+  petListScroll: { maxHeight: 300 },
+  petRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1 },
+  petNameText: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },
+  petBreedText: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
 });

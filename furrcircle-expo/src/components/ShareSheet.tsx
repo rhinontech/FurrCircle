@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
   StyleSheet, Modal, Pressable, TextInput, Alert,
+  KeyboardAvoidingView, Platform, Keyboard,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Search, Check } from "lucide-react-native";
@@ -83,10 +84,14 @@ export function ShareSheet({ open, onClose, postId }: ShareSheetProps) {
 
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <View style={[styles.sheet, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true}>
-          <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
-          <Text style={[styles.sheetTitle, { color: tk.text }]}>Share to</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <Pressable style={styles.overlay} onPress={() => { Keyboard.dismiss(); onClose(); }}>
+          <Pressable style={[styles.sheet, { backgroundColor: tk.card }]} onPress={Keyboard.dismiss}>
+            <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+            <Text style={[styles.sheetTitle, { color: tk.text }]}>Share to</Text>
 
           {/* Search bar */}
           <View style={[styles.searchBar, { backgroundColor: tk.bg, borderColor: tk.border }]}>
@@ -150,8 +155,9 @@ export function ShareSheet({ open, onClose, postId }: ShareSheetProps) {
               {selected.length > 0 ? `Send to ${selected.length} friend${selected.length > 1 ? "s" : ""}` : "Select friends"}
             </Text>
           </TouchableOpacity>
-        </View>
-      </Pressable>
+          </Pressable>
+        </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
