@@ -61,6 +61,26 @@ export const updateListing = async (id: string, payload: any) => {
     }
 };
 
+export const getPetMemories = async (id: string) => {
+    try {
+        const response = await PrivateAxios.get(`/pets/${id}/memories`);
+        return response.data;
+    } catch (error: any) {
+        console.error("getPetMemories Error:", error?.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const addPetMemory = async (id: string, payload: any) => {
+    try {
+        const response = await PrivateAxios.post(`/pets/${id}/memories`, payload);
+        return response.data;
+    } catch (error: any) {
+        console.error("addPetMemory Error:", error?.response?.data || error.message);
+        throw error;
+    }
+};
+
 export const petApi = {
     getMyPets,
     createPet,
@@ -68,4 +88,6 @@ export const petApi = {
     discoverPets,
     updatePet,
     updateListing,
+    getPetMemories,
+    addPetMemory,
 };

@@ -445,3 +445,105 @@ export const discoverPets = async (_req: Request, res: Response): Promise<void> 
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Add a pet memory
+// @route   POST /api/pets/:id/memories
+export const addPetMemory = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { pets: Pet, memories: Memory } = db as any;
+    const petId = req.params.id;
+    const { media_url, date, title } = req.body;
+
+    const pet = await Pet.findOne({ where: { id: petId, ownerId: req.user.id } });
+    if (!pet) {
+      res.status(404).json({ message: "Pet not found or unauthorized" });
+      return;
+    }
+
+    const memory = await Memory.create({
+      petId,
+      media_url,
+      date: date || today(),
+      title,
+    });
+
+    res.status(201).json(memory);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get pet memories & aura
+// @route   GET /api/pets/:id/memories
+export const getPetMemories = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { pets: Pet, memories: Memory } = db as any;
+    const petId = req.params.id;
+
+    // Check if user is authorized to view (owners only for now, or vet if they have access)
+    const hasPrivateAccess = req.userType === "user" && await canViewPrivatePet(petId, req);
+    if (!hasPrivateAccess) {
+       const petOwner = await Pet.findByPk(petId);
+       if (petOwner?.ownerId !== req.user.id) {
+         res.status(403).json({ message: "Not authorized to view memories" });
+         return;
+       }
+    }
+
+    const pet = await Pet.findByPk(petId);
+    if (!pet) {
+      res.status(404).json({ message: "Pet not found" });
+      return;
+    }
+
+    const memories = await Memory.findAll({
+      where: { petId },
+      order: [["date", "DESC"], ["createdAt", "DESC"]],
+    });
+
+    // Compute Aura
+    const traits = Array.isArray(pet.personality) && pet.personality.length > 0 
+        ? pet.personality 
+        : ["Loving", "Playful"];
+        
+    const mood = traits[0] || "Happy";
+
+    let zodiac = "Unknown";
+    if (pet.birth_date) {
+        const d = new Date(pet.birth_date);
+        const month = d.getUTCMonth() + 1; // 1-12
+        const day = d.getUTCDate();
+        if ((month == 1 && day <= 19) || (month == 12 && day >= 22)) zodiac = "Capricorn ♑";
+        else if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) zodiac = "Aquarius ♒";
+        else if ((month == 2 && day >= 19) || (month == 3 && day <= 20)) zodiac = "Pisces ♓";
+        else if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) zodiac = "Aries ♈";
+        else if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) zodiac = "Taurus ♉";
+        else if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) zodiac = "Gemini ♊";
+        else if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) zodiac = "Cancer ♋";
+        else if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) zodiac = "Leo ♌";
+        else if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) zodiac = "Virgo ♍";
+        else if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) zodiac = "Libra ♎";
+        else if ((month == 10 && day >= 23) || (month == 11 && day <= 21)) zodiac = "Scorpio ♏";
+        else if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) zodiac = "Sagittarius ♐";
+    }
+
+    // Static random score based on pet id string length or char codes so it stays consistent
+    let score = 92;
+    if (pet.id) {
+       const sum = pet.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+       score = 80 + (sum % 21); // 80 to 100
+    }
+
+    res.json({
+      aura: {
+        zodiac,
+        mood,
+        traits,
+        score,
+      },
+      memories,
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
