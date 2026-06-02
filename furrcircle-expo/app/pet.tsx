@@ -69,7 +69,7 @@ export default function PetScreen() {
           {/* Hero card */}
           <View style={styles.px5}>
             <View style={styles.heroCard}>
-              <Image source={pet?.avatar_url ? { uri: pet.avatar_url } : require("../src/assets/doodle-boy-dog.png")} style={styles.heroImg} resizeMode="contain" />
+              <Image source={pet?.avatar_url?.startsWith('http') ? { uri: pet.avatar_url } : require("../src/assets/doodle-boy-dog.png")} style={styles.heroImg} resizeMode={pet?.avatar_url?.startsWith('http') ? "cover" : "contain"} />
               <TouchableOpacity style={[styles.heroBtn, { top: 16, right: 16 }]}>
                 <Share2 size={16} color={colors.foreground} />
               </TouchableOpacity>
@@ -379,8 +379,8 @@ function StatCard({ icon: Icon, label, value }: { icon: any; label: string; valu
 const styles = StyleSheet.create({
   container: { flex: 1 },
   px5: { paddingHorizontal: 20 },
-  heroCard: { backgroundColor: "rgba(255,107,107,0.2)", borderRadius: 32, padding: 24, alignItems: "center", marginBottom: 4 },
-  heroImg: { width: 220, height: 208 },
+  heroCard: { backgroundColor: "rgba(255,107,107,0.2)", borderRadius: 32, overflow: "hidden", height: 260, marginBottom: 4 },
+  heroImg: { width: "100%", height: "100%" },
   heroBtn: { position: "absolute", backgroundColor: colors.white, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 3 },
   nameRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 24, marginTop: 12, marginBottom: 4 },
   petName: { fontFamily: "Poppins_700Bold", fontSize: 30 },

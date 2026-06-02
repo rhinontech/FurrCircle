@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Camera } from "lucide-react-native";
@@ -6,6 +6,7 @@ import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { petApi } from "../services/pet/petApi";
+import { uploadImage } from "../services/user/userApi";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -50,14 +51,19 @@ export default function AddPetScreen() {
     const calculatedAge = years > 0 ? `${years}` : (months > 0 ? `${months} mo` : '< 1 mo');
 
     try {
-      await petApi.createPet({ 
-        name: name.trim(), 
-        species, 
-        breed: breed.trim(), 
-        gender, 
+      let avatarUrl = photo;
+      if (photo?.startsWith('file://') || (photo && !photo.startsWith('http'))) {
+        const result = await uploadImage(photo, 'pets');
+        avatarUrl = result?.url ?? result;
+      }
+      await petApi.createPet({
+        name: name.trim(),
+        species,
+        breed: breed.trim(),
+        gender,
         age: calculatedAge,
-        birth_date: birthDate.toISOString().split('T')[0], 
-        avatar_url: photo, 
+        birth_date: birthDate.toISOString().split('T')[0],
+        avatar_url: avatarUrl,
         microchip_id: microchipId.trim() || null,
         personality
       });
@@ -74,7 +80,11 @@ export default function AddPetScreen() {
       <ScreenHeader title="Add a pet" />
       <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 20 }}>
         <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { borderColor: tk.border }]} activeOpacity={0.8}>
-          {photo ? null : <Camera size={32} color={tk.textMuted} />}
+          {photo ? (
+            <Image source={{ uri: photo }} style={styles.photoPreview} />
+          ) : (
+            <Camera size={32} color={tk.textMuted} />
+          )}
           <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>{photo ? "Change photo" : "Add photo"}</Text>
         </TouchableOpacity>
 
@@ -169,7 +179,8 @@ export default function AddPetScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  photoBtn: { height: 140, borderRadius: 24, borderWidth: 2, borderColor: "rgba(26,26,46,0.15)", borderStyle: "dashed", alignItems: "center", justifyContent: "center", marginVertical: 16, gap: 8 },
+  photoBtn: { height: 140, borderRadius: 24, borderWidth: 2, borderColor: "rgba(26,26,46,0.15)", borderStyle: "dashed", alignItems: "center", justifyContent: "center", marginVertical: 16, gap: 8, overflow: "hidden" },
+  photoPreview: { position: "absolute", width: "100%", height: "100%", borderRadius: 22 },
   photoBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 14, color: colors.foreground + "88" },
   label: { fontFamily: "Poppins_700Bold", fontSize: 13, color: colors.foreground + "99", marginBottom: 6, marginTop: 16, textTransform: "uppercase", letterSpacing: 0.5 },
   input: { borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, fontFamily: "Inter_400Regular" },

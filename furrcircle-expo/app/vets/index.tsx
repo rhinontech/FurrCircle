@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { View, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator, StyleSheet } from "react-native";
+import { View, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator, StyleSheet, Linking } from "react-native";
 import { Text } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft, Search, Stethoscope, MapPin, Star, ChevronRight, Check } from "lucide-react-native";
+import { ChevronLeft, Search, Stethoscope, MapPin, Star, ChevronRight, Check, Phone } from "lucide-react-native";
 import { useTokens } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { placesApi } from "../../services/places/placesApi";
@@ -73,7 +73,7 @@ export default function AllVetsScreen() {
       <ScreenHeader title="Nearby Vets" />
 
       {/* Sort dropdown trigger */}
-      <View style={{ paddingHorizontal: 20, marginBottom: 12, alignItems: 'flex-end' }}>
+      <View style={{ paddingHorizontal: 20, marginTop: 12, marginBottom: 12, alignItems: 'flex-end' }}>
         <TouchableOpacity
             onPress={() => setSortOpen(v => !v)}
             style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, backgroundColor: tk.card, borderWidth: 1, borderColor: sortOpen ? colors.primary : tk.border }}
@@ -118,7 +118,7 @@ export default function AllVetsScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40, gap: 12 }}>
           {!cityLabel ? (
             <View style={{ alignItems: "center", paddingTop: 60, gap: 12 }}>
               <MapPin size={40} color={tk.textMuted} />
@@ -140,35 +140,34 @@ export default function AllVetsScreen() {
             <TouchableOpacity
               key={vet.id}
               onPress={() => router.push(`/vets/${vet.id}`)}
-              style={{ backgroundColor: tk.card, borderRadius: 20, borderWidth: 1, borderColor: tk.border, padding: 16, marginBottom: 12 }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: tk.card, borderRadius: 24, padding: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2 }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-                <View style={{ width: 52, height: 52, borderRadius: 16, overflow: "hidden", backgroundColor: "rgba(37,99,235,0.1)", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Stethoscope size={22} color={colors.primary} />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ fontSize: 15, fontFamily: "Poppins_700Bold", color: tk.text }} numberOfLines={1}>
-                    {vet.clinic_name || vet.name}
+              <View style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: "rgba(37,99,235,0.1)", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                <Image source={require("../../src/assets/doodle-vet.png")} style={{ width: "80%", height: "80%" }} resizeMode="contain" />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 15, color: tk.text }} numberOfLines={1}>
+                  {vet.clinic_name || vet.name}
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                  <Stethoscope size={12} color={tk.textMuted} />
+                  <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted, flex: 1 }} numberOfLines={1}>
+                    {vet.address ? vet.address.split(',')[0] : "General"}
                   </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4, gap: 4 }}>
-                    <MapPin size={12} color={tk.textMuted} />
-                    <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted, flex: 1 }} numberOfLines={1}>{vet.address || vet.city || "Nearby"}</Text>
-                  </View>
-                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4, gap: 4 }}>
-                    <Star size={12} color={colors.sunshine} fill={colors.sunshine} />
-                    <Text style={{ fontSize: 12, color: colors.sunshine, fontFamily: "Inter_700Bold" }}>{Number(vet.rating || 4.5).toFixed(1)}</Text>
-                    {vet.userRatingCount ? (
-                      <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: tk.textMuted }}>({vet.userRatingCount})</Text>
-                    ) : null}
-                  </View>
-                  {!!(vet as any).specialty && (
-                    <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted, marginTop: 3 }} numberOfLines={1}>{(vet as any).specialty}</Text>
-                  )}
                 </View>
-                <View style={{ backgroundColor: "rgba(37,99,235,0.1)", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: "rgba(37,99,235,0.2)", flexShrink: 0 }}>
-                  <Text style={{ fontSize: 11, fontFamily: "Inter_700Bold", color: colors.primary }}>VET</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+                  <Star size={12} color={colors.sunshine} fill={colors.sunshine} />
+                  <Text style={{ fontSize: 12, color: tk.textMuted, fontFamily: "Inter_400Regular", marginRight: 6 }}>{vet.rating || "N/A"}</Text>
+                  <MapPin size={12} color={tk.textMuted} />
+                  <Text style={{ fontSize: 12, color: tk.textMuted, fontFamily: "Inter_400Regular" }}>{vet.city || cityLabel}</Text>
                 </View>
               </View>
+              <TouchableOpacity
+                onPress={(e) => { e.stopPropagation(); if (vet.phone) Linking.openURL(`tel:${vet.phone}`); }}
+                style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+              >
+                <Phone size={16} color={colors.white} />
+              </TouchableOpacity>
             </TouchableOpacity>
           ))}
         </ScrollView>
