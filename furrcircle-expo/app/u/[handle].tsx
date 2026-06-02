@@ -20,12 +20,12 @@ const puppy = require("../../src/assets/doodle-puppy.png");
 const tabs = ["Posts", "Pets", "Saved"] as const;
 const tabIcons = { Posts: Grid3x3, Pets: Bone, Saved: Bookmark };
 
-function StatItem({ n, l, tk }: { n: string; l: string; tk: any }) {
+function StatItem({ n, l, tk, onPress }: { n: string; l: string; tk: any; onPress?: () => void }) {
   return (
-    <View style={styles.statItem}>
+    <TouchableOpacity style={styles.statItem} onPress={onPress} activeOpacity={onPress ? 0.6 : 1} disabled={!onPress}>
       <Text style={[styles.statNum, { color: tk.text }]}>{n}</Text>
       <Text style={[styles.statLabel, { color: tk.textMuted }]}>{l}</Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -128,8 +128,8 @@ export default function UserProfileScreen() {
                   </View>
                   <View style={styles.statsRow}>
                     <StatItem n={(posts.length || userProfile?.postCount || 0).toString()} l="Posts" tk={tk} />
-                    <StatItem n={(userProfile?.followersCount || 0).toString()} l="Followers" tk={tk} />
-                    <StatItem n={(userProfile?.followingCount || 0).toString()} l="Following" tk={tk} />
+                    <StatItem n={(userProfile?.followersCount || 0).toString()} l="Followers" tk={tk} onPress={() => userProfile?.id && router.push({ pathname: "/user/followers", params: { userId: userProfile.id, type: "followers", title: "Followers" } })} />
+                    <StatItem n={(userProfile?.followingCount || 0).toString()} l="Following" tk={tk} onPress={() => userProfile?.id && router.push({ pathname: "/user/followers", params: { userId: userProfile.id, type: "following", title: "Following" } })} />
                   </View>
                 </View>
 
