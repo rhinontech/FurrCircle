@@ -2,8 +2,10 @@ import { useState, useCallback, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
   StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  Keyboard,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Heart, MessageCircle, Send, Bookmark, Volume2, VolumeX } from "lucide-react-native";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Avatar } from "../../src/components/Avatar";
@@ -18,8 +20,27 @@ import { useIsFocused } from "@react-navigation/native";
 
 export default function PostDetail() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const tk = useTokens();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const spacerHeight = Math.max(0, keyboardHeight - insets.bottom);
+
   const isScreenFocused = useIsFocused();
   const { user } = useAuthStore();
   const [shareOpen, setShareOpen] = useState(false);
@@ -29,7 +50,7 @@ export default function PostDetail() {
   useEffect(() => {
     Audio.setAudioModeAsync({
       playsInSilentModeIOS: true,
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -84,14 +105,14 @@ export default function PostDetail() {
     setIsLiked(v => !v);
     const isDummy = dummyPosts.some(p => p.id === id);
     if (isDummy) return;
-    try { await feedApi.likePost(id!); } catch {}
+    try { await feedApi.likePost(id!); } catch { }
   };
 
   const handleSave = async () => {
     setIsSaved(v => !v);
     const isDummy = dummyPosts.some(p => p.id === id);
     if (isDummy) return;
-    try { await feedApi.savePost(id!); } catch {}
+    try { await feedApi.savePost(id!); } catch { }
   };
 
   const handleComment = async () => {
@@ -161,7 +182,11 @@ export default function PostDetail() {
     : baseLikes + (isLiked ? (initiallyLiked ? 0 : 1) : (initiallyLiked ? -1 : 0));
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      enabled={Platform.OS === "ios"}
+    >
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title={displayName} />
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }}>
@@ -205,7 +230,7 @@ export default function PostDetail() {
                       if (!status.isLoaded) {
                         setIsVideoLoading(true);
                       } else {
-                        setIsVideoLoading(status.isBuffering || (status.shouldPlay && !status.isPlaying));
+                        setIsVideoLoading(!status.isPlaying && (status.isBuffering || status.shouldPlay));
                       }
                     }}
                   />
@@ -286,7 +311,7 @@ export default function PostDetail() {
         </ScrollView>
 
         {/* Reply bar */}
-        <View style={[styles.replyBar, { backgroundColor: tk.card, borderTopColor: tk.border }]}>
+        <View style={[styles.replyBar, { backgroundColor: tk.card, borderTopColor: tk.border, paddingBottom: Platform.OS === "ios" ? 20 : insets.bottom + 12 }]}>
           <TextInput
             placeholder="Add a comment…"
             placeholderTextColor={tk.textMuted}
@@ -304,6 +329,7 @@ export default function PostDetail() {
         </View>
 
         <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} postId={post.id} />
+        {Platform.OS === "android" && <View style={{ height: 0 }} />}
       </View>
     </KeyboardAvoidingView>
   );

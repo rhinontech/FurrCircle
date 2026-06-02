@@ -186,11 +186,12 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
               if (!status.isLoaded) return;
 
               // Toggle loader container on buffering
-              setMediaLoading(status.isBuffering);
+              const isBuffering = status.isBuffering && !status.isPlaying;
+              setMediaLoading(isBuffering);
 
               if (status.durationMillis && status.positionMillis !== undefined) {
                 // If not buffering, synchronize progress bar with video duration ratio
-                if (!status.isBuffering) {
+                if (!isBuffering) {
                   const ratio = status.positionMillis / status.durationMillis;
                   progress.setValue(ratio);
                 }

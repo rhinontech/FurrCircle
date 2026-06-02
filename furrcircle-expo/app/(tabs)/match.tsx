@@ -357,12 +357,12 @@ export default function MatchScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: tk.text }]}>Match</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        {/* <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           {coords && <MapPin size={14} color={colors.primary} />}
           <TouchableOpacity onPress={() => router.push("/discover")}>
             <Text style={styles.filtersLink}>Filters</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
       </View>
 
       {/* Mode pills */}

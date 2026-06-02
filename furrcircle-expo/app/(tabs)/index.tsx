@@ -803,7 +803,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                   if (!status.isLoaded) {
                     setIsVideoLoading(true);
                   } else {
-                    setIsVideoLoading(status.isBuffering || (status.shouldPlay && !status.isPlaying));
+                    setIsVideoLoading(!status.isPlaying && (status.isBuffering || status.shouldPlay));
                   }
                 }}
               />
@@ -909,22 +909,22 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
   const tk = useTokens();
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <View style={[styles.sheet, { backgroundColor: tk.card }]}>
-          <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
-          <Text style={[styles.sheetTitle, { color: tk.text }]}>Create</Text>
-          {composeOptions.map((o) => (
-            <TouchableOpacity key={o.label} onPress={() => { onClose(); router.push(o.to); }}
-              style={[styles.sheetRow, { backgroundColor: tk.bg }]} activeOpacity={0.8}>
-              <View style={[styles.sheetIcon, { backgroundColor: o.tintColor }]} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{o.label}</Text>
-                <Text style={[styles.sheetRowDesc, { color: tk.textMuted }]}>{o.desc}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Pressable>
+        <Pressable style={styles.overlay} onPress={onClose}>
+          <View style={[styles.sheet, { backgroundColor: tk.card }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+            <Text style={[styles.sheetTitle, { color: tk.text }]}>Create</Text>
+            {composeOptions.map((o) => (
+              <TouchableOpacity key={o.label} onPress={() => { onClose(); router.push(o.to); }}
+                style={[styles.sheetRow, { backgroundColor: tk.bg }]} activeOpacity={0.8}>
+                <View style={[styles.sheetIcon, { backgroundColor: o.tintColor }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{o.label}</Text>
+                  <Text style={[styles.sheetRowDesc, { color: tk.textMuted }]}>{o.desc}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Pressable>
     </Modal>
   );
 }

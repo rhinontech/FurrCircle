@@ -1,4 +1,5 @@
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Platform, Keyboard } from "react-native";
+import { useState, useEffect } from "react";
 import { Tabs } from "expo-router";
 import { Home, Users, Bone, Compass, LayoutGrid } from "lucide-react-native";
 import { colors } from "../../src/lib/theme";
@@ -12,6 +13,21 @@ export default function TabsLayout() {
   const tk = useTokens();
   const { isTablet, isWide } = useBreakpoint();
   const insets = useSafeAreaInsets();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   return (
     <View style={[styles.root, { backgroundColor: tk.bg }]}>
@@ -33,6 +49,12 @@ export default function TabsLayout() {
                     paddingTop: 6,
                     paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
                     height: 60 + (insets.bottom > 0 ? insets.bottom : 8),
+                    ...(keyboardHeight > 0 ? {
+                      position: "absolute",
+                      bottom: -keyboardHeight,
+                      left: 0,
+                      right: 0,
+                    } : {}),
                   },
               tabBarActiveTintColor: colors.coral,
               tabBarInactiveTintColor: tk.textMuted,

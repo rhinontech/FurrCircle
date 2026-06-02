@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { Image as ImageIcon, Hash, X, Check } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -84,7 +84,11 @@ export default function ComposeScreen() {
 
   return (
     <PageContainer>
-      <View style={[styles.container, { backgroundColor: tk.bg }]}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: tk.card }]}>
             <X size={20} color={tk.text} />
@@ -157,14 +161,15 @@ export default function ComposeScreen() {
             />
           </View>
         </ScrollView>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 24, paddingBottom: 12 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: Platform.OS === "ios" ? 24 : 40, paddingBottom: 12 },
   closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
   headerTitle: { fontFamily: "Poppins_700Bold", fontSize: 18 },
   shareBtn: { backgroundColor: colors.primary, borderRadius: 20, paddingHorizontal: 20, paddingVertical: 8, minWidth: 70, alignItems: "center", justifyContent: "center" },
