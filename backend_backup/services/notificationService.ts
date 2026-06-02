@@ -2,7 +2,7 @@ import db from "../models/index.ts";
 import { emitToActor } from "./realtimeService.ts";
 
 type ActorType = "user" | "vet";
-type NotificationCategory = "activity" | "campaign" | "social";
+type NotificationCategory = "activity" | "campaign";
 type PushStatus = "sent" | "failed" | "skipped";
 
 type NotificationActionPayload = Record<string, unknown> | null;

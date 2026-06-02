@@ -44,12 +44,6 @@ for (const file of filesInDir) {
 db.pets.belongsTo(db.users, { foreignKey: 'ownerId', as: 'owner' });
 db.users.hasMany(db.pets, { foreignKey: 'ownerId', as: 'pets' });
 
-// User <-> Follow
-db.follows.belongsTo(db.users, { foreignKey: 'followerId', as: 'followerUser' });
-db.follows.belongsTo(db.users, { foreignKey: 'followingId', as: 'followingUser' });
-db.users.hasMany(db.follows, { foreignKey: 'followerId', as: 'following' });
-db.users.hasMany(db.follows, { foreignKey: 'followingId', as: 'followers' });
-
 // Vet <-> VetReview
 db.vet_reviews.belongsTo(db.vets, { foreignKey: 'vetId', as: 'vet' });
 db.vets.hasMany(db.vet_reviews, { foreignKey: 'vetId', as: 'reviews' });
@@ -143,34 +137,6 @@ db.users.hasMany(db.stories, { foreignKey: 'userId', as: 'stories', constraints:
 db.stories.hasMany(db.story_views, { foreignKey: 'storyId', as: 'views' });
 db.story_views.belongsTo(db.stories, { foreignKey: 'storyId' });
 
-// Lost & Found Pets
-db.lost_pets.belongsTo(db.users, { foreignKey: 'userId', as: 'author', constraints: false });
-db.users.hasMany(db.lost_pets, { foreignKey: 'userId', as: 'lostPets', constraints: false });
-
-// Circles
-db.circles.belongsTo(db.users, { foreignKey: 'createdBy', as: 'creator' });
-db.circles.hasMany(db.circle_members, { foreignKey: 'circleId', as: 'members' });
-db.circle_members.belongsTo(db.circles, { foreignKey: 'circleId', as: 'circle' });
-db.circle_members.belongsTo(db.users, { foreignKey: 'userId', as: 'user' });
-db.users.hasMany(db.circle_members, { foreignKey: 'userId', as: 'circlesMembership' });
-
-// Questions
-db.questions.belongsTo(db.users, { foreignKey: 'userId', as: 'author', constraints: false });
-db.questions.belongsTo(db.circles, { foreignKey: 'circleId', as: 'circle' });
-db.circles.hasMany(db.questions, { foreignKey: 'circleId', as: 'questions' });
-db.questions.hasMany(db.question_answers, { foreignKey: 'questionId', as: 'answers' });
-db.question_answers.belongsTo(db.questions, { foreignKey: 'questionId' });
-db.question_answers.belongsTo(db.users, { foreignKey: 'userId', as: 'author', constraints: false });
-
-// Playdate Likes
-db.playdate_likes.belongsTo(db.users, { foreignKey: 'swiperId', as: 'swiper' });
-db.playdate_likes.belongsTo(db.pets, { foreignKey: 'swiperPetId', as: 'swiperPet' });
-db.playdate_likes.belongsTo(db.pets, { foreignKey: 'targetPetId', as: 'targetPet' });
-
-// Owner Likes
-db.owner_likes.belongsTo(db.users, { foreignKey: 'likerId', as: 'liker' });
-db.owner_likes.belongsTo(db.users, { foreignKey: 'targetId', as: 'target' });
-
 // ──────────────────────────────────────────────────────────────────────────────
 
 db.sequelize = sequelize;
@@ -206,14 +172,6 @@ export const adoption_applications = db.adoption_applications;
 export const contact_leads = db.contact_leads;
 export const stories = db.stories;
 export const story_views = db.story_views;
-export const follows = db.follows;
-export const circles = db.circles;
-export const circle_members = db.circle_members;
-export const questions = db.questions;
-export const question_answers = db.question_answers;
-export const playdate_likes = db.playdate_likes;
-export const owner_likes = db.owner_likes;
-export const lost_pets = db.lost_pets;
 
 export { sequelize, Sequelize };
 export default db;

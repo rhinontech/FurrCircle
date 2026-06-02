@@ -1,13 +1,8 @@
 import express from "express";
-import { registerUser, loginUser, loginOtp, getUserProfile, updateUserProfile, forgotPassword, resetPassword, resetPasswordByEmail, changePassword, getUsersByRole, completeOnboarding, checkUsername, sendEmailOtp, verifyEmailOtp, sendPhoneOtp } from "../controllers/authController.ts";
+import { registerUser, loginUser, loginOtp, getUserProfile, updateUserProfile, forgotPassword, resetPassword, resetPasswordByEmail, changePassword, getUsersByRole, completeOnboarding } from "../controllers/authController.ts";
 import { protect } from "../middleware/authMiddleware.ts";
 
 const router = express.Router();
-
-router.get("/check-username", checkUsername);
-router.post("/send-email-otp", sendEmailOtp);
-router.post("/send-phone-otp", sendPhoneOtp);
-router.post("/verify-email-otp", verifyEmailOtp);
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);

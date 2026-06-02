@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('users', {
+    await queryInterface.createTable('vets', {
       id: {
         allowNull: false,
         primaryKey: true,
@@ -23,15 +23,26 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
-      role: {
-        type: Sequelize.STRING,
-        allowNull: false,
-        defaultValue: 'owner'
-      },
       verified: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
-        defaultValue: true
+        defaultValue: false
+      },
+      hospital_name: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      profession: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      experience: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      working_hours: {
+        type: Sequelize.STRING,
+        allowNull: true
       },
       profile_photo: {
         type: Sequelize.TEXT,
@@ -39,15 +50,10 @@ module.exports = {
       },
       phone_number: {
         type: Sequelize.STRING,
-        allowNull: true,
-        unique: true
+        allowNull: true
       },
       address: {
         type: Sequelize.STRING,
-        allowNull: true
-      },
-      bio: {
-        type: Sequelize.TEXT,
         allowNull: true
       },
       city: {
@@ -59,41 +65,22 @@ module.exports = {
         allowNull: false,
         defaultValue: false
       },
-      username: {
-        type: Sequelize.STRING,
-        allowNull: false,
-        unique: true
-      },
-      isPrivate: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      otpCode: {
-        type: Sequelize.STRING,
+      bio: {
+        type: Sequelize.TEXT,
         allowNull: true
       },
-      otpExpiry: {
-        type: Sequelize.DATE,
-        allowNull: true
-      },
-      latitude: {
+      rating: {
         type: Sequelize.FLOAT,
+        allowNull: true,
+        defaultValue: 0
+      },
+      clinicStampUrl: {
+        type: Sequelize.TEXT,
         allowNull: true
       },
-      longitude: {
-        type: Sequelize.FLOAT,
+      licenseNumber: {
+        type: Sequelize.STRING,
         allowNull: true
-      },
-      petTypeInterests: {
-        type: Sequelize.ARRAY(Sequelize.STRING),
-        allowNull: true,
-        defaultValue: []
-      },
-      topicInterests: {
-        type: Sequelize.ARRAY(Sequelize.STRING),
-        allowNull: true,
-        defaultValue: []
       },
       resetToken: {
         type: Sequelize.STRING,
@@ -117,6 +104,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('users');
+    await queryInterface.dropTable('vets');
   }
 };

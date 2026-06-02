@@ -3,7 +3,6 @@ import { Op } from "sequelize";
 import db from "../models/index.ts";
 import { createNotification, createRichNotification } from "../services/notificationService.ts";
 import { sendEmail } from "../services/emailService.ts";
-import { emitToActor, isUserOnline } from "../services/realtimeService.ts";
 
 const toPlain = (value: any) => (value && typeof value.toJSON === "function" ? value.toJSON() : value);
 
@@ -48,7 +47,6 @@ const createProfileResolver = () => {
     const profile = {
       id: payload.id,
       name: payload.name,
-      username: payload.username,
       email: payload.email,
       role: resolvedType === "vet" ? "veterinarian" : payload.role || "owner",
       avatar_url: payload.avatar_url,
@@ -297,78 +295,6 @@ export const getMyPosts = async (req: any, res: Response): Promise<void> => {
   }
 };
 
-// @desc    Get user's posts by username
-// @route   GET /api/community/posts/user/:username
-export const getUserPosts = async (req: any, res: Response): Promise<void> => {
-  try {
-    const { users: User, posts: Post, comments: Comment, likes: Like, saved_posts: SavedPost } = db as any;
-    const { username } = req.params;
-
-    const targetUser = await User.findOne({ where: { username: { [Op.iLike]: username } } });
-    if (!targetUser) {
-      res.status(404).json({ message: "User not found" });
-      return;
-    }
-
-    const posts = await Post.findAll({
-      where: { userId: targetUser.id, status: "approved" },
-      include: [
-        { model: Comment, as: "comments" },
-        { model: Like, as: "likes", attributes: ["userId", "userType"] },
-        { model: SavedPost, as: "savedPosts", attributes: ["userId", "userType"] },
-      ],
-      order: [["createdAt", "DESC"]],
-    });
-
-    const resolveProfile = createProfileResolver();
-    const serialized = await Promise.all(posts.map((post: any) => serializePost(post, resolveProfile)));
-    res.json(serialized);
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const getSavedPosts = async (req: any, res: Response): Promise<void> => {
-  try {
-    const { posts: Post, comments: Comment, likes: Like, saved_posts: SavedPost } = db as any;
-
-    // Find all savedPost records for this user
-    const savedRecords = await SavedPost.findAll({
-      where: { userId: req.user.id },
-      order: [["createdAt", "DESC"]],
-    });
-    const postIds = savedRecords.map((r: any) => r.postId);
-
-    if (postIds.length === 0) {
-      res.json([]);
-      return;
-    }
-
-    const { Op } = await import("sequelize");
-    const posts = await Post.findAll({
-      where: { id: { [Op.in]: postIds }, status: "approved" },
-      include: [
-        { model: Comment, as: "comments" },
-        { model: Like, as: "likes", attributes: ["userId", "userType"] },
-        { model: SavedPost, as: "savedPosts", attributes: ["userId", "userType"] },
-      ],
-    });
-
-    // Preserve the saved order
-    const postMap: Record<string, any> = {};
-    posts.forEach((p: any) => { postMap[p.id] = p; });
-    const ordered = postIds.map((id: string) => postMap[id]).filter(Boolean);
-
-    const resolveProfile = createProfileResolver();
-    const serialized = await Promise.all(ordered.map((post: any) => serializePost(post, resolveProfile)));
-    res.json(serialized);
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-
-
 
 export const deleteMyPost = async (req: any, res: Response): Promise<void> => {
   const transaction = await db.sequelize.transaction();
@@ -463,106 +389,28 @@ export const getCommunityFeed = async (req: any, res: Response): Promise<void> =
         order: [["createdAt", "DESC"]],
       });
     } else {
-      // ═══════════════════════════════════════════════════════════════════════
-      // FOR YOU — Two-tier feed algorithm
-      //
-      // Tier 1 – Following feed (top slots, chronological newest-first):
-      //   • Posts from users the current user follows (accepted status only)
-      //   • Max age: 72 hours (3 days) — keeps the following feed fresh
-      //   • Sorted purely by createdAt DESC (latest follower post at very top)
-      //
-      // Tier 2 – Discovery feed (shown after following posts):
-      //   • All other approved posts, max age: 7 days
-      //   • Scored: engagementScore + topicBonus(30) + cityBonus(20) + recencyDecay
-      //   • recencyDecay = max(0, 100 − hoursOld × 1.5)  → 0 after ~67 hours
-      //   • Posts already in Tier 1 are excluded (deduplicated by post id)
-      //   • Followed-user posts older than 72 h get a +40 followBonus so they
-      //     still rank above random strangers even after leaving Tier 1
-      // ═══════════════════════════════════════════════════════════════════════
-
-      const currentUserId = req.user?.id;
+      // for_you: score = engagementScore + topicMatch(30) + cityMatch(20) + recencyDecay
       const userCity = (req.user?.city || "").trim().toLowerCase();
       const userTopics: string[] = req.user?.topicInterests || [];
 
-      // ── Step 1: Resolve the current user's followed user IDs ─────────────
-      const followedUserIds: Set<string> = new Set();
-      if (currentUserId) {
-        const { follows: Follow } = db as any;
-        const myFollows = await Follow.findAll({
-          where: { followerId: currentUserId, status: "accepted" },
-          attributes: ["followingId"],
-        });
-        myFollows.forEach((f: any) => followedUserIds.add(f.followingId));
-      }
-
-      // ── Step 2: Tier 1 — Following posts (≤ 72 h, newest-first) ─────────
-      const tier1Cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000);
-
-      let tier1Posts: any[] = [];
-      if (followedUserIds.size > 0) {
-        tier1Posts = await Post.findAll({
-          where: {
-            status: "approved",
-            userId: { [Op.in]: Array.from(followedUserIds) },
-            createdAt: { [Op.gte]: tier1Cutoff },
-          },
-          include: postIncludes,
-          order: [["createdAt", "DESC"]],
-        });
-      }
-
-      // Build a Set of IDs already in Tier 1 to prevent duplicates in Tier 2
-      const tier1Ids = new Set(tier1Posts.map((p: any) => p.id));
-
-      // ── Step 3: Tier 2 — Discovery posts (≤ 7 days, excluding Tier 1) ───
-      const tier2Cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-      const discoveryWhere: any = {
-        status: "approved",
-        createdAt: { [Op.gte]: tier2Cutoff },
-      };
-      if (tier1Ids.size > 0) {
-        discoveryWhere.id = { [Op.notIn]: Array.from(tier1Ids) };
-      }
-
-      const discoveryPosts = await Post.findAll({
-        where: discoveryWhere,
+      allPosts = await Post.findAll({
+        where: { status: "approved" },
         include: postIncludes,
         order: [["createdAt", "DESC"]],
       });
 
-      // Score each discovery post
-      const scoredDiscovery = discoveryPosts
+      allPosts = allPosts
         .map((post: any) => {
           const payload = toPlain(post);
-          const hoursOld =
-            (Date.now() - new Date(payload.createdAt).getTime()) / 3600000;
-
-          // Steep recency decay: 0 h → +100, 24 h → +64, 48 h → +28, 67 h → 0
-          const recencyDecay = Math.max(0, 100 - hoursOld * 1.5);
-
-          // Followed users' older posts still rank above strangers
-          const followBonus = followedUserIds.has(payload.userId) ? 40 : 0;
-
-          const topicBonus =
-            userTopics.length > 0 && userTopics.includes(payload.category) ? 30 : 0;
-          const cityBonus =
-            userCity && (payload.city || "").trim().toLowerCase() === userCity ? 20 : 0;
-
-          const score =
-            (payload.engagementScore || 0) +
-            topicBonus +
-            cityBonus +
-            recencyDecay +
-            followBonus;
-
+          const hoursOld = (Date.now() - new Date(payload.createdAt).getTime()) / 3600000;
+          const recencyDecay = Math.max(0, 100 - hoursOld * 2);
+          const topicBonus = userTopics.length > 0 && userTopics.includes(payload.category) ? 30 : 0;
+          const cityBonus = userCity && (payload.city || "").trim().toLowerCase() === userCity ? 20 : 0;
+          const score = (payload.engagementScore || 0) + topicBonus + cityBonus + recencyDecay;
           return { post, score };
         })
         .sort((a: any, b: any) => b.score - a.score)
         .map((item: any) => item.post);
-
-      // ── Step 4: Merge — Tier 1 (following, newest-first) + Tier 2 ───────
-      allPosts = [...tier1Posts, ...scoredDiscovery];
     }
 
     const total = allPosts.length;
@@ -993,17 +841,7 @@ export const getChats = async (req: any, res: Response): Promise<void> => {
       return `${bDate || ""}`.localeCompare(`${aDate || ""}`);
     });
 
-    // Deduplicate conversations so we only show one thread per user pair (the newest one)
-    const seenUsers = new Set();
-    const deduplicated = serialized.filter((conv: any) => {
-      const otherUser = conv.otherParticipants?.[0];
-      if (!otherUser) return false;
-      if (seenUsers.has(otherUser.id)) return false;
-      seenUsers.add(otherUser.id);
-      return true;
-    });
-
-    res.json(deduplicated);
+    res.json(serialized);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -1055,30 +893,10 @@ export const sendMessage = async (req: any, res: Response): Promise<void> => {
 
     await conversation.update({ updatedAt: new Date() } as any);
 
+    // Notify the other participant about the new message
     const recipientId = conversation.initiatorId === req.user.id ? conversation.recipientId : conversation.initiatorId;
     const recipientType = conversation.initiatorId === req.user.id ? conversation.recipientType : conversation.initiatorType;
-
-    const refreshedConversation = await fetchConversation(conversation.id);
-    const resolveProfile = createProfileResolver();
-    const serializedMessage = await serializeMessage(message, resolveProfile);
-    const serializedConversation = await serializeConversation(refreshedConversation, req.user.id, resolveProfile);
-
-    // Emit real-time event to recipient
     if (recipientId) {
-      emitToActor(recipientId, recipientType, "chat:message", {
-        conversationId: conversation.id,
-        message: serializedMessage,
-      });
-    }
-
-    // Emit real-time event to sender (for multi-device sync)
-    emitToActor(req.user.id, req.userType || "user", "chat:message", {
-      conversationId: conversation.id,
-      message: serializedMessage,
-    });
-
-    // Notify the other participant about the new message via push (smart push: skip if online)
-    if (recipientId && !isUserOnline(recipientId)) {
       await createNotification(
         recipientId,
         recipientType,
@@ -1090,9 +908,11 @@ export const sendMessage = async (req: any, res: Response): Promise<void> => {
       );
     }
 
+    const refreshedConversation = await fetchConversation(conversation.id);
+    const resolveProfile = createProfileResolver();
     res.status(201).json({
-      message: serializedMessage,
-      conversation: serializedConversation,
+      message: await serializeMessage(message, resolveProfile),
+      conversation: await serializeConversation(refreshedConversation, req.user.id, resolveProfile),
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -1144,14 +964,11 @@ export const startChat = async (req: any, res: Response): Promise<void> => {
       ],
     };
 
-    // We removed petId from the 'where' clause so that 1-on-1 chats 
-    // are ALWAYS reused, preventing duplicate conversation threads.
-    
-    let conversation = await Conversation.findOne({ where });
-    if (conversation && petId && conversation.petId !== petId) {
-      // Optionally update the petId if a new one is provided and we are reusing a chat
-      await conversation.update({ petId } as any);
+    if (petId) {
+      where.petId = petId;
     }
+
+    let conversation = await Conversation.findOne({ where });
     if (!conversation) {
       conversation = await Conversation.create({
         initiatorId: req.user.id,
@@ -1164,7 +981,7 @@ export const startChat = async (req: any, res: Response): Promise<void> => {
     }
 
     if (firstMessage) {
-      const message = await Message.create({
+      await Message.create({
         conversationId: conversation.id,
         senderId: req.user.id,
         senderType: req.userType || "user",
@@ -1173,32 +990,16 @@ export const startChat = async (req: any, res: Response): Promise<void> => {
       });
       await conversation.update({ updatedAt: new Date() } as any);
 
-      const serializedMessage = await serializeMessage(message, resolveProfile);
-
-      // Emit real-time event to recipient
-      emitToActor(recipientId, recipientType, "chat:message", {
-        conversationId: conversation.id,
-        message: serializedMessage,
-      });
-
-      // Emit real-time event to sender
-      emitToActor(req.user.id, req.userType || "user", "chat:message", {
-        conversationId: conversation.id,
-        message: serializedMessage,
-      });
-
-      // Notify recipient via push (smart push)
-      if (!isUserOnline(recipientId)) {
-        await createNotification(
-          recipientId,
-          recipientType,
-          "chat",
-          `New message from ${req.user.name || "Someone"}`,
-          firstMessage.length > 80 ? firstMessage.substring(0, 80) + "…" : firstMessage,
-          conversation.id,
-          "chat"
-        );
-      }
+      // Notify recipient
+      await createNotification(
+        recipientId,
+        recipientType,
+        "chat",
+        `New message from ${req.user.name || "Someone"}`,
+        firstMessage.length > 80 ? firstMessage.substring(0, 80) + "…" : firstMessage,
+        conversation.id,
+        "chat"
+      );
     }
 
     const refreshedConversation = await fetchConversation(conversation.id);
