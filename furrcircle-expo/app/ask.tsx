@@ -34,6 +34,7 @@ export default function AskScreen() {
       Alert.alert("Required", "Please write your question first.");
       return;
     }
+    if (submitting) return;
     setSubmitting(true);
     try {
       const tagList = tags.split(",").map(t => t.trim().replace(/^#/, "")).filter(Boolean);
@@ -43,21 +44,11 @@ export default function AskScreen() {
         tags: tagList,
         circleId: selectedCircleId || undefined,
       });
-      if (selectedCircleId) {
-        router.navigate({
-          pathname: `/community/${selectedCircleId}` as any,
-          params: { refresh: String(Date.now()) },
-        });
-      } else {
-        router.navigate({
-          pathname: "/(tabs)/community" as any,
-          params: { refresh: String(Date.now()) },
-        });
-      }
+      // Go back — the circle/community screen will reload via useFocusEffect
+      router.back();
     } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || "Failed to post question.");
-    } finally {
       setSubmitting(false);
+      Alert.alert("Error", err?.response?.data?.message || "Failed to post question.");
     }
   };
 

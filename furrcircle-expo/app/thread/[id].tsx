@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image,
 } from "react-native";
 import { useLocalSearchParams, useFocusEffect } from "expo-router";
-import { ArrowUp, MessageCircle, Share2, ShieldAlert } from "lucide-react-native";
+import { ArrowUp, MessageCircle, Share2, ShieldAlert, Trash2 } from "lucide-react-native";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { PageContainer } from "../../src/components/PageContainer";
 import { Avatar } from "../../src/components/Avatar";
@@ -12,10 +12,12 @@ import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { questionApi } from "../../services/community/questionApi";
+import { useRouter } from "expo-router";
 import { threads as dummyThreads } from "../../src/lib/demo-data";
 
 export default function ThreadDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const tk = useTokens();
   const { user } = useAuthStore();
   const [answers, setAnswers] = useState<any[]>([]);
@@ -23,6 +25,7 @@ export default function ThreadDetail() {
   const [answerText, setAnswerText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [upvoted, setUpvoted] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const dummy = dummyThreads.find(t => t.id === id);
 
@@ -46,7 +49,32 @@ export default function ThreadDetail() {
   }, [id, dummy]));
 
   // The question is passed via route params or we parse it
-  const { title, body, tags, askerName, time, upvotes } = useLocalSearchParams<any>();
+  const { title, body, tags, askerName, time, upvotes, questionUserId } = useLocalSearchParams<any>();
+
+  const isOwner = !dummy && user?.id && questionUserId && user.id === questionUserId;
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Delete Question",
+      "Delete this question and all its answers? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete", style: "destructive",
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await questionApi.deleteQuestion(id!);
+              router.back();
+            } catch (err: any) {
+              setDeleting(false);
+              Alert.alert("Error", err?.response?.data?.message || "Failed to delete.");
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const displayTitle = title || dummy?.title || "Question";
   const displayBody = body || dummy?.body || "";
@@ -140,6 +168,13 @@ export default function ThreadDetail() {
                 <TouchableOpacity style={styles.shareBtn}>
                   <Share2 size={20} color={tk.text} />
                 </TouchableOpacity>
+                {isOwner && (
+                  <TouchableOpacity onPress={handleDelete} disabled={deleting} style={{ marginLeft: 4, opacity: deleting ? 0.4 : 1 }}>
+                    {deleting
+                      ? <ActivityIndicator size="small" color={colors.coral} />
+                      : <Trash2 size={18} color={colors.coral} />}
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 
