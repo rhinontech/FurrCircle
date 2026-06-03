@@ -233,7 +233,7 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
   scroll: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 20 },
-  backBtn: { alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 12, marginBottom: 20 },
+  backBtn: { alignSelf: 'flex-start', paddingVertical: 8, paddingRight: 12, marginBottom: 20 },
   backText: { fontFamily: "Inter_600SemiBold", fontSize: 15, color: colors.primary },
   content: { flex: 1, alignItems: 'center', paddingTop: 10 },
   heroContainer: { height: height * 0.22, width: '100%', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
