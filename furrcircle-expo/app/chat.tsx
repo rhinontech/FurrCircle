@@ -42,13 +42,13 @@ const getDateGroup = (dateStr: string) => {
   const now = new Date();
   const diff = now.getTime() - d.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  
+
   if (d.toDateString() === now.toDateString()) return "Today";
-  
+
   const yesterday = new Date();
   yesterday.setDate(now.getDate() - 1);
   if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
-  
+
   return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 };
 
@@ -59,7 +59,7 @@ export default function ChatScreen() {
   const [selectedChat, setSelectedChat] = useState<string | null>(params.id || null);
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -149,7 +149,7 @@ export default function ChatScreen() {
       loadMessages();
       clearChatUnread(); // Mark all chats read when opening a specific chat
       // Also inform the backend
-      chatApi.markChatAsRead(selectedChat).catch(() => {});
+      chatApi.markChatAsRead(selectedChat).catch(() => { });
     }
   }, [selectedChat]);
 
@@ -202,48 +202,48 @@ export default function ChatScreen() {
     return conv.initiator?.id === user?.id ? conv.recipient : conv.initiator;
   };
 
-// --- Message Content Renderer ---
-const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any) => {
-  const match = text.match(/furrcircle:\/\/post\/([A-Za-z0-9-]+)/);
-  if (match) {
-    const postId = match[1];
-    const prefixText = text.replace(match[0], "").trim();
-    
-    return (
-      <View>
-        {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
-        <TouchableOpacity 
-          onPress={() => router.push(`/post/${postId}`)}
-          style={{ backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border, padding: 12, borderRadius: 12, alignItems: "center" }}
-          activeOpacity={0.7}
-        >
-          <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Post</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  // --- Message Content Renderer ---
+  const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any) => {
+    const match = text.match(/furrcircle:\/\/post\/([A-Za-z0-9-]+)/);
+    if (match) {
+      const postId = match[1];
+      const prefixText = text.replace(match[0], "").trim();
 
-  const petMatch = text.match(/furrcircle:\/\/pet\/([A-Za-z0-9-]+)/);
-  if (petMatch) {
-    const petId = petMatch[1];
-    const prefixText = text.replace(petMatch[0], "").trim();
-    
-    return (
-      <View>
-        {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
-        <TouchableOpacity 
-          onPress={() => router.push(`/p/${petId}`)}
-          style={{ backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border, padding: 12, borderRadius: 12, alignItems: "center" }}
-          activeOpacity={0.7}
-        >
-          <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Pet</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-  
-  return <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text }]}>{text}</Text>;
-};
+      return (
+        <View>
+          {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
+          <TouchableOpacity
+            onPress={() => router.push(`/post/${postId}`)}
+            style={{ backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border, padding: 12, borderRadius: 12, alignItems: "center" }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Post</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    const petMatch = text.match(/furrcircle:\/\/pet\/([A-Za-z0-9-]+)/);
+    if (petMatch) {
+      const petId = petMatch[1];
+      const prefixText = text.replace(petMatch[0], "").trim();
+
+      return (
+        <View>
+          {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
+          <TouchableOpacity
+            onPress={() => router.push(`/p/${petId}`)}
+            style={{ backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border, padding: 12, borderRadius: 12, alignItems: "center" }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Pet</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text }]}>{text}</Text>;
+  };
 
   // Group messages by date for dividers (must be at top level to follow Rules of Hooks)
   const groupedMessages = useMemo(() => {
@@ -269,18 +269,18 @@ const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any)
 
     return (
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader 
-          title={otherUser.name} 
+        <ScreenHeader
+          title={otherUser.name}
           onBack={() => {
             setSelectedChat(null);
             // Optionally clear the query param so refresh doesn't stick inside
             router.setParams({ id: "" });
           }}
           right={
-            <Avatar source={otherUser.avatar_url ? {uri: otherUser.avatar_url} : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={32} />
+            <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={32} />
           }
         />
-        
+
         {loadingMessages ? (
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -303,7 +303,7 @@ const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any)
               const isMe = item.sender?.id === user?.id;
               return (
                 <View style={isMe ? styles.msgRowMe : styles.msgRowOther}>
-                  {!isMe && <Avatar source={otherUser.avatar_url ? {uri: otherUser.avatar_url} : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={28} />}
+                  {!isMe && <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={28} />}
                   <View style={[
                     isMe ? styles.bubbleMe : styles.bubbleOther,
                     !isMe && { backgroundColor: tk.card }
@@ -321,17 +321,17 @@ const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any)
 
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={[styles.inputBar, { backgroundColor: tk.card, borderTopColor: tk.border }]}>
-            <TextInput 
-              value={msgInput} 
-              onChangeText={setMsgInput} 
+            <TextInput
+              value={msgInput}
+              onChangeText={setMsgInput}
               placeholder="Message…"
-              placeholderTextColor={tk.textMuted} 
-              style={[styles.msgInput, { backgroundColor: tk.bg, color: tk.text }]} 
+              placeholderTextColor={tk.textMuted}
+              style={[styles.msgInput, { backgroundColor: tk.bg, color: tk.text }]}
               multiline
               maxLength={500}
             />
-            <TouchableOpacity 
-              style={[styles.sendBtn, { backgroundColor: msgInput.trim() ? colors.primary : tk.border }]} 
+            <TouchableOpacity
+              style={[styles.sendBtn, { backgroundColor: msgInput.trim() ? colors.primary : tk.border }]}
               onPress={handleSend}
               disabled={!msgInput.trim()}
             >
@@ -346,10 +346,10 @@ const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any)
   // --- Render List View ---
   return (
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader 
-        title="Messages" 
+      <ScreenHeader
+        title="Messages"
         right={
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.headerIconBtn, { backgroundColor: tk.card }]}
             onPress={() => setIsNewChatOpen(true)}
           >
@@ -357,7 +357,7 @@ const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any)
           </TouchableOpacity>
         }
       />
-      
+
       {loading ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -371,7 +371,7 @@ const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any)
           <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, textAlign: "center", marginTop: 8 }}>
             Start a conversation with a friend or a vet!
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.startChatBtn, { backgroundColor: colors.primary }]}
             onPress={() => setIsNewChatOpen(true)}
           >
@@ -386,19 +386,19 @@ const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any)
           renderItem={({ item: c }) => {
             const otherUser = getOtherParticipant(c);
             if (!otherUser) return null;
-            
+
             // Determine if there's unread logic here if we add lastRead marker, for now we just show it
             // if we have unread badge and the last message isn't ours. We'll simplify.
             const hasUnread = c.unreadCount > 0 || (c.lastMessage && !c.lastMessage.readAt && !c.lastMessage.seen && c.lastMessage.sender?.id !== user?.id);
 
             return (
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setSelectedChat(c.id)}
-                style={[styles.chatRow, { backgroundColor: tk.card, borderBottomColor: tk.border }]} 
+                style={[styles.chatRow, { backgroundColor: tk.card, borderBottomColor: tk.border }]}
                 activeOpacity={0.8}
               >
                 <View style={styles.avatarWrap}>
-                  <Avatar source={otherUser.avatar_url ? {uri: otherUser.avatar_url} : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={50} />
+                  <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={50} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.chatName, { color: tk.text, fontFamily: hasUnread ? "Poppins_700Bold" : "Poppins_600SemiBold" }]}>{otherUser.name}</Text>
@@ -424,7 +424,7 @@ const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any)
           <View style={[styles.modalContent, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true}>
             <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
             <Text style={[styles.modalTitle, { color: tk.text }]}>New Chat</Text>
-            
+
             <View style={[styles.searchBar, { backgroundColor: tk.bg, borderColor: tk.border }]}>
               <Search size={16} color={tk.textMuted} />
               <TextInput
@@ -448,11 +448,11 @@ const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any)
                   searchQuery.trim() ? <Text style={[styles.emptyText, { color: tk.textMuted }]}>No users found</Text> : null
                 }
                 renderItem={({ item }) => (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.searchRow}
                     onPress={() => handleStartNewChat(item.id)}
                   >
-                    <Avatar source={item.avatar_url ? {uri: item.avatar_url} : require("../src/assets/doodle-puppy.png")} name={item.name} size={40} />
+                    <Avatar source={item.avatar_url ? { uri: item.avatar_url } : require("../src/assets/doodle-puppy.png")} name={item.name} size={40} />
                     <View style={{ marginLeft: 12 }}>
                       <Text style={[styles.searchName, { color: tk.text }]}>{item.name}</Text>
                       <Text style={[styles.searchHandle, { color: tk.textMuted }]}>@{item.username}</Text>
@@ -473,14 +473,14 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   headerIconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   startChatBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24, marginTop: 20 },
-  
+
   // List view
   chatRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
   avatarWrap: { position: "relative" },
   chatName: { fontFamily: "Poppins_700Bold", fontSize: 15 },
   chatLastMsg: { fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 2 },
   chatTime: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  
+
   // Detail view
   dateDivider: { alignItems: "center", marginVertical: 16 },
   dateDividerText: { fontSize: 11, fontFamily: "Inter_500Medium" },

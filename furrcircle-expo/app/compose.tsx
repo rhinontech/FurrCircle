@@ -77,7 +77,7 @@ export default function ComposeScreen() {
         const uploadRes = await userApi.uploadImage(imageUri, "posts");
         imageUrl = uploadRes.url;
       }
-      
+
       if (editPostId) {
         await feedApi.updatePost(editPostId, {
           content: caption.trim(),
@@ -92,7 +92,7 @@ export default function ComposeScreen() {
           category: category !== "General" ? category : undefined,
         });
       }
-      router.navigate({
+      router.replace({
         pathname: "/(tabs)",
         params: { refresh: String(Date.now()) },
       });
@@ -110,78 +110,78 @@ export default function ComposeScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: tk.card }]}>
-            <X size={20} color={tk.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: tk.text }]}>{editPostId ? "Edit post" : "New post"}</Text>
-          <TouchableOpacity onPress={handleShare} disabled={loading} style={[styles.shareBtn, loading && { opacity: 0.6 }]}>
-            {loading ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.shareBtnText}>{editPostId ? "Update" : "Share"}</Text>}
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
-          {/* Category chips */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chipsContent}>
-            {CATEGORIES.map((c) => (
-              <TouchableOpacity key={c} onPress={() => setCategory(c)} style={[styles.chip, category === c ? styles.chipActive : { backgroundColor: tk.card }]}>
-                <Text style={[styles.chipText, category === c ? { color: colors.white } : { color: tk.textMuted }]}>{c}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Photo */}
-          <TouchableOpacity onPress={pickPhoto} style={[styles.photoZone, { backgroundColor: tk.card, borderColor: tk.border }]} activeOpacity={0.8}>
-            {imageUri ? (
-              <View style={{ position: "relative", width: "100%", height: 240 }}>
-                {mediaType === "video" ? (
-                  <Video
-                    source={{ uri: imageUri }}
-                    style={styles.previewImage}
-                    resizeMode={ResizeMode.COVER}
-                    isMuted={true}
-                    shouldPlay
-                    isLooping
-                  />
-                ) : (
-                  <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="cover" />
-                )}
-                <TouchableOpacity onPress={(e) => { (e as any).stopPropagation?.(); setImageUri(null); setMediaType(null); }} style={styles.removeImg}>
-                  <X size={14} color={colors.white} />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={{ alignItems: "center", gap: 8 }}>
-                <ImageIcon size={32} color={tk.textMuted} />
-                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.textMuted }}>Tap to add a photo or video</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Caption */}
-          <TextInput
-            value={caption}
-            onChangeText={setCaption}
-            multiline
-            numberOfLines={5}
-            placeholder="Tell the circle what's happening…"
-            placeholderTextColor={tk.textMuted}
-            style={[styles.captionInput, { backgroundColor: tk.card, color: tk.text, borderColor: tk.border }]}
-          />
-
-          {/* Tags */}
-          <View style={[styles.tagRow, { backgroundColor: tk.card, borderColor: tk.border }]}>
-            <Hash size={16} color={tk.textMuted} />
-            <TextInput
-              value={tags}
-              onChangeText={setTags}
-              placeholder="Add tags (comma-separated)"
-              placeholderTextColor={tk.textMuted}
-              style={{ flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: tk.text, paddingVertical: 8 }}
-              autoCapitalize="none"
-            />
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: tk.card }]}>
+              <X size={20} color={tk.text} />
+            </TouchableOpacity>
+            <Text style={[styles.headerTitle, { color: tk.text }]}>{editPostId ? "Edit post" : "New post"}</Text>
+            <TouchableOpacity onPress={handleShare} disabled={loading} style={[styles.shareBtn, loading && { opacity: 0.6 }]}>
+              {loading ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.shareBtnText}>{editPostId ? "Update" : "Share"}</Text>}
+            </TouchableOpacity>
           </View>
-        </ScrollView>
+
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
+            {/* Category chips */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chipsContent}>
+              {CATEGORIES.map((c) => (
+                <TouchableOpacity key={c} onPress={() => setCategory(c)} style={[styles.chip, category === c ? styles.chipActive : { backgroundColor: tk.card }]}>
+                  <Text style={[styles.chipText, category === c ? { color: colors.white } : { color: tk.textMuted }]}>{c}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Photo */}
+            <TouchableOpacity onPress={pickPhoto} style={[styles.photoZone, { backgroundColor: tk.card, borderColor: tk.border }]} activeOpacity={0.8}>
+              {imageUri ? (
+                <View style={{ position: "relative", width: "100%", height: 240 }}>
+                  {mediaType === "video" ? (
+                    <Video
+                      source={{ uri: imageUri }}
+                      style={styles.previewImage}
+                      resizeMode={ResizeMode.COVER}
+                      isMuted={true}
+                      shouldPlay
+                      isLooping
+                    />
+                  ) : (
+                    <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="cover" />
+                  )}
+                  <TouchableOpacity onPress={(e) => { (e as any).stopPropagation?.(); setImageUri(null); setMediaType(null); }} style={styles.removeImg}>
+                    <X size={14} color={colors.white} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={{ alignItems: "center", gap: 8 }}>
+                  <ImageIcon size={32} color={tk.textMuted} />
+                  <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.textMuted }}>Tap to add a photo or video</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            {/* Caption */}
+            <TextInput
+              value={caption}
+              onChangeText={setCaption}
+              multiline
+              numberOfLines={5}
+              placeholder="Tell the circle what's happening…"
+              placeholderTextColor={tk.textMuted}
+              style={[styles.captionInput, { backgroundColor: tk.card, color: tk.text, borderColor: tk.border }]}
+            />
+
+            {/* Tags */}
+            <View style={[styles.tagRow, { backgroundColor: tk.card, borderColor: tk.border }]}>
+              <Hash size={16} color={tk.textMuted} />
+              <TextInput
+                value={tags}
+                onChangeText={setTags}
+                placeholder="Add tags (comma-separated)"
+                placeholderTextColor={tk.textMuted}
+                style={{ flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: tk.text, paddingVertical: 8 }}
+                autoCapitalize="none"
+              />
+            </View>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </PageContainer>

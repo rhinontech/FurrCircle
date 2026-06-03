@@ -44,19 +44,19 @@ export default function TabsLayout() {
               tabBarStyle: isTablet
                 ? { display: "none" }
                 : {
-                    backgroundColor: tk.card,
-                    borderTopColor: tk.border,
-                    paddingTop: 6,
-                    paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-                    height: 60 + (insets.bottom > 0 ? insets.bottom : 8),
-                    ...(keyboardHeight > 0 ? {
-                      position: "absolute",
-                      bottom: -keyboardHeight,
-                      left: 0,
-                      right: 0,
-                    } : {}),
-                  },
-              tabBarActiveTintColor: colors.coral,
+                  backgroundColor: tk.card,
+                  borderTopColor: tk.border,
+                  paddingTop: 6,
+                  paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+                  height: 60 + (insets.bottom > 0 ? insets.bottom : 8),
+                  ...(keyboardHeight > 0 ? {
+                    position: "absolute",
+                    bottom: -keyboardHeight,
+                    left: 0,
+                    right: 0,
+                  } : {}),
+                },
+              tabBarActiveTintColor: colors.primary,
               tabBarInactiveTintColor: tk.textMuted,
               tabBarLabelStyle: {
                 fontFamily: "Poppins_600SemiBold",
@@ -64,11 +64,11 @@ export default function TabsLayout() {
               },
             }}
           >
-            <Tabs.Screen name="index"     options={{ title: "Feed",    tabBarIcon: ({ color, size }) => <Home      size={size} color={color} strokeWidth={2} /> }} />
-            <Tabs.Screen name="community" options={{ title: "Circles", tabBarIcon: ({ color, size }) => <Users     size={size} color={color} strokeWidth={2} /> }} />
-            <Tabs.Screen name="match"     options={{ title: "Match",   tabBarIcon: ({ color, size }) => <Bone      size={size} color={color} strokeWidth={2} /> }} />
-            <Tabs.Screen name="discover"  options={{ title: "Discover",tabBarIcon: ({ color, size }) => <Compass   size={size} color={color} strokeWidth={2} /> }} />
-            <Tabs.Screen name="profile"   options={{ title: "Profile", tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} strokeWidth={2} /> }} />
+            <Tabs.Screen name="index" options={{ title: "Feed", tabBarIcon: ({ color, size }) => <Home size={size} color={color} strokeWidth={2} /> }} />
+            <Tabs.Screen name="community" options={{ title: "Circles", tabBarIcon: ({ color, size }) => <Users size={size} color={color} strokeWidth={2} /> }} />
+            <Tabs.Screen name="match" options={{ title: "Match", tabBarIcon: ({ color, size }) => <Bone size={size} color={color} strokeWidth={2} /> }} />
+            <Tabs.Screen name="discover" options={{ title: "Discover", tabBarIcon: ({ color, size }) => <Compass size={size} color={color} strokeWidth={2} /> }} />
+            <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} strokeWidth={2} /> }} />
           </Tabs>
         </View>
 

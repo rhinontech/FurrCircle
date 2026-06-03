@@ -86,7 +86,7 @@ export default function ThreadDetail() {
   const handleUpvote = async () => {
     setUpvoted(v => !v);
     if (dummy) return;
-    try { await questionApi.upvoteQuestion(id!); } catch {}
+    try { await questionApi.upvoteQuestion(id!); } catch { }
   };
 
   const handleSubmitAnswer = async () => {
