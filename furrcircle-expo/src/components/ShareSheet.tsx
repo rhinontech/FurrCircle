@@ -16,10 +16,11 @@ import { useAuthStore } from "../lib/auth-store";
 interface ShareSheetProps {
   open: boolean;
   onClose: () => void;
-  postId: string | null;
+  postId?: string | null;
+  petId?: string | null;
 }
 
-export function ShareSheet({ open, onClose, postId }: ShareSheetProps) {
+export function ShareSheet({ open, onClose, postId, petId }: ShareSheetProps) {
   const tk = useTokens();
   const { user } = useAuthStore();
   const [search, setSearch] = useState("");
@@ -67,16 +68,25 @@ export function ShareSheet({ open, onClose, postId }: ShareSheetProps) {
   const handleSend = async () => {
     if (selected.length === 0) return;
     
-    // In a real scenario, this would likely be a universal deep link
-    const postLink = `Check out this post! furrcircle://post/${postId}`;
+    let shareLink = "";
+    let typeName = "item";
+    if (postId) {
+      shareLink = `Check out this post! furrcircle://post/${postId}`;
+      typeName = "Post";
+    } else if (petId) {
+      shareLink = `Check out this pet! furrcircle://pet/${petId}`;
+      typeName = "Pet";
+    }
+    
+    if (!shareLink) return;
     
     try {
       await Promise.all(
-        selected.map(recipientId => chatApi.startChat(recipientId, postLink))
+        selected.map(recipientId => chatApi.startChat(recipientId, shareLink))
       );
-      Alert.alert("Success", "Post shared to chat!");
+      Alert.alert("Success", `${typeName} shared to chat!`);
     } catch (err) {
-      Alert.alert("Error", "Failed to share post.");
+      Alert.alert("Error", `Failed to share ${typeName.toLowerCase()}.`);
     }
     
     onClose();

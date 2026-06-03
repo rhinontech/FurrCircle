@@ -24,6 +24,7 @@ import {
   sendMessage,
   startChat,
   deleteMyPost,
+  updateMyPost,
 } from "../controllers/communityController.ts";
 import {
   getStoriesForCity,
@@ -73,6 +74,7 @@ router.post("/posts/:id/share", protect, sharePost);
 router.post("/posts/:id/comment", protect, addComment);
 router.delete("/comments/:id", protect, deleteComment);
 
-router.delete("/posts/me/:id", protect, deleteMyPost)
+router.delete("/posts/me/:id", protect, deleteMyPost);
+router.put("/posts/me/:id", protect, updateMyPost);
 
 export default router;

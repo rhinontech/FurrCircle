@@ -10,6 +10,7 @@ import Constants from "expo-constants";
 import { colors } from "../src/lib/theme";
 import { authApi } from "../services/auth/authApi";
 import { useAuthStore } from "../src/lib/auth-store";
+import { Eye, EyeOff } from "lucide-react-native";
 
 const { height } = Dimensions.get("window");
 
@@ -292,7 +293,11 @@ export default function SignupScreen() {
                 onChangeText={setPassword}
               />
               <TouchableOpacity onPress={() => setShowPassword((v) => !v)} style={styles.eyeBtn}>
-                <Text style={styles.eyeText}>{showPassword ? "Hide" : "Show"}</Text>
+                {showPassword ? (
+                  <EyeOff size={20} color={colors.primary} />
+                ) : (
+                  <Eye size={20} color={colors.primary} />
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -316,14 +321,14 @@ export default function SignupScreen() {
             <View style={styles.dividerLine} />
           </View>
 
-          <TouchableOpacity style={styles.socialBtn} onPress={() => Alert.alert("Coming soon", "Apple Sign-in coming soon!")}>
+          {/* <TouchableOpacity style={styles.socialBtn} onPress={() => Alert.alert("Coming soon", "Apple Sign-in coming soon!")}>
             <Text style={styles.socialBtnText}>🍎  Continue with Apple</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <TouchableOpacity style={[styles.socialBtn, { marginTop: 12 }]} onPress={() => Alert.alert("Coming soon", "Google Sign-in coming soon!")}>
             <Text style={styles.socialBtnText}>🌐  Continue with Google</Text>
           </TouchableOpacity>
 
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 0 }]}>
             <Text style={styles.footerText}>Already have an account? </Text>
             <TouchableOpacity onPress={() => router.push("/login")}>
               <Text style={styles.footerLink}>Sign in</Text>
@@ -344,20 +349,20 @@ const styles = StyleSheet.create({
   title: { fontFamily: "Poppins_700Bold", fontSize: 24, color: colors.foreground, lineHeight: 32 },
   subtitle: { fontFamily: "Inter_400Regular", fontSize: 14, color: colors.foreground + "88", marginTop: 6, marginBottom: 28, lineHeight: 21 },
   field: { marginBottom: 16 },
-  labelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  label: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.foreground + "99" },
+  labelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom:0 },
+  label: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.foreground + "99", marginBottom:6 },
   statusLoader: { marginRight: 4 },
   statusAvailable: { fontFamily: "Inter_600SemiBold", fontSize: 12, color: "green" },
   statusError: { fontFamily: "Inter_600SemiBold", fontSize: 12, color: "red", flex: 1, textAlign: "right", marginLeft: 8 },
   input: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontFamily: "Inter_400Regular", fontSize: 15, color: colors.foreground, backgroundColor: colors.surface },
   inputSuccess: { borderColor: "green" },
   inputErrorStyle: { borderColor: "red" },
-  inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, paddingHorizontal: 16 },
+  inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, paddingRight: 16 },
   eyeBtn: { paddingVertical: 13, paddingLeft: 8 },
   eyeText: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.primary },
   terms: { fontFamily: "Inter_400Regular", fontSize: 12, color: colors.foreground + "77", lineHeight: 18, marginBottom: 24 },
   termsLink: { fontFamily: "Inter_600SemiBold", color: colors.primary },
-  primaryBtn: { backgroundColor: colors.coral, borderRadius: 24, paddingVertical: 15, alignItems: "center" },
+  primaryBtn: { backgroundColor: colors.primary, borderRadius: 24, paddingVertical: 15, alignItems: "center" },
   primaryBtnText: { fontFamily: "Poppins_700Bold", fontSize: 16, color: colors.white },
   dividerRow: { flexDirection: "row", alignItems: "center", marginVertical: 24, gap: 12 },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
@@ -366,5 +371,5 @@ const styles = StyleSheet.create({
   socialBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 15, color: colors.foreground },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 28 },
   footerText: { fontFamily: "Inter_400Regular", fontSize: 14, color: colors.foreground + "88" },
-  footerLink: { fontFamily: "Poppins_600SemiBold", fontSize: 14, color: colors.coral },
+  footerLink: { fontFamily: "Poppins_600SemiBold", fontSize: 14, color: colors.primary },
 });

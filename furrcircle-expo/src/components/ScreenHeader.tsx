@@ -35,11 +35,11 @@ export function ScreenHeader({ title, right, showBack, onBack }: Props) {
   return (
     <View style={[
       styles.container,
-      { paddingTop: (title === 'Ask the Community') || (title === 'Add a pet') ? Platform.OS === "ios" ? 20 : insets.top + 10 : insets.top + 8, backgroundColor: tk.card, borderBottomColor: tk.border },
+      { paddingTop: (title === 'Ask the Community') || (title === 'Add a pet') ? Platform.OS === "ios" ? 20 : insets.top + 10 : insets.top + 8, backgroundColor: tk.bg},
       isTablet && styles.containerTablet,
     ]}>
       {shouldShowBack ? (
-        <TouchableOpacity onPress={handleBack} style={[styles.backBtn, { backgroundColor: tk.bg }]}>
+        <TouchableOpacity onPress={handleBack} style={[styles.backBtn, { backgroundColor: tk.card }]}>
           <ChevronLeft size={24} color={tk.text} strokeWidth={2} />
         </TouchableOpacity>
       ) : (
@@ -59,7 +59,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingBottom: 12,
-    borderBottomWidth: 1,
   },
   containerTablet: {
     paddingHorizontal: 24,

@@ -100,6 +100,16 @@ export const getUserPosts = async (username: string) => {
     }
 };
 
+export const updatePost = async (postId: string, payload: { content?: string; imageUrl?: string | null; category?: string }) => {
+    try {
+        const response = await PrivateAxios.put(`/community/posts/me/${postId}`, payload);
+        return response.data;
+    } catch (error: any) {
+        console.error('updatePost Error:', error?.response?.data || error.message);
+        throw error;
+    }
+};
+
 export const feedApi = {
     getFeed,
     createPost,
@@ -111,4 +121,5 @@ export const feedApi = {
     getSavedPosts,
     getPostById,
     getUserPosts,
+    updatePost,
 };

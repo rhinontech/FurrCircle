@@ -10,6 +10,7 @@ import Constants from "expo-constants";
 import { colors } from "../src/lib/theme";
 import { useAuthStore } from "../src/lib/auth-store";
 import { authApi } from "../services/auth/authApi";
+import { Eye, EyeOff } from "lucide-react-native";
 
 const { height } = Dimensions.get("window");
 
@@ -176,7 +177,11 @@ export default function LoginScreen() {
                 onChangeText={setPassword}
               />
               <TouchableOpacity onPress={() => setShowPassword((v) => !v)} style={styles.eyeBtn}>
-                <Text style={styles.eyeText}>{showPassword ? "Hide" : "Show"}</Text>
+                {showPassword ? (
+                  <EyeOff size={20} color={colors.primary} />
+                ) : (
+                  <Eye size={20} color={colors.primary} />
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -199,7 +204,7 @@ export default function LoginScreen() {
           </View>
 
           {/* Phone OTP Login Option */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.phoneOtpBtn, otpLoginBusy && { opacity: 0.7 }]}
             onPress={handlePhoneOtpLogin}
             disabled={busy || otpLoginBusy}
@@ -209,11 +214,11 @@ export default function LoginScreen() {
             ) : (
               <Text style={styles.phoneOtpBtnText}>📱  Log in with Phone OTP</Text>
             )}
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
-          <TouchableOpacity style={[styles.socialBtn, { marginTop: 12 }]} onPress={() => Alert.alert("Coming soon", "Apple Sign-in coming soon!")}>
+          {/* <TouchableOpacity style={[styles.socialBtn, { marginTop: 12 }]} onPress={() => Alert.alert("Coming soon", "Apple Sign-in coming soon!")}>
             <Text style={styles.socialBtnText}>🍎  Continue with Apple</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <TouchableOpacity style={[styles.socialBtn, { marginTop: 12 }]} onPress={() => Alert.alert("Coming soon", "Google Sign-in coming soon!")}>
             <Text style={styles.socialBtnText}>🌐  Continue with Google</Text>
           </TouchableOpacity>
@@ -241,7 +246,7 @@ const styles = StyleSheet.create({
   field: { marginBottom: 16 },
   label: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.foreground + "99", marginBottom: 6 },
   input: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontFamily: "Inter_400Regular", fontSize: 15, color: colors.foreground, backgroundColor: colors.surface },
-  inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, paddingHorizontal: 16 },
+  inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, paddingRight: 16 },
   eyeBtn: { paddingVertical: 13, paddingLeft: 8 },
   eyeText: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.primary },
   forgotBtn: { alignSelf: "flex-end", marginBottom: 24 },

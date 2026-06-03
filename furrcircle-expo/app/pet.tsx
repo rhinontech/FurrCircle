@@ -1,8 +1,9 @@
 import { useCallback, useState, useEffect } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Modal } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2, Pill, X } from "lucide-react-native";
+import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2, Pill, X, Trash2 } from "lucide-react-native";
 import { ScreenHeader } from "../src/components/ScreenHeader";
+import { ShareSheet } from "../src/components/ShareSheet";
 import { PageContainer } from "../src/components/PageContainer";
 import { petApi } from "../services/pet/petApi";
 import { colors } from "../src/lib/theme";
@@ -35,6 +36,7 @@ export default function PetScreen() {
   const [tab, setTab] = useState<(typeof tabs)[number]>(initialTab);
   const [pet, setPet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -45,6 +47,32 @@ export default function PetScreen() {
         .catch(err => { console.error("Failed to load pet:", err); setLoading(false); });
     }, [id])
   );
+
+  const handleDelete = () => {
+    if (!pet?.id) return;
+    Alert.alert(
+      "Delete Pet",
+      `Are you sure you want to delete ${pet.name}? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await petApi.deletePet(pet.id);
+              Alert.alert("Success", "Pet deleted successfully.");
+              router.replace("/(tabs)/profile");
+            } catch (err: any) {
+              setLoading(false);
+              Alert.alert("Error", err?.response?.data?.message || "Failed to delete pet.");
+            }
+          }
+        }
+      ]
+    );
+  };
 
   if (loading) {
     return (
@@ -64,15 +92,26 @@ export default function PetScreen() {
   return (
     <PageContainer>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Pet Profile" />
+        <ScreenHeader title="Pet Profile"
+          right={
+            <TouchableOpacity 
+              onPress={() => setShareOpen(true)}
+              style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
+            >
+              <Share2 size={20} color={tk.text} />
+            </TouchableOpacity>
+          }
+         />
         <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
           {/* Hero card */}
           <View style={styles.px5}>
             <View style={styles.heroCard}>
               <Image source={pet?.avatar_url?.startsWith('http') ? { uri: pet.avatar_url } : require("../src/assets/doodle-boy-dog.png")} style={styles.heroImg} resizeMode={pet?.avatar_url?.startsWith('http') ? "cover" : "contain"} />
-              <TouchableOpacity style={[styles.heroBtn, { top: 16, right: 16 }]}>
-                <Share2 size={16} color={colors.foreground} />
-              </TouchableOpacity>
+              {pet?.canManage && (
+                <TouchableOpacity onPress={handleDelete} style={[styles.heroBtn, { top: 16, right: 16 }]}>
+                  <Trash2 size={16} color={colors.coral} />
+                </TouchableOpacity>
+              )}
               {pet?.canManage ? (
                 <TouchableOpacity onPress={() => router.push(`/edit-pet?id=${pet.id}`)} style={[styles.heroBtn, { top: 64, right: 16 }]}>
                   <Edit2 size={16} color={colors.foreground} />
@@ -114,6 +153,8 @@ export default function PetScreen() {
           </View>
         </ScrollView>
       </View>
+
+      <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} petId={pet?.id} />
     </PageContainer>
   );
 }
@@ -367,10 +408,11 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
 }
 
 function StatCard({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  const displayValue = value && value.length > 9 ? `${value.slice(0, 6)}...` : (value || "");
   return (
     <View style={[styles.statCard, { backgroundColor: colors.white }]}>
       <Icon size={20} color={colors.foreground + "99"} />
-      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statValue}>{displayValue}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
@@ -393,7 +435,7 @@ const styles = StyleSheet.create({
   tabText: { fontFamily: "Poppins_700Bold", fontSize: 12 },
   statsGrid: { flexDirection: "row", gap: 10 },
   statCard: { flex: 1, borderRadius: 16, padding: 12, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
-  statValue: { fontFamily: "Poppins_700Bold", fontSize: 16, color: colors.foreground, marginTop: 4 },
+  statValue: { fontFamily: "Poppins_700Bold", fontSize: 12, color: colors.foreground, marginTop: 4 },
   statLabel: { fontSize: 11, color: colors.foreground + "88", fontFamily: "Inter_400Regular" },
   sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, marginBottom: 6 },
   sectionSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 10 },

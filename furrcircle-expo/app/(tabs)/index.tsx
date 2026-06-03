@@ -1,10 +1,15 @@
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
   StyleSheet, Modal, Pressable, Alert, ActivityIndicator, TextInput, FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
 } from "react-native";
+
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX } from "lucide-react-native";
+import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX, MoreVertical } from "lucide-react-native";
 import { useState, useEffect, useCallback, useRef } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { posts as dummyPosts, sampleComments, type Post } from "../../src/lib/demo-data";
@@ -331,6 +336,12 @@ export default function FeedScreen() {
               isMuted={feedVideoMuted}
               onToggleMute={() => setFeedVideoMuted(prev => !prev)}
               isActive={activePostId === p.id}
+              onDelete={() => {
+                setFeedPosts(prev => prev.filter(x => x.id !== p.id));
+              }}
+              onUpdate={(updatedPost) => {
+                setFeedPosts(prev => prev.map(x => x.id === p.id ? { ...x, ...updatedPost } : x));
+              }}
             />
           </View>
         )}
@@ -451,7 +462,7 @@ function FeedHeader() {
         if (hasUnread) unread++;
       });
       setChatUnreadCount(unread);
-    }).catch(() => {});
+    }).catch(() => { });
   }, [user]);
 
   const handleLocationSelect = async (loc: LocationResult) => {
@@ -691,21 +702,70 @@ function StoryRail({
   );
 }
 
-function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, onToggleMute, isActive }: {
+const getCommentTimeLabel = (createdAt?: string) => {
+  if (!createdAt) return "now";
+  const time = new Date(createdAt).getTime();
+  if (isNaN(time)) return "now";
+  const diff = Date.now() - time;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return "now";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h`;
+  const dy = Math.floor(hr / 24);
+  return `${dy}d`;
+};
+
+function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, onToggleMute, isActive, onDelete, onUpdate }: {
   post: any; isLiked: boolean; isSaved: boolean;
   onLike: () => void; onSave: () => void; onShare: (id: string) => void;
   isMuted: boolean; onToggleMute: () => void; isActive: boolean;
+  onDelete?: () => void; onUpdate?: (updatedPost: any) => void;
 }) {
   const router = useRouter();
   const tk = useTokens();
   const isScreenFocused = useIsFocused();
   const { user } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
 
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const isDummy = dummyPosts.some(d => d.id === post.id);
+  const isOwner = !isDummy && post.userId === user?.id;
+
+  const handleDeletePost = () => {
+    setMenuOpen(false);
+    Alert.alert(
+      "Delete Post",
+      "Are you sure you want to delete this post?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setDeleting(true);
+              await feedApi.deletePost(post.id);
+              Alert.alert("Success", "Post deleted successfully.");
+              if (onDelete) onDelete();
+            } catch (err: any) {
+              Alert.alert("Error", err?.response?.data?.message || "Could not delete post.");
+            } finally {
+              setDeleting(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const [localComments, setLocalComments] = useState<any[]>(
     Array.isArray(post.comments)
       ? post.comments
@@ -793,6 +853,10 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
         {!post.type && post.category === "Lost & Found" && <View style={[styles.typeBadge, { backgroundColor: colors.coral }]}><Text style={styles.typeBadgeText}>LOST & FOUND</Text></View>}
         {!post.type && post.category === "Training" && <View style={[styles.typeBadge, { backgroundColor: colors.primary }]}><Text style={styles.typeBadgeText}>TRAINING</Text></View>}
         {!post.type && post.category === "Health" && <View style={[styles.typeBadge, { backgroundColor: "#2563EB" }]}><Text style={styles.typeBadgeText}>HEALTH</Text></View>}
+
+        <TouchableOpacity onPress={() => setMenuOpen(true)} style={{ padding: 6, marginLeft: 4 }}>
+          <MoreVertical size={20} color={tk.textMuted} />
+        </TouchableOpacity>
       </View>
 
       {/* Image in tinted container */}
@@ -884,29 +948,203 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
         </TouchableOpacity>
       </View>
 
-      {/* Inline comments */}
-      {commentOpen && (
-        <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-          {localComments.slice(-3).map((c: any, i) => (
-            <View key={c.id || i} style={{ flexDirection: "row", gap: 8, marginBottom: 4 }}>
-              <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 12, color: tk.text }}>{c.author?.name || "User"}</Text>
-              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: tk.textMuted, flex: 1 }}>{c.text}</Text>
+      {/* Comments Bottom Sheet Modal */}
+      <Modal
+        visible={commentOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCommentOpen(false)}
+      >
+        <View style={{ flex: 1, justifyContent: "flex-end" }}>
+          {/* Backdrop Pressable (fills the screen absolutely and captures tap outside the sheet to dismiss) */}
+          <Pressable
+            style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.5)" }]}
+            onPress={() => setCommentOpen(false)}
+          />
+
+          {/* Keyboard avoiding content container */}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={{ width: "100%", justifyContent: "flex-end" }}
+            pointerEvents="box-none"
+          >
+            <View
+              style={[styles.commentSheet, { backgroundColor: tk.card }]}
+            >
+              {/* Handle */}
+              <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted, marginTop: 20 }]} />
+
+              {/* Header */}
+              <Text style={[styles.sheetTitle, { color: tk.text, paddingHorizontal: 16, marginBottom: 12 }]}>Comments</Text>
+
+              {/* Scrollable list of comments */}
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 20 }}
+                style={{ flex: 1 }}
+              >
+                {localComments.length === 0 ? (
+                  <View style={{ alignItems: "center", justifyContent: "center", paddingVertical: 40 }}>
+                    <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted }}>No comments yet. Start the conversation!</Text>
+                  </View>
+                ) : (
+                  [...localComments].reverse().map((c: any, i) => (
+                    <View key={c.id || i} style={styles.commentItemRow}>
+                      {c.author?.avatar_url ? (
+                        <Image source={{ uri: c.author.avatar_url }} style={styles.commentAvatar} />
+                      ) : (
+                        <Avatar name={c.author?.name || "User"} size={36} />
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                          <Text style={[styles.commentAuthorName, { color: tk.text }]}>
+                            {c.author?.username || c.author?.name || "user"}
+                          </Text>
+                          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: tk.textMuted }}>
+                            {c.createdAt ? getCommentTimeLabel(c.createdAt) : "now"}
+                          </Text>
+                        </View>
+                        <Text style={[styles.commentTextContent, { color: tk.text }]}>{c.text}</Text>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+
+              {/* Input Area */}
+              <View style={[styles.commentInputContainer, { borderTopColor: tk.border, paddingBottom: Math.max(insets.bottom, 12) }]}>
+                {user?.avatar_url ? (
+                  <Image source={{ uri: user.avatar_url }} style={styles.inputAvatar} />
+                ) : (
+                  <Avatar name={user?.name || "User"} size={36} />
+                )}
+                <View style={[styles.commentInputWrapper, { backgroundColor: tk.bg, borderColor: tk.border }]}>
+                  <TextInput
+                    value={commentText}
+                    onChangeText={setCommentText}
+                    placeholder="Add Comment..."
+                    placeholderTextColor={tk.textMuted}
+                    style={[styles.commentTextInput, { color: tk.text }]}
+                    multiline
+                  />
+                  <TouchableOpacity
+                    onPress={handleComment}
+                    disabled={submitting || !commentText.trim()}
+                    style={styles.commentPostBtn}
+                  >
+                    {submitting ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Text
+                        style={{
+                          fontFamily: "Poppins_700Bold",
+                          fontSize: 14,
+                          color: commentText.trim() ? colors.primary : colors.primary + "55",
+                        }}
+                      >
+                        Post
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          ))}
-          <View style={{ flexDirection: "row", gap: 8, marginTop: 6, alignItems: "center" }}>
-            <TextInput
-              value={commentText}
-              onChangeText={setCommentText}
-              placeholder="Add a comment…"
-              placeholderTextColor={tk.textMuted}
-              style={{ flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: tk.text, borderBottomWidth: 1, borderColor: tk.border, paddingVertical: 4 }}
-            />
-            <TouchableOpacity onPress={handleComment} disabled={submitting}>
-              <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 13, color: colors.primary }}>Post</Text>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
+      {/* Options Menu Modal */}
+      <Modal visible={menuOpen} transparent={true} animationType="slide" onRequestClose={() => setMenuOpen(false)}>
+        <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
+          <View style={[styles.sheet, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true}onTouchEnd={(e) => e.stopPropagation()}>
+            <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+            <Text style={[styles.sheetTitle, { color: tk.text }]}>Options</Text>
+            
+            {/* Save Option */}
+            <TouchableOpacity 
+              onPress={() => { setMenuOpen(false); onSave(); }}
+              style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+              activeOpacity={0.8}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sheetRowTitle, { color: tk.text }]}>
+                  {isSaved ? "Remove from Saved" : "Save Post"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {isOwner ? (
+              <>
+                {/* Edit Post Option */}
+                <TouchableOpacity 
+                  onPress={() => { 
+                    setMenuOpen(false); 
+                    router.push({
+                      pathname: "/compose",
+                      params: {
+                        editPostId: post.id,
+                        prefilledCategory: post.category || "General",
+                        prefilledCaption: post.content || "",
+                        prefilledImageUrl: post.imageUrl || "",
+                      }
+                    });
+                  }}
+                  style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.sheetRowTitle, { color: tk.text }]}>Edit Post</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Delete Post Option */}
+                <TouchableOpacity 
+                  onPress={handleDeletePost}
+                  style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Delete Post</Text>
+                  </View>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                {/* About this Account Option */}
+                <TouchableOpacity 
+                  onPress={() => setMenuOpen(false)}
+                  style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.sheetRowTitle, { color: tk.text }]}>About this Account</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Report Option */}
+                <TouchableOpacity 
+                  onPress={() => setMenuOpen(false)}
+                  style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Report</Text>
+                  </View>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* Cancel Button */}
+            <TouchableOpacity 
+              onPress={() => setMenuOpen(false)}
+              style={[styles.sheetRow, { backgroundColor: tk.bg, marginTop: 12, justifyContent: "center", alignItems: "center" }]} 
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.sheetRowTitle, { color: tk.textMuted }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      )}
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -923,22 +1161,22 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
   const tk = useTokens();
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-        <Pressable style={styles.overlay} onPress={onClose}>
-          <View style={[styles.sheet, { backgroundColor: tk.card }]}>
-            <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
-            <Text style={[styles.sheetTitle, { color: tk.text }]}>Create</Text>
-            {composeOptions.map((o) => (
-              <TouchableOpacity key={o.label} onPress={() => { onClose(); router.push(o.to); }}
-                style={[styles.sheetRow, { backgroundColor: tk.bg }]} activeOpacity={0.8}>
-                <View style={[styles.sheetIcon, { backgroundColor: o.tintColor }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{o.label}</Text>
-                  <Text style={[styles.sheetRowDesc, { color: tk.textMuted }]}>{o.desc}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Pressable>
+      <Pressable style={styles.overlay} onPress={onClose}>
+        <View style={[styles.sheet, { backgroundColor: tk.card }]}>
+          <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+          <Text style={[styles.sheetTitle, { color: tk.text }]}>Create</Text>
+          {composeOptions.map((o) => (
+            <TouchableOpacity key={o.label} onPress={() => { onClose(); router.push(o.to); }}
+              style={[styles.sheetRow, { backgroundColor: tk.bg }]} activeOpacity={0.8}>
+              <View style={[styles.sheetIcon, { backgroundColor: o.tintColor }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{o.label}</Text>
+                <Text style={[styles.sheetRowDesc, { color: tk.textMuted }]}>{o.desc}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Pressable>
     </Modal>
   );
 }
@@ -993,12 +1231,12 @@ const styles = StyleSheet.create({
   typeBadgeText: { fontFamily: "Poppins_700Bold", fontSize: 10, color: "#fff" },
   imageWrapper: { width: "92%", alignSelf: "center", aspectRatio: 1, marginTop: 12, marginBottom: 4, borderRadius: 16, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   postImage: { width: "80%", height: "80%" },
-  actions: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 12, gap: 16 },
+  actions: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, gap: 16 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   actionCount: { fontSize: 14, fontFamily: "Poppins_600SemiBold" },
   caption: { paddingHorizontal: 16, paddingTop: 8, fontSize: 14, lineHeight: 20, fontFamily: "Inter_400Regular" },
   captionBold: { fontFamily: "Poppins_700Bold" },
-  tags: { paddingHorizontal: 16, paddingBottom: 16, paddingTop: 4, fontSize: 12, fontFamily: "Poppins_600SemiBold", color: colors.primary },
+  tags: { paddingHorizontal: 16, paddingBottom: 12, paddingTop: 4, fontSize: 12, fontFamily: "Poppins_600SemiBold", color: colors.primary },
   fab: { position: "absolute", bottom: 16, right: 16, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   sheet: { borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 20, paddingBottom: 40 },
@@ -1038,4 +1276,17 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 16,
   },
+  commentModalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  commentSheet: { height: SCREEN_HEIGHT * 0.5, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingBottom: 0 },
+  commentItemRow: { flexDirection: "row", gap: 12, paddingVertical: 12, alignItems: "flex-start", paddingHorizontal: 16 },
+  commentAvatar: { width: 36, height: 36, borderRadius: 18 },
+  commentAuthorName: { fontFamily: "Poppins_700Bold", fontSize: 13 },
+  commentTextContent: { fontFamily: "Inter_400Regular", fontSize: 14, marginTop: 3, lineHeight: 18 },
+  emojiRow: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 0.5 },
+  emojiBtn: { padding: 4 },
+  commentInputContainer: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 10, gap: 10, borderTopWidth: 0.5 },
+  inputAvatar: { width: 36, height: 36, borderRadius: 18 },
+  commentInputWrapper: { flex: 1, flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 24, paddingLeft: 16, paddingRight: 8, minHeight: 40, maxHeight: 100 },
+  commentTextInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", paddingVertical: 8, marginRight: 8 },
+  commentPostBtn: { paddingVertical: 8, paddingHorizontal: 10 },
 });

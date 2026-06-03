@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, Image } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, Image, KeyboardAvoidingView } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import { Camera } from "lucide-react-native";
@@ -8,7 +8,8 @@ import { PageContainer } from "../src/components/PageContainer";
 import { petApi } from "../services/pet/petApi";
 import { uploadImage } from "../services/user/userApi";
 import { colors } from "../src/lib/theme";
-import { useTokens } from "../src/lib/theme-store";
+import { useTokens, useThemeStore } from "../src/lib/theme-store";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const PERSONALITY_TAGS = ["Friendly", "Playful", "Calm", "Active", "Independent", "Cuddly", "Protective", "Curious"];
@@ -17,6 +18,8 @@ export default function EditPetScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const tk = useTokens();
+  const insets = useSafeAreaInsets();
+  const dark = useThemeStore((s) => s.dark);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [species, setSpecies] = useState("dog");
@@ -126,16 +129,31 @@ export default function EditPetScreen() {
 
   return (
     <PageContainer>
-    <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title="Edit pet" />
-      <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 20 }}>
-        <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { borderColor: tk.border }]} activeOpacity={0.8}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <View style={[styles.container, { backgroundColor: tk.bg }]}>
+          <ScreenHeader title="Edit pet" />
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 60 + (insets.bottom > 0 ? insets.bottom : 0), paddingHorizontal: 20 }}
+          >
+        <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { borderColor: tk.border, backgroundColor: tk.card }]} activeOpacity={0.8}>
           {photo ? (
-            <Image source={{ uri: photo }} style={styles.photoPreview} />
+            <>
+              <Image source={{ uri: photo }} style={styles.photoPreview} />
+              <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", gap: 8 }]}>
+                <Camera size={32} color="#FFFFFF" />
+                <Text style={[styles.photoBtnText, { color: "#FFFFFF" }]}>Change photo</Text>
+              </View>
+            </>
           ) : (
-            <Camera size={32} color={tk.textMuted} />
+            <>
+              <Camera size={32} color={tk.textMuted} />
+              <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>Add photo</Text>
+            </>
           )}
-          <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>{photo ? "Change photo" : "Add photo"}</Text>
         </TouchableOpacity>
 
         <Text style={[styles.label, { color: tk.textMuted }]}>Name</Text>
@@ -176,6 +194,7 @@ export default function EditPetScreen() {
               mode="date"
               display="default"
               maximumDate={new Date()}
+              themeVariant={dark ? "dark" : "light"}
               onChange={(e, date) => {
                 if (date) setBirthDate(date);
               }}
@@ -221,8 +240,9 @@ export default function EditPetScreen() {
         <TouchableOpacity onPress={save} disabled={saving} style={styles.saveBtn} activeOpacity={0.85}>
           <Text style={styles.saveBtnText}>{saving ? "Saving…" : "Save changes"}</Text>
         </TouchableOpacity>
-      </ScrollView>
-    </View>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
     </PageContainer>
   );
 }
