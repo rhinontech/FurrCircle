@@ -117,34 +117,35 @@ export default function RootLayout() {
   }, [user?.id]);
 
   // ── Push notification bootstrap ─────────────────────────────────────────────
-  // Uncomment when Firebase Messaging native module is configured:
-  // useEffect(() => {
-  //   if (!user) return;
-  //   const bootstrapPush = async () => {
-  //     try {
-  //       const authStatus = await messaging().requestPermission();
-  //       const enabled =
-  //         authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-  //         authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-  //       if (!enabled) return;
-  //       const fcmToken = await messaging().getToken();
-  //       let installationId = await SecureStore.getItemAsync("push_installation_id");
-  //       if (!installationId) {
-  //         installationId = `${Platform.OS}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  //         await SecureStore.setItemAsync("push_installation_id", installationId);
-  //       }
-  //       await notificationApi.registerDevice({
-  //         installationId,
-  //         expoPushToken: fcmToken,
-  //         platform: Platform.OS as "ios" | "android",
-  //         pushEnabled: true,
-  //       });
-  //     } catch (err) {
-  //       console.warn("[Push] Bootstrap failed:", err);
-  //     }
-  //   };
-  //   bootstrapPush();
-  // }, [user?.id]);
+  useEffect(() => {
+    if (!user) return;
+    const bootstrapPush = async () => {
+      try {
+        if (Constants.appOwnership === 'expo' || Platform.OS === 'web') return;
+        const messaging = require("@react-native-firebase/messaging").default;
+        const authStatus = await messaging().requestPermission();
+        const enabled =
+          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+        if (!enabled) return;
+        const fcmToken = await messaging().getToken();
+        let installationId = await SecureStore.getItemAsync("push_installation_id");
+        if (!installationId) {
+          installationId = `${Platform.OS}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+          await SecureStore.setItemAsync("push_installation_id", installationId);
+        }
+        await notificationApi.registerDevice({
+          installationId,
+          expoPushToken: fcmToken,
+          platform: Platform.OS as "ios" | "android",
+          pushEnabled: true,
+        });
+      } catch (err) {
+        console.warn("[Push] Bootstrap failed:", err);
+      }
+    };
+    bootstrapPush();
+  }, [user?.id]);
 
   // Auth guard: redirect based on login state once both fonts + auth are ready
   useEffect(() => {

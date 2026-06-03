@@ -83,7 +83,7 @@
         "@react-native-firebase/auth",
         {
           "ios": {
-            "captchaOpenUrlFix": true
+            "captchaOpenUrlFix": false
           }
         }
       ],

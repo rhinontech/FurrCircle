@@ -40,9 +40,20 @@ export const startChat = async (recipientId: string, message?: string) => {
     }
 };
 
+export const markChatAsRead = async (chatId: string) => {
+    try {
+        const response = await PrivateAxios.post(`/community/chats/${chatId}/read`);
+        return response.data;
+    } catch (error: any) {
+        console.error('markChatAsRead Error:', error?.response?.data || error.message);
+        throw error;
+    }
+};
+
 export const chatApi = {
     getChats,
     getChatById,
     sendMessage,
     startChat,
+    markChatAsRead,
 };

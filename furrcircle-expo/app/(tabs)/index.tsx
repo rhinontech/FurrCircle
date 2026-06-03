@@ -28,6 +28,7 @@ import { Video, ResizeMode, Audio } from "expo-av";
 import { useIsFocused } from "@react-navigation/native";
 import Svg, { Path, Circle } from "react-native-svg";
 import { useNotificationStore } from "../../src/lib/notification-store";
+import { chatApi } from "../../services/chat/chatApi";
 
 export default function FeedScreen() {
   const { refresh } = useLocalSearchParams<{ refresh?: string }>();
@@ -444,6 +445,19 @@ function FeedHeader() {
 
   const chatUnreadCount = useNotificationStore((s) => s.chatUnreadCount);
   const chatBadgeLabel = chatUnreadCount > 99 ? "99+" : String(chatUnreadCount);
+  const setChatUnreadCount = useNotificationStore((s) => s.setChatUnreadCount);
+
+  useEffect(() => {
+    if (!user) return;
+    chatApi.getChats().then((chats: any[]) => {
+      let unread = 0;
+      chats.forEach(c => {
+        const hasUnread = c.unreadCount > 0 || (c.lastMessage && !c.lastMessage.readAt && !c.lastMessage.seen && c.lastMessage.sender?.id !== user.id);
+        if (hasUnread) unread++;
+      });
+      setChatUnreadCount(unread);
+    }).catch(() => {});
+  }, [user]);
 
   const handleLocationSelect = async (loc: LocationResult) => {
     setLocationModalVisible(false);
