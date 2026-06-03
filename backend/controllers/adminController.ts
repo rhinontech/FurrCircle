@@ -409,6 +409,205 @@ export const adminDeleteVetReview = async (req: Request, res: Response): Promise
   }
 };
 
+// @desc    Get all questions with author + circle + answer count
+// @route   GET /api/admin/questions
+export const getAllQuestions = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { questions: Question, question_answers: QuestionAnswer, users: User, circles: Circle } = db as any;
+    const questions = await Question.findAll({
+      include: [
+        { model: User, as: 'author', attributes: ['id', 'name', 'username', 'avatar_url'], required: false },
+        { model: Circle, as: 'circle', attributes: ['id', 'name'], required: false },
+        { model: QuestionAnswer, as: 'answers', attributes: ['id'] },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(questions.map((q: any) => ({
+      ...q.toJSON(),
+      answerCount: (q.answers || []).length,
+    })));
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Create a question as admin
+// @route   POST /api/admin/questions
+export const adminCreateQuestion = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { questions: Question, users: User } = db as any;
+    const { title, body, tags, circleId } = req.body;
+    if (!String(title || '').trim()) { res.status(400).json({ message: 'Title is required' }); return; }
+
+    const question = await Question.create({
+      userId: req.user.id,
+      circleId: circleId || null,
+      title: String(title).trim(),
+      body: body ? String(body).trim() : null,
+      tags: Array.isArray(tags) ? tags : [],
+      upvotes: 0,
+      answerCount: 0,
+    });
+
+    const author = await User.findByPk(req.user.id, { attributes: ['id', 'name', 'username', 'avatar_url'] });
+    res.status(201).json({ ...question.toJSON(), author, answerCount: 0 });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a question (and its answers)
+// @route   DELETE /api/admin/questions/:id
+export const adminDeleteQuestion = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { questions: Question, question_answers: QuestionAnswer } = db as any;
+    const question = await Question.findByPk(req.params.id);
+    if (!question) { res.status(404).json({ message: 'Question not found' }); return; }
+    await QuestionAnswer.destroy({ where: { questionId: req.params.id } });
+    await question.destroy();
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get answers for a question
+// @route   GET /api/admin/questions/:id/answers
+export const adminGetAnswers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { question_answers: QuestionAnswer, users: User } = db as any;
+    const answers = await QuestionAnswer.findAll({
+      where: { questionId: req.params.id },
+      include: [{ model: User, as: 'author', attributes: ['id', 'name', 'username', 'avatar_url'], required: false }],
+      order: [['createdAt', 'ASC']],
+    });
+    res.json(answers);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete an answer
+// @route   DELETE /api/admin/questions/:id/answers/:answerId
+export const adminDeleteAnswer = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { question_answers: QuestionAnswer, questions: Question } = db as any;
+    const answer = await QuestionAnswer.findByPk(req.params.answerId);
+    if (!answer) { res.status(404).json({ message: 'Answer not found' }); return; }
+    await answer.destroy();
+    await Question.decrement('answerCount', { where: { id: req.params.id }, by: 1 });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get all circles
+// @route   GET /api/admin/circles
+export const getAllCircles = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { circles: Circle, users: User } = db as any;
+    const circles = await Circle.findAll({
+      include: [{ model: User, as: 'creator', attributes: ['id', 'name', 'username', 'avatar_url'] }],
+      order: [['memberCount', 'DESC'], ['createdAt', 'DESC']],
+    });
+    res.json(circles);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Create a circle as admin
+// @route   POST /api/admin/circles
+export const adminCreateCircle = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { circles: Circle, circle_members: CircleMember } = db as any;
+    const { name, description, category, coverImage } = req.body;
+    if (!String(name || '').trim()) { res.status(400).json({ message: 'Circle name is required' }); return; }
+
+    const circle = await Circle.create({
+      name: String(name).trim(),
+      description: description ? String(description).trim() : null,
+      category: category || 'general',
+      coverImage: coverImage || null,
+      createdBy: req.user.id,
+      memberCount: 1,
+      isPublic: true,
+    });
+
+    await CircleMember.create({ circleId: circle.id, userId: req.user.id, role: 'admin' });
+
+    const { users: User } = db as any;
+    const creator = await User.findByPk(req.user.id, { attributes: ['id', 'name', 'username', 'avatar_url'] });
+    res.status(201).json({ ...circle.toJSON(), creator, isJoined: true });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a circle
+// @route   DELETE /api/admin/circles/:id
+export const adminDeleteCircle = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { circles: Circle } = db as any;
+    const circle = await Circle.findByPk(req.params.id);
+    if (!circle) { res.status(404).json({ message: 'Circle not found' }); return; }
+    await circle.destroy();
+    res.json({ success: true, message: 'Circle deleted' });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get all lost pet reports
+// @route   GET /api/admin/lost-pets
+export const getAllLostPets = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { lost_pets: LostPet, users: User } = db as any;
+    const list = await LostPet.findAll({
+      include: [{ model: User, as: 'author', attributes: ['id', 'name', 'username', 'avatar_url'] }],
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(list);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update lost pet status (admin can also mark as found)
+// @route   PATCH /api/admin/lost-pets/:id/status
+export const adminUpdateLostPetStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { lost_pets: LostPet } = db as any;
+    const { status } = req.body;
+    if (!['lost', 'spotted', 'found'].includes(status)) {
+      res.status(400).json({ message: "Status must be 'lost', 'spotted', or 'found'" });
+      return;
+    }
+    const pet = await LostPet.findByPk(req.params.id);
+    if (!pet) { res.status(404).json({ message: 'Report not found' }); return; }
+    pet.status = status;
+    await pet.save();
+    res.json(pet);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a lost pet report
+// @route   DELETE /api/admin/lost-pets/:id
+export const adminDeleteLostPet = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { lost_pets: LostPet } = db as any;
+    const pet = await LostPet.findByPk(req.params.id);
+    if (!pet) { res.status(404).json({ message: 'Report not found' }); return; }
+    await pet.destroy();
+    res.json({ success: true, message: 'Report deleted' });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Get platform stats overview
 // @route   GET /api/admin/stats
 export const getAdminStats = async (_req: Request, res: Response): Promise<void> => {

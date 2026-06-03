@@ -111,6 +111,23 @@ export const addAnswer = async (req: any, res: Response): Promise<void> => {
     }
 };
 
+// ─── DELETE /api/questions/:id ────────────────────────────────────────────────
+export const deleteQuestion = async (req: any, res: Response): Promise<void> => {
+    try {
+        const { questions: Question, question_answers: QuestionAnswer } = db as any;
+        const question = await Question.findByPk(req.params.id);
+        if (!question) { res.status(404).json({ message: "Question not found" }); return; }
+        if (question.userId !== req.user.id && req.user.role !== 'admin') {
+            res.status(403).json({ message: "Not authorized to delete this question" }); return;
+        }
+        await QuestionAnswer.destroy({ where: { questionId: req.params.id } });
+        await question.destroy();
+        res.json({ success: true });
+    } catch (err: any) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 // ─── GET /api/questions/:id/answers ──────────────────────────────────────────
 export const getAnswers = async (req: any, res: Response): Promise<void> => {
     try {

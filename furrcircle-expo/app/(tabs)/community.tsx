@@ -1,7 +1,7 @@
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
   TextInput, StyleSheet, Modal, Pressable, Alert, ActivityIndicator,
-  KeyboardAvoidingView, Platform, Keyboard,
+  KeyboardAvoidingView, Platform, Keyboard, RefreshControl,
 } from "react-native";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -54,6 +54,7 @@ export default function CommunityScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [loadingCircles, setLoadingCircles] = useState(true);
   const [loadingTrending, setLoadingTrending] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Search results
   const [searchResults, setSearchResults] = useState<any>(null);
@@ -88,6 +89,12 @@ export default function CommunityScreen() {
   }, []);
 
   useEffect(() => { loadCircles(); loadTrending(); }, [loadCircles, loadTrending, refresh]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([loadCircles(), loadTrending()]);
+    setRefreshing(false);
+  }, [loadCircles, loadTrending]);
 
   // Debounced backend search
   useEffect(() => {
@@ -159,7 +166,15 @@ export default function CommunityScreen() {
   return (
     <PageContainer>
       <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: tk.bg }}>
-        <ScrollView style={[styles.container, { backgroundColor: tk.bg }]} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          style={[styles.container, { backgroundColor: tk.bg }]}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+          }
+        >
 
           {/* Header */}
           <View style={styles.header}>
@@ -310,6 +325,7 @@ export default function CommunityScreen() {
                               askerName: q.author?.name || "Someone",
                               time: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : "",
                               upvotes: q.upvotes || 0,
+                              questionUserId: q.userId || q.author?.id || "",
                             },
                           })}
                         >
@@ -388,6 +404,7 @@ export default function CommunityScreen() {
                           askerName: q.author?.name || "Someone",
                           time: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : "",
                           upvotes: q.upvotes || 0,
+                          questionUserId: q.userId || q.author?.id || "",
                         },
                       })}
                     >

@@ -6,6 +6,7 @@ import {
     upvoteQuestion,
     addAnswer,
     getAnswers,
+    deleteQuestion,
 } from "../controllers/questionController.ts";
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.post("/", createQuestion);
 router.post("/:id/vote", upvoteQuestion);
 router.post("/:id/answers", addAnswer);
 router.get("/:id/answers", getAnswers);
+router.delete("/:id", deleteQuestion);
 
 export default router;

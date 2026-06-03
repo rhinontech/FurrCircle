@@ -12,7 +12,7 @@ const s3 = new S3Client({
 const BUCKET = process.env.AWS_S3_BUCKET_NAME!;
 const FOLDER = process.env.AWS_S3_FOLDER_NAME || 'furrcircle-dev';
 
-export type UploadFolder = 'profiles' | 'pets' | 'posts' | 'events' | 'stamps' | 'reports' | 'certificates' | 'stories' | 'memories';
+export type UploadFolder = 'profiles' | 'pets' | 'posts' | 'events' | 'stamps' | 'reports' | 'certificates' | 'stories' | 'memories' | 'circles';
 
 export const uploadFileToS3 = async (
   buffer: Buffer,

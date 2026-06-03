@@ -187,6 +187,7 @@ export default function CommunityDetail() {
                     askerName: q.author?.name || "Someone",
                     time: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : "",
                     upvotes: q.upvotes || 0,
+                    questionUserId: q.userId || q.author?.id || "",
                   },
                 })}
               >
