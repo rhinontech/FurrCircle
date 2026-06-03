@@ -122,7 +122,7 @@ export default function ProfileScreen() {
           {pets.map((p, i) => (
             <TouchableOpacity key={p.id} onPress={() => router.push({ pathname: "/pet", params: { id: p.id } })} style={[styles.petCard, { backgroundColor: TINT_COLORS[(i + 2) % TINT_COLORS.length] }]} activeOpacity={0.85}>
               <View style={[styles.petCardImgWrap, { overflow: "hidden" }]}>
-                {p.avatar_url ? <Image source={{ uri: p.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" /> : null}
+                {p.avatar_url?.startsWith('http') ? <Image source={{ uri: p.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" /> : null}
                 {(p.isAdoptionOpen || p.isFosterOpen) && (
                   <View style={{ position: 'absolute', top: 6, right: 6, backgroundColor: colors.coral, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2 }}>
                     <Text style={{ color: colors.white, fontSize: 9, fontFamily: 'Poppins_700Bold' }}>

@@ -1,7 +1,7 @@
-import { useCallback, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { useCallback, useState, useEffect } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Modal } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2, Pill } from "lucide-react-native";
+import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2, Pill, X } from "lucide-react-native";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { petApi } from "../services/pet/petApi";
@@ -69,7 +69,7 @@ export default function PetScreen() {
           {/* Hero card */}
           <View style={styles.px5}>
             <View style={styles.heroCard}>
-              <Image source={pet?.avatar_url ? { uri: pet.avatar_url } : require("../src/assets/doodle-boy-dog.png")} style={styles.heroImg} resizeMode="contain" />
+              <Image source={pet?.avatar_url?.startsWith('http') ? { uri: pet.avatar_url } : require("../src/assets/doodle-boy-dog.png")} style={styles.heroImg} resizeMode={pet?.avatar_url?.startsWith('http') ? "cover" : "contain"} />
               <TouchableOpacity style={[styles.heroBtn, { top: 16, right: 16 }]}>
                 <Share2 size={16} color={colors.foreground} />
               </TouchableOpacity>
@@ -122,7 +122,17 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
   const tk = useTokens();
   const [adoption, setAdoption] = useState(pet?.isAdoptionOpen || false);
   const [foster, setFoster] = useState(pet?.isFosterOpen || false);
+  const [memories, setMemories] = useState<any[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const petName = pet?.name || "this pet";
+
+  useEffect(() => {
+    if (pet?.id) {
+      petApi.getPetMemories(pet.id)
+        .then(res => setMemories(res.memories || []))
+        .catch(err => console.log("Failed to load memories", err));
+    }
+  }, [pet?.id]);
   
   const toggleAdoption = async () => {
     const newVal = !adoption;
@@ -198,25 +208,52 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
       </View>
 
       {/* Memory vault */}
-      <TouchableOpacity onPress={() => router.push("/memory")} style={styles.memoryVault} activeOpacity={0.88}>
+      <TouchableOpacity onPress={() => router.push({ pathname: "/memory", params: { petId: pet?.id } })} style={styles.memoryVault} activeOpacity={0.88}>
         <View style={styles.memoryIcon}>
           <Sparkles size={24} color={colors.white} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.memoryTitle}>Memory vault</Text>
-          <Text style={styles.memorySub}>17 memories · pet aura unlocked</Text>
+          <Text style={styles.memorySub}>{memories.length > 0 ? `${memories.length} memories · ` : ""}pet aura unlocked</Text>
         </View>
       </TouchableOpacity>
 
       {/* Gallery */}
       <View>
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Gallery</Text>
-        <View style={styles.galleryGrid}>
-          {galleryTints.map((bg, i) => (
-            <View key={i} style={[styles.galleryItem, { backgroundColor: bg }]} />
-          ))}
-        </View>
+        {memories.length === 0 ? (
+          <Text style={{ color: tk.textMuted, fontSize: 13, fontFamily: "Inter_400Regular" }}>No memory</Text>
+        ) : (
+          <View style={styles.galleryGrid}>
+            {memories.slice(0, 6).map((m, i) => (
+              <TouchableOpacity 
+                key={m.id || i} 
+                style={[styles.galleryItem, { backgroundColor: galleryTints[i % 6], overflow: "hidden" }]}
+                onPress={() => { if (m.media_url) setSelectedImage(m.media_url); }}
+                activeOpacity={0.8}
+              >
+                {m.media_url ? (
+                  <Image source={{ uri: m.media_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                ) : (
+                  <Text style={{ color: tk.textMuted, fontSize: 10, alignSelf: "center", marginTop: 20 }}>No Photo</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
+
+      {/* Full Screen Image Modal */}
+      <Modal visible={!!selectedImage} transparent={true} animationType="fade" onRequestClose={() => setSelectedImage(null)}>
+        <View style={styles.fullScreenModal}>
+          <TouchableOpacity style={styles.closeModalBtn} onPress={() => setSelectedImage(null)}>
+            <X size={28} color={colors.white} />
+          </TouchableOpacity>
+          {selectedImage && (
+            <Image source={{ uri: selectedImage }} style={styles.fullScreenImg} resizeMode="contain" />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -342,8 +379,8 @@ function StatCard({ icon: Icon, label, value }: { icon: any; label: string; valu
 const styles = StyleSheet.create({
   container: { flex: 1 },
   px5: { paddingHorizontal: 20 },
-  heroCard: { backgroundColor: "rgba(255,107,107,0.2)", borderRadius: 32, padding: 24, alignItems: "center", marginBottom: 4 },
-  heroImg: { width: 220, height: 208 },
+  heroCard: { backgroundColor: "rgba(255,107,107,0.2)", borderRadius: 32, overflow: "hidden", height: 260, marginBottom: 4 },
+  heroImg: { width: "100%", height: "100%" },
   heroBtn: { position: "absolute", backgroundColor: colors.white, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 3 },
   nameRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 24, marginTop: 12, marginBottom: 4 },
   petName: { fontFamily: "Poppins_700Bold", fontSize: 30 },
@@ -393,4 +430,7 @@ const styles = StyleSheet.create({
   vaccineDate: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
   vaccineBadge: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
   vaccineBadgeText: { fontFamily: "Poppins_700Bold", fontSize: 10 },
+  fullScreenModal: { flex: 1, backgroundColor: "rgba(0,0,0,0.9)", justifyContent: "center", alignItems: "center" },
+  closeModalBtn: { position: "absolute", top: 56, right: 20, zIndex: 10, width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  fullScreenImg: { width: "100%", height: "80%" },
 });

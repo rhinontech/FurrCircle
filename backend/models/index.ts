@@ -87,6 +87,9 @@ db.pets.hasMany(db.medical_records, { foreignKey: 'petId', as: 'medicalRecords' 
 db.allergies.belongsTo(db.pets, { foreignKey: 'petId', as: 'pet' });
 db.pets.hasMany(db.allergies, { foreignKey: 'petId', as: 'Allergies' });
 
+db.memories.belongsTo(db.pets, { foreignKey: 'petId', as: 'pet' });
+db.pets.hasMany(db.memories, { foreignKey: 'petId', as: 'Memories' });
+
 // Community: Post <-> User / Comments / Likes
 db.posts.belongsTo(db.users, { foreignKey: 'userId', as: 'author', constraints: false });
 db.users.hasMany(db.posts, { foreignKey: 'userId', as: 'posts', constraints: false });
@@ -214,6 +217,7 @@ export const question_answers = db.question_answers;
 export const playdate_likes = db.playdate_likes;
 export const owner_likes = db.owner_likes;
 export const lost_pets = db.lost_pets;
+export const memories = db.memories;
 
 export { sequelize, Sequelize };
 export default db;

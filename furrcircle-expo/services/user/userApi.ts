@@ -67,6 +67,26 @@ export const uploadImage = async (uri: string, folder: string = 'profiles') => {
     return response.data;
 };
 
+export const getFollowers = async (userId: string) => {
+    try {
+        const response = await PrivateAxios.get(`/follows/${userId}/followers`);
+        return response.data;
+    } catch (error: any) {
+        console.error('getFollowers Error:', error?.response?.data || error.message);
+        return [];
+    }
+};
+
+export const getFollowing = async (userId: string) => {
+    try {
+        const response = await PrivateAxios.get(`/follows/${userId}/following`);
+        return response.data;
+    } catch (error: any) {
+        console.error('getFollowing Error:', error?.response?.data || error.message);
+        return [];
+    }
+};
+
 export const searchUsers = async (q: string) => {
     try {
         const response = await PrivateAxios.get('/users/search', { params: { q } });
@@ -86,5 +106,7 @@ export const userApi = {
     getPendingFollowRequests,
     updateProfile,
     uploadImage,
+    getFollowers,
+    getFollowing,
     searchUsers,
 };

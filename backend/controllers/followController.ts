@@ -170,6 +170,46 @@ export const rejectRequest = async (req: any, res: Response): Promise<void> => {
   }
 };
 
+export const getFollowers = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { follows: Follow, users: User } = db as any;
+    const { userId } = req.params;
+
+    const rows = await Follow.findAll({
+      where: { followingId: userId, status: 'accepted' },
+      include: [{ model: User, as: 'followerUser', attributes: ['id', 'name', 'username', 'profile_photo', 'city', 'verified'] }],
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.json(rows.map((r: any) => ({
+      ...r.followerUser?.toJSON(),
+      avatar_url: r.followerUser?.profile_photo,
+    })));
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getFollowing = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { follows: Follow, users: User } = db as any;
+    const { userId } = req.params;
+
+    const rows = await Follow.findAll({
+      where: { followerId: userId, status: 'accepted' },
+      include: [{ model: User, as: 'followingUser', attributes: ['id', 'name', 'username', 'profile_photo', 'city', 'verified'] }],
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.json(rows.map((r: any) => ({
+      ...r.followingUser?.toJSON(),
+      avatar_url: r.followingUser?.profile_photo,
+    })));
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const getPendingRequests = async (req: any, res: Response): Promise<void> => {
   try {
     const { follows: Follow, users: User } = db as any;
