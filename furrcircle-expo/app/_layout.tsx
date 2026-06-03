@@ -78,7 +78,9 @@ export default function RootLayout() {
 
     const bootstrap = async () => {
       try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = Platform.OS === 'web'
+          ? useAuthStore.getState().user?.token ?? null
+          : await SecureStore.getItemAsync("token");
         if (!token || cancelled) return;
 
         socketService.connect(token);

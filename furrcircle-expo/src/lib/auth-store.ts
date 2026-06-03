@@ -1,7 +1,15 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from "react-native";
 import { authApi, type AuthPayload } from "../../services/auth/authApi";
+
+const secureGet = (key: string) =>
+  Platform.OS === 'web' ? Promise.resolve(null) : SecureStore.getItemAsync(key);
+const secureSet = (key: string, value: string) =>
+  Platform.OS === 'web' ? Promise.resolve() : SecureStore.setItemAsync(key, value);
+const secureDel = (key: string) =>
+  Platform.OS === 'web' ? Promise.resolve() : SecureStore.deleteItemAsync(key);
 
 const AUTH_KEY = "furr:auth";
 
@@ -20,13 +28,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   hydrate: async () => {
     try {
-      const [rawUser, token] = await Promise.all([
+      const [rawUser, secureToken] = await Promise.all([
         AsyncStorage.getItem(AUTH_KEY),
-        SecureStore.getItemAsync('token'),
+        secureGet('token'),
       ]);
-      
-      if (rawUser && token) {
-        const saved = JSON.parse(rawUser) as AuthPayload;
+
+      const saved = rawUser ? JSON.parse(rawUser) as AuthPayload : null;
+      const token = secureToken || saved?.token || null;
+
+      if (saved && token) {
         set({ user: saved, loading: false });
         
         try {
@@ -56,7 +66,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (data && data.token) {
         await Promise.all([
           AsyncStorage.setItem(AUTH_KEY, JSON.stringify(data)),
-          SecureStore.setItemAsync('token', data.token),
+          secureSet('token', data.token),
         ]);
         set({ user: data });
         return null;
@@ -72,7 +82,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const userToSave = { ...payload, token: currentToken };
 
     if (currentToken) {
-      await SecureStore.setItemAsync('token', currentToken);
+      await secureSet('token', currentToken);
     }
 
     await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(userToSave));
@@ -82,7 +92,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     await Promise.all([
       AsyncStorage.removeItem(AUTH_KEY),
-      SecureStore.deleteItemAsync('token'),
+      secureDel('token'),
     ]);
     set({ user: null });
   },
