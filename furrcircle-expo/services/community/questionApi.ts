@@ -50,10 +50,21 @@ export const getAnswers = async (questionId: string) => {
     }
 };
 
+export const deleteQuestion = async (questionId: string) => {
+    try {
+        const response = await PrivateAxios.delete(`/questions/${questionId}`);
+        return response.data;
+    } catch (error: any) {
+        console.error('deleteQuestion Error:', error?.response?.data || error.message);
+        throw error;
+    }
+};
+
 export const questionApi = {
     getQuestions,
     createQuestion,
     upvoteQuestion,
     addAnswer,
     getAnswers,
+    deleteQuestion,
 };

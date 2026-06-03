@@ -226,15 +226,7 @@ export default function EventsScreen() {
         >
           <View style={styles.modalOverlay}>
             <View style={[styles.modalContent, { backgroundColor: tk.card }]}>
-              {/* Image header */}
-              {selectedEvent?.imageUrl ? (
-                <Image source={{ uri: selectedEvent.imageUrl }} style={styles.modalImage} resizeMode="cover" />
-              ) : (
-                <View style={[styles.modalImagePlaceholder, { backgroundColor: getTint(selectedEvent?.category).bg }]}>
-                  <CalendarDays size={56} color={getTint(selectedEvent?.category).badge} style={{ opacity: 0.5 }} />
-                </View>
-              )}
-
+              {/* Close button floats above everything */}
               <TouchableOpacity
                 onPress={() => setSelectedEvent(null)}
                 style={[styles.modalCloseBtn, { backgroundColor: "rgba(0,0,0,0.4)" }]}
@@ -242,7 +234,21 @@ export default function EventsScreen() {
                 <X size={18} color="#fff" />
               </TouchableOpacity>
 
-              <ScrollView contentContainerStyle={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <ScrollView
+                contentContainerStyle={styles.modalBody}
+                showsVerticalScrollIndicator={false}
+                bounces={true}
+              >
+                {/* Image scrolls with content */}
+                {selectedEvent?.imageUrl ? (
+                  <Image source={{ uri: selectedEvent.imageUrl }} style={styles.modalImage} resizeMode="cover" />
+                ) : (
+                  <View style={[styles.modalImagePlaceholder, { backgroundColor: getTint(selectedEvent?.category).bg }]}>
+                    <CalendarDays size={56} color={getTint(selectedEvent?.category).badge} style={{ opacity: 0.5 }} />
+                  </View>
+                )}
+                {/* Content below image */}
+                <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
                 {/* Category + booked */}
                 <View style={styles.modalBadgeRow}>
                   <View style={[styles.typeBadge, { backgroundColor: getTint(selectedEvent?.category).badge + "20" }]}>
@@ -305,6 +311,7 @@ export default function EventsScreen() {
                     </Text>
                   )}
                 </TouchableOpacity>
+                </View>{/* end content padding wrapper */}
               </ScrollView>
             </View>
           </View>
@@ -376,15 +383,15 @@ const styles = StyleSheet.create({
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  modalContent: { borderTopLeftRadius: 30, borderTopRightRadius: 30, maxHeight: "88%", overflow: "hidden" },
-  modalImage: { width: "100%", height: 240 },
+  modalContent: { borderTopLeftRadius: 30, borderTopRightRadius: 30, maxHeight: "92%", overflow: "hidden" },
+  modalImage: { width: "100%", height: 260 },
   modalImagePlaceholder: { width: "100%", height: 200, alignItems: "center", justifyContent: "center" },
   modalCloseBtn: {
-    position: "absolute", top: 16, right: 16,
+    position: "absolute", top: 16, right: 16, zIndex: 10,
     width: 34, height: 34, borderRadius: 17,
     alignItems: "center", justifyContent: "center",
   },
-  modalBody: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 48 },
+  modalBody: { paddingBottom: 48 },
   modalBadgeRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
   modalTitle: { fontFamily: "Poppins_700Bold", fontSize: 22, lineHeight: 30, marginBottom: 20 },
 

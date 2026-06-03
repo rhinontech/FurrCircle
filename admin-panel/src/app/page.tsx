@@ -55,7 +55,6 @@ export default function DashboardPage() {
         { label: "Active Pets", value: stats.totalPets.toLocaleString(), icon: PawPrint, change: "Live" },
         { label: "Vets Joined", value: stats.totalVets.toLocaleString(), icon: Stethoscope, change: "Live" },
         { label: "New Leads", value: stats.newContactLeads.toLocaleString(), icon: Mail, change: "Inbox" },
-        { label: "Pending Posts", value: stats.pendingPosts.toLocaleString(), icon: Bell, change: "Queue" },
         { label: "Pending Vets", value: stats.pendingVets.toLocaleString(), icon: ShieldCheck, change: "Queue" },
       ]
     : [];

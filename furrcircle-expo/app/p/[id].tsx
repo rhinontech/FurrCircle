@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
-import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, MessageCircle, Sparkles } from "lucide-react-native";
+import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, MessageCircle, Sparkles, X } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { ShareSheet } from "../../src/components/ShareSheet";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { petApi } from "../../services/pet/petApi";
@@ -38,6 +39,9 @@ export default function PetPublicProfile() {
   const [pet, setPet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
+  const [memories, setMemories] = useState<any[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -48,6 +52,14 @@ export default function PetPublicProfile() {
         .catch(err => { console.error("Failed to load pet:", err); setLoading(false); });
     }, [id])
   );
+
+  useEffect(() => {
+    if (id) {
+      petApi.getPetMemories(id)
+        .then(res => setMemories(res.memories || []))
+        .catch(err => console.log("Failed to load memories in public profile", err));
+    }
+  }, [id]);
 
   if (loading) {
     return (
@@ -94,7 +106,10 @@ export default function PetPublicProfile() {
         <ScreenHeader
           title="Pet profile"
           right={
-            <TouchableOpacity style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.bg }}>
+            <TouchableOpacity 
+              onPress={() => setShareOpen(true)}
+              style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
+            >
               <Share2 size={20} color={tk.text} />
             </TouchableOpacity>
           }
@@ -104,10 +119,10 @@ export default function PetPublicProfile() {
           {/* Hero card */}
           <View style={styles.px5}>
             <View style={[styles.heroCard, { backgroundColor: tintColor }]}>
-              <Image source={pet.avatar_url ? { uri: pet.avatar_url } : boyDog} style={styles.heroImg} resizeMode="contain" />
-              <TouchableOpacity onPress={() => setLiked(!liked)} style={styles.heartBtn}>
+              <Image source={pet.avatar_url ? { uri: pet.avatar_url } : boyDog} style={styles.heroImg} resizeMode="cover" />
+              {/* <TouchableOpacity onPress={() => setLiked(!liked)} style={styles.heartBtn}>
                 <Heart size={16} color={liked ? colors.pinky : colors.foreground} fill={liked ? colors.pinky : "transparent"} />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           </View>
 
@@ -166,35 +181,75 @@ export default function PetPublicProfile() {
           {/* Gallery */}
           <View style={styles.px5}>
             <Text style={[styles.sectionTitle, { color: tk.text, paddingHorizontal: 4 }]}>Gallery</Text>
-            <View style={styles.galleryGrid}>
-              {galleryTints.map((bg: string, i: number) => (
-                <View key={i} style={[styles.galleryItem, { backgroundColor: bg }]} />
-              ))}
-            </View>
+            {memories.length === 0 ? (
+              <Text style={{ color: tk.textMuted, fontSize: 13, fontFamily: "Inter_400Regular", paddingHorizontal: 4 }}>No memory</Text>
+            ) : (
+              <View style={styles.galleryGrid}>
+                {memories.slice(0, 6).map((m, i) => (
+                  <TouchableOpacity 
+                    key={m.id || i} 
+                    style={[styles.galleryItem, { backgroundColor: galleryTints[i % 6], overflow: "hidden" }]}
+                    onPress={() => { if (m.media_url) setSelectedImage(m.media_url); }}
+                    activeOpacity={0.8}
+                  >
+                    {m.media_url ? (
+                      <Image source={{ uri: m.media_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                    ) : (
+                      <Text style={{ color: tk.textMuted, fontSize: 10, alignSelf: "center", marginTop: 20 }}>No Photo</Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* CTA buttons */}
           <View style={styles.ctaRow}>
-            <TouchableOpacity onPress={() => router.push(`/chat?recipient=${pet.ownerId || ""}&pet=${pet.id}` as any)} style={styles.messageBtn}>
+            <TouchableOpacity
+              onPress={() => router.push(`/chat?recipient=${pet.ownerId || ""}&pet=${pet.id}` as any)}
+              disabled={!!pet.canManage}
+              style={[styles.messageBtn, pet.canManage && { opacity: 0.5 }]}
+              activeOpacity={0.8}
+            >
               <MessageCircle size={16} color={colors.white} />
               <Text style={styles.messageBtnText}>Message owner</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push("/match")} style={styles.matchBtn}>
+            <TouchableOpacity
+              onPress={() => router.push("/match")}
+              disabled={!!pet.canManage}
+              style={[styles.matchBtn, pet.canManage && { opacity: 0.5 }]}
+              activeOpacity={0.8}
+            >
               <Sparkles size={16} color={colors.white} />
               <Text style={styles.matchBtnText}>Match</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
+
+      {/* Full Screen Image Modal */}
+      <Modal visible={!!selectedImage} transparent={true} animationType="fade" onRequestClose={() => setSelectedImage(null)}>
+        <View style={styles.fullScreenModal}>
+          <TouchableOpacity style={styles.closeModalBtn} onPress={() => setSelectedImage(null)}>
+            <X size={28} color={colors.white} />
+          </TouchableOpacity>
+          {selectedImage && (
+            <Image source={{ uri: selectedImage }} style={styles.fullScreenImg} resizeMode="contain" />
+          )}
+        </View>
+      </Modal>
+
+      <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} petId={pet.id} />
     </PageContainer>
   );
 }
 
 function StatCard({ icon: Icon, label, value, tk }: { icon: any; label: string; value: string; tk: any }) {
+  const displayValue = value && value.length > 9 ? `${value.slice(0, 6)}...` : (value || "");
   return (
     <View style={[styles.statCard, { backgroundColor: tk.card }]}>
       <Icon size={20} color={tk.textMuted} />
-      <Text style={[styles.statValue, { color: tk.text }]}>{value}</Text>
+      <Text style={[styles.statValue, { color: tk.text }]} numberOfLines={1}>{displayValue}</Text>
       <Text style={[styles.statLabel, { color: tk.textMuted }]}>{label}</Text>
     </View>
   );
@@ -208,8 +263,8 @@ const styles = StyleSheet.create({
   iconBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
   backArrow: { fontSize: 20, color: colors.foreground, fontFamily: "Poppins_600SemiBold" },
   headerTitle: { fontFamily: "Poppins_700Bold", fontSize: 16 },
-  heroCard: { borderRadius: 32, padding: 24, alignItems: "center", overflow: "hidden", marginBottom: 4 },
-  heroImg: { width: 220, height: 224 },
+  heroCard: { borderRadius: 32, overflow: "hidden", marginBottom: 4, height: 280, width: "100%" },
+  heroImg: { width: "100%", height: "100%" },
   heartBtn: { position: "absolute", top: 16, right: 16, backgroundColor: colors.white, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 3 },
   nameRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 24, marginTop: 14, marginBottom: 12 },
   petName: { fontFamily: "Poppins_700Bold", fontSize: 30 },
@@ -224,7 +279,7 @@ const styles = StyleSheet.create({
   bio: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 22, marginTop: 14 },
   statsRow: { flexDirection: "row", gap: 12, paddingHorizontal: 20, marginTop: 16 },
   statCard: { flex: 1, borderRadius: 16, padding: 12, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
-  statValue: { fontFamily: "Poppins_700Bold", fontSize: 16, color: colors.foreground, marginTop: 4 },
+  statValue: { fontFamily: "Poppins_700Bold", fontSize: 14, color: colors.foreground, marginTop: 4 },
   statLabel: { fontSize: 11, color: colors.foreground + "88", fontFamily: "Inter_400Regular" },
   sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, marginTop: 20, marginBottom: 10 },
   tagsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
@@ -237,4 +292,7 @@ const styles = StyleSheet.create({
   messageBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14, color: colors.white },
   matchBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.foreground, borderRadius: 30, paddingHorizontal: 20, paddingVertical: 14 },
   matchBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14, color: colors.white },
+  fullScreenModal: { flex: 1, backgroundColor: "rgba(0,0,0,0.9)", justifyContent: "center", alignItems: "center" },
+  closeModalBtn: { position: "absolute", top: 56, right: 20, zIndex: 10, width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  fullScreenImg: { width: "100%", height: "80%" },
 });

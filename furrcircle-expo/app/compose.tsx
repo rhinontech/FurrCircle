@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Image as ImageIcon, Hash, X, Check } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
@@ -16,10 +16,21 @@ const CATEGORIES = ["General", "Health", "Adoption", "Training", "Nutrition", "L
 export default function ComposeScreen() {
   const router = useRouter();
   const tk = useTokens();
-  const [category, setCategory] = useState<string>("General");
-  const [caption, setCaption] = useState("");
-  const [imageUri, setImageUri] = useState<string | null>(null);
-  const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
+  const { editPostId, prefilledCategory, prefilledCaption, prefilledImageUrl } = useLocalSearchParams<{
+    editPostId?: string;
+    prefilledCategory?: string;
+    prefilledCaption?: string;
+    prefilledImageUrl?: string;
+  }>();
+
+  const [category, setCategory] = useState<string>(prefilledCategory || "General");
+  const [caption, setCaption] = useState(prefilledCaption || "");
+  const [imageUri, setImageUri] = useState<string | null>(prefilledImageUrl || null);
+  const [mediaType, setMediaType] = useState<"image" | "video" | null>(
+    prefilledImageUrl
+      ? (prefilledImageUrl.match(/\.(mp4|mov|quicktime|3gp|mpeg|avi|wmv|flv|mkv|webm)(\?|$)/i) ? "video" : "image")
+      : null
+  );
   const [tags, setTags] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -61,16 +72,26 @@ export default function ComposeScreen() {
     if (!caption.trim()) { Alert.alert("Required", "Please write something before posting."); return; }
     setLoading(true);
     try {
-      let imageUrl: string | undefined;
-      if (imageUri) {
+      let imageUrl: string | undefined = imageUri || undefined;
+      if (imageUri && (imageUri.startsWith("file://") || imageUri.startsWith("content://") || !imageUri.startsWith("http"))) {
         const uploadRes = await userApi.uploadImage(imageUri, "posts");
         imageUrl = uploadRes.url;
       }
-      await feedApi.createPost({
-        content: caption.trim(),
-        imageUrl,
-        category: category !== "General" ? category : undefined,
-      });
+      
+      if (editPostId) {
+        await feedApi.updatePost(editPostId, {
+          content: caption.trim(),
+          imageUrl: imageUrl || null,
+          category: category !== "General" ? category : "General",
+        });
+        Alert.alert("Success", "Post updated successfully.");
+      } else {
+        await feedApi.createPost({
+          content: caption.trim(),
+          imageUrl,
+          category: category !== "General" ? category : undefined,
+        });
+      }
       router.navigate({
         pathname: "/(tabs)",
         params: { refresh: String(Date.now()) },
@@ -93,9 +114,9 @@ export default function ComposeScreen() {
           <TouchableOpacity onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: tk.card }]}>
             <X size={20} color={tk.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: tk.text }]}>New post</Text>
+          <Text style={[styles.headerTitle, { color: tk.text }]}>{editPostId ? "Edit post" : "New post"}</Text>
           <TouchableOpacity onPress={handleShare} disabled={loading} style={[styles.shareBtn, loading && { opacity: 0.6 }]}>
-            {loading ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.shareBtnText}>Share</Text>}
+            {loading ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.shareBtnText}>{editPostId ? "Update" : "Share"}</Text>}
           </TouchableOpacity>
         </View>
 

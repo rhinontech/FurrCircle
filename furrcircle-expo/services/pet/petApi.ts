@@ -81,6 +81,16 @@ export const addPetMemory = async (id: string, payload: any) => {
     }
 };
 
+export const deletePet = async (id: string) => {
+    try {
+        const response = await PrivateAxios.delete(`/pets/${id}`);
+        return response.data;
+    } catch (error: any) {
+        console.error("deletePet Error:", error?.response?.data || error.message);
+        throw error;
+    }
+};
+
 export const petApi = {
     getMyPets,
     createPet,
@@ -90,4 +100,5 @@ export const petApi = {
     updateListing,
     getPetMemories,
     addPetMemory,
+    deletePet,
 };

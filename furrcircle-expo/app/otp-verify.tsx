@@ -19,6 +19,7 @@ import Constants from "expo-constants";
 import { colors } from "../src/lib/theme";
 import { authApi } from "../services/auth/authApi";
 import { useAuthStore } from "../src/lib/auth-store";
+import { Eye, EyeOff } from "lucide-react-native";
 
 const { height } = Dimensions.get("window");
 
@@ -39,14 +40,14 @@ export default function OtpVerifyScreen() {
   const inputRef = useRef<TextInput>(null);
 
   // Extract search params
-  const { 
-    userId, 
-    emailOrPhone, 
-    type, 
-    initialVerificationId, 
-    username, 
-    name, 
-    password 
+  const {
+    userId,
+    emailOrPhone,
+    type,
+    initialVerificationId,
+    username,
+    name,
+    password
   } = params as any;
 
   const [code, setCode] = useState("");
@@ -79,7 +80,7 @@ export default function OtpVerifyScreen() {
     try {
       setLoading(true);
       setIsResending(true);
-      
+
       const confirmation = await auth().signInWithPhoneNumber(emailOrPhone);
       setConfirm(confirmation);
       setTimer(60);
@@ -130,7 +131,7 @@ export default function OtpVerifyScreen() {
     }
 
     setLoading(true);
-    
+
     // ─── PHONE VERIFICATION (FIREBASE) ───────────────────────────────────────────
     if (type.startsWith("phone")) {
       const auth = getFirebaseAuth();
@@ -214,7 +215,7 @@ export default function OtpVerifyScreen() {
       } finally {
         setLoading(false);
       }
-    } 
+    }
     // ─── EMAIL VERIFICATION (BACKEND) ────────────────────────────────────────────
     else {
       try {
@@ -265,7 +266,7 @@ export default function OtpVerifyScreen() {
 
   const renderOtpBoxes = () => {
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         activeOpacity={0.8}
         onPress={() => inputRef.current?.focus()}
         style={styles.otpContainer}
@@ -296,7 +297,7 @@ export default function OtpVerifyScreen() {
     <SafeAreaView style={styles.root}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          
+
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
@@ -327,8 +328,8 @@ export default function OtpVerifyScreen() {
                 autoFocus
               />
 
-              <TouchableOpacity 
-                style={[styles.primaryBtn, (loading || code.length < 6) && styles.disabledBtn]} 
+              <TouchableOpacity
+                style={[styles.primaryBtn, (loading || code.length < 6) && styles.disabledBtn]}
                 onPress={handleVerify}
                 disabled={loading || code.length < 6}
               >
@@ -367,13 +368,17 @@ export default function OtpVerifyScreen() {
                     autoFocus
                   />
                   <TouchableOpacity onPress={() => setShowNewPassword((v) => !v)} style={styles.eyeBtn}>
-                    <Text style={styles.eyeText}>{showNewPassword ? "Hide" : "Show"}</Text>
+                    {showNewPassword ? (
+                      <EyeOff size={20} color={colors.primary} />
+                    ) : (
+                      <Eye size={20} color={colors.primary} />
+                    )}
                   </TouchableOpacity>
                 </View>
               </View>
 
-              <TouchableOpacity 
-                style={[styles.primaryBtn, loading && styles.disabledBtn]} 
+              <TouchableOpacity
+                style={[styles.primaryBtn, loading && styles.disabledBtn]}
                 onPress={handleResetPasswordSubmit}
                 disabled={loading}
               >
@@ -395,7 +400,7 @@ export default function OtpVerifyScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
   scroll: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 20 },
-  backBtn: { alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 12, marginBottom: 28 },
+  backBtn: { alignSelf: 'flex-start', paddingVertical: 8, paddingRight: 12, marginBottom: 28 },
   backText: { fontFamily: "Inter_600SemiBold", fontSize: 15, color: colors.primary },
   content: { flex: 1, alignItems: 'center', paddingTop: 20 },
   title: { fontFamily: "Poppins_700Bold", fontSize: 26, color: colors.foreground, textAlign: 'center', marginBottom: 12 },
@@ -407,7 +412,7 @@ const styles = StyleSheet.create({
   otpBoxFilled: { borderColor: colors.primary + "66" },
   otpText: { fontFamily: "Poppins_700Bold", fontSize: 20, color: colors.foreground },
   hiddenInput: { position: 'absolute', opacity: 0, width: 1, height: 1, left: -9999 },
-  primaryBtn: { width: '100%', backgroundColor: colors.coral, borderRadius: 24, paddingVertical: 15, alignItems: "center", justifyContent: 'center', marginTop: 12 },
+  primaryBtn: { width: '100%', backgroundColor: colors.primary, borderRadius: 24, paddingVertical: 15, alignItems: "center", justifyContent: 'center', marginTop: 12 },
   disabledBtn: { opacity: 0.6 },
   primaryBtnText: { fontFamily: "Poppins_700Bold", fontSize: 16, color: colors.white },
   timerRow: { marginTop: 24 },
@@ -418,7 +423,7 @@ const styles = StyleSheet.create({
   field: { width: '100%', marginBottom: 24 },
   label: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.foreground + "99", marginBottom: 6 },
   input: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontFamily: "Inter_400Regular", fontSize: 15, color: colors.foreground, backgroundColor: colors.surface },
-  inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, paddingHorizontal: 16 },
+  inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, paddingRight: 16 },
   eyeBtn: { paddingVertical: 13, paddingLeft: 8 },
   eyeText: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.primary },
 });

@@ -403,6 +403,49 @@ export const deleteMyPost = async (req: any, res: Response): Promise<void> => {
   }
 };
 
+export const updateMyPost = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { posts: Post } = db as any;
+    const { id } = req.params;
+    const { content, category, imageUrl } = req.body;
+
+    const post = await Post.findOne({
+      where: { id, userId: req.user.id, userType: req.userType || "user" },
+    });
+
+    if (!post) {
+      res.status(404).json({ message: "Post not found or not yours" });
+      return;
+    }
+
+    if (content !== undefined) {
+      if (!String(content || "").trim()) {
+        res.status(400).json({ message: "Post content cannot be empty" });
+        return;
+      }
+      post.content = String(content).trim();
+    }
+
+    if (category !== undefined) {
+      post.category = category;
+    }
+
+    if (imageUrl !== undefined) {
+      post.imageUrl = imageUrl;
+    }
+
+    await post.save();
+
+    const resolveProfile = createProfileResolver();
+    res.json({
+      message: "Post updated successfully",
+      post: await serializePost(post, resolveProfile),
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 const recomputeEngagementScore = async (postId: string) => {
   const { posts: Post, likes: Like, comments: Comment } = db as any;
