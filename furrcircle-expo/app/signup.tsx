@@ -10,6 +10,7 @@ import Constants from "expo-constants";
 import { colors } from "../src/lib/theme";
 import { authApi } from "../services/auth/authApi";
 import { useAuthStore } from "../src/lib/auth-store";
+import { Eye, EyeOff } from "lucide-react-native";
 
 const { height } = Dimensions.get("window");
 
@@ -292,7 +293,11 @@ export default function SignupScreen() {
                 onChangeText={setPassword}
               />
               <TouchableOpacity onPress={() => setShowPassword((v) => !v)} style={styles.eyeBtn}>
-                <Text style={styles.eyeText}>{showPassword ? "Hide" : "Show"}</Text>
+                {showPassword ? (
+                  <EyeOff size={20} color={colors.primary} />
+                ) : (
+                  <Eye size={20} color={colors.primary} />
+                )}
               </TouchableOpacity>
             </View>
           </View>

@@ -73,7 +73,7 @@ export default function AllVetsScreen() {
       <ScreenHeader title="Nearby Vets" />
 
       {/* Sort dropdown trigger */}
-      <View style={{ paddingHorizontal: 20, marginBottom: 12, alignItems: 'flex-end' }}>
+      <View style={{ paddingHorizontal: 20, marginVertical: 12, alignItems: 'flex-end' }}>
         <TouchableOpacity
             onPress={() => setSortOpen(v => !v)}
             style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, backgroundColor: tk.card, borderWidth: 1, borderColor: sortOpen ? colors.primary : tk.border }}
