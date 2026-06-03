@@ -494,7 +494,7 @@ function FeedHeader() {
       </View>
       <View style={styles.headerActions}>
         <TouchableOpacity onPress={() => router.push("/chat")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
-          <MessageCircle size={20} color={chatUnreadCount > 0 ? colors.coral : tk.text} strokeWidth={2} />
+          <MessageCircle size={20} color={chatUnreadCount > 0 ? colors.primary : tk.text} strokeWidth={2} />
           {chatUnreadCount > 0 && (
             <View style={styles.notifBadge}>
               <Text style={styles.notifBadgeText}>{chatBadgeLabel}</Text>
@@ -506,7 +506,7 @@ function FeedHeader() {
           style={[styles.iconBtn, { backgroundColor: tk.card }]}
           activeOpacity={0.8}
         >
-          <Bell size={20} color={unreadCount > 0 ? colors.coral : tk.text} strokeWidth={2} />
+          <Bell size={20} color={unreadCount > 0 ? colors.primary : tk.text} strokeWidth={2} />
           {unreadCount > 0 && (
             <View style={styles.notifBadge}>
               <Text style={styles.notifBadgeText}>{badgeLabel}</Text>
@@ -575,7 +575,7 @@ function StoryRing({
   const hasUnviewed = stories.some((s) => !s.viewedByMe);
 
   if (N === 1) {
-    const color = hasUnviewed ? colors.coral : (dark ? tk.border : "rgba(26,26,46,0.15)");
+    const color = hasUnviewed ? colors.primary : (dark ? tk.border : "rgba(26,26,46,0.15)");
     return (
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         <Circle
@@ -598,7 +598,7 @@ function StoryRing({
     const startAngle = i * angleStep + gapAngle / 2;
     const endAngle = (i + 1) * angleStep - gapAngle / 2;
     const isViewed = !!stories[i].viewedByMe;
-    const strokeColor = isViewed ? (dark ? tk.border : "rgba(26,26,46,0.15)") : colors.coral;
+    const strokeColor = isViewed ? (dark ? tk.border : "rgba(26,26,46,0.15)") : colors.primary;
 
     const pathData = describeArc(center, center, radius, startAngle, endAngle);
     arcs.push(
@@ -663,7 +663,7 @@ function StoryRail({
             style={[
               styles.miniAddBadge,
               {
-                backgroundColor: colors.coral,
+                backgroundColor: colors.primary,
                 borderColor: tk.bg,
               },
             ]}
@@ -1112,7 +1112,17 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
               <>
                 {/* About this Account Option */}
                 <TouchableOpacity 
-                  onPress={() => setMenuOpen(false)}
+                  onPress={() => {
+                    setMenuOpen(false);
+                    router.push({
+                      pathname: "/about-account",
+                      params: {
+                        username: author.username || "",
+                        prefilledName: displayName,
+                        prefilledAvatar: author.avatar_url || "",
+                      }
+                    });
+                  }}
                   style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
                   activeOpacity={0.8}
                 >
@@ -1195,7 +1205,7 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: colors.coral,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,

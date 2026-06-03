@@ -165,43 +165,51 @@ const sendPushToActor = async (
   const messages = devices
     .map((device: any) => String(device.expoPushToken || "").trim())
     .filter(Boolean)
-    .map((token: string) => ({
-      notification: { title, body: message },
-      data: {
+    .map((token: string) => {
+      const rId = actionPayload?.relatedId || actionPayload?.id || actionPayload?.conversationId;
+      
+      const rawData: Record<string, any> = {
         category,
         actionType: actionType || "",
         actionPayload: JSON.stringify(actionPayload || {}),
-        relatedId: (actionPayload?.relatedId || actionPayload?.id) ? String(actionPayload.relatedId || actionPayload.id) : undefined,
         title,
         body: message,
-      },
-      token: token,
-      android: {
-        priority: 'high' as const,
-        notification: {
+      };
+      if (rId) rawData.relatedId = rId;
+
+      // Firebase Admin STRICTLY requires all data values to be strings.
+      // We strip out undefined/null and cast everything else to a string.
+      const dataPayload: Record<string, string> = {};
+      for (const [key, val] of Object.entries(rawData)) {
+        if (val !== undefined && val !== null) {
+          dataPayload[key] = String(val);
+        }
+      }
+
+      const apnsPayload: any = {
+        aps: {
+          alert: { title, body: message },
           sound: 'default',
-          channelId: 'default',
+          badge: 1,
+          'mutable-content': 1,
         },
-      },
-      apns: {
-        payload: {
-          aps: {
-            alert: {
-              title,
-              body: message,
-            },
-            sound: 'default',
-            badge: 1,
-            'mutable-content': 1,
-          },
-          // Explicitly include data in APNs payload root for iOS reliability
-          category,
-          actionType: actionType || "",
-          actionPayload: JSON.stringify(actionPayload || {}),
-          relatedId: (actionPayload?.relatedId || actionPayload?.id) ? String(actionPayload.relatedId || actionPayload.id) : undefined,
+        category,
+        actionType: actionType || "",
+        actionPayload: JSON.stringify(actionPayload || {}),
+      };
+      if (rId) apnsPayload.relatedId = String(rId);
+
+      return {
+        notification: { title, body: message },
+        data: dataPayload,
+        token: token,
+        android: {
+          priority: 'high' as const,
+          notification: { sound: 'default', channelId: 'default' },
         },
-      },
-    }));
+        apns: { payload: apnsPayload },
+      };
+    });
 
   if (messages.length === 0) {
     console.warn(`[NotificationService] No valid FCM tokens for actor ${actorId}`);

@@ -1,0 +1,156 @@
+import { useState, useEffect } from "react";
+import { View, Text, StyleSheet, Image, ActivityIndicator, Alert, ScrollView } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { Calendar, MapPin } from "lucide-react-native";
+import { ScreenHeader } from "../src/components/ScreenHeader";
+import { PageContainer } from "../src/components/PageContainer";
+import { colors } from "../src/lib/theme";
+import { useTokens } from "../src/lib/theme-store";
+import { userApi } from "../services/user/userApi";
+import { Avatar } from "../src/components/Avatar";
+
+export default function AboutAccountScreen() {
+  const router = useRouter();
+  const tk = useTokens();
+  const { username, prefilledName, prefilledAvatar } = useLocalSearchParams<{
+    username: string;
+    prefilledName?: string;
+    prefilledAvatar?: string;
+  }>();
+
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (!username) return;
+    setLoading(true);
+    userApi.getUserProfile(username)
+      .then(data => {
+        setProfile(data);
+      })
+      .catch(err => {
+        console.error("Failed to load profile:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [username]);
+
+  const displayName = profile?.name || prefilledName || username;
+  const avatarUrl = profile?.avatar_url || prefilledAvatar;
+  
+  const getJoinedDate = () => {
+    if (profile?.memberSince) return profile.memberSince;
+    if (profile?.createdAt) {
+      const date = new Date(profile.createdAt);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      }
+    }
+    return "July 2015";
+  };
+
+  const getCountry = () => {
+    if (profile?.city) return profile.city;
+    return "India";
+  };
+
+  return (
+    <PageContainer>
+      <View style={[styles.container, { backgroundColor: tk.bg }]}>
+        <ScreenHeader title="About this account" />
+        
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.avatarSection}>
+            <View style={[styles.avatarOutline, { borderColor: tk.border }]}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+              ) : (
+                <Avatar name={displayName} size={100} />
+              )}
+            </View>
+            <Text style={[styles.usernameText, { color: tk.text }]}>
+              {username || profile?.username || "username"}
+            </Text>
+            
+            <Text style={[styles.introText, { color: tk.textMuted }]}>
+              To help keep our community authentic, we're showing information about profiles on FurrCircle.{" "}
+              {/* <Text style={styles.linkText}>See why this information is important.</Text> */}
+            </Text>
+          </View>
+
+          <View style={styles.infoSection}>
+            {/* Date Joined */}
+            <View style={styles.infoRow}>
+              <View style={styles.iconContainer}>
+                <Calendar size={24} color={tk.text} />
+              </View>
+              <View style={styles.infoTextContainer}>
+                <Text style={[styles.infoLabel, { color: tk.text }]}>Date joined</Text>
+                {loading && !profile ? (
+                  <ActivityIndicator size="small" color={colors.primary} style={styles.loader} />
+                ) : (
+                  <Text style={[styles.infoValue, { color: tk.textMuted }]}>{getJoinedDate()}</Text>
+                )}
+              </View>
+            </View>
+
+            {/* Account based in */}
+            <View style={styles.infoRow}>
+              <View style={styles.iconContainer}>
+                <MapPin size={24} color={tk.text} />
+              </View>
+              <View style={styles.infoTextContainer}>
+                <Text style={[styles.infoLabel, { color: tk.text }]}>Account based in</Text>
+                {loading && !profile ? (
+                  <ActivityIndicator size="small" color={colors.primary} style={styles.loader} />
+                ) : (
+                  <Text style={[styles.infoValue, { color: tk.textMuted }]}>{getCountry()}</Text>
+                )}
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    </PageContainer>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  scrollContent: { alignItems: "center", paddingTop: 40, paddingHorizontal: 24, paddingBottom: 40 },
+  avatarSection: { alignItems: "center", marginBottom: 32, width: "100%" },
+  avatarOutline: {
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    borderWidth: 1.5,
+    padding: 3,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 16,
+  },
+  avatar: { width: "100%", height: "100%", borderRadius: 50 },
+  usernameText: { fontFamily: "Poppins_700Bold", fontSize: 18, marginBottom: 12, textAlign: "center" },
+  introText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
+    paddingHorizontal: 16,
+  },
+  linkText: { color: "#2563EB", fontFamily: "Inter_600SemiBold" },
+  infoSection: { width: "100%", alignSelf: "stretch", gap: 24, marginTop: 12 },
+  infoRow: { flexDirection: "row", alignItems: "flex-start", gap: 16 },
+  iconContainer: { paddingTop: 2 },
+  infoTextContainer: { flex: 1 },
+  infoLabel: { fontFamily: "Poppins_600SemiBold", fontSize: 15, marginBottom: 2 },
+  infoValue: { fontFamily: "Inter_400Regular", fontSize: 13 },
+  loader: { alignSelf: "flex-start", marginTop: 4 },
+});

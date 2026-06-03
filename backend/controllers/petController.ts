@@ -366,6 +366,7 @@ export const deletePet = async (req: any, res: Response): Promise<void> => {
       adoption_applications: AdoptionApplication,
       conversations: Conversation,
       messages: Message,
+      playdate_likes: PlaydateLike,
     } = db as any;
 
     const pet = await Pet.findOne({
@@ -392,6 +393,15 @@ export const deletePet = async (req: any, res: Response): Promise<void> => {
     await AdoptionApplication.destroy({ where: { petId }, transaction });
     await Message.destroy({ where: { petId }, transaction });
     await Conversation.destroy({ where: { petId }, transaction });
+    await PlaydateLike.destroy({
+      where: {
+        [Op.or]: [
+          { swiperPetId: petId },
+          { targetPetId: petId }
+        ]
+      },
+      transaction
+    });
 
     // Finally delete the pet
     await pet.destroy({ transaction });

@@ -15,6 +15,25 @@ import { notificationApi } from "../services/notification/notificationApi";
 import { socketService } from "../services/socket/socketService";
 import { useNotificationStore } from "../src/lib/notification-store";
 import type { AppNotification, UnreadCounts } from "../services/notification/notificationApi";
+import { Alert } from "react-native";
+
+// Safe dynamic import for Firebase messaging
+const getMessaging = () => {
+  if (Constants.appOwnership === 'expo' || Platform.OS === 'web') return null;
+  try {
+    return require("@react-native-firebase/messaging").default;
+  } catch {
+    return null;
+  }
+};
+
+// Register background handler early
+const messaging = getMessaging();
+if (messaging) {
+  messaging().setBackgroundMessageHandler(async (remoteMessage: any) => {
+    console.log("Message handled in the background!", remoteMessage);
+  });
+}
 
 const queryClient = new QueryClient();
 
@@ -121,8 +140,9 @@ export default function RootLayout() {
     if (!user) return;
     const bootstrapPush = async () => {
       try {
-        if (Constants.appOwnership === 'expo' || Platform.OS === 'web') return;
-        const messaging = require("@react-native-firebase/messaging").default;
+        const messaging = getMessaging();
+        if (!messaging) return;
+        
         const authStatus = await messaging().requestPermission();
         const enabled =
           authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
@@ -140,11 +160,30 @@ export default function RootLayout() {
           platform: Platform.OS as "ios" | "android",
           pushEnabled: true,
         });
+
+        // Listen for foreground messages
+        const unsubscribe = messaging().onMessage(async (remoteMessage: any) => {
+          console.log("A new FCM message arrived!", JSON.stringify(remoteMessage));
+          if (remoteMessage.notification) {
+            Alert.alert(
+              remoteMessage.notification.title || "New Notification",
+              remoteMessage.notification.body || ""
+            );
+          }
+        });
+        
+        return unsubscribe;
       } catch (err) {
         console.warn("[Push] Bootstrap failed:", err);
       }
     };
-    bootstrapPush();
+    let unsubForeground: any;
+    bootstrapPush().then(unsub => { unsubForeground = unsub; });
+    return () => {
+      if (unsubForeground && typeof unsubForeground === 'function') {
+        unsubForeground();
+      }
+    };
   }, [user?.id]);
 
   // Auth guard: redirect based on login state once both fonts + auth are ready
