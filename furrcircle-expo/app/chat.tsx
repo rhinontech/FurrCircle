@@ -148,6 +148,8 @@ export default function ChatScreen() {
     if (selectedChat) {
       loadMessages();
       clearChatUnread(); // Mark all chats read when opening a specific chat
+      // Also inform the backend
+      chatApi.markChatAsRead(selectedChat).catch(() => {});
     }
   }, [selectedChat]);
 
@@ -289,7 +291,7 @@ const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any)
                   ]}>
                     {renderMessageContent(item.text, isMe, tk, router)}
                     <Text style={[styles.timeText, { color: isMe ? "rgba(255,255,255,0.7)" : tk.textMuted, textAlign: isMe ? "right" : "left" }]}>
-                      {formatTime(item.createdAt)}
+                      {formatTime(item.createdAt)}{isMe && (item.readAt || item.seen ? " ✓✓" : " ✓")}
                     </Text>
                   </View>
                 </View>
@@ -368,7 +370,7 @@ const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any)
             
             // Determine if there's unread logic here if we add lastRead marker, for now we just show it
             // if we have unread badge and the last message isn't ours. We'll simplify.
-            const hasUnread = false; // We can integrate this deeper later
+            const hasUnread = c.unreadCount > 0 || (c.lastMessage && !c.lastMessage.readAt && !c.lastMessage.seen && c.lastMessage.sender?.id !== user?.id);
 
             return (
               <TouchableOpacity 
@@ -378,17 +380,19 @@ const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any)
               >
                 <View style={styles.avatarWrap}>
                   <Avatar source={otherUser.avatar_url ? {uri: otherUser.avatar_url} : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={50} />
-                  {/* We don't have online status in getChats yet, but we could add it. For now omit dot or mock it. */}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.chatName, { color: tk.text }]}>{otherUser.name}</Text>
-                  <Text style={[styles.chatLastMsg, { color: tk.textMuted }]} numberOfLines={1}>
+                  <Text style={[styles.chatName, { color: tk.text, fontFamily: hasUnread ? "Poppins_700Bold" : "Poppins_600SemiBold" }]}>{otherUser.name}</Text>
+                  <Text style={[styles.chatLastMsg, { color: hasUnread ? tk.text : tk.textMuted, fontFamily: hasUnread ? "Inter_600SemiBold" : "Inter_400Regular" }]} numberOfLines={1}>
                     {c.lastMessage?.text || "Started a conversation"}
                   </Text>
                 </View>
-                <Text style={[styles.chatTime, { color: tk.textMuted }]}>
-                  {formatRelativeTime(c.lastMessage?.createdAt || c.updatedAt)}
-                </Text>
+                <View style={{ alignItems: "flex-end", gap: 4 }}>
+                  <Text style={[styles.chatTime, { color: hasUnread ? colors.coral : tk.textMuted }]}>
+                    {formatRelativeTime(c.lastMessage?.createdAt || c.updatedAt)}
+                  </Text>
+                  {hasUnread && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.coral }} />}
+                </View>
               </TouchableOpacity>
             );
           }}

@@ -169,15 +169,28 @@ export default function OtpVerifyScreen() {
       }
 
       try {
-        if (confirm) {
-          await confirm.confirm(code);
+        const currentUser = auth().currentUser;
+        // If Android auto-verified the SMS, the user might already be signed in to Firebase
+        if (currentUser && currentUser.phoneNumber?.includes(emailOrPhone.replace(/[^0-9+]/g, ''))) {
+          console.log("User already signed into Firebase via auto-verification.");
         } else {
-          const credential = auth.PhoneAuthProvider.credential(activeVerificationId, code);
-          await auth().signInWithCredential(credential);
+          if (confirm) {
+            await confirm.confirm(code);
+          } else {
+            const credential = auth.PhoneAuthProvider.credential(activeVerificationId, code);
+            await auth().signInWithCredential(credential);
+          }
         }
+      } catch (err: any) {
+        console.error("Firebase Verification Error:", err);
+        setLoading(false);
+        // Include the actual firebase error message to debug if it's not auto-verification
+        Alert.alert("Verification Failed", err.message || "The code you entered is invalid or has expired.");
+        return;
+      }
 
-        // Firebase verified! Call backend to log in or register
-        // Firebase verified! Call backend to log in or register
+      // Firebase verified! Call backend to log in or register
+      try {
         if (type === "phone-verify-signup") {
           const res = await authApi.register({
             username,
@@ -196,8 +209,8 @@ export default function OtpVerifyScreen() {
           setIsCodeVerified(true);
         }
       } catch (err: any) {
-        console.error("Firebase Verification Error:", err);
-        Alert.alert("Verification Failed", "The code you entered is invalid or has expired.");
+        console.error("Backend Error after OTP:", err);
+        Alert.alert("Error", err.message || "Failed to complete account setup. Please try again.");
       } finally {
         setLoading(false);
       }
