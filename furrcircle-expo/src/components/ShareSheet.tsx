@@ -139,8 +139,8 @@ export function ShareSheet({ open, onClose, postId, petId }: ShareSheetProps) {
                     <View
                       style={[
                         styles.checkbox,
-                        { borderColor: isSelected ? colors.coral : tk.border },
-                        isSelected && { backgroundColor: colors.coral },
+                        { borderColor: isSelected ? colors.primary : tk.border },
+                        isSelected && { backgroundColor: colors.primary },
                       ]}
                     >
                       {isSelected && <Check size={12} color="#fff" strokeWidth={3} />}
@@ -157,7 +157,7 @@ export function ShareSheet({ open, onClose, postId, petId }: ShareSheetProps) {
             disabled={selected.length === 0}
             style={[
               styles.sendActionBtn,
-              { backgroundColor: selected.length > 0 ? colors.coral : tk.border },
+              { backgroundColor: selected.length > 0 ? colors.primary : tk.border },
             ]}
             activeOpacity={0.8}
           >
