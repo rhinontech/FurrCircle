@@ -301,7 +301,8 @@ export const loginOtp = async (req: Request, res: Response): Promise<void> => {
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { users: User, vets: Vet } = db as any;
-    const identifier = req.body.identifier?.trim().toLowerCase(); // Can be username, email, or phone
+    // Accept both `identifier` (mobile/regular flow) and `email` (admin panel flow)
+    const identifier = (req.body.identifier || req.body.email)?.trim().toLowerCase();
     const { password } = req.body;
 
     if (!identifier || !password) {
