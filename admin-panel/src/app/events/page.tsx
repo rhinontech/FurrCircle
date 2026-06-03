@@ -420,7 +420,7 @@ export default function EventsPage() {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Event Image</label>
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImagePick} className="hidden" />
                 {imagePreview ? (
-                  <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-slate-200">
+                  <div className="relative w-full aspect-4/3 rounded-2xl overflow-hidden border border-slate-200">
                     <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
                     {uploadingImage && (
                       <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
@@ -458,7 +458,7 @@ export default function EventsPage() {
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-semibold text-slate-600 group-hover:text-primary-900">Click to upload image</p>
-                      <p className="text-xs text-slate-400 mt-0.5">PNG, JPG up to 5MB</p>
+                      <p className="text-xs text-slate-400 mt-0.5">PNG, JPG up to 10MB</p>
                     </div>
                   </button>
                 )}
