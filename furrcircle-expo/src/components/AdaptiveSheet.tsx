@@ -1,0 +1,93 @@
+import { Modal, View, Pressable, StyleSheet } from "react-native";
+import { useBreakpoint } from "../lib/breakpoints";
+import { useTokens } from "../lib/theme-store";
+
+interface AdaptiveSheetProps {
+  visible: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  maxWidth?: number;
+  maxHeight?: string | number;
+}
+
+export function AdaptiveSheet({
+  visible,
+  onClose,
+  children,
+  maxWidth = 480,
+  maxHeight = "90%",
+}: AdaptiveSheetProps) {
+  const { isTablet } = useBreakpoint();
+  const tk = useTokens();
+
+  if (isTablet) {
+    // Desktop: centered dialog, fade in, click outside to close
+    return (
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+        <Pressable style={styles.overlayCenter} onPress={onClose}>
+          <Pressable
+            style={[styles.dialog, { maxWidth, maxHeight, backgroundColor: tk.card }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            {children}
+          </Pressable>
+        </Pressable>
+      </Modal>
+    );
+  }
+
+  // Mobile: slide-up bottom sheet — backdrop is a separate absoluteFill
+  // so it never interferes with ScrollView / touch in the sheet content
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.overlayMobile}>
+        {/* Tap backdrop to close — sits behind the sheet */}
+        <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
+        {/* Sheet content — plain View, no touch interception */}
+        <View style={[styles.sheet, { backgroundColor: tk.card, maxHeight }]}>
+          <View style={[styles.handle, { backgroundColor: tk.textMuted }]} />
+          {children}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlayMobile: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-end",
+  },
+  overlayCenter: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  sheet: {
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+  },
+  handle: {
+    width: 48,
+    height: 5,
+    borderRadius: 3,
+    alignSelf: "center",
+    marginTop: 12,
+    marginBottom: 4,
+    opacity: 0.25,
+  },
+  dialog: {
+    width: "100%",
+    borderRadius: 24,
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+});

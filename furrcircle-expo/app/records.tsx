@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { healthApi } from "../services/health/healthApi";
 import { moonaPassport } from "../src/lib/demo-data";
 import { FileText, Plus, X, Syringe, AlertCircle, ShieldCheck, Activity, Pill } from "lucide-react-native";
+import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
 
 type RecordType = "vaccine" | "allergy" | "insurance";
 
@@ -167,10 +168,8 @@ export default function RecordsScreen() {
     </View>
 
     {/* Add Record Modal */}
-    <Modal visible={addSheetOpen} transparent animationType="slide" onRequestClose={handleClose}>
-      <Pressable style={styles.overlay} onPress={handleClose}>
-        <Pressable style={[styles.sheet, { backgroundColor: tk.card }]} onPress={(e) => e.stopPropagation()}>
-          <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+    <AdaptiveSheet visible={addSheetOpen} onClose={handleClose} maxWidth={500} maxHeight="90%">
+        <View style={{ padding: 24 }}>
           <View style={styles.sheetTitleRow}>
             <Text style={[styles.sheetTitle, { color: tk.text }]}>
               {selectedType ? `Add ${selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}` : "Add Record"}
@@ -225,9 +224,8 @@ export default function RecordsScreen() {
               <SaveButton onPress={handleSave} />
             </View>
           )}
-        </Pressable>
-      </Pressable>
-    </Modal>
+        </View>
+    </AdaptiveSheet>
     </PageContainer>
   );
 }

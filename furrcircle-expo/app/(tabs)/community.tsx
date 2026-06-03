@@ -16,6 +16,7 @@ import { circleApi } from "../../services/community/circleApi";
 import { questionApi } from "../../services/community/questionApi";
 import { feedApi } from "../../services/community/feedApi";
 import { userApi } from "../../services/user/userApi";
+import { AdaptiveSheet } from "../../src/components/AdaptiveSheet";
 
 type FilterType = "all" | "people" | "pets" | "posts" | "circles" | "questions" | "tags";
 const FILTERS: { key: FilterType; label: string }[] = [
@@ -527,14 +528,9 @@ function CreateCircleSheet({ open, onClose, onCreate, tk }: any) {
   };
 
   return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-      >
-        <Pressable style={styles.overlay} onPress={() => { Keyboard.dismiss(); onClose(); }}>
-          <Pressable style={[styles.sheet, { backgroundColor: tk.card, maxHeight: "85%" }]} onPress={Keyboard.dismiss}>
-            <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+    <AdaptiveSheet visible={open} onClose={onClose} maxWidth={520} maxHeight="85%">
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <Pressable onPress={Keyboard.dismiss} style={{ padding: 24, paddingBottom: 40 }}>
             <Text style={[styles.sheetTitle, { color: tk.text }]}>Create new Circle</Text>
 
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -572,10 +568,9 @@ function CreateCircleSheet({ open, onClose, onCreate, tk }: any) {
                 </TouchableOpacity>
               </Pressable>
             </ScrollView>
-          </Pressable>
         </Pressable>
       </KeyboardAvoidingView>
-    </Modal>
+    </AdaptiveSheet>
   );
 }
 

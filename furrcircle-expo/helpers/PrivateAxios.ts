@@ -1,6 +1,18 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { DeviceEventEmitter } from 'react-native';
+import { DeviceEventEmitter, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const getToken = async (): Promise<string | null> => {
+    if (Platform.OS === 'web') {
+        try {
+            const raw = await AsyncStorage.getItem('furr:auth');
+            if (raw) return JSON.parse(raw)?.token ?? null;
+        } catch { }
+        return null;
+    }
+    return SecureStore.getItemAsync('token');
+};
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? 'http://localhost:5002/api' : '');
 
@@ -27,23 +39,20 @@ export const PrivateAxios = axios.create({
 PrivateAxios.interceptors.request.use(
     async (config) => {
         try {
-            let token = await SecureStore.getItemAsync('token');
+            let token = await getToken();
             if (!token) {
-                // Minor retry delay if token was just refreshed or set
                 await new Promise(r => setTimeout(r, 250));
-                token = await SecureStore.getItemAsync('token');
-                
-                // One more final attempt if still null, total wait 750ms
+                token = await getToken();
                 if (!token) {
                     await new Promise(r => setTimeout(r, 500));
-                    token = await SecureStore.getItemAsync('token');
+                    token = await getToken();
                 }
             }
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
         } catch (error) {
-            console.error('Error fetching token from SecureStore', error);
+            console.error('Error fetching token', error);
         }
         return config;
     },
@@ -58,7 +67,7 @@ PrivateAxios.interceptors.response.use(
         const code = error?.response?.data?.code;
         if (code === 'SUBSCRIPTION_LOCKED') {
             try {
-                await SecureStore.setItemAsync('subscriptionLocked', 'true');
+                if (Platform.OS !== 'web') await SecureStore.setItemAsync('subscriptionLocked', 'true');
             } catch (secureStoreError) {
                 console.error('Failed to persist subscription lock state', secureStoreError);
             }

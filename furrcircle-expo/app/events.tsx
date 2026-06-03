@@ -10,6 +10,7 @@ import { useTokens } from "../src/lib/theme-store";
 import { MapPin, Users, Calendar, Clock, X, CalendarDays } from "lucide-react-native";
 import { eventApi } from "../services/community/eventApi";
 import { useFocusEffect } from "expo-router";
+import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
 
 const filters = ["All", "Adoption", "Playdate", "Training", "Meetup"] as const;
 
@@ -218,35 +219,30 @@ export default function EventsScreen() {
         </ScrollView>
 
         {/* Event Detail Modal */}
-        <Modal
-          visible={!!selectedEvent}
-          animationType="slide"
-          transparent
-          onRequestClose={() => setSelectedEvent(null)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { backgroundColor: tk.card }]}>
-              {/* Close button floats above everything */}
-              <TouchableOpacity
-                onPress={() => setSelectedEvent(null)}
-                style={[styles.modalCloseBtn, { backgroundColor: "rgba(0,0,0,0.4)" }]}
-              >
-                <X size={18} color="#fff" />
-              </TouchableOpacity>
-
+        <AdaptiveSheet visible={!!selectedEvent} onClose={() => setSelectedEvent(null)} maxWidth={560} maxHeight="92%">
+            <View style={{ flex: 1 }}>
               <ScrollView
+                style={{ flex: 1 }}
                 contentContainerStyle={styles.modalBody}
                 showsVerticalScrollIndicator={false}
                 bounces={true}
               >
-                {/* Image scrolls with content */}
-                {selectedEvent?.imageUrl ? (
-                  <Image source={{ uri: selectedEvent.imageUrl }} style={styles.modalImage} resizeMode="cover" />
-                ) : (
-                  <View style={[styles.modalImagePlaceholder, { backgroundColor: getTint(selectedEvent?.category).bg }]}>
-                    <CalendarDays size={56} color={getTint(selectedEvent?.category).badge} style={{ opacity: 0.5 }} />
-                  </View>
-                )}
+                {/* Image with close button overlaid */}
+                <View style={{ position: "relative" }}>
+                  {selectedEvent?.imageUrl ? (
+                    <Image source={{ uri: selectedEvent.imageUrl }} style={styles.modalImage} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.modalImagePlaceholder, { backgroundColor: getTint(selectedEvent?.category).bg }]}>
+                      <CalendarDays size={56} color={getTint(selectedEvent?.category).badge} style={{ opacity: 0.5 }} />
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => setSelectedEvent(null)}
+                    style={[styles.modalCloseBtn, { backgroundColor: "rgba(0,0,0,0.4)" }]}
+                  >
+                    <X size={18} color="#fff" />
+                  </TouchableOpacity>
+                </View>
                 {/* Content below image */}
                 <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
                 {/* Category + booked */}
@@ -314,8 +310,7 @@ export default function EventsScreen() {
                 </View>{/* end content padding wrapper */}
               </ScrollView>
             </View>
-          </View>
-        </Modal>
+        </AdaptiveSheet>
       </View>
     </PageContainer>
   );

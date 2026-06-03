@@ -35,7 +35,7 @@ export function ScreenHeader({ title, right, showBack, onBack }: Props) {
   return (
     <View style={[
       styles.container,
-      { paddingTop: (title === 'Ask the Community') || (title === 'Add a pet') ? Platform.OS === "ios" ? 20 : insets.top + 10 : insets.top + 8, backgroundColor: tk.bg},
+      { paddingTop: insets.top + 8, backgroundColor: tk.bg },
       isTablet && styles.containerTablet,
     ]}>
       {shouldShowBack ? (

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
 import { Home, Users, Bone, Compass, LayoutGrid, PawPrint, Plus, Bell } from "lucide-react-native";
 import { colors } from "../lib/theme";
@@ -6,6 +6,7 @@ import { useTokens } from "../lib/theme-store";
 import { useBreakpoint } from "../lib/breakpoints";
 import { Avatar } from "./Avatar";
 import { useNotificationStore } from "../lib/notification-store";
+import { useAuthStore } from "../lib/auth-store";
 
 const NAV_ITEMS = [
   { key: "feed",          icon: Home,       label: "Feed",          path: "/(tabs)/" },
@@ -23,6 +24,7 @@ export function SideNav() {
   const { isDesktop } = useBreakpoint();
   const unreadCount = useNotificationStore((s) => s.unreadCount);
 
+  const user = useAuthStore((s) => s.user);
   const wide = isDesktop;               // show labels + user card
   const navW = wide ? 240 : 84;
 
@@ -97,18 +99,22 @@ export function SideNav() {
       </TouchableOpacity>
 
       {/* User card — only on wide */}
-      {wide && (
-        <View style={[styles.userCard, { backgroundColor: tk.bg }]}>
+      {wide && user && (
+        <TouchableOpacity
+          onPress={() => router.push(`/u/${user.username}`)}
+          style={[styles.userCard, { backgroundColor: tk.bg }]}
+          activeOpacity={0.8}
+        >
           <Avatar
-            source={require("../../src/assets/doodle-boy-dog.png")}
-            name="Goutham R."
+            source={user.avatar_url?.startsWith('http') ? { uri: user.avatar_url } : require("../../src/assets/doodle-boy-dog.png")}
+            name={user.name || user.username || ""}
             size={36}
           />
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={[styles.userName, { color: tk.text }]} numberOfLines={1}>Goutham R.</Text>
-            <Text style={[styles.userHandle, { color: tk.textMuted }]}>@goutham</Text>
+            <Text style={[styles.userName, { color: tk.text }]} numberOfLines={1}>{user.name || user.username}</Text>
+            <Text style={[styles.userHandle, { color: tk.textMuted }]}>@{user.username}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
       )}
     </View>
   );
