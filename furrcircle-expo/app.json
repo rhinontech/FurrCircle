@@ -21,7 +21,16 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.furrcircle.app",
       "buildNumber": "8",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.1086302921042-dummy"
+            ]
+          }
+        ]
+      }
     },
     "android": {
       "splash": {
@@ -74,7 +83,7 @@
         "@react-native-firebase/auth",
         {
           "ios": {
-            "captchaOpenUrlFix": false
+            "captchaOpenUrlFix": true
           }
         }
       ],
