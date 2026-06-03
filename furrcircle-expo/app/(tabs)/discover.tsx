@@ -156,7 +156,7 @@ export default function DiscoverScreen() {
             <View style={styles.petInfo}>
               <View style={styles.petNameRow}>
                 <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
-                <Heart size={16} color={colors.pinky} />
+                {/* <Heart size={16} color={colors.pinky} /> */}
               </View>
               <Text style={[styles.petBreed, { color: tk.textMuted }]}>{p.breed || p.species}</Text>
               <View style={styles.petDistRow}>

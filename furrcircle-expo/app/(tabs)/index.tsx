@@ -9,7 +9,7 @@ import {
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX } from "lucide-react-native";
+import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX, MoreVertical } from "lucide-react-native";
 import { useState, useEffect, useCallback, useRef } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { posts as dummyPosts, sampleComments, type Post } from "../../src/lib/demo-data";
@@ -336,6 +336,12 @@ export default function FeedScreen() {
               isMuted={feedVideoMuted}
               onToggleMute={() => setFeedVideoMuted(prev => !prev)}
               isActive={activePostId === p.id}
+              onDelete={() => {
+                setFeedPosts(prev => prev.filter(x => x.id !== p.id));
+              }}
+              onUpdate={(updatedPost) => {
+                setFeedPosts(prev => prev.map(x => x.id === p.id ? { ...x, ...updatedPost } : x));
+              }}
             />
           </View>
         )}
@@ -456,7 +462,7 @@ function FeedHeader() {
         if (hasUnread) unread++;
       });
       setChatUnreadCount(unread);
-    }).catch(() => {});
+    }).catch(() => { });
   }, [user]);
 
   const handleLocationSelect = async (loc: LocationResult) => {
@@ -711,10 +717,11 @@ const getCommentTimeLabel = (createdAt?: string) => {
   return `${dy}d`;
 };
 
-function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, onToggleMute, isActive }: {
+function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, onToggleMute, isActive, onDelete, onUpdate }: {
   post: any; isLiked: boolean; isSaved: boolean;
   onLike: () => void; onSave: () => void; onShare: (id: string) => void;
   isMuted: boolean; onToggleMute: () => void; isActive: boolean;
+  onDelete?: () => void; onUpdate?: (updatedPost: any) => void;
 }) {
   const router = useRouter();
   const tk = useTokens();
@@ -726,7 +733,39 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   const [submitting, setSubmitting] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
 
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const isDummy = dummyPosts.some(d => d.id === post.id);
+  const isOwner = !isDummy && post.userId === user?.id;
+
+  const handleDeletePost = () => {
+    setMenuOpen(false);
+    Alert.alert(
+      "Delete Post",
+      "Are you sure you want to delete this post?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setDeleting(true);
+              await feedApi.deletePost(post.id);
+              Alert.alert("Success", "Post deleted successfully.");
+              if (onDelete) onDelete();
+            } catch (err: any) {
+              Alert.alert("Error", err?.response?.data?.message || "Could not delete post.");
+            } finally {
+              setDeleting(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const [localComments, setLocalComments] = useState<any[]>(
     Array.isArray(post.comments)
       ? post.comments
@@ -814,6 +853,10 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
         {!post.type && post.category === "Lost & Found" && <View style={[styles.typeBadge, { backgroundColor: colors.coral }]}><Text style={styles.typeBadgeText}>LOST & FOUND</Text></View>}
         {!post.type && post.category === "Training" && <View style={[styles.typeBadge, { backgroundColor: colors.primary }]}><Text style={styles.typeBadgeText}>TRAINING</Text></View>}
         {!post.type && post.category === "Health" && <View style={[styles.typeBadge, { backgroundColor: "#2563EB" }]}><Text style={styles.typeBadgeText}>HEALTH</Text></View>}
+
+        <TouchableOpacity onPress={() => setMenuOpen(true)} style={{ padding: 6, marginLeft: 4 }}>
+          <MoreVertical size={20} color={tk.textMuted} />
+        </TouchableOpacity>
       </View>
 
       {/* Image in tinted container */}
@@ -1008,6 +1051,99 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
             </View>
           </KeyboardAvoidingView>
         </View>
+      </Modal>
+
+      {/* Options Menu Modal */}
+      <Modal visible={menuOpen} transparent={true} animationType="slide" onRequestClose={() => setMenuOpen(false)}>
+        <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
+          <View style={[styles.sheet, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true}onTouchEnd={(e) => e.stopPropagation()}>
+            <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+            <Text style={[styles.sheetTitle, { color: tk.text }]}>Options</Text>
+            
+            {/* Save Option */}
+            <TouchableOpacity 
+              onPress={() => { setMenuOpen(false); onSave(); }}
+              style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+              activeOpacity={0.8}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sheetRowTitle, { color: tk.text }]}>
+                  {isSaved ? "Remove from Saved" : "Save Post"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {isOwner ? (
+              <>
+                {/* Edit Post Option */}
+                <TouchableOpacity 
+                  onPress={() => { 
+                    setMenuOpen(false); 
+                    router.push({
+                      pathname: "/compose",
+                      params: {
+                        editPostId: post.id,
+                        prefilledCategory: post.category || "General",
+                        prefilledCaption: post.content || "",
+                        prefilledImageUrl: post.imageUrl || "",
+                      }
+                    });
+                  }}
+                  style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.sheetRowTitle, { color: tk.text }]}>Edit Post</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Delete Post Option */}
+                <TouchableOpacity 
+                  onPress={handleDeletePost}
+                  style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Delete Post</Text>
+                  </View>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                {/* About this Account Option */}
+                <TouchableOpacity 
+                  onPress={() => setMenuOpen(false)}
+                  style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.sheetRowTitle, { color: tk.text }]}>About this Account</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Report Option */}
+                <TouchableOpacity 
+                  onPress={() => setMenuOpen(false)}
+                  style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Report</Text>
+                  </View>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* Cancel Button */}
+            <TouchableOpacity 
+              onPress={() => setMenuOpen(false)}
+              style={[styles.sheetRow, { backgroundColor: tk.bg, marginTop: 12, justifyContent: "center", alignItems: "center" }]} 
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.sheetRowTitle, { color: tk.textMuted }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
       </Modal>
     </View>
   );

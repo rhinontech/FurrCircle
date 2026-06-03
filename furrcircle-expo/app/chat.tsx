@@ -222,6 +222,25 @@ const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any)
       </View>
     );
   }
+
+  const petMatch = text.match(/furrcircle:\/\/pet\/([A-Za-z0-9-]+)/);
+  if (petMatch) {
+    const petId = petMatch[1];
+    const prefixText = text.replace(petMatch[0], "").trim();
+    
+    return (
+      <View>
+        {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
+        <TouchableOpacity 
+          onPress={() => router.push(`/p/${petId}`)}
+          style={{ backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border, padding: 12, borderRadius: 12, alignItems: "center" }}
+          activeOpacity={0.7}
+        >
+          <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Pet</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
   
   return <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text }]}>{text}</Text>;
 };

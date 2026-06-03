@@ -16,7 +16,7 @@ import { Heart, X, Star, ArrowLeft, ArrowRight, MapPin } from "lucide-react-nati
 import { useState, useRef, useCallback, useEffect } from "react";
 import * as Location from "expo-location";
 import { colors } from "../../src/lib/theme";
-import { useTokens } from "../../src/lib/theme-store";
+import { useTokens, useThemeStore } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { matchApi, type Coords } from "../../services/match/matchApi";
 import { petApi } from "../../services/pet/petApi";
@@ -73,6 +73,7 @@ export default function MatchScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const tk = useTokens();
+  const dark = useThemeStore((s) => s.dark);
   const { user } = useAuthStore();
 
   const [mode, setMode] = useState<Mode>("Playdate");
@@ -392,13 +393,13 @@ export default function MatchScreen() {
             {bgCard && (
               <View style={[styles.card, { backgroundColor: bgCard.tintColor, transform: [{ rotate: "2deg" }, { translateX: 4 }], zIndex: 0 }]}>
                 {bgCard.img ? (
-                  <Image source={bgCard.img} style={styles.cardImage} resizeMode="contain" />
+                  <Image source={bgCard.img} style={styles.cardImage} resizeMode="cover" />
                 ) : (
                   <View style={styles.cardImagePlaceholder} />
                 )}
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardName}>{bgCard.name}</Text>
-                  <Text style={styles.cardMeta}>{bgCard.meta}</Text>
+                <View style={[styles.cardInfo, { backgroundColor: dark ? "rgba(28,28,46,0.85)" : "rgba(255,255,255,0.85)", borderColor: dark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)", borderWidth: 1 }]}>
+                  <Text style={[styles.cardName, { color: dark ? "#FFFFFF" : colors.foreground }]}>{bgCard.name}</Text>
+                  <Text style={[styles.cardMeta, { color: dark ? "rgba(255,255,255,0.7)" : "rgba(26,26,46,0.65)" }]}>{bgCard.meta}</Text>
                 </View>
               </View>
             )}
@@ -420,7 +421,7 @@ export default function MatchScreen() {
               {...panResponder.panHandlers}
             >
               {topCard.img ? (
-                <Image source={topCard.img} style={styles.cardImage} resizeMode="contain" />
+                <Image source={topCard.img} style={styles.cardImage} resizeMode="cover" />
               ) : (
                 <View style={[styles.cardImagePlaceholder, { backgroundColor: topCard.tintColor }]}>
                   <Text style={{ fontSize: 64 }}>{mode === "Owner" ? "👤" : "🐾"}</Text>
@@ -445,10 +446,10 @@ export default function MatchScreen() {
                 </View>
               )}
 
-              <View style={styles.cardInfo}>
-                <Text style={styles.cardName}>{topCard.name}</Text>
-                <Text style={styles.cardMeta}>{topCard.meta}</Text>
-                <Text style={styles.cardTag}>{topCard.tag}</Text>
+              <View style={[styles.cardInfo, { backgroundColor: dark ? "rgba(28,28,46,0.85)" : "rgba(255,255,255,0.85)", borderColor: dark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)", borderWidth: 1 }]}>
+                <Text style={[styles.cardName, { color: dark ? "#FFFFFF" : colors.foreground }]}>{topCard.name}</Text>
+                <Text style={[styles.cardMeta, { color: dark ? "rgba(255,255,255,0.7)" : "rgba(26,26,46,0.65)" }]}>{topCard.meta}</Text>
+                <Text style={[styles.cardTag, { color: dark ? "rgba(255,255,255,0.9)" : "rgba(26,26,46,0.85)" }]}>{topCard.tag}</Text>
               </View>
             </Animated.View>
           </>
@@ -596,19 +597,17 @@ const styles = StyleSheet.create({
   },
   cardImage: {
     position: "absolute",
-    left: "10%",
-    right: "10%",
-    top: 24,
-    height: "65%",
-    width: "80%",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
   cardImagePlaceholder: {
     position: "absolute",
-    left: "10%",
-    right: "10%",
-    top: 24,
-    height: "65%",
-    width: "80%",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     alignItems: "center",
     justifyContent: "center",
   },
