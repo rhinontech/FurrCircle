@@ -1142,6 +1142,35 @@ export const sendMessage = async (req: any, res: Response): Promise<void> => {
   }
 };
 
+// @desc    Mark a chat as read
+// @route   POST /api/community/chats/:id/read
+export const markChatAsRead = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { messages: Message } = db as any;
+    const { id } = req.params;
+    const currentUserId = req.user.id;
+
+    // Update all unread messages in this conversation that were NOT sent by the current user
+    await Message.update(
+      { isRead: true },
+      {
+        where: {
+          conversationId: id,
+          isRead: false,
+          senderId: {
+            [Op.ne]: currentUserId
+          }
+        }
+      }
+    );
+
+    res.status(200).json({ success: true, message: "Chat marked as read" });
+  } catch (error: any) {
+    console.error("markChatAsRead error:", error);
+    res.status(500).json({ message: "Server error marking chat as read", error: error.message });
+  }
+};
+
 // @desc    Start or reuse a chat
 // @route   POST /api/community/chats/start
 export const startChat = async (req: any, res: Response): Promise<void> => {
