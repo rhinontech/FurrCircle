@@ -92,6 +92,7 @@ import playdateRoutes from './routes/playdateRoutes.ts';
 import ownerMatchRoutes from './routes/ownerMatchRoutes.ts';
 import breedRoutes from './routes/breedRoutes.ts';
 import lostPetRoutes from './routes/lostPetRoutes.ts';
+import blockRoutes from './routes/blockRoutes.ts';
 
 
 // Routes
@@ -123,6 +124,7 @@ app.use('/api/playdate', playdateRoutes);
 app.use('/api/owner-match', ownerMatchRoutes);
 app.use('/api/breed', breedRoutes);
 app.use('/api/lost-pets', lostPetRoutes);
+app.use('/api/blocks', blockRoutes);
 
 
 // Test DB Connection and Start Server
@@ -132,7 +134,7 @@ const startServer = async (attempt = 1) => {
         console.log('Database connected successfully.');
 
         // Auto-create/sync tables based on models - Safe mode (Persistence enabled)
-        await sequelize.sync({ alter: true });
+        // await sequelize.sync({ alter: true });
         console.log('Database schema synchronized.');
 
         await seedSuperAdmin();

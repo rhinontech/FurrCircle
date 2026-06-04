@@ -174,6 +174,12 @@ db.playdate_likes.belongsTo(db.pets, { foreignKey: 'targetPetId', as: 'targetPet
 db.owner_likes.belongsTo(db.users, { foreignKey: 'likerId', as: 'liker' });
 db.owner_likes.belongsTo(db.users, { foreignKey: 'targetId', as: 'target' });
 
+// User Blocks
+db.user_blocks.belongsTo(db.users, { foreignKey: 'blockerId', as: 'blocker' });
+db.user_blocks.belongsTo(db.users, { foreignKey: 'blockedId', as: 'blocked' });
+db.users.hasMany(db.user_blocks, { foreignKey: 'blockerId', as: 'blockedByMe' });
+db.users.hasMany(db.user_blocks, { foreignKey: 'blockedId', as: 'blockedMe' });
+
 // ──────────────────────────────────────────────────────────────────────────────
 
 db.sequelize = sequelize;
@@ -218,6 +224,7 @@ export const playdate_likes = db.playdate_likes;
 export const owner_likes = db.owner_likes;
 export const lost_pets = db.lost_pets;
 export const memories = db.memories;
+export const user_blocks = db.user_blocks;
 
 export { sequelize, Sequelize };
 export default db;

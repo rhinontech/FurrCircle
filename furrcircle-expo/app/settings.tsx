@@ -2,7 +2,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, Switch,
   StyleSheet, Modal, Pressable, Alert,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { colors } from "../src/lib/theme";
@@ -13,6 +13,7 @@ import {
   Bell, Trash2, ChevronRight, LogOut,
 } from "lucide-react-native";
 import { userApi } from "../services/user/userApi";
+import { blockApi } from "../services/user/blockApi";
 import { LocationPickerModal, LocationResult } from "../src/components/LocationPickerModal";
 import * as Location from 'expo-location';
 import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
@@ -45,6 +46,13 @@ export default function SettingsScreen() {
   const [pushNotifs, setPushNotifs] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isLocationModalVisible, setLocationModalVisible] = useState(false);
+  const [blockedCount, setBlockedCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    blockApi.getBlockedUsers()
+      .then(list => setBlockedCount(list.length))
+      .catch(() => setBlockedCount(0));
+  }, []);
 
   const togglePrivateProfile = async (val: boolean) => {
     // Optimistic update
@@ -94,8 +102,12 @@ export default function SettingsScreen() {
           <Row tk={tk} icon={Lock} iconBg="rgba(76,175,80,0.15)" iconColor={colors.success}
             label="Two-factor auth" sub="Extra step on new logins"
             toggle={twoFA} onToggle={setTwoFA} />
-          <Row tk={tk} icon={ShieldAlert} iconBg="rgba(255,107,107,0.15)" iconColor={colors.coral}
-            label="Blocked accounts" sub="0 blocked" isLink />
+          <TouchableOpacity onPress={() => router.push('/blocked-accounts' as any)} activeOpacity={0.8}>
+            <View pointerEvents="none">
+              <Row tk={tk} icon={ShieldAlert} iconBg="rgba(255,107,107,0.15)" iconColor={colors.coral}
+                label="Blocked accounts" sub={blockedCount === null ? "Loading..." : `${blockedCount} blocked`} isLink />
+            </View>
+          </TouchableOpacity>
         </Section>
 
         <Section title="Location" tk={tk}>

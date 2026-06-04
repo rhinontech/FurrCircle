@@ -285,6 +285,7 @@ export default function RootLayout() {
       <Stack.Screen name="book" options={{ presentation: "card" }} />
       <Stack.Screen name="reels" options={{ presentation: "card" }} />
       <Stack.Screen name="chat" options={{ presentation: "card" }} />
+      <Stack.Screen name="blocked-accounts" options={{ presentation: "card" }} />
       <Stack.Screen name="compose" options={{ presentation: "card" }} />
       <Stack.Screen name="add-pet" options={{ presentation: "card" }} />
       <Stack.Screen name="edit-pet" options={{ presentation: "card" }} />

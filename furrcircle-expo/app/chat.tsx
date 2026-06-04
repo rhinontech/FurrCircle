@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
-  FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, Pressable
+  FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, Pressable, Alert
 } from "react-native";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { Avatar } from "../src/components/Avatar";
@@ -127,14 +127,17 @@ export default function ChatScreen() {
   }, [isNewChatOpen]);
 
   const handleStartNewChat = async (recipientId: string) => {
-    setIsNewChatOpen(false);
-    setSearchQuery("");
-    setSearchResults([]);
+    // Don't close the modal yet — wait until we know the API succeeded
     try {
       const conv = await chatApi.startChat(recipientId);
+      // Only close modal and navigate on success
+      setIsNewChatOpen(false);
+      setSearchQuery("");
+      setSearchResults([]);
       setSelectedChat(conv.id);
-    } catch (e) {
-      console.error("Failed to start chat", e);
+    } catch (e: any) {
+      const msg = e?.message || "Failed to start chat";
+      Alert.alert("Can't send message", msg);
     }
   };
 
