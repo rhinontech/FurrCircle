@@ -9,6 +9,9 @@ import { View, Platform } from "react-native";
 import { useEffect, useRef } from "react";
 import { useThemeStore, useTokens } from "../src/lib/theme-store";
 import { useAuthStore } from "../src/lib/auth-store";
+import { useBreakpoint } from "../src/lib/breakpoints";
+import { SideNav } from "../src/components/SideNav";
+import { RightRail } from "../src/components/RightRail";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { notificationApi } from "../services/notification/notificationApi";
@@ -56,6 +59,13 @@ export default function RootLayout() {
   const authLoading = useAuthStore((s) => s.loading);
   const router = useRouter();
   const segments = useSegments();
+  const { isTablet } = useBreakpoint();
+
+  const { isWide } = useBreakpoint();
+  const AUTH_SCREENS = ["login", "signup", "otp-verify", "forgot-password", "onboarding"];
+  const isAuthScreen = AUTH_SCREENS.includes(segments[0] || "");
+  const showSideNav = isTablet && !!user && !isAuthScreen;
+  const showRightRail = isWide && !!user && !isAuthScreen;
 
   const setUnreadCounts = useNotificationStore((s) => s.setUnreadCounts);
   const prependNotification = useNotificationStore((s) => s.prependNotification);
@@ -78,7 +88,9 @@ export default function RootLayout() {
 
     const bootstrap = async () => {
       try {
-        const token = await SecureStore.getItemAsync("token");
+        const token = Platform.OS === 'web'
+          ? useAuthStore.getState().user?.token ?? null
+          : await SecureStore.getItemAsync("token");
         if (!token || cancelled) return;
 
         socketService.connect(token);
@@ -199,41 +211,63 @@ export default function RootLayout() {
 
   if (!fontsLoaded || authLoading) return <View style={{ flex: 1, backgroundColor: "#F7F8FA" }} />;
 
+  const stackScreens = (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tokens.bg } }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="post/[id]" options={{ presentation: "card" }} />
+      <Stack.Screen name="thread/[id]" options={{ presentation: "card" }} />
+      <Stack.Screen name="community/[slug]" options={{ presentation: "card" }} />
+      <Stack.Screen name="u/[handle]" options={{ presentation: "card" }} />
+      <Stack.Screen name="p/[id]" options={{ presentation: "card" }} />
+      <Stack.Screen name="pet" options={{ presentation: "card" }} />
+      <Stack.Screen name="records" options={{ presentation: "card" }} />
+      <Stack.Screen name="care" options={{ presentation: "card" }} />
+      <Stack.Screen name="log/vitals" options={{ presentation: "card" }} />
+      <Stack.Screen name="log/meds" options={{ presentation: "card" }} />
+      <Stack.Screen name="log/vaccine" options={{ presentation: "card" }} />
+      <Stack.Screen name="notifications" options={{ presentation: "card" }} />
+      <Stack.Screen name="settings" options={{ presentation: "card" }} />
+      <Stack.Screen name="today" options={{ presentation: "card" }} />
+      <Stack.Screen name="events" options={{ presentation: "card" }} />
+      <Stack.Screen name="lost" options={{ presentation: "card" }} />
+      <Stack.Screen name="memory" options={{ presentation: "card" }} />
+      <Stack.Screen name="book" options={{ presentation: "card" }} />
+      <Stack.Screen name="reels" options={{ presentation: "card" }} />
+      <Stack.Screen name="chat" options={{ presentation: "card" }} />
+      <Stack.Screen name="compose" options={{ presentation: "card" }} />
+      <Stack.Screen name="add-pet" options={{ presentation: "card" }} />
+      <Stack.Screen name="edit-pet" options={{ presentation: "card" }} />
+      <Stack.Screen name="ask" options={{ presentation: "card" }} />
+      <Stack.Screen name="user/followers" options={{ presentation: "card" }} />
+      <Stack.Screen name="onboarding" options={{ presentation: "fullScreenModal" }} />
+      <Stack.Screen name="login" options={{ presentation: "card" }} />
+      <Stack.Screen name="signup" options={{ presentation: "card" }} />
+      <Stack.Screen name="otp-verify" options={{ presentation: "card" }} />
+      <Stack.Screen name="forgot-password" options={{ presentation: "card" }} />
+    </Stack>
+  );
+
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: tokens.bg }}>
       <QueryClientProvider client={queryClient}>
         <StatusBar style={dark ? "light" : "dark"} />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tokens.bg } }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="post/[id]" options={{ presentation: "card" }} />
-          <Stack.Screen name="thread/[id]" options={{ presentation: "card" }} />
-          <Stack.Screen name="community/[slug]" options={{ presentation: "card" }} />
-          <Stack.Screen name="u/[handle]" options={{ presentation: "card" }} />
-          <Stack.Screen name="p/[id]" options={{ presentation: "card" }} />
-          <Stack.Screen name="pet" options={{ presentation: "card" }} />
-          <Stack.Screen name="records" options={{ presentation: "card" }} />
-          <Stack.Screen name="care" options={{ presentation: "card" }} />
-          <Stack.Screen name="log/vitals" options={{ presentation: "card" }} />
-          <Stack.Screen name="log/meds" options={{ presentation: "card" }} />
-          <Stack.Screen name="log/vaccine" options={{ presentation: "card" }} />
-          <Stack.Screen name="notifications" options={{ presentation: "card" }} />
-          <Stack.Screen name="settings" options={{ presentation: "card" }} />
-          <Stack.Screen name="today" options={{ presentation: "card" }} />
-          <Stack.Screen name="events" options={{ presentation: "card" }} />
-          <Stack.Screen name="lost" options={{ presentation: "card" }} />
-          <Stack.Screen name="memory" options={{ presentation: "card" }} />
-          <Stack.Screen name="book" options={{ presentation: "card" }} />
-          <Stack.Screen name="reels" options={{ presentation: "card" }} />
-          <Stack.Screen name="chat" options={{ presentation: "card" }} />
-          <Stack.Screen name="compose" options={{ presentation: "modal" }} />
-          <Stack.Screen name="add-pet" options={{ presentation: "modal" }} />
-          <Stack.Screen name="ask" options={{ presentation: "modal" }} />
-          <Stack.Screen name="onboarding" options={{ presentation: "fullScreenModal" }} />
-          <Stack.Screen name="login" options={{ presentation: "card" }} />
-          <Stack.Screen name="signup" options={{ presentation: "card" }} />
-          <Stack.Screen name="otp-verify" options={{ presentation: "card" }} />
-          <Stack.Screen name="forgot-password" options={{ presentation: "card" }} />
-        </Stack>
+        {showSideNav ? (
+          <View style={{ flex: 1, flexDirection: "row" }}>
+            <SideNav />
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <View style={{ flex: 1, width: "100%", maxWidth: 680 }}>
+                {stackScreens}
+              </View>
+            </View>
+            {showRightRail && (
+              <View style={{ width: 300, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: tokens.border }}>
+                <RightRail />
+              </View>
+            )}
+          </View>
+        ) : (
+          stackScreens
+        )}
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

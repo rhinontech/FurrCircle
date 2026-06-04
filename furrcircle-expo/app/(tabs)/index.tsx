@@ -16,6 +16,7 @@ import { posts as dummyPosts, sampleComments, type Post } from "../../src/lib/de
 import { colors } from "../../src/lib/theme";
 import { Avatar } from "../../src/components/Avatar";
 import { useTokens, useThemeStore } from "../../src/lib/theme-store";
+import { useBreakpoint } from "../../src/lib/breakpoints";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { userApi } from "../../services/user/userApi";
 import { feedApi } from "../../services/community/feedApi";
@@ -1169,23 +1170,34 @@ const composeOptions = [
 function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: () => void; onPublished: () => void }) {
   const router = useRouter();
   const tk = useTokens();
+  const { isTablet } = useBreakpoint();
+
+  const content = (
+    <View style={[isTablet ? styles.dialog : styles.sheet, { backgroundColor: tk.card }]}>
+      {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
+      <Text style={[styles.sheetTitle, { color: tk.text }]}>Create</Text>
+      {composeOptions.map((o) => (
+        <TouchableOpacity key={o.label} onPress={() => { onClose(); router.push(o.to); }}
+          style={[styles.sheetRow, { backgroundColor: tk.bg }]} activeOpacity={0.8}>
+          <View style={[styles.sheetIcon, { backgroundColor: o.tintColor }]} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{o.label}</Text>
+            <Text style={[styles.sheetRowDesc, { color: tk.textMuted }]}>{o.desc}</Text>
+          </View>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
   return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <View style={[styles.sheet, { backgroundColor: tk.card }]}>
-          <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
-          <Text style={[styles.sheetTitle, { color: tk.text }]}>Create</Text>
-          {composeOptions.map((o) => (
-            <TouchableOpacity key={o.label} onPress={() => { onClose(); router.push(o.to); }}
-              style={[styles.sheetRow, { backgroundColor: tk.bg }]} activeOpacity={0.8}>
-              <View style={[styles.sheetIcon, { backgroundColor: o.tintColor }]} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{o.label}</Text>
-                <Text style={[styles.sheetRowDesc, { color: tk.textMuted }]}>{o.desc}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+    <Modal visible={open} transparent animationType={isTablet ? "fade" : "slide"} onRequestClose={onClose}>
+      <Pressable
+        style={[styles.overlay, isTablet && styles.overlayCenter]}
+        onPress={onClose}
+      >
+        <Pressable onPress={(e) => e.stopPropagation()}>
+          {content}
+        </Pressable>
       </Pressable>
     </Modal>
   );
@@ -1249,7 +1261,9 @@ const styles = StyleSheet.create({
   tags: { paddingHorizontal: 16, paddingBottom: 12, paddingTop: 4, fontSize: 12, fontFamily: "Poppins_600SemiBold", color: colors.primary },
   fab: { position: "absolute", bottom: 16, right: 16, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  overlayCenter: { justifyContent: "center", alignItems: "center" },
   sheet: { borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 20, paddingBottom: 40 },
+  dialog: { borderRadius: 24, padding: 24, width: 360, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 10 },
   sheetHandle: { width: 48, height: 6, borderRadius: 3, alignSelf: "center", marginBottom: 16, opacity: 0.2 },
   sheetTitle: { fontFamily: "Poppins_700Bold", fontSize: 20, paddingHorizontal: 4, marginBottom: 12 },
   sheetRow: { flexDirection: "row", alignItems: "center", gap: 16, borderRadius: 16, padding: 16, marginBottom: 8 },

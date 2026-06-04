@@ -490,20 +490,19 @@ export const getPetMemories = async (req: any, res: Response): Promise<void> => 
     const { pets: Pet, memories: Memory } = db as any;
     const petId = req.params.id;
 
-    // Check if user is authorized to view (owners only for now, or vet if they have access)
-    const hasPrivateAccess = req.userType === "user" && await canViewPrivatePet(petId, req);
-    if (!hasPrivateAccess) {
-       const petOwner = await Pet.findByPk(petId);
-       if (petOwner?.ownerId !== req.user.id) {
-         res.status(403).json({ message: "Not authorized to view memories" });
-         return;
-       }
-    }
-
+    // Allow owner always; allow others if the pet owner has a public profile
     const pet = await Pet.findByPk(petId);
-    if (!pet) {
-      res.status(404).json({ message: "Pet not found" });
-      return;
+    if (!pet) { res.status(404).json({ message: "Pet not found" }); return; }
+
+    if (pet.ownerId !== req.user.id) {
+      const { users: User } = db as any;
+      const owner = await User.findByPk(pet.ownerId, { attributes: ['isPrivate'] });
+      // Private profile owners are still visible if the pet is listed for adoption/foster
+      const isListedPublicly = pet.isAdoptionOpen || pet.isFosterOpen;
+      if (owner?.isPrivate && !isListedPublicly) {
+        res.status(403).json({ message: "Not authorized to view memories" });
+        return;
+      }
     }
 
     const memories = await Memory.findAll({

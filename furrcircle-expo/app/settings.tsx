@@ -15,6 +15,7 @@ import {
 import { userApi } from "../services/user/userApi";
 import { LocationPickerModal, LocationResult } from "../src/components/LocationPickerModal";
 import * as Location from 'expo-location';
+import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
 
 
 export default function SettingsScreen() {
@@ -144,9 +145,8 @@ export default function SettingsScreen() {
       </ScrollView>
 
       {/* Delete confirmation modal */}
-      <Modal visible={confirmDelete} transparent animationType="slide" onRequestClose={() => setConfirmDelete(false)}>
-        <Pressable style={styles.overlay} onPress={() => setConfirmDelete(false)}>
-          <View style={[styles.modal, { backgroundColor: tk.card }]}>
+      <AdaptiveSheet visible={confirmDelete} onClose={() => setConfirmDelete(false)} maxWidth={380}>
+          <View style={{ padding: 28, alignItems: "center" }}>
             <View style={styles.modalIcon}>
               <Trash2 size={28} color="#EF4444" strokeWidth={2} />
             </View>
@@ -163,8 +163,7 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </Pressable>
-      </Modal>
+      </AdaptiveSheet>
 
       <LocationPickerModal
         visible={isLocationModalVisible}

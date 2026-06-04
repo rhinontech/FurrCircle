@@ -12,6 +12,7 @@ import {
 } from "lucide-react-native";
 import { useEffect } from "react";
 import { petApi } from "../services/pet/petApi";
+import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
 
 type PickerTarget = "records" | "passport" | "vaccine" | "vitals" | "meds" | "book" | null;
 
@@ -127,10 +128,8 @@ export default function CareScreen() {
     </View>
 
     {/* Pet Picker Modal */}
-    <Modal visible={pickerTarget !== null} transparent animationType="slide" onRequestClose={() => setPickerTarget(null)}>
-      <Pressable style={styles.overlay} onPress={() => setPickerTarget(null)}>
-        <Pressable style={[styles.sheet, { backgroundColor: tk.card }]} onPress={(e) => e.stopPropagation()}>
-          <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+    <AdaptiveSheet visible={pickerTarget !== null} onClose={() => setPickerTarget(null)} maxWidth={420}>
+        <View style={{ padding: 24 }}>
           <View style={styles.sheetTitleRow}>
             <Text style={[styles.sheetTitle, { color: tk.text }]}>
               {pickerTarget === "passport" ? "Whose passport?" : "Which pet?"}
@@ -167,9 +166,8 @@ export default function CareScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+        </View>
+    </AdaptiveSheet>
     </PageContainer>
   );
 }

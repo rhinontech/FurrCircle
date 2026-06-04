@@ -11,6 +11,7 @@ import { useAuthStore } from "../../src/lib/auth-store";
 import { petApi } from "../../services/pet/petApi";
 import { userApi } from "../../services/user/userApi";
 import { reminderApi } from "../../services/reminder/reminderApi";
+import { AdaptiveSheet } from "../../src/components/AdaptiveSheet";
 
 const TINT_COLORS = ["rgba(255,107,107,0.15)", "rgba(37,99,235,0.1)", "rgba(255,217,61,0.3)", "rgba(255,111,207,0.15)", "rgba(76,175,80,0.15)"];
 
@@ -252,10 +253,8 @@ export default function ProfileScreen() {
 
 function PetPickerModal({ open, onClose, pets, onSelect, tk }: any) {
   return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.modalOverlay} onPress={onClose}>
-        <Pressable style={[styles.modalSheet, { backgroundColor: tk.card }]} onPress={e => e.stopPropagation()}>
-          <View style={[styles.modalHandle, { backgroundColor: tk.textMuted }]} />
+    <AdaptiveSheet visible={open} onClose={onClose} maxWidth={420}>
+        <View style={{ padding: 20 }}>
           <Text style={[styles.modalTitle, { color: tk.text }]}>Choose a Pet</Text>
           
           <ScrollView style={styles.petListScroll} showsVerticalScrollIndicator={false}>
@@ -283,9 +282,8 @@ function PetPickerModal({ open, onClose, pets, onSelect, tk }: any) {
               ))
             )}
           </ScrollView>
-        </Pressable>
-      </Pressable>
-    </Modal>
+        </View>
+    </AdaptiveSheet>
   );
 }
 
