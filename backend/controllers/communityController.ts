@@ -1146,12 +1146,12 @@ export const sendMessage = async (req: any, res: Response): Promise<void> => {
 // @route   POST /api/community/chats/:id/read
 export const markChatAsRead = async (req: any, res: Response): Promise<void> => {
   try {
-    const { messages: Message } = db as any;
+    const { messages: Message, conversations: Conversation } = db as any;
     const { id } = req.params;
     const currentUserId = req.user.id;
 
     // Update all unread messages in this conversation that were NOT sent by the current user
-    await Message.update(
+    const [updatedCount] = await Message.update(
       { isRead: true },
       {
         where: {
@@ -1163,6 +1163,16 @@ export const markChatAsRead = async (req: any, res: Response): Promise<void> => 
         }
       }
     );
+
+    // If any messages were marked as read, emit socket event to the other user
+    if (updatedCount > 0) {
+      const conversation = await Conversation.findByPk(id);
+      if (conversation) {
+        const otherId = conversation.initiatorId === currentUserId ? conversation.recipientId : conversation.initiatorId;
+        const otherType = conversation.initiatorId === currentUserId ? conversation.recipientType : conversation.initiatorType;
+        emitToActor(otherId, otherType, "chat:read", { conversationId: id });
+      }
+    }
 
     res.status(200).json({ success: true, message: "Chat marked as read" });
   } catch (error: any) {

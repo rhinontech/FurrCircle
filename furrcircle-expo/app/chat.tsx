@@ -7,7 +7,7 @@ import { ScreenHeader } from "../src/components/ScreenHeader";
 import { Avatar } from "../src/components/Avatar";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
-import { Send, Plus, Search, MessageCircle } from "lucide-react-native";
+import { Send, Plus, Search, MessageCircle, Check, CheckCheck } from "lucide-react-native";
 import { useAuthStore } from "../src/lib/auth-store";
 import { chatApi } from "../services/chat/chatApi";
 import { userApi } from "../services/user/userApi";
@@ -174,10 +174,21 @@ export default function ChatScreen() {
       if (data.conversationId === selectedChat && data.message) {
         setMessages((prev) => [...prev, data.message]);
         clearChatUnread(); // Keep unread count 0 while actively in chat
+        // Tell backend we read it, since we're currently looking at it
+        chatApi.markChatAsRead(selectedChat).catch(() => { });
       }
     });
-    return () => unsub();
-  }, [selectedChat]);
+
+    const unsubRead = socketService.on("chat:read", (data: any) => {
+      if (data.conversationId === selectedChat) {
+        setMessages((prev) => prev.map(m => 
+          m.sender?.id === user?.id ? { ...m, isRead: true } : m
+        ));
+      }
+    });
+
+    return () => { unsub(); unsubRead(); };
+  }, [selectedChat, user?.id]);
 
   const handleSend = async () => {
     if (!msgInput.trim() || !selectedChat) return;
@@ -309,9 +320,18 @@ export default function ChatScreen() {
                     !isMe && { backgroundColor: tk.card }
                   ]}>
                     {renderMessageContent(item.text, isMe, tk, router)}
-                    <Text style={[styles.timeText, { color: isMe ? "rgba(255,255,255,0.7)" : tk.textMuted, textAlign: isMe ? "right" : "left" }]}>
-                      {formatTime(item.createdAt)}{isMe && (item.readAt || item.seen ? " ✓✓" : " ✓")}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: isMe ? "flex-end" : "flex-start", gap: 4 }}>
+                      <Text style={[styles.timeText, { color: isMe ? "rgba(255,255,255,0.7)" : tk.textMuted }]}>
+                        {formatTime(item.createdAt)}
+                      </Text>
+                      {isMe && (
+                        (item.isRead || item.readAt || item.seen) ? (
+                          <CheckCheck size={14} color="#60a5fa" />
+                        ) : (
+                          <Check size={14} color="rgba(255,255,255,0.7)" />
+                        )
+                      )}
+                    </View>
                   </View>
                 </View>
               );
