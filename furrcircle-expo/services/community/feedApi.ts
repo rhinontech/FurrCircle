@@ -110,6 +110,16 @@ export const updatePost = async (postId: string, payload: { content?: string; im
     }
 };
 
+export const reportUser = async (reportedId: string, subject: string, description?: string) => {
+    try {
+        const response = await PrivateAxios.post('/reports', { reportedId, subject, description });
+        return response.data;
+    } catch (error: any) {
+        console.error('reportUser Error:', error?.response?.data || error.message);
+        throw error;
+    }
+};
+
 export const feedApi = {
     getFeed,
     createPost,
@@ -122,4 +132,5 @@ export const feedApi = {
     getPostById,
     getUserPosts,
     updatePost,
+    reportUser,
 };

@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, Modal, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
-import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut, Clock, Trash2, Syringe, Pill } from "lucide-react-native";
+import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut, Clock, Trash2, Syringe, Pill, Activity } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { getPets, type Pet } from "../../src/lib/pets-store";
 import { colors } from "../../src/lib/theme";
@@ -24,7 +24,7 @@ export default function ProfileScreen() {
   const [pets, setPets] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [reminders, setReminders] = useState<any[]>([]);
-  const [petPickerOpen, setPetPickerOpen] = useState(false);
+  const [petPickerTarget, setPetPickerTarget] = useState<"vaccine" | "vitals" | "meds" | "profile" | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -216,12 +216,21 @@ export default function ProfileScreen() {
           <Tile onPress={() => router.push("/care")} icon={Stethoscope} label="Care" tintColor="rgba(37,99,235,0.1)" tk={tk} />
         </View>
 
+        {/* Log care */}
+        <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Log care</Text>
+        <View style={styles.tilesGrid}>
+          <Tile onPress={() => setPetPickerTarget("vaccine")} icon={Syringe} label="Log Vaccine" tintColor="rgba(76,175,80,0.15)" tk={tk} />
+          <Tile onPress={() => setPetPickerTarget("vitals")} icon={Activity} label="Log Vitals" tintColor="rgba(255,107,107,0.15)" tk={tk} />
+          <Tile onPress={() => setPetPickerTarget("meds")} icon={Pill} label="Log Meds" tintColor="rgba(255,111,207,0.15)" tk={tk} />
+          <View style={{ width: "48%" }} />
+        </View>
+
         {/* Activity */}
         <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Activity</Text>
         <View style={styles.activityList}>
           <Row onPress={() => router.push("/notifications")} icon={Bell} label="Notifications" meta="" tintColor="rgba(255,217,61,0.3)" tk={tk} />
           <Row onPress={() => router.push("/chat")} icon={MessageCircle} label="Messages" meta="" tintColor="rgba(37,99,235,0.1)" tk={tk} />
-          <Row onPress={() => setPetPickerOpen(true)} icon={Award} label="Badges & Achievements" meta="" tintColor="rgba(255,111,207,0.15)" tk={tk} />
+          <Row onPress={() => setPetPickerTarget("profile")} icon={Award} label="Badges & Achievements" meta="" tintColor="rgba(255,111,207,0.15)" tk={tk} />
           <Row onPress={() => router.push("/discover")} icon={MapPin} label="Places visited" meta="" tintColor="rgba(76,175,80,0.15)" tk={tk} />
         </View>
 
@@ -238,11 +247,19 @@ export default function ProfileScreen() {
           <ChevronRight size={16} color={tk.textMuted} />
         </TouchableOpacity>
         <PetPickerModal
-          open={petPickerOpen}
-          onClose={() => setPetPickerOpen(false)}
+          open={petPickerTarget !== null}
+          onClose={() => setPetPickerTarget(null)}
           pets={pets}
           onSelect={(petId: string) => {
-            router.push({ pathname: "/pet", params: { id: petId } });
+            if (petPickerTarget === "vaccine") {
+              router.push({ pathname: "/log/vaccine", params: { petId } });
+            } else if (petPickerTarget === "vitals") {
+              router.push({ pathname: "/log/vitals", params: { petId } });
+            } else if (petPickerTarget === "meds") {
+              router.push({ pathname: "/log/meds", params: { petId } });
+            } else {
+              router.push({ pathname: "/pet", params: { id: petId } });
+            }
           }}
           tk={tk}
         />
@@ -346,7 +363,7 @@ const styles = StyleSheet.create({
   petCardImgWrap: { width: "100%", height: 72, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.6)" },
   petCardName: { fontFamily: "Poppins_700Bold", fontSize: 15, marginTop: 8 },
   petCardBreed: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  petCardAdd: { width: 160, borderRadius: 22, borderWidth: 2, borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 4 },
+  petCardAdd: { width: 160, height:150, borderRadius: 22, borderWidth: 2, borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 4 },
   addPetCardText: { fontFamily: "Poppins_700Bold", fontSize: 13 },
   tilesGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 12, paddingHorizontal: 20 },
   tile: { width: "48%", borderRadius: 16, padding: 16, gap: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },

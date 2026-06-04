@@ -22,7 +22,7 @@ export function ScreenHeader({ title, right, showBack, onBack }: Props) {
   const { isTablet } = useBreakpoint();
 
   // Default: show back on mobile, hide on tablet
-  const shouldShowBack = showBack ?? !isTablet;
+  const shouldShowBack = true;
 
   const handleBack = () => {
     if (onBack) {
@@ -78,7 +78,8 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   rightSlot: {
-    width: 40,
+    minWidth: 40,
     alignItems: "flex-end",
+    justifyContent: "center",
   },
 });

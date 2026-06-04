@@ -291,7 +291,9 @@ export default function ChatScreen() {
             router.setParams({ id: "" });
           }}
           right={
-            <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={32} />
+            <TouchableOpacity onPress={() => otherUser.username && router.push(`/u/${otherUser.username}`)}>
+              <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={32} />
+            </TouchableOpacity>
           }
         />
 
@@ -317,7 +319,11 @@ export default function ChatScreen() {
               const isMe = item.sender?.id === user?.id;
               return (
                 <View style={isMe ? styles.msgRowMe : styles.msgRowOther}>
-                  {!isMe && <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={28} />}
+                  {!isMe && (
+                    <TouchableOpacity onPress={() => otherUser.username && router.push(`/u/${otherUser.username}`)}>
+                      <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={28} />
+                    </TouchableOpacity>
+                  )}
                   <View style={[
                     isMe ? styles.bubbleMe : styles.bubbleOther,
                     !isMe && { backgroundColor: tk.card }

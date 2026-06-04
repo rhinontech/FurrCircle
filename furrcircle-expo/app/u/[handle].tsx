@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Dimensions, Alert, Modal, Pressable,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { Share2, MapPin, Grid3x3, Bookmark, Bone, Play, MoreVertical, ShieldOff, Flag } from "lucide-react-native";
+import { Share2, MapPin, Grid3x3, Bookmark, Bone, Play, MoreVertical, ShieldOff, Flag, ChevronRight, X, Check } from "lucide-react-native";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { colors } from "../../src/lib/theme";
@@ -15,6 +15,7 @@ import { feedApi } from "../../services/community/feedApi";
 import { chatApi } from "../../services/chat/chatApi";
 import { blockApi } from "../../services/user/blockApi";
 import { Video, ResizeMode } from "expo-av";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const GRID_SIZE = (Dimensions.get("window").width - 12) / 3;
 const puppy = require("../../src/assets/doodle-puppy.png");
@@ -35,12 +36,15 @@ export default function UserProfileScreen() {
   const router = useRouter();
   const tk = useTokens();
   const { user: me } = useAuthStore();
+  const insets = useSafeAreaInsets();
 
   const [tab, setTab] = useState<(typeof tabs)[number]>("Posts");
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportStep, setReportStep] = useState(1);
 
   // Tab data
   const [posts, setPosts] = useState<any[]>([]);
@@ -99,6 +103,26 @@ export default function UserProfileScreen() {
         },
       ]
     );
+  };
+
+  const handleReportUser = () => {
+    setMenuOpen(false);
+    setReportStep(1);
+    setReportModalOpen(true);
+  };
+
+  const handleSelectReason = async (reason: string) => {
+    if (!userProfile?.id) {
+      Alert.alert("Error", "Could not identify the user to report.");
+      return;
+    }
+
+    try {
+      await feedApi.reportUser(userProfile.id, reason);
+      setReportStep(2);
+    } catch (err: any) {
+      Alert.alert("Error", err?.response?.data?.message || "Failed to submit report.");
+    }
   };
 
   const handleUnblockUser = async () => {
@@ -376,7 +400,7 @@ export default function UserProfileScreen() {
               <Text style={[styles.menuItemText, { color: "#EF4444" }]}>Block @{handle}</Text>
             </TouchableOpacity>
             <View style={[styles.menuDivider, { backgroundColor: tk.border }]} />
-            <TouchableOpacity style={styles.menuItem} onPress={() => setMenuOpen(false)}>
+            <TouchableOpacity style={styles.menuItem} onPress={handleReportUser}>
               <Flag size={22} color={tk.textMuted} />
               <Text style={[styles.menuItemText, { color: tk.text }]}>Report</Text>
             </TouchableOpacity>
@@ -388,6 +412,73 @@ export default function UserProfileScreen() {
             </TouchableOpacity>
           </Pressable>
         </Pressable>
+      </Modal>
+
+      {/* Report Flow Modal */}
+      <Modal visible={reportModalOpen} animationType="slide" transparent={false} onRequestClose={() => setReportModalOpen(false)}>
+        <View style={[styles.reportContainer, { backgroundColor: tk.bg, paddingTop: insets.top }]}>
+          {/* Header */}
+          <View style={[styles.reportHeader, { borderBottomColor: tk.border }]}>
+            <View style={{ width: 40 }} />
+            <Text style={[styles.reportHeaderTitle, { color: tk.text }]}>Report</Text>
+            <TouchableOpacity onPress={() => setReportModalOpen(false)} style={styles.reportCloseBtn}>
+              <X size={24} color={tk.text} />
+            </TouchableOpacity>
+          </View>
+
+          {reportStep === 1 ? (
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.reportContent} showsVerticalScrollIndicator={false}>
+              <Text style={[styles.reportTitle, { color: tk.text }]}>Why are you reporting this user?</Text>
+              <Text style={[styles.reportSubtitle, { color: tk.textMuted }]}>
+                Your report is anonymous. If someone is in immediate danger, call the local emergency services - don't wait.
+              </Text>
+
+              <View style={{ marginTop: 24 }}>
+                {[
+                  "I just don't like it",
+                  "Bullying or unwanted contact",
+                  "Suicide, self-injury or eating disorders",
+                  "Violence, hate or exploitation",
+                  "Selling or promoting restricted items",
+                  "Nudity or sexual activity",
+                  "Scam, fraud or spam",
+                  "False information",
+                  "Intellectual property"
+                ].map((reason, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[styles.reasonRow, { borderBottomColor: tk.border }]}
+                    onPress={() => handleSelectReason(reason)}
+                  >
+                    <Text style={[styles.reasonText, { color: tk.text }]}>{reason}</Text>
+                    <ChevronRight size={20} color={tk.textMuted} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          ) : (
+            <View style={styles.successContainer}>
+              <View style={styles.successContent}>
+                <View style={[styles.checkCircle, { backgroundColor: tk.border }]}>
+                  <Check size={40} color={colors.primary} strokeWidth={3} />
+                </View>
+                <Text style={[styles.successTitle, { color: tk.text }]}>Thanks for your feedback</Text>
+                <Text style={[styles.successSubtitle, { color: tk.textMuted }]}>
+                  We use these reports to show you less of this kind of content in the future.
+                </Text>
+              </View>
+              
+              <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+                <TouchableOpacity
+                  style={[styles.doneBtn, { backgroundColor: colors.primary }]}
+                  onPress={() => setReportModalOpen(false)}
+                >
+                  <Text style={styles.doneBtnText}>Done</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
       </Modal>
     </PageContainer>
   );
@@ -435,11 +526,28 @@ const styles = StyleSheet.create({
   petGridBreed: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   // Menu modal
   menuOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  menuSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 12, paddingHorizontal: 20, paddingBottom: 40 },
-  menuHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#ccc", alignSelf: "center", marginBottom: 20 },
-  menuItem: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 16 },
-  menuItemText: { fontFamily: "Poppins_600SemiBold", fontSize: 16 },
+  menuSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12, paddingHorizontal: 16, paddingBottom: 28 },
+  menuHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#ccc", alignSelf: "center", marginBottom: 12 },
+  menuItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
+  menuItemText: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
   menuDivider: { height: 1, marginVertical: 4 },
   menuCancelBtn: { marginTop: 12, borderRadius: 20, paddingVertical: 14, alignItems: "center" },
   menuCancelText: { fontFamily: "Poppins_700Bold", fontSize: 15 },
+  reportContainer: { flex: 1 },
+  reportHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 56, paddingHorizontal: 16, borderBottomWidth: 1 },
+  reportHeaderTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, textAlign: "center" },
+  reportCloseBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  reportContent: { padding: 24 },
+  reportTitle: { fontFamily: "Poppins_700Bold", fontSize: 20, textAlign: "center", marginTop: 16, marginBottom: 8 },
+  reportSubtitle: { fontFamily: "Inter_400Regular", fontSize: 13, textAlign: "center", lineHeight: 18, paddingHorizontal: 16, marginBottom: 16 },
+  reasonRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 16, borderBottomWidth: 0.5 },
+  reasonText: { fontFamily: "Inter_400Regular", fontSize: 15, flex: 1, paddingRight: 16 },
+  successContainer: { flex: 1, justifyContent: "space-between" },
+  successContent: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32, marginTop: -40 },
+  checkCircle: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 24 },
+  successTitle: { fontFamily: "Poppins_700Bold", fontSize: 22, textAlign: "center", marginBottom: 12 },
+  successSubtitle: { fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center", lineHeight: 20 },
+  footer: { paddingHorizontal: 24 },
+  doneBtn: { height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center" },
+  doneBtnText: { fontFamily: "Poppins_700Bold", fontSize: 16, color: "#fff" },
 });

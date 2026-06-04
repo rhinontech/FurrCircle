@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from "react-native";
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
-import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, MessageCircle, Sparkles, X } from "lucide-react-native";
+import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, MessageCircle, Sparkles, X, Edit2 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
@@ -9,6 +9,7 @@ import { ShareSheet } from "../../src/components/ShareSheet";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { petApi } from "../../services/pet/petApi";
+import { chatApi } from "../../services/chat/chatApi";
 
 const boyDog = require("../../src/assets/doodle-boy-dog.png");
 const puppy = require("../../src/assets/doodle-puppy.png");
@@ -42,6 +43,22 @@ export default function PetPublicProfile() {
   const [memories, setMemories] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+
+  const handleMessageOwner = async () => {
+    if (!pet || !pet.ownerId) return;
+    const introMessage = `I am interested to adopt your pet named ${pet.name}!`;
+    try {
+      const conv = await chatApi.startChat(pet.ownerId, introMessage);
+      if (conv?.id) {
+        router.push({ pathname: "/chat", params: { id: conv.id } });
+      } else {
+        router.push("/chat");
+      }
+    } catch (err) {
+      console.error("Failed to start chat with owner:", err);
+      Alert.alert("Error", "Failed to start a conversation with the owner.");
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -106,12 +123,22 @@ export default function PetPublicProfile() {
         <ScreenHeader
           title="Pet profile"
           right={
-            <TouchableOpacity 
-              onPress={() => setShareOpen(true)}
-              style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
-            >
-              <Share2 size={20} color={tk.text} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {pet?.canManage && (
+                <TouchableOpacity 
+                  onPress={() => router.replace({ pathname: "/pet", params: { id: pet.id } })}
+                  style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
+                >
+                  <Edit2 size={18} color={tk.text} />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity 
+                onPress={() => setShareOpen(true)}
+                style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
+              >
+                <Share2 size={20} color={tk.text} />
+              </TouchableOpacity>
+            </View>
           }
         />
 
@@ -206,7 +233,7 @@ export default function PetPublicProfile() {
           {/* CTA buttons */}
           <View style={styles.ctaRow}>
             <TouchableOpacity
-              onPress={() => router.push(`/chat?recipient=${pet.ownerId || ""}&pet=${pet.id}` as any)}
+              onPress={handleMessageOwner}
               disabled={!!pet.canManage}
               style={[styles.messageBtn, pet.canManage && { opacity: 0.5 }]}
               activeOpacity={0.8}

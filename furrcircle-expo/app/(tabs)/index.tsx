@@ -4,12 +4,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Dimensions,
+  RefreshControl,
 } from "react-native";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX, MoreVertical } from "lucide-react-native";
+import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check, Edit2, Trash2, Info, Flag } from "lucide-react-native";
 import { useState, useEffect, useCallback, useRef } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { posts as dummyPosts, sampleComments, type Post } from "../../src/lib/demo-data";
@@ -19,6 +20,7 @@ import { useTokens, useThemeStore } from "../../src/lib/theme-store";
 import { useBreakpoint } from "../../src/lib/breakpoints";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { userApi } from "../../services/user/userApi";
+import { petApi } from "../../services/pet/petApi";
 import { feedApi } from "../../services/community/feedApi";
 import { storyApi } from "../../services/community/storyApi";
 import { LocationPickerModal, LocationResult } from "../../src/components/LocationPickerModal";
@@ -115,6 +117,14 @@ export default function FeedScreen() {
       setFeedLoading(false);
     }
   }, [user?.id]);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([loadFeed(), loadStories()]);
+    setRefreshing(false);
+  }, [loadFeed, loadStories]);
 
   useFocusEffect(useCallback(() => {
     loadFeed();
@@ -322,6 +332,8 @@ export default function FeedScreen() {
       <FlatList
         data={feedPosts}
         keyExtractor={(item) => item.id}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         renderItem={({ item: p }) => (
           <View style={{ paddingHorizontal: 16 }}>
             <PostCard
@@ -736,6 +748,8 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportStep, setReportStep] = useState(1);
 
   const isDummy = dummyPosts.some(d => d.id === post.id);
   const isOwner = !isDummy && post.userId === user?.id;
@@ -765,6 +779,27 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
         }
       ]
     );
+  };
+
+  const handleReportUser = () => {
+    setMenuOpen(false);
+    setReportStep(1);
+    setReportModalOpen(true);
+  };
+
+  const handleSelectReason = async (reason: string) => {
+    const reportedUserId = post?.userId || post?.author?.id;
+    if (!reportedUserId) {
+      Alert.alert("Error", "Could not identify the user to report.");
+      return;
+    }
+
+    try {
+      await feedApi.reportUser(reportedUserId, reason);
+      setReportStep(2);
+    } catch (err: any) {
+      Alert.alert("Error", err?.response?.data?.message || "Failed to submit report.");
+    }
   };
 
   const [localComments, setLocalComments] = useState<any[]>(
@@ -1057,29 +1092,28 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
       {/* Options Menu Modal */}
       <Modal visible={menuOpen} transparent={true} animationType="slide" onRequestClose={() => setMenuOpen(false)}>
         <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
-          <View style={[styles.sheet, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true}onTouchEnd={(e) => e.stopPropagation()}>
+          <View style={[styles.sheet, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true} onTouchEnd={(e) => e.stopPropagation()}>
             <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
             <Text style={[styles.sheetTitle, { color: tk.text }]}>Options</Text>
-            
+
             {/* Save Option */}
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => { setMenuOpen(false); onSave(); }}
-              style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+              style={[styles.sheetRow, { backgroundColor: tk.bg }]}
               activeOpacity={0.8}
             >
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.sheetRowTitle, { color: tk.text }]}>
-                  {isSaved ? "Remove from Saved" : "Save Post"}
-                </Text>
-              </View>
+              <Bookmark size={20} color={isSaved ? colors.primary : tk.text} fill={isSaved ? colors.primary : "none"} />
+              <Text style={[styles.sheetRowTitle, { color: tk.text }]}>
+                {isSaved ? "Remove from Saved" : "Save Post"}
+              </Text>
             </TouchableOpacity>
 
             {isOwner ? (
               <>
                 {/* Edit Post Option */}
-                <TouchableOpacity 
-                  onPress={() => { 
-                    setMenuOpen(false); 
+                <TouchableOpacity
+                  onPress={() => {
+                    setMenuOpen(false);
                     router.push({
                       pathname: "/compose",
                       params: {
@@ -1090,29 +1124,27 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                       }
                     });
                   }}
-                  style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+                  style={[styles.sheetRow, { backgroundColor: tk.bg }]}
                   activeOpacity={0.8}
                 >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.sheetRowTitle, { color: tk.text }]}>Edit Post</Text>
-                  </View>
+                  <Edit2 size={20} color={tk.text} />
+                  <Text style={[styles.sheetRowTitle, { color: tk.text }]}>Edit Post</Text>
                 </TouchableOpacity>
 
                 {/* Delete Post Option */}
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={handleDeletePost}
-                  style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+                  style={[styles.sheetRow, { backgroundColor: tk.bg }]}
                   activeOpacity={0.8}
                 >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Delete Post</Text>
-                  </View>
+                  <Trash2 size={20} color={colors.coral} />
+                  <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Delete Post</Text>
                 </TouchableOpacity>
               </>
             ) : (
               <>
                 {/* About this Account Option */}
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => {
                     setMenuOpen(false);
                     router.push({
@@ -1124,31 +1156,29 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                       }
                     });
                   }}
-                  style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+                  style={[styles.sheetRow, { backgroundColor: tk.bg }]}
                   activeOpacity={0.8}
                 >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.sheetRowTitle, { color: tk.text }]}>About this Account</Text>
-                  </View>
+                  <Info size={20} color={tk.text} />
+                  <Text style={[styles.sheetRowTitle, { color: tk.text }]}>About this Account</Text>
                 </TouchableOpacity>
 
                 {/* Report Option */}
-                <TouchableOpacity 
-                  onPress={() => setMenuOpen(false)}
-                  style={[styles.sheetRow, { backgroundColor: tk.bg }]} 
+                <TouchableOpacity
+                  onPress={handleReportUser}
+                  style={[styles.sheetRow, { backgroundColor: tk.bg }]}
                   activeOpacity={0.8}
                 >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Report</Text>
-                  </View>
+                  <Flag size={20} color={colors.coral} />
+                  <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Report</Text>
                 </TouchableOpacity>
               </>
             )}
 
             {/* Cancel Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => setMenuOpen(false)}
-              style={[styles.sheetRow, { backgroundColor: tk.bg, marginTop: 12, justifyContent: "center", alignItems: "center" }]} 
+              style={[styles.sheetRow, { backgroundColor: tk.bg, marginTop: 12, justifyContent: "center", alignItems: "center" }]}
               activeOpacity={0.8}
             >
               <Text style={[styles.sheetRowTitle, { color: tk.textMuted }]}>Cancel</Text>
@@ -1156,15 +1186,84 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
           </View>
         </Pressable>
       </Modal>
+
+      {/* Report Flow Modal */}
+      <Modal visible={reportModalOpen} animationType="slide" transparent={false} onRequestClose={() => setReportModalOpen(false)}>
+        <View style={[styles.reportContainer, { backgroundColor: tk.bg, paddingTop: insets.top }]}>
+          {/* Header */}
+          <View style={[styles.reportHeader, { borderBottomColor: tk.border }]}>
+            <View style={{ width: 40 }} />
+            <Text style={[styles.reportHeaderTitle, { color: tk.text }]}>Report</Text>
+            <TouchableOpacity onPress={() => setReportModalOpen(false)} style={styles.reportCloseBtn}>
+              <X size={24} color={tk.text} />
+            </TouchableOpacity>
+          </View>
+
+          {reportStep === 1 ? (
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.reportContent} showsVerticalScrollIndicator={false}>
+              <Text style={[styles.reportTitle, { color: tk.text }]}>Why are you reporting this post?</Text>
+              <Text style={[styles.reportSubtitle, { color: tk.textMuted }]}>
+                Your report is anonymous. If someone is in immediate danger, call the local emergency services - don't wait.
+              </Text>
+
+              <View style={{ marginTop: 24 }}>
+                {[
+                  "I just don't like it",
+                  "Bullying or unwanted contact",
+                  "Suicide, self-injury or eating disorders",
+                  "Violence, hate or exploitation",
+                  "Selling or promoting restricted items",
+                  "Nudity or sexual activity",
+                  "Scam, fraud or spam",
+                  "False information",
+                  "Intellectual property"
+                ].map((reason, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[styles.reasonRow, { borderBottomColor: tk.border }]}
+                    onPress={() => handleSelectReason(reason)}
+                  >
+                    <Text style={[styles.reasonText, { color: tk.text }]}>{reason}</Text>
+                    <ChevronRight size={20} color={tk.textMuted} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          ) : (
+            <View style={styles.successContainer}>
+              <View style={styles.successContent}>
+                <View style={[styles.checkCircle, { backgroundColor: tk.border }]}>
+                  <Check size={40} color={colors.primary} strokeWidth={3} />
+                </View>
+                <Text style={[styles.successTitle, { color: tk.text }]}>Thanks for your feedback</Text>
+                <Text style={[styles.successSubtitle, { color: tk.textMuted }]}>
+                  We use these reports to show you less of this kind of content in the future.
+                </Text>
+              </View>
+              
+              <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+                <TouchableOpacity
+                  style={[styles.doneBtn, { backgroundColor: colors.primary }]}
+                  onPress={() => setReportModalOpen(false)}
+                >
+                  <Text style={styles.doneBtnText}>Done</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
+
+
 
 const composeOptions = [
   { label: "New Post", desc: "Share a photo of your pet", tintColor: "rgba(255,107,107,0.15)", to: "/compose" as const },
   // { label: "New Reel", desc: "Quick video moment", tintColor: "rgba(37,99,235,0.1)", to: "/reels" as const },
   { label: "Ask the Community", desc: "Get help from pet parents", tintColor: "rgba(255,217,61,0.3)", to: "/ask" as const },
-  { label: "Add Memory", desc: "Save to Moona's vault", tintColor: "rgba(255,111,207,0.15)", to: "/memory" as const },
+  { label: "Add Memory", desc: "Save to vault", tintColor: "rgba(255,111,207,0.15)", to: "/memory" as const },
 ];
 
 function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: () => void; onPublished: () => void }) {
@@ -1172,12 +1271,68 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
   const tk = useTokens();
   const { isTablet } = useBreakpoint();
 
-  const content = (
+  const [step, setStep] = useState<'options' | 'select_pet'>('options');
+  const [pets, setPets] = useState<any[]>([]);
+  const [loadingPets, setLoadingPets] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setStep('options');
+      setPets([]);
+      setLoadingPets(false);
+    }
+  }, [open]);
+
+  const handleOptionPress = async (option: typeof composeOptions[0]) => {
+    if (option.label === "Add Memory") {
+      setLoadingPets(true);
+      try {
+        const myPets = await petApi.getMyPets();
+        if (!myPets || myPets.length === 0) {
+          onClose();
+          Alert.alert(
+            "No Pets Found",
+            "Please add a pet to your profile first before adding a memory.",
+            [
+              { text: "Cancel", style: "cancel" },
+              { text: "Add Pet", onPress: () => router.push("/add-pet") }
+            ]
+          );
+          return;
+        }
+
+        if (myPets.length === 1) {
+          onClose();
+          router.push({ pathname: "/memory", params: { petId: myPets[0].id } });
+        } else {
+          setPets(myPets);
+          setStep('select_pet');
+        }
+      } catch (err) {
+        Alert.alert("Error", "Failed to retrieve your pets.");
+      } finally {
+        setLoadingPets(false);
+      }
+    } else {
+      onClose();
+      router.push(option.to);
+    }
+  };
+
+  const handleSelectPet = (petId: string) => {
+    onClose();
+    router.push({ pathname: "/memory", params: { petId } });
+  };
+
+  const content = step === 'options' ? (
     <View style={[isTablet ? styles.dialog : styles.sheet, { backgroundColor: tk.card }]}>
       {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
-      <Text style={[styles.sheetTitle, { color: tk.text }]}>Create</Text>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <Text style={[styles.sheetTitle, { color: tk.text, marginBottom: 0 }]}>Create</Text>
+        {loadingPets && <ActivityIndicator size="small" color={colors.primary} />}
+      </View>
       {composeOptions.map((o) => (
-        <TouchableOpacity key={o.label} onPress={() => { onClose(); router.push(o.to); }}
+        <TouchableOpacity key={o.label} onPress={() => handleOptionPress(o)} disabled={loadingPets}
           style={[styles.sheetRow, { backgroundColor: tk.bg }]} activeOpacity={0.8}>
           <View style={[styles.sheetIcon, { backgroundColor: o.tintColor }]} />
           <View style={{ flex: 1 }}>
@@ -1186,6 +1341,34 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
           </View>
         </TouchableOpacity>
       ))}
+    </View>
+  ) : (
+    <View style={[isTablet ? styles.dialog : styles.sheet, { backgroundColor: tk.card }]}>
+      {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+        <TouchableOpacity onPress={() => setStep('options')} style={{ marginRight: 12, paddingVertical: 4 }}>
+          <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.primary }}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={[styles.sheetTitle, { color: tk.text, marginBottom: 0 }]}>Select Pet</Text>
+      </View>
+      <ScrollView style={{ maxHeight: 250 }} showsVerticalScrollIndicator={false}>
+        {pets.map((p) => (
+          <TouchableOpacity key={p.id} onPress={() => handleSelectPet(p.id)}
+            style={[styles.sheetRow, { backgroundColor: tk.bg }]} activeOpacity={0.8}>
+            <View style={[styles.sheetIcon, { overflow: "hidden", backgroundColor: tk.border }]}>
+              {p.avatar_url ? (
+                <Image source={{ uri: p.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+              ) : (
+                <Image source={require("../../src/assets/doodle-puppy.png")} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+              )}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{p.name}</Text>
+              <Text style={[styles.sheetRowDesc, { color: tk.textMuted }]}>{p.breed || p.species}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
     </View>
   );
 
@@ -1262,13 +1445,13 @@ const styles = StyleSheet.create({
   fab: { position: "absolute", bottom: 16, right: 16, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   overlayCenter: { justifyContent: "center", alignItems: "center" },
-  sheet: { borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 20, paddingBottom: 40 },
+  sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 16, paddingBottom: 28 },
   dialog: { borderRadius: 24, padding: 24, width: 360, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 10 },
-  sheetHandle: { width: 48, height: 6, borderRadius: 3, alignSelf: "center", marginBottom: 16, opacity: 0.2 },
-  sheetTitle: { fontFamily: "Poppins_700Bold", fontSize: 20, paddingHorizontal: 4, marginBottom: 12 },
-  sheetRow: { flexDirection: "row", alignItems: "center", gap: 16, borderRadius: 16, padding: 16, marginBottom: 8 },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 12, opacity: 0.2 },
+  sheetTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, paddingHorizontal: 4, marginBottom: 8 },
+  sheetRow: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 12, padding: 12, marginBottom: 6 },
   sheetIcon: { width: 48, height: 48, borderRadius: 16 },
-  sheetRowTitle: { fontFamily: "Poppins_700Bold", fontSize: 15 },
+  sheetRowTitle: { fontFamily: "Poppins_700Bold", fontSize: 13 },
   sheetRowDesc: { fontSize: 12, fontFamily: "Inter_400Regular" },
   emptyState: { alignItems: "center", justifyContent: "center", paddingVertical: 60, paddingHorizontal: 40 },
   emptyImage: { width: 140, height: 140, marginBottom: 16, opacity: 0.8 },
@@ -1313,4 +1496,21 @@ const styles = StyleSheet.create({
   commentInputWrapper: { flex: 1, flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 24, paddingLeft: 16, paddingRight: 8, minHeight: 40, maxHeight: 100 },
   commentTextInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", paddingVertical: 8, marginRight: 8 },
   commentPostBtn: { paddingVertical: 8, paddingHorizontal: 10 },
+  reportContainer: { flex: 1 },
+  reportHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 56, paddingHorizontal: 16, borderBottomWidth: 1 },
+  reportHeaderTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, textAlign: "center" },
+  reportCloseBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  reportContent: { padding: 24 },
+  reportTitle: { fontFamily: "Poppins_700Bold", fontSize: 20, textAlign: "center", marginTop: 16, marginBottom: 8 },
+  reportSubtitle: { fontFamily: "Inter_400Regular", fontSize: 13, textAlign: "center", lineHeight: 18, paddingHorizontal: 16, marginBottom: 16 },
+  reasonRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 16, borderBottomWidth: 0.5 },
+  reasonText: { fontFamily: "Inter_400Regular", fontSize: 15, flex: 1, paddingRight: 16 },
+  successContainer: { flex: 1, justifyContent: "space-between" },
+  successContent: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32, marginTop: -40 },
+  checkCircle: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 24 },
+  successTitle: { fontFamily: "Poppins_700Bold", fontSize: 22, textAlign: "center", marginBottom: 12 },
+  successSubtitle: { fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center", lineHeight: 20 },
+  footer: { paddingHorizontal: 24 },
+  doneBtn: { height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center" },
+  doneBtnText: { fontFamily: "Poppins_700Bold", fontSize: 16, color: "#fff" },
 });

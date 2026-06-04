@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image as ImageIcon, Hash, X, Check } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
@@ -16,6 +17,7 @@ const CATEGORIES = ["General", "Health", "Adoption", "Training", "Nutrition", "L
 export default function ComposeScreen() {
   const router = useRouter();
   const tk = useTokens();
+  const insets = useSafeAreaInsets();
   const { editPostId, prefilledCategory, prefilledCaption, prefilledImageUrl } = useLocalSearchParams<{
     editPostId?: string;
     prefilledCategory?: string;
@@ -110,7 +112,7 @@ export default function ComposeScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
-          <View style={styles.header}>
+          <View style={[styles.header, { paddingTop: Platform.OS === "ios" ? insets.top + 16 : 40 }]}>
             <TouchableOpacity onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: tk.card }]}>
               <X size={20} color={tk.text} />
             </TouchableOpacity>
@@ -190,7 +192,7 @@ export default function ComposeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: Platform.OS === "ios" ? 24 : 40, paddingBottom: 12 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 12 },
   closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
   headerTitle: { fontFamily: "Poppins_700Bold", fontSize: 18 },
   shareBtn: { backgroundColor: colors.primary, borderRadius: 20, paddingHorizontal: 20, paddingVertical: 8, minWidth: 70, alignItems: "center", justifyContent: "center" },

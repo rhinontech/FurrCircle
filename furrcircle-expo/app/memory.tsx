@@ -137,8 +137,8 @@ export default function MemoryScreen() {
             {yearsData.length === 0 && (
               <View style={{ alignItems: "center", marginVertical: 20 }}>
                 <Text style={{ color: tk.textMuted, marginBottom: 12, fontFamily: "Inter_400Regular" }}>No memories yet. Start the vault!</Text>
-                <TouchableOpacity onPress={handleAddPhoto} style={[styles.addPhotoBtn, { width: 100, height: 100 }]}>
-                  {uploading ? <ActivityIndicator color={colors.primary} /> : <Plus size={24} color={colors.foreground + "66"} />}
+                <TouchableOpacity onPress={handleAddPhoto} style={[styles.addPhotoBtn, { width: 100, height: 100, borderColor: tk.border }]}>
+                  {uploading ? <ActivityIndicator color={colors.primary} /> : <Plus size={24} color={tk.textMuted} />}
                 </TouchableOpacity>
               </View>
             )}
@@ -163,8 +163,8 @@ export default function MemoryScreen() {
                   ))}
                   {/* Allow adding more photos to the current/most recent year easily */}
                   {yIndex === 0 && (
-                    <TouchableOpacity style={styles.addPhotoBtn} onPress={handleAddPhoto}>
-                      {uploading ? <ActivityIndicator color={colors.primary} /> : <Plus size={20} color={colors.foreground + "66"} />}
+                    <TouchableOpacity style={[styles.addPhotoBtn, { borderColor: tk.border }]} onPress={handleAddPhoto}>
+                      {uploading ? <ActivityIndicator color={colors.primary} /> : <Plus size={20} color={tk.textMuted} />}
                     </TouchableOpacity>
                   )}
                 </View>
