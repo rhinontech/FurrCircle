@@ -1,45 +1,52 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Stethoscope, CalendarCheck, Bell, Users, BadgeDollarSign, PawPrint } from "lucide-react";
+import { Stethoscope, CalendarCheck, Heart, Users, MapPin, BadgeDollarSign } from "lucide-react";
 import Image from "next/image";
 import { AnimatedHeading } from "@/components/AnimationProvider";
 
 const signs = [
   {
-    title: "HEALTH TRACKING",
-    icon: <Stethoscope className="w-6 h-6" />,
-    color: "bg-[#0CA2D0]",
+    title: "PET MATCHING",
+    icon: <Heart className="w-6 h-6" />,
+    color: "bg-[#EA5222]",
     rotate: -3,
     delay: 0.1,
   },
   {
-    title: "VET BOOKING",
-    icon: <CalendarCheck className="w-6 h-6" />,
-    color: "bg-[#EA5222]",
+    title: "SOCIAL FEED",
+    icon: <Users className="w-6 h-6" />,
+    color: "bg-[#9D8FE4]",
     rotate: 2,
     delay: 0.2,
   },
   {
-    title: "REMINDERS",
-    icon: <Bell className="w-6 h-6" />,
-    color: "bg-[#53AF54]",
+    title: "HEALTH PASSPORT",
+    icon: <Stethoscope className="w-6 h-6" />,
+    color: "bg-[#0CA2D0]",
     rotate: -2,
     delay: 0.3,
   },
   {
-    title: "PET COMMUNITY",
-    icon: <Users className="w-6 h-6" />,
-    color: "bg-[#9D8FE4]",
+    title: "VET BOOKING",
+    icon: <CalendarCheck className="w-6 h-6" />,
+    color: "bg-[#53AF54]",
     rotate: 3,
     delay: 0.4,
   },
   {
-    title: "ALWAYS FREE",
-    icon: <BadgeDollarSign className="w-6 h-6" />,
+    title: "LOCAL EVENTS",
+    icon: <MapPin className="w-6 h-6" />,
     color: "bg-[#FABC3F]",
     rotate: -1,
     delay: 0.5,
+  },
+  {
+    title: "ALWAYS FREE",
+    icon: <BadgeDollarSign className="w-6 h-6" />,
+    color: "bg-[#1A1A1A]",
+    rotate: 2,
+    delay: 0.6,
   },
 ];
 
@@ -88,7 +95,7 @@ export function ValuesSignpost() {
             transition={{ delay: 0.1 }}
             className="text-xl md:text-3xl text-gray-600 font-normal"
           >
-            Everything your pet needs, right at your fingertips.
+            More than health tracking — a full social world for pet lovers.
           </motion.p>
         </div>
 

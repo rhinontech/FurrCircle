@@ -6,24 +6,28 @@ import { ArrowDown, PawPrint } from "lucide-react";
 
 const faqs = [
   {
-    question: "What are your operating hours?",
-    answer: "Our standard hours are Monday-Friday 8:00 AM - 7:00 PM, and Saturday 9:00 AM - 5:00 PM. We are closed on Sundays for routine visits but have emergency on-call staff available.",
+    question: "What is FurrCircle?",
+    answer: "FurrCircle is India's social network for pet lovers. You can share posts and stories, match your pet for playdates or adoption, track health records, book vets, discover local events, and chat with other pet parents — all in one free app.",
   },
   {
-    question: "Do you offer emergency veterinary services?",
-    answer: "Yes, we provide 24/7 emergency care for critical situations. During regular hours, please call us while on your way. After hours, follow the instructions on our emergency line.",
+    question: "How does pet matching work?",
+    answer: "Pet matching works like a swipe card interface. You can match in four modes: Playdate (find pets to hang out with), Adoption (find pets looking for a home), Breed (connect for responsible breeding), and Owner (meet other pet parents nearby).",
   },
   {
-    question: "How do I schedule and appointment?",
-    answer: "You can schedule an appointment by calling us directly at 1-800-PET-CARE or by using our online booking system available on our website.",
+    question: "Is FurrCircle free to use?",
+    answer: "Yes, FurrCircle is completely free to download and use on both iOS and Android.",
   },
   {
-    question: "What types of pets do you treat?",
-    answer: "We treat a wide variety of pets, including dogs, cats, rabbits, guinea pigs, and other small domestic animals.",
+    question: "What pets does FurrCircle support?",
+    answer: "FurrCircle supports all kinds of pets — dogs, cats, rabbits, parrots, turtles, squirrels, and more. Any pet parent is welcome.",
   },
   {
-    question: "Do you provide vaccinations and preventive care?",
-    answer: "Absolutely! We offer comprehensive vaccination programs and preventive care plans tailored to your pet's specific needs and lifestyle.",
+    question: "How do I track my pet's health records?",
+    answer: "Each pet gets a Health Passport inside the app where you can log vaccines, vitals, medications, allergies, and insurance info. You can also set reminders so you never miss a dose or vet visit.",
+  },
+  {
+    question: "Can I find local vets and events on FurrCircle?",
+    answer: "Yes! The Discover tab lets you find verified vets near you and book appointments. The Events section shows local adoption drives, pet meetups, training sessions, and playdates in your city.",
   },
 ];
 
