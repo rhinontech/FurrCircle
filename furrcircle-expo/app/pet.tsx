@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Modal } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2, Pill, X, Trash2 } from "lucide-react-native";
+import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2, Pill, X, Trash2, Eye } from "lucide-react-native";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { ShareSheet } from "../src/components/ShareSheet";
 import { PageContainer } from "../src/components/PageContainer";
@@ -94,12 +94,20 @@ export default function PetScreen() {
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title="Pet Profile"
           right={
-            <TouchableOpacity 
-              onPress={() => setShareOpen(true)}
-              style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
-            >
-              <Share2 size={20} color={tk.text} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <TouchableOpacity 
+                onPress={() => router.replace(`/p/${pet?.id || id}`)}
+                style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
+              >
+                <Eye size={20} color={tk.text} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => setShareOpen(true)}
+                style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
+              >
+                <Share2 size={20} color={tk.text} />
+              </TouchableOpacity>
+            </View>
           }
          />
         <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
@@ -217,19 +225,19 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
         <Text style={[styles.sectionSub, { color: tk.textMuted }]}>Show {petName} on Discover for matching families.</Text>
         <View style={styles.availGrid}>
           <TouchableOpacity onPress={toggleAdoption} disabled={!pet?.canManage}
-            style={[styles.availCard, adoption ? { backgroundColor: colors.success } : { backgroundColor: colors.white }, !pet?.canManage && { opacity: 0.8 }]}>
-            <Home size={20} color={adoption ? colors.white : colors.foreground} />
+            style={[styles.availCard, adoption ? { backgroundColor: colors.success } : { backgroundColor: tk.card }, !pet?.canManage && { opacity: 0.8 }]}>
+            <Home size={20} color={adoption ? colors.white : tk.text + "99"} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.availLabel, { color: adoption ? colors.white : colors.foreground }]}>Open for adoption</Text>
-              <Text style={[styles.availSub, { color: adoption ? colors.white + "CC" : colors.foreground + "88" }]}>{adoption ? "Listed" : "Off"}</Text>
+              <Text style={[styles.availLabel, { color: adoption ? colors.white : tk.text }]}>Open for adoption</Text>
+              <Text style={[styles.availSub, { color: adoption ? colors.white + "CC" : tk.textMuted }]}>{adoption ? "Listed" : "Off"}</Text>
             </View>
           </TouchableOpacity>
           <TouchableOpacity onPress={toggleFoster} disabled={!pet?.canManage}
-            style={[styles.availCard, foster ? { backgroundColor: colors.coral } : { backgroundColor: colors.white }, !pet?.canManage && { opacity: 0.8 }]}>
-            <HandHeart size={20} color={foster ? colors.white : colors.foreground} />
+            style={[styles.availCard, foster ? { backgroundColor: colors.coral } : { backgroundColor: tk.card }, !pet?.canManage && { opacity: 0.8 }]}>
+            <HandHeart size={20} color={foster ? colors.white : tk.text + '99'} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.availLabel, { color: foster ? colors.white : colors.foreground }]}>Open for foster</Text>
-              <Text style={[styles.availSub, { color: foster ? colors.white + "CC" : colors.foreground + "88" }]}>{foster ? "Listed" : "Off"}</Text>
+              <Text style={[styles.availLabel, { color: foster ? colors.white : tk.text }]}>Open for foster</Text>
+              <Text style={[styles.availSub, { color: foster ? colors.white + "CC" : tk.textMuted }]}>{foster ? "Listed" : "Off"}</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -344,7 +352,7 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
         <View style={{ gap: 8 }}>
           {vaccines.length === 0 && <Text style={{ color: tk.textMuted }}>No vaccines recorded.</Text>}
           {vaccines.map((v: any, i: number) => (
-            <View key={v.id ? String(v.id) : String(i)} style={[styles.vaccineRow, { backgroundColor: colors.white }]}>
+            <View key={v.id ? String(v.id) : String(i)} style={[styles.vaccineRow, { backgroundColor: tk.card }]}>
               <View style={[styles.vaccineIcon, { backgroundColor: v.status === "completed" ? "rgba(76,175,80,0.15)" : "rgba(255,217,61,0.4)" }]}>
                 <Syringe size={16} color={v.status === "completed" ? colors.success : colors.foreground} />
               </View>
@@ -379,7 +387,7 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
         <View style={{ gap: 8 }}>
           {meds.length === 0 && <Text style={{ color: tk.textMuted }}>No active medications.</Text>}
           {meds.map((m: any, i: number) => (
-            <View key={m.id ? String(m.id) : String(i)} style={[styles.vaccineRow, { backgroundColor: colors.white }]}>
+            <View key={m.id ? String(m.id) : String(i)} style={[styles.vaccineRow, { backgroundColor: tk.card }]}>
               <View style={[styles.vaccineIcon, { backgroundColor: "rgba(255,111,207,0.15)" }]}>
                 <Pill size={16} color={colors.pinky} />
               </View>
@@ -398,22 +406,23 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
 
 
       {/* Insurance */}
-      <View style={[styles.passportCard, { backgroundColor: colors.white }]}>
+      {/* <View style={[styles.passportCard, { backgroundColor: tk.card }]}>
         <Text style={styles.passportCardLabel}>INSURANCE</Text>
         <Text style={[styles.passportCardValue, { color: tk.text }]}>PawCare Health</Text>
         <Text style={[styles.passportCardSub, { color: tk.textMuted }]}>Policy PAW-2023 · Valid till Dec 2024</Text>
-      </View>
+      </View> */}
     </View>
   );
 }
 
 function StatCard({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  const tk = useTokens();
   const displayValue = value && value.length > 9 ? `${value.slice(0, 6)}...` : (value || "");
   return (
-    <View style={[styles.statCard, { backgroundColor: colors.white }]}>
-      <Icon size={20} color={colors.foreground + "99"} />
-      <Text style={styles.statValue}>{displayValue}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={[styles.statCard, { backgroundColor: tk.card }]}>
+      <Icon size={20} color={tk.text + "99"} />
+      <Text style={[styles.statValue, { color: tk.text }]}>{displayValue}</Text>
+      <Text style={[styles.statLabel, { color: tk.textMuted }]}>{label}</Text>
     </View>
   );
 }
@@ -435,8 +444,8 @@ const styles = StyleSheet.create({
   tabText: { fontFamily: "Poppins_700Bold", fontSize: 12 },
   statsGrid: { flexDirection: "row", gap: 10 },
   statCard: { flex: 1, borderRadius: 16, padding: 12, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
-  statValue: { fontFamily: "Poppins_700Bold", fontSize: 12, color: colors.foreground, marginTop: 4 },
-  statLabel: { fontSize: 11, color: colors.foreground + "88", fontFamily: "Inter_400Regular" },
+  statValue: { fontFamily: "Poppins_700Bold", fontSize: 12, marginTop: 4 },
+  statLabel: { fontSize: 11,  fontFamily: "Inter_400Regular" },
   sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, marginBottom: 6 },
   sectionSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 10 },
   availGrid: { flexDirection: "row", gap: 10 },

@@ -6,6 +6,7 @@ import {
   Image,
   TextInput,
   StyleSheet,
+  RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -28,6 +29,23 @@ export default function DiscoverScreen() {
   const [mode, setMode] = useState<Mode>("all");
   const [nearbyVets, setNearbyVets] = useState<any[]>([]);
   const [allPets, setAllPets] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      if (user?.city) {
+        const vetsData = await placesApi.getVetsByCity(user.city);
+        setNearbyVets(vetsData.items || []);
+      }
+      const petsData = await petApi.discoverPets();
+      setAllPets(petsData || []);
+    } catch (err) {
+      console.error("Failed to refresh discover data:", err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,7 +54,7 @@ export default function DiscoverScreen() {
           const vetsData = await placesApi.getVetsByCity(user.city);
           setNearbyVets(vetsData.items || []);
         }
-        
+
         const petsData = await petApi.discoverPets();
         setAllPets(petsData || []);
       } catch (err) {
@@ -52,128 +70,135 @@ export default function DiscoverScreen() {
 
   return (
     <PageContainer>
-    <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: tk.bg }}>
-      <ScrollView style={[styles.container, { backgroundColor: tk.bg }]} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-      <View style={styles.headerSection}>
-        <Text style={[styles.title, { color: tk.text }]}>Discover</Text>
-        <Text style={[styles.subtitle, { color: tk.textMuted }]}>Vets, pets & places near you</Text>
-      </View>
-
-      <View style={[styles.searchBar, { backgroundColor: tk.card }]}>
-        <Search size={20} color={tk.textMuted} />
-        <TextInput placeholder="Search vets, breeds, places…" placeholderTextColor={tk.textMuted} style={[styles.searchInput, { color: tk.text }]} />
-      </View>
-
-      <View style={styles.sectionRow}>
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Nearby vets</Text>
-        <TouchableOpacity onPress={() => router.push("/vets")}>
-          <Text style={styles.seeAll}>See all</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.vetList}>
-        {!user?.city ? (
-          <TouchableOpacity onPress={() => router.push("/edit-profile")} style={[styles.vetRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
-            <View style={[styles.vetIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
-              <MapPin size={28} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-              <View style={styles.vetNameRow}>
-                <Text style={[styles.vetName, { color: tk.text }]}>Add Location</Text>
-              </View>
-              <View style={styles.vetSpecRow}>
-                <Text style={[styles.vetSpec, { color: tk.textMuted }]}>Set your city to find nearby vets</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ) : (
-          nearbyVets.slice(0, 4).map((v) => (
-            <TouchableOpacity key={v.id} onPress={() => router.push(`/vets/${v.id}`)} style={[styles.vetRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
-              <View style={[styles.vetIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
-                <Image source={require("../../src/assets/doodle-vet.png")} style={styles.vetImg} resizeMode="contain" />
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <View style={styles.vetNameRow}>
-                  <Text style={[styles.vetName, { color: tk.text }]} numberOfLines={1}>{v.name}</Text>
-                </View>
-                <View style={styles.vetSpecRow}>
-                  <Stethoscope size={12} color={tk.textMuted} />
-                  <Text style={[styles.vetSpec, { color: tk.textMuted }]}>{v.address ? v.address.split(',')[0] : "General"}</Text>
-                </View>
-                <View style={styles.vetMeta}>
-                  <Star size={12} color={colors.sunshine} fill={colors.sunshine} />
-                  <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{v.rating || "N/A"}</Text>
-                  {user?.city && (
-                    <>
-                      <MapPin size={12} color={tk.textMuted} />
-                      <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{user.city}</Text>
-                    </>
-                  )}
-                </View>
-              </View>
-              <View style={styles.callBtn}>
-                <Phone size={16} color={colors.white} />
-              </View>
-            </TouchableOpacity>
-          ))
-        )}
-      </View>
-
-      <View style={styles.sectionRow}>
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Pets nearby</Text>
-        <Text style={[styles.petCount, { color: tk.textMuted }]}>{pets.length} found</Text>
-      </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
-        {([
-          { k: "all" as Mode, label: "All" },
-          { k: "adoption" as Mode, label: "Adoption" },
-          { k: "foster" as Mode, label: "Foster" },
-        ]).map(({ k, label }) => {
-          const isActive = mode === k;
-          return (
-            <TouchableOpacity key={k} onPress={() => setMode(k)} style={[styles.filterBtn, { backgroundColor: isActive ? tk.text : tk.card }]}>
-              <Text style={[styles.filterBtnText, { color: isActive ? tk.bg : tk.textMuted }]}>{label}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      <View style={styles.petsGrid}>
-        {pets.map((p) => (
-          <TouchableOpacity key={p.id} onPress={() => router.push(`/p/${p.id}`)} style={[styles.petCard, { backgroundColor: tk.card }]} activeOpacity={0.85}>
-            <View style={[styles.petImageBg, { backgroundColor: "rgba(255,217,61,0.3)" }]}>
-              {p.avatar_url ? (
-                <Image source={{ uri: p.avatar_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-              ) : (
-                <Image source={require("../../src/assets/doodle-puppy.png")} style={styles.petImage} resizeMode="contain" />
-              )}
-              <View style={styles.petBadges}>
-                {p.isAdoptionOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.success }]}><Text style={styles.adoptBadgeText}>Adopt</Text></View>}
-                {p.isFosterOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.coral }]}><Text style={styles.adoptBadgeText}>Foster</Text></View>}
-              </View>
-            </View>
-            <View style={styles.petInfo}>
-              <View style={styles.petNameRow}>
-                <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
-                {/* <Heart size={16} color={colors.pinky} /> */}
-              </View>
-              <Text style={[styles.petBreed, { color: tk.textMuted }]}>{p.breed || p.species}</Text>
-              <View style={styles.petDistRow}>
-                <MapPin size={12} color={tk.textMuted} />
-                <Text style={[styles.petDist, { color: tk.textMuted }]}>{p.city || "Nearby"}</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-        {pets.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={[styles.emptyText, { color: tk.textMuted }]}>No pets match this filter yet.</Text>
+      <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: tk.bg }}>
+        <ScrollView
+          style={[styles.container, { backgroundColor: tk.bg }]}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+          }
+        >
+          <View style={styles.headerSection}>
+            <Text style={[styles.title, { color: tk.text }]}>Discover</Text>
+            <Text style={[styles.subtitle, { color: tk.textMuted }]}>Vets, pets & places near you</Text>
           </View>
-        )}
+
+          <View style={[styles.searchBar, { backgroundColor: tk.card }]}>
+            <Search size={20} color={tk.textMuted} />
+            <TextInput placeholder="Search vets, breeds, places…" placeholderTextColor={tk.textMuted} style={[styles.searchInput, { color: tk.text }]} />
+          </View>
+
+          <View style={styles.sectionRow}>
+            <Text style={[styles.sectionTitle, { color: tk.text }]}>Nearby vets</Text>
+            <TouchableOpacity onPress={() => router.push("/vets")}>
+              <Text style={styles.seeAll}>See all</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.vetList}>
+            {!user?.city ? (
+              <TouchableOpacity onPress={() => router.push("/edit-profile")} style={[styles.vetRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+                <View style={[styles.vetIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
+                  <MapPin size={28} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                  <View style={styles.vetNameRow}>
+                    <Text style={[styles.vetName, { color: tk.text }]}>Add Location</Text>
+                  </View>
+                  <View style={styles.vetSpecRow}>
+                    <Text style={[styles.vetSpec, { color: tk.textMuted }]}>Set your city to find nearby vets</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ) : (
+              nearbyVets.slice(0, 4).map((v) => (
+                <TouchableOpacity key={v.id} onPress={() => router.push(`/vets/${v.id}`)} style={[styles.vetRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+                  <View style={[styles.vetIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
+                    <Image source={require("../../src/assets/doodle-vet.png")} style={styles.vetImg} resizeMode="contain" />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={styles.vetNameRow}>
+                      <Text style={[styles.vetName, { color: tk.text }]} numberOfLines={1}>{v.name}</Text>
+                    </View>
+                    <View style={styles.vetSpecRow}>
+                      <Stethoscope size={12} color={tk.textMuted} />
+                      <Text style={[styles.vetSpec, { color: tk.textMuted }]}>{v.address ? v.address.split(',')[0] : "General"}</Text>
+                    </View>
+                    <View style={styles.vetMeta}>
+                      <Star size={12} color={colors.sunshine} fill={colors.sunshine} />
+                      <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{v.rating || "N/A"}</Text>
+                      {user?.city && (
+                        <>
+                          <MapPin size={12} color={tk.textMuted} />
+                          <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{user.city}</Text>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                  <View style={styles.callBtn}>
+                    <Phone size={16} color={colors.white} />
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+
+          <View style={styles.sectionRow}>
+            <Text style={[styles.sectionTitle, { color: tk.text }]}>Pets nearby</Text>
+            <Text style={[styles.petCount, { color: tk.textMuted }]}>{pets.length} found</Text>
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
+            {([
+              { k: "all" as Mode, label: "All" },
+              { k: "adoption" as Mode, label: "Adoption" },
+              { k: "foster" as Mode, label: "Foster" },
+            ]).map(({ k, label }) => {
+              const isActive = mode === k;
+              return (
+                <TouchableOpacity key={k} onPress={() => setMode(k)} style={[styles.filterBtn, { backgroundColor: isActive ? tk.text : tk.card }]}>
+                  <Text style={[styles.filterBtnText, { color: isActive ? tk.bg : tk.textMuted }]}>{label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          <View style={styles.petsGrid}>
+            {pets.map((p) => (
+              <TouchableOpacity key={p.id} onPress={() => router.push(`/p/${p.id}`)} style={[styles.petCard, { backgroundColor: tk.card }]} activeOpacity={0.85}>
+                <View style={[styles.petImageBg, { backgroundColor: "rgba(255,217,61,0.3)" }]}>
+                  {p.avatar_url ? (
+                    <Image source={{ uri: p.avatar_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  ) : (
+                    <Image source={require("../../src/assets/doodle-puppy.png")} style={styles.petImage} resizeMode="contain" />
+                  )}
+                  <View style={styles.petBadges}>
+                    {p.isAdoptionOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.success }]}><Text style={styles.adoptBadgeText}>Adopt</Text></View>}
+                    {p.isFosterOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.coral }]}><Text style={styles.adoptBadgeText}>Foster</Text></View>}
+                  </View>
+                </View>
+                <View style={styles.petInfo}>
+                  <View style={styles.petNameRow}>
+                    <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
+                    {/* <Heart size={16} color={colors.pinky} /> */}
+                  </View>
+                  <Text style={[styles.petBreed, { color: tk.textMuted }]}>{p.breed || p.species}</Text>
+                  <View style={styles.petDistRow}>
+                    <MapPin size={12} color={tk.textMuted} />
+                    <Text style={[styles.petDist, { color: tk.textMuted }]}>{p.city || "Nearby"}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+            {pets.length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyText, { color: tk.textMuted }]}>No pets match this filter yet.</Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
       </View>
-      </ScrollView>
-    </View>
     </PageContainer>
   );
 }

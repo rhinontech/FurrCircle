@@ -9,6 +9,8 @@ import {
   Animated,
   PanResponder,
   ActivityIndicator,
+  Alert,
+  RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -21,6 +23,7 @@ import { useAuthStore } from "../../src/lib/auth-store";
 import { matchApi, type Coords } from "../../services/match/matchApi";
 import { petApi } from "../../services/pet/petApi";
 import { PrivateAxios } from "../../helpers/PrivateAxios";
+import { chatApi } from "../../services/chat/chatApi";
 
 const { width, height } = Dimensions.get("window");
 const CARD_WIDTH = width - 40;
@@ -107,21 +110,29 @@ export default function MatchScreen() {
           const c = { lat: loc.coords.latitude, lng: loc.coords.longitude };
           setCoords(c);
           // Update user's location on backend (fire-and-forget)
-          PrivateAxios.patch("/auth/profile", { latitude: c.lat, longitude: c.lng }).catch(() => {});
+          PrivateAxios.patch("/auth/profile", { latitude: c.lat, longitude: c.lng }).catch(() => { });
         }
-      } catch {}
+      } catch { }
     })();
   }, []);
 
   // Load user's pets
   useEffect(() => {
-    petApi.getMyPets().then(setMyPets).catch(() => {});
+    petApi.getMyPets().then(setMyPets).catch(() => { });
   }, []);
 
   // Load cards whenever mode or coords ready
   useEffect(() => {
     loadCards(mode);
   }, [mode, coords]);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadCards(mode);
+    setRefreshing(false);
+  }, [mode]);
 
   const loadCards = async (m: Mode) => {
     setLoading(true);
@@ -146,7 +157,7 @@ export default function MatchScreen() {
         const data = await matchApi.getOwnerCards(coords || undefined);
         setCards(data.map(mapOwnerToCard));
       }
-    } catch {}
+    } catch { }
     setLoading(false);
   };
 
@@ -185,14 +196,14 @@ export default function MatchScreen() {
             if (res.matched && res.conversationId) {
               showMatchModal(res.conversationId, card.name, card.img);
             }
-          }).catch(() => {});
+          }).catch(() => { });
         } else if (mode === "Breed" && myPet) {
           const breedPet = myPets.find((p: any) => p.isBreedingOpen) || myPet;
           matchApi.swipeBreed(card.id, breedPet.id, swipeDir).then((res) => {
             if (res.matched && res.conversationId) {
               showMatchModal(res.conversationId, card.name, card.img);
             }
-          }).catch(() => {});
+          }).catch(() => { });
         }
       }
       advance();
@@ -226,9 +237,9 @@ export default function MatchScreen() {
           if (res.matched && res.conversationId) {
             showMatchModal(res.conversationId, card.name, card.img);
           }
-        }).catch(() => {});
+        }).catch(() => { });
       } else if (card && direction === "left") {
-        matchApi.swipeOwner(card.id, "pass").catch(() => {});
+        matchApi.swipeOwner(card.id, "pass").catch(() => { });
       }
       advance();
     });
@@ -298,12 +309,44 @@ export default function MatchScreen() {
   const handleAdoptionInterest = async () => {
     const card = cards[index % cards.length];
     if (!card) return;
+    if (!card.ownerId) {
+      Alert.alert("Error", "This pet does not have an owner associated with it.");
+      return;
+    }
+    if (card.ownerId === user?.id) {
+      Alert.alert("Adoption", "You cannot adopt your own pet.");
+      return;
+    }
+
     setApplyingAdoption(true);
     try {
-      await PrivateAxios.post("/adoptions/apply", { petId: card.id, type: "adoption", message: "I'm interested in adopting this pet!" });
-      animatePagination("next");
-    } catch {
-      animatePagination("next");
+      // 1. Submit adoption application
+      try {
+        await PrivateAxios.post("/adoptions/apply", { petId: card.id, type: "adoption", message: "I'm interested in adopting this pet!" });
+      } catch (applyErr: any) {
+        // If the user already applied (409 Conflict), we log a warning and proceed so they can still chat
+        console.warn("Adoption application failed or already exists:", applyErr?.response?.data || applyErr.message);
+      }
+
+      // 2. Start the chat with the owner and send the deep link message
+      const introMessage = `I am interested to adopt this pet! furrcircle://pet/${card.id}`;
+      const conv = await chatApi.startChat(card.ownerId, introMessage);
+
+      // 3. Send the image URL if available so the owner gets a photo message
+      // if (card.img?.uri && conv?.id) {
+      //   await chatApi.sendMessage(conv.id, card.img.uri);
+      // }
+
+      // 4. Redirect to that chat screen (with the selected id to open detail view)
+      if (conv?.id) {
+        router.push({ pathname: "/chat", params: { id: conv.id } });
+      } else {
+        router.push("/chat");
+      }
+    } catch (err: any) {
+      console.error("Failed to start chat:", err);
+      const errMsg = err?.response?.data?.message || err?.message || "Please try again.";
+      Alert.alert("Error", `Failed to contact the owner: ${errMsg}`);
     } finally {
       setApplyingAdoption(false);
     }
@@ -354,7 +397,15 @@ export default function MatchScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: tk.bg }]}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: tk.bg }}
+      contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top }}
+      scrollEnabled={!topCard || loading}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+      }
+      keyboardShouldPersistTaps="handled"
+    >
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: tk.text }]}>Match</Text>
@@ -541,7 +592,7 @@ export default function MatchScreen() {
           </Animated.View>
         </Animated.View>
       )}
-    </View>
+    </ScrollView>
   );
 }
 

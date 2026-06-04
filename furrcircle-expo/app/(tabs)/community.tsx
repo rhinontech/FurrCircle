@@ -6,7 +6,7 @@ import {
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Plus, Flame, Search, X, Hash, HelpCircle, Users, ChevronRight, Camera } from "lucide-react-native";
+import { Plus, Flame, Search, X, Hash, HelpCircle, Users, ChevronRight, Camera, Calendar } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";
@@ -179,15 +179,21 @@ export default function CommunityScreen() {
 
           {/* Header */}
           <View style={styles.header}>
-            <View>
+            <View style={{ flex: 1, marginRight: 8 }}>
               <Text style={[styles.title, { color: tk.text }]}>Circles</Text>
-              {!isSearchActive && <Text style={[styles.subtitle, { color: tk.textMuted }]}>Conversations that bring pet parents together</Text>}
+              {!isSearchActive && <Text style={[styles.subtitle, { color: tk.textMuted }]} numberOfLines={1}>Conversations that bring pet parents together</Text>}
             </View>
             {!isSearchActive && (
-              <TouchableOpacity onPress={() => router.push("/ask")} style={styles.askBtn} activeOpacity={0.85}>
-                <Plus size={16} color={colors.white} strokeWidth={3} />
-                <Text style={styles.askBtnText}>Ask</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <TouchableOpacity onPress={() => router.push("/events")} style={[styles.eventBtn, { backgroundColor: tk.card, borderColor: tk.border, borderWidth: 1 }]} activeOpacity={0.85}>
+                  <Calendar size={20} color={tk.text} />
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => router.push("/ask")} style={styles.askBtn} activeOpacity={0.85}>
+                  <Plus size={16} color={colors.white} strokeWidth={3} />
+                  {/* <Text style={styles.askBtnText}></Text> */}
+                </TouchableOpacity>
+              </View>
             )}
           </View>
 
@@ -253,8 +259,8 @@ export default function CommunityScreen() {
                             {p.avatar_url
                               ? <Image source={{ uri: p.avatar_url }} style={{ width: 44, height: 44, borderRadius: 12 }} resizeMode="cover" />
                               : <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.coral + "33", alignItems: "center", justifyContent: "center" }}>
-                                  <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 16, color: colors.coral }}>{(p.name || "?")?.[0]?.toUpperCase()}</Text>
-                                </View>}
+                                <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 16, color: colors.coral }}>{(p.name || "?")?.[0]?.toUpperCase()}</Text>
+                              </View>}
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={[styles.resultTitle, { color: tk.text }]}>{p.name}</Text>
@@ -272,7 +278,7 @@ export default function CommunityScreen() {
                                     await userApi.unfollowUser(p.id);
                                     setSearchResults((prev: any) => ({ ...prev, people: prev.people.map((u: any) => u.id === p.id ? { ...u, followStatus: "none" } : u) }));
                                   }
-                                } catch {}
+                                } catch { }
                               }}
                               style={[styles.joinBtn, { backgroundColor: p.followStatus === "none" ? colors.primary : tk.card, borderColor: p.followStatus === "none" ? colors.primary : tk.border }]}
                             >
@@ -359,7 +365,7 @@ export default function CommunityScreen() {
 
                   {/* TAGS */}
                   {(activeFilter === "all" || activeFilter === "tags") && (searchResults?.tags || []).length > 0 && (
-                    <ResultSection label="#TAGS" count={searchResults.tags.length} showSeeAll={false} onSeeAll={() => {}} tk={tk}>
+                    <ResultSection label="#TAGS" count={searchResults.tags.length} showSeeAll={false} onSeeAll={() => { }} tk={tk}>
                       <View style={styles.tagsWrap}>
                         {searchResults.tags.map((tag: string) => (
                           <TouchableOpacity key={tag} onPress={() => setSearchQuery(tag)} style={[styles.tagChip, { backgroundColor: tk.card, borderColor: tk.border }]} activeOpacity={0.8}>
@@ -531,43 +537,43 @@ function CreateCircleSheet({ open, onClose, onCreate, tk }: any) {
     <AdaptiveSheet visible={open} onClose={onClose} maxWidth={520} maxHeight="85%">
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <Pressable onPress={Keyboard.dismiss} style={{ padding: 24, paddingBottom: 40 }}>
-            <Text style={[styles.sheetTitle, { color: tk.text }]}>Create new Circle</Text>
+          <Text style={[styles.sheetTitle, { color: tk.text }]}>Create new Circle</Text>
 
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              <Pressable onPress={Keyboard.dismiss}>
-                {/* Cover image */}
-                <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Cover Image</Text>
-                <TouchableOpacity onPress={pickCover} style={[styles.coverPicker, { backgroundColor: tk.inputBg, borderColor: tk.border }]} activeOpacity={0.8}>
-                  {coverUri ? (
-                    <Image source={{ uri: coverUri }} style={{ width: "100%", height: "100%", borderRadius: 12 }} resizeMode="cover" />
-                  ) : (
-                    <View style={{ alignItems: "center", gap: 6 }}>
-                      <Camera size={24} color={tk.textMuted} />
-                      <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: tk.textMuted }}>Tap to add cover photo</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <Pressable onPress={Keyboard.dismiss}>
+              {/* Cover image */}
+              <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Cover Image</Text>
+              <TouchableOpacity onPress={pickCover} style={[styles.coverPicker, { backgroundColor: tk.inputBg, borderColor: tk.border }]} activeOpacity={0.8}>
+                {coverUri ? (
+                  <Image source={{ uri: coverUri }} style={{ width: "100%", height: "100%", borderRadius: 12 }} resizeMode="cover" />
+                ) : (
+                  <View style={{ alignItems: "center", gap: 6 }}>
+                    <Camera size={24} color={tk.textMuted} />
+                    <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: tk.textMuted }}>Tap to add cover photo</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
 
-                <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Name</Text>
-                <TextInput value={name} onChangeText={setName} placeholder="e.g. Beagle Buddies" placeholderTextColor={tk.textMuted} style={[styles.modalInput, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border }]} />
+              <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Name</Text>
+              <TextInput value={name} onChangeText={setName} placeholder="e.g. Beagle Buddies" placeholderTextColor={tk.textMuted} style={[styles.modalInput, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border }]} />
 
-                <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Description</Text>
-                <TextInput value={description} onChangeText={setDescription} placeholder="What is this circle about?" placeholderTextColor={tk.textMuted} style={[styles.modalInput, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, height: 80, textAlignVertical: "top" }]} multiline />
+              <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Description</Text>
+              <TextInput value={description} onChangeText={setDescription} placeholder="What is this circle about?" placeholderTextColor={tk.textMuted} style={[styles.modalInput, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, height: 80, textAlignVertical: "top" }]} multiline />
 
-                <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Category</Text>
-                <View style={styles.categoryRow}>
-                  {CATEGORY_PRESETS.map((cat) => (
-                    <TouchableOpacity key={cat.id} onPress={() => setCategory(cat.id)} style={[styles.categoryBtn, { backgroundColor: category === cat.id ? tk.text : tk.bg }]} activeOpacity={0.8}>
-                      <Text style={[styles.categoryBtnText, { color: category === cat.id ? tk.bg : tk.textMuted }]}>{cat.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+              <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Category</Text>
+              <View style={styles.categoryRow}>
+                {CATEGORY_PRESETS.map((cat) => (
+                  <TouchableOpacity key={cat.id} onPress={() => setCategory(cat.id)} style={[styles.categoryBtn, { backgroundColor: category === cat.id ? tk.text : tk.bg }]} activeOpacity={0.8}>
+                    <Text style={[styles.categoryBtnText, { color: category === cat.id ? tk.bg : tk.textMuted }]}>{cat.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-                <TouchableOpacity onPress={handleSubmit} disabled={loading} style={[styles.createBtn, loading && { opacity: 0.6 }]} activeOpacity={0.85}>
-                  {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.createBtnText}>Create Circle</Text>}
-                </TouchableOpacity>
-              </Pressable>
-            </ScrollView>
+              <TouchableOpacity onPress={handleSubmit} disabled={loading} style={[styles.createBtn, loading && { opacity: 0.6 }]} activeOpacity={0.85}>
+                {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.createBtnText}>Create Circle</Text>}
+              </TouchableOpacity>
+            </Pressable>
+          </ScrollView>
         </Pressable>
       </KeyboardAvoidingView>
     </AdaptiveSheet>
@@ -581,6 +587,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   askBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.primary, borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10 },
   askBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14, color: colors.white },
+  eventBtn: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
   searchBar: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 24, paddingHorizontal: 16, paddingVertical: 12, marginHorizontal: 20, marginBottom: 4 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular" },
   chip: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },

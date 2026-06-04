@@ -92,6 +92,7 @@ import playdateRoutes from './routes/playdateRoutes.ts';
 import ownerMatchRoutes from './routes/ownerMatchRoutes.ts';
 import breedRoutes from './routes/breedRoutes.ts';
 import lostPetRoutes from './routes/lostPetRoutes.ts';
+import reportRoutes from './routes/reportRoutes.ts';
 
 
 // Routes
@@ -123,6 +124,7 @@ app.use('/api/playdate', playdateRoutes);
 app.use('/api/owner-match', ownerMatchRoutes);
 app.use('/api/breed', breedRoutes);
 app.use('/api/lost-pets', lostPetRoutes);
+app.use('/api/reports', reportRoutes);
 
 
 // Test DB Connection and Start Server

@@ -2,11 +2,11 @@ import { useState, useCallback, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
   StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
-  Keyboard,
+  Keyboard, Modal, Pressable,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Heart, MessageCircle, Send, Bookmark, Volume2, VolumeX } from "lucide-react-native";
+import { Heart, MessageCircle, Send, Bookmark, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check } from "lucide-react-native";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Avatar } from "../../src/components/Avatar";
 import { colors } from "../../src/lib/theme";
@@ -46,6 +46,10 @@ export default function PostDetail() {
   const [shareOpen, setShareOpen] = useState(false);
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportStep, setReportStep] = useState(1);
 
   useEffect(() => {
     Audio.setAudioModeAsync({
@@ -115,6 +119,60 @@ export default function PostDetail() {
     try { await feedApi.savePost(id!); } catch { }
   };
 
+  const handleDeletePost = () => {
+    setMenuOpen(false);
+    Alert.alert(
+      "Delete Post",
+      "Are you sure you want to delete this post?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setDeleting(true);
+              await feedApi.deletePost(post.id);
+              Alert.alert("Success", "Post deleted successfully.", [
+                {
+                  text: "OK",
+                  onPress: () => {
+                    router.back();
+                  }
+                }
+              ]);
+            } catch (err: any) {
+              Alert.alert("Error", err?.response?.data?.message || "Could not delete post.");
+            } finally {
+              setDeleting(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleReportUser = () => {
+    setMenuOpen(false);
+    setReportStep(1);
+    setReportModalOpen(true);
+  };
+
+  const handleSelectReason = async (reason: string) => {
+    const reportedUserId = post?.userId || post?.author?.id;
+    if (!reportedUserId) {
+      Alert.alert("Error", "Could not identify the user to report.");
+      return;
+    }
+
+    try {
+      await feedApi.reportUser(reportedUserId, reason);
+      setReportStep(2);
+    } catch (err: any) {
+      Alert.alert("Error", err?.response?.data?.message || "Failed to submit report.");
+    }
+  };
+
   const handleComment = async () => {
     if (!commentText.trim()) return;
 
@@ -166,6 +224,7 @@ export default function PostDetail() {
   }
 
   const isDummy = dummyPosts.some(p => p.id === id);
+  const isOwner = !isDummy && post?.userId === user?.id;
   const author = isDummy ? {
     name: post.pet,
     avatar_url: null,
@@ -188,7 +247,14 @@ export default function PostDetail() {
       enabled={Platform.OS === "ios"}
     >
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title={displayName} />
+        <ScreenHeader 
+          title={displayName} 
+          right={
+            <TouchableOpacity onPress={() => setMenuOpen(true)} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}>
+              <MoreVertical size={20} color={tk.text} />
+            </TouchableOpacity>
+          }
+        />
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }}>
           {/* Author row */}
           <View style={styles.authorRow}>
@@ -329,6 +395,177 @@ export default function PostDetail() {
         </View>
 
         <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} postId={post.id} />
+
+        {/* Options Menu Modal */}
+        <Modal visible={menuOpen} transparent={true} animationType="slide" onRequestClose={() => setMenuOpen(false)}>
+          <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
+            <View style={[styles.sheet, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true} onTouchEnd={(e) => e.stopPropagation()}>
+              <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+              <Text style={[styles.sheetTitle, { color: tk.text }]}>Options</Text>
+
+              {/* Save Option */}
+              <TouchableOpacity
+                onPress={() => { setMenuOpen(false); handleSave(); }}
+                style={[styles.sheetRow, { backgroundColor: tk.bg }]}
+                activeOpacity={0.8}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.sheetRowTitle, { color: tk.text }]}>
+                    {isSaved ? "Remove from Saved" : "Save Post"}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              {isOwner ? (
+                <>
+                  {/* Edit Post Option */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      setMenuOpen(false);
+                      router.push({
+                        pathname: "/compose",
+                        params: {
+                          editPostId: post.id,
+                          prefilledCategory: post.category || "General",
+                          prefilledCaption: post.content || "",
+                          prefilledImageUrl: post.imageUrl || "",
+                        }
+                      });
+                    }}
+                    style={[styles.sheetRow, { backgroundColor: tk.bg }]}
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.sheetRowTitle, { color: tk.text }]}>Edit Post</Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Delete Post Option */}
+                  <TouchableOpacity
+                    onPress={handleDeletePost}
+                    style={[styles.sheetRow, { backgroundColor: tk.bg }]}
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Delete Post</Text>
+                    </View>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  {/* About this Account Option */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      setMenuOpen(false);
+                      router.push({
+                        pathname: "/about-account",
+                        params: {
+                          username: author.username || "",
+                          prefilledName: displayName,
+                          prefilledAvatar: author.avatar_url || "",
+                        }
+                      });
+                    }}
+                    style={[styles.sheetRow, { backgroundColor: tk.bg }]}
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.sheetRowTitle, { color: tk.text }]}>About this Account</Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Report Option */}
+                  <TouchableOpacity
+                    onPress={handleReportUser}
+                    style={[styles.sheetRow, { backgroundColor: tk.bg }]}
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Report</Text>
+                    </View>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {/* Cancel Button */}
+              <TouchableOpacity
+                onPress={() => setMenuOpen(false)}
+                style={[styles.sheetRow, { backgroundColor: tk.bg, marginTop: 12, justifyContent: "center", alignItems: "center" }]}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.sheetRowTitle, { color: tk.textMuted }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Modal>
+
+        {/* Report Flow Modal */}
+        <Modal visible={reportModalOpen} animationType="slide" transparent={false} onRequestClose={() => setReportModalOpen(false)}>
+          <View style={[styles.reportContainer, { backgroundColor: tk.bg, paddingTop: insets.top }]}>
+            {/* Header */}
+            <View style={[styles.reportHeader, { borderBottomColor: tk.border }]}>
+              <View style={{ width: 40 }} />
+              <Text style={[styles.reportHeaderTitle, { color: tk.text }]}>Report</Text>
+              <TouchableOpacity onPress={() => setReportModalOpen(false)} style={styles.reportCloseBtn}>
+                <X size={24} color={tk.text} />
+              </TouchableOpacity>
+            </View>
+
+            {reportStep === 1 ? (
+              <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.reportContent} showsVerticalScrollIndicator={false}>
+                <Text style={[styles.reportTitle, { color: tk.text }]}>Why are you reporting this post?</Text>
+                <Text style={[styles.reportSubtitle, { color: tk.textMuted }]}>
+                  Your report is anonymous. If someone is in immediate danger, call the local emergency services - don't wait.
+                </Text>
+
+                <View style={{ marginTop: 24 }}>
+                  {[
+                    "I just don't like it",
+                    "Bullying or unwanted contact",
+                    "Suicide, self-injury or eating disorders",
+                    "Violence, hate or exploitation",
+                    "Selling or promoting restricted items",
+                    "Nudity or sexual activity",
+                    "Scam, fraud or spam",
+                    "False information",
+                    "Intellectual property"
+                  ].map((reason, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      style={[styles.reasonRow, { borderBottomColor: tk.border }]}
+                      onPress={() => handleSelectReason(reason)}
+                    >
+                      <Text style={[styles.reasonText, { color: tk.text }]}>{reason}</Text>
+                      <ChevronRight size={20} color={tk.textMuted} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            ) : (
+              <View style={styles.successContainer}>
+                <View style={styles.successContent}>
+                  <View style={[styles.checkCircle, { backgroundColor: tk.border }]}>
+                    <Check size={40} color={colors.primary} strokeWidth={3} />
+                  </View>
+                  <Text style={[styles.successTitle, { color: tk.text }]}>Thanks for your feedback</Text>
+                  <Text style={[styles.successSubtitle, { color: tk.textMuted }]}>
+                    We use these reports to show you less of this kind of content in the future.
+                  </Text>
+                </View>
+                
+                <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+                  <TouchableOpacity
+                    style={[styles.doneBtn, { backgroundColor: colors.primary }]}
+                    onPress={() => setReportModalOpen(false)}
+                  >
+                    <Text style={styles.doneBtnText}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+        </Modal>
+
         {Platform.OS === "android" && <View style={{ height: 0 }} />}
       </View>
     </KeyboardAvoidingView>
@@ -368,4 +605,27 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 10,
   },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 16, paddingBottom: 28 },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 12, opacity: 0.2 },
+  sheetTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, paddingHorizontal: 4, marginBottom: 8 },
+  sheetRow: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 12, padding: 12, marginBottom: 6 },
+  sheetRowTitle: { fontFamily: "Poppins_700Bold", fontSize: 13 },
+  reportContainer: { flex: 1 },
+  reportHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 56, paddingHorizontal: 16, borderBottomWidth: 1 },
+  reportHeaderTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, textAlign: "center" },
+  reportCloseBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  reportContent: { padding: 24 },
+  reportTitle: { fontFamily: "Poppins_700Bold", fontSize: 20, textAlign: "center", marginTop: 16, marginBottom: 8 },
+  reportSubtitle: { fontFamily: "Inter_400Regular", fontSize: 13, textAlign: "center", lineHeight: 18, paddingHorizontal: 16, marginBottom: 16 },
+  reasonRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 16, borderBottomWidth: 0.5 },
+  reasonText: { fontFamily: "Inter_400Regular", fontSize: 15, flex: 1, paddingRight: 16 },
+  successContainer: { flex: 1, justifyContent: "space-between" },
+  successContent: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32, marginTop: -40 },
+  checkCircle: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 24 },
+  successTitle: { fontFamily: "Poppins_700Bold", fontSize: 22, textAlign: "center", marginBottom: 12 },
+  successSubtitle: { fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center", lineHeight: 20 },
+  footer: { paddingHorizontal: 24 },
+  doneBtn: { height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center" },
+  doneBtnText: { fontFamily: "Poppins_700Bold", fontSize: 16, color: "#fff" },
 });

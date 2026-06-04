@@ -78,7 +78,8 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   rightSlot: {
-    width: 40,
+    minWidth: 40,
     alignItems: "flex-end",
+    justifyContent: "center",
   },
 });
