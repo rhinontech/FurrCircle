@@ -1,6 +1,6 @@
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Alert, Image
+  StyleSheet, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect, useRef } from "react";
@@ -259,9 +259,13 @@ export default function EditProfileScreen() {
 
   return (
     <PageContainer>
-      <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Edit Profile" />
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <View style={[styles.container, { backgroundColor: tk.bg }]}>
+          <ScreenHeader title="Edit Profile" />
+          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           
           {/* Avatar Section */}
           <View style={styles.avatarSection}>
@@ -381,6 +385,7 @@ export default function EditProfileScreen() {
           </View>
         </ScrollView>
       </View>
+    </KeyboardAvoidingView>
 
       <LocationPickerModal
         visible={isLocationModalVisible}

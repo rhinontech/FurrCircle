@@ -6,7 +6,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Heart, MessageCircle, Send, Bookmark, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check } from "lucide-react-native";
+import { Heart, MessageCircle, Send, Bookmark, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check, Edit2, Trash2, Info, Flag } from "lucide-react-native";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Avatar } from "../../src/components/Avatar";
 import { colors } from "../../src/lib/theme";
@@ -409,11 +409,10 @@ export default function PostDetail() {
                 style={[styles.sheetRow, { backgroundColor: tk.bg }]}
                 activeOpacity={0.8}
               >
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.sheetRowTitle, { color: tk.text }]}>
-                    {isSaved ? "Remove from Saved" : "Save Post"}
-                  </Text>
-                </View>
+                <Bookmark size={20} color={isSaved ? colors.primary : tk.text} fill={isSaved ? colors.primary : "none"} />
+                <Text style={[styles.sheetRowTitle, { color: tk.text }]}>
+                  {isSaved ? "Remove from Saved" : "Save Post"}
+                </Text>
               </TouchableOpacity>
 
               {isOwner ? (
@@ -435,9 +434,8 @@ export default function PostDetail() {
                     style={[styles.sheetRow, { backgroundColor: tk.bg }]}
                     activeOpacity={0.8}
                   >
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.sheetRowTitle, { color: tk.text }]}>Edit Post</Text>
-                    </View>
+                    <Edit2 size={20} color={tk.text} />
+                    <Text style={[styles.sheetRowTitle, { color: tk.text }]}>Edit Post</Text>
                   </TouchableOpacity>
 
                   {/* Delete Post Option */}
@@ -446,9 +444,8 @@ export default function PostDetail() {
                     style={[styles.sheetRow, { backgroundColor: tk.bg }]}
                     activeOpacity={0.8}
                   >
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Delete Post</Text>
-                    </View>
+                    <Trash2 size={20} color={colors.coral} />
+                    <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Delete Post</Text>
                   </TouchableOpacity>
                 </>
               ) : (
@@ -469,9 +466,8 @@ export default function PostDetail() {
                     style={[styles.sheetRow, { backgroundColor: tk.bg }]}
                     activeOpacity={0.8}
                   >
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.sheetRowTitle, { color: tk.text }]}>About this Account</Text>
-                    </View>
+                    <Info size={20} color={tk.text} />
+                    <Text style={[styles.sheetRowTitle, { color: tk.text }]}>About this Account</Text>
                   </TouchableOpacity>
 
                   {/* Report Option */}
@@ -480,9 +476,8 @@ export default function PostDetail() {
                     style={[styles.sheetRow, { backgroundColor: tk.bg }]}
                     activeOpacity={0.8}
                   >
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Report</Text>
-                    </View>
+                    <Flag size={20} color={colors.coral} />
+                    <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Report</Text>
                   </TouchableOpacity>
                 </>
               )}
