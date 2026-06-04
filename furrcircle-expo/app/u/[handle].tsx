@@ -1,10 +1,10 @@
 import { useState, useCallback } from "react";
 import {
   View, Text, ScrollView, Image, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Dimensions,
+  ActivityIndicator, Dimensions, Alert, Modal, Pressable,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { Share2, MapPin, Grid3x3, Bookmark, Bone, Play } from "lucide-react-native";
+import { Share2, MapPin, Grid3x3, Bookmark, Bone, Play, MoreVertical, ShieldOff, Flag } from "lucide-react-native";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { colors } from "../../src/lib/theme";
@@ -13,6 +13,7 @@ import { useAuthStore } from "../../src/lib/auth-store";
 import { userApi } from "../../services/user/userApi";
 import { feedApi } from "../../services/community/feedApi";
 import { chatApi } from "../../services/chat/chatApi";
+import { blockApi } from "../../services/user/blockApi";
 import { Video, ResizeMode } from "expo-av";
 
 const GRID_SIZE = (Dimensions.get("window").width - 12) / 3;
@@ -38,6 +39,8 @@ export default function UserProfileScreen() {
   const [tab, setTab] = useState<(typeof tabs)[number]>("Posts");
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
 
   // Tab data
   const [posts, setPosts] = useState<any[]>([]);
@@ -68,6 +71,44 @@ export default function UserProfileScreen() {
       router.push({ pathname: '/chat', params: { id: conv.id } });
     } catch (err) {
       console.error("Failed to start chat", err);
+    }
+  };
+
+  const handleBlockUser = () => {
+    setMenuOpen(false);
+    Alert.alert(
+      `Block @${handle}?`,
+      `They won't be able to see your profile or contact you. They won't be notified that you blocked them.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Block",
+          style: "destructive",
+          onPress: async () => {
+            setIsBlocking(true);
+            try {
+              await blockApi.blockUser(userProfile.id);
+              // Update local state to show blocked screen
+              setUserProfile({ ...userProfile, isBlocked: true, canViewContent: false, avatar_url: null });
+            } catch (err: any) {
+              Alert.alert("Error", err.message || "Failed to block user");
+            } finally {
+              setIsBlocking(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleUnblockUser = async () => {
+    try {
+      await blockApi.unblockUser(userProfile.id);
+      // Reload the profile
+      const data = await userApi.getUserProfile(handle as string);
+      setUserProfile(data);
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to unblock user");
     }
   };
 
@@ -102,15 +143,52 @@ export default function UserProfileScreen() {
         <ScreenHeader
           title={`@${handle}`}
           right={
-            <TouchableOpacity style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}>
-              <Share2 size={20} color={tk.text} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+              <TouchableOpacity style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}>
+                <Share2 size={20} color={tk.text} />
+              </TouchableOpacity>
+              {!isOwnProfile && (
+                <TouchableOpacity
+                  onPress={() => setMenuOpen(true)}
+                  style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
+                >
+                  <MoreVertical size={20} color={tk.text} />
+                </TouchableOpacity>
+              )}
+            </View>
           }
         />
 
         {loading ? (
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
             <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : userProfile?.isBlocked ? (
+          /* ── Blocked State ── */
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 40 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "rgba(239,68,68,0.12)", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+              <ShieldOff size={36} color="#EF4444" />
+            </View>
+            <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 20, color: tk.text, marginBottom: 8 }}>
+              This account is not available
+            </Text>
+            {userProfile.iBlockedThem ? (
+              <>
+                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, textAlign: "center", lineHeight: 22 }}>
+                  {`You've blocked @${handle}. Unblock to see their profile.`}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleUnblockUser}
+                  style={{ marginTop: 24, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 24, borderWidth: 1.5, borderColor: "#EF4444" }}
+                >
+                  <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 14, color: "#EF4444" }}>Unblock</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, textAlign: "center", lineHeight: 22 }}>
+                {`You can't view this profile.`}
+              </Text>
+            )}
           </View>
         ) : (
           <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
@@ -192,13 +270,6 @@ export default function UserProfileScreen() {
                           {p.avatar_url
                             ? <Image source={{ uri: p.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
                             : <Image source={puppy} style={styles.petAvatarImg} />}
-                          {/* {(p.isAdoptionOpen || p.isFosterOpen) && (
-                            <View style={{ position: "absolute", top: 0, right: 0, left: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "center", alignItems: "center" }}>
-                              <Text style={{ color: colors.white, fontSize: 8, fontFamily: "Poppins_700Bold" }}>
-                                {p.isAdoptionOpen && p.isFosterOpen ? "ADOPT/FOSTER" : p.isAdoptionOpen ? "ADOPT" : "FOSTER"}
-                              </Text>
-                            </View>
-                          )} */}
                         </View>
                         <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
                       </TouchableOpacity>
@@ -290,6 +361,34 @@ export default function UserProfileScreen() {
           </ScrollView>
         )}
       </View>
+
+      {/* ── 3-dot Menu Modal ── */}
+      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+        <Pressable style={styles.menuOverlay} onPress={() => setMenuOpen(false)}>
+          <Pressable style={[styles.menuSheet, { backgroundColor: tk.card }]} onPress={() => {}}>
+            <View style={styles.menuHandle} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleBlockUser}
+              disabled={isBlocking}
+            >
+              <ShieldOff size={22} color="#EF4444" />
+              <Text style={[styles.menuItemText, { color: "#EF4444" }]}>Block @{handle}</Text>
+            </TouchableOpacity>
+            <View style={[styles.menuDivider, { backgroundColor: tk.border }]} />
+            <TouchableOpacity style={styles.menuItem} onPress={() => setMenuOpen(false)}>
+              <Flag size={22} color={tk.textMuted} />
+              <Text style={[styles.menuItemText, { color: tk.text }]}>Report</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.menuCancelBtn, { backgroundColor: tk.bg }]}
+              onPress={() => setMenuOpen(false)}
+            >
+              <Text style={[styles.menuCancelText, { color: tk.text }]}>Cancel</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </PageContainer>
   );
 }
@@ -327,20 +426,20 @@ const styles = StyleSheet.create({
   // Photo grid
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 2, paddingTop: 2 },
   gridItem: { width: GRID_SIZE, height: GRID_SIZE, overflow: "hidden" },
-  videoBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    backgroundColor: "rgba(0, 0, 0, 0.45)",
-    borderRadius: 12,
-    padding: 5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  videoBadge: { position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0, 0, 0, 0.45)", borderRadius: 12, padding: 5, alignItems: "center", justifyContent: "center" },
   // Pets grid
   petsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, padding: 20 },
   petGridCard: { width: "47%", borderRadius: 22, padding: 14, alignItems: "center" },
   petGridImgWrap: { width: "100%", height: 100, borderRadius: 14, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.6)", alignItems: "center", justifyContent: "center" },
   petGridName: { fontFamily: "Poppins_700Bold", fontSize: 15, marginTop: 10 },
   petGridBreed: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  // Menu modal
+  menuOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  menuSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 12, paddingHorizontal: 20, paddingBottom: 40 },
+  menuHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#ccc", alignSelf: "center", marginBottom: 20 },
+  menuItem: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 16 },
+  menuItemText: { fontFamily: "Poppins_600SemiBold", fontSize: 16 },
+  menuDivider: { height: 1, marginVertical: 4 },
+  menuCancelBtn: { marginTop: 12, borderRadius: 20, paddingVertical: 14, alignItems: "center" },
+  menuCancelText: { fontFamily: "Poppins_700Bold", fontSize: 15 },
 });

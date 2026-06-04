@@ -46,9 +46,11 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
+    "patch-package": "^8.0.0",
     "typescript": "~5.9.2"
   },
   "scripts": {
+    "postinstall": "patch-package",
     "start": "expo start --port=8082",
     "start:clear": "expo start --port=8082 --clear",
     "android": "expo start --android --port=8082",

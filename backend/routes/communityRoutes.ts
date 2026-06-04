@@ -23,6 +23,7 @@ import {
   getChatById,
   sendMessage,
   startChat,
+  markChatAsRead,
   deleteMyPost,
   updateMyPost,
 } from "../controllers/communityController.ts";
@@ -50,6 +51,7 @@ router.get("/chats", protect, getChats);
 router.get("/chats/:id", protect, getChatById);
 router.post("/chats/start", protect, startChat);
 router.post("/chats/:id/messages", protect, sendMessage);
+router.post("/chats/:id/read", protect, markChatAsRead);
 
 // Stories — /stories/me must come before /stories/:id
 router.get("/stories/me", protect, getMyStory);

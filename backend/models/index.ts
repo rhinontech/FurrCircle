@@ -179,6 +179,11 @@ db.reports.belongsTo(db.users, { foreignKey: 'reporterId', as: 'reporter' });
 db.reports.belongsTo(db.users, { foreignKey: 'reportedId', as: 'reported' });
 db.users.hasMany(db.reports, { foreignKey: 'reporterId', as: 'reportsSubmitted' });
 db.users.hasMany(db.reports, { foreignKey: 'reportedId', as: 'reportsReceived' });
+// User Blocks
+db.user_blocks.belongsTo(db.users, { foreignKey: 'blockerId', as: 'blocker' });
+db.user_blocks.belongsTo(db.users, { foreignKey: 'blockedId', as: 'blocked' });
+db.users.hasMany(db.user_blocks, { foreignKey: 'blockerId', as: 'blockedByMe' });
+db.users.hasMany(db.user_blocks, { foreignKey: 'blockedId', as: 'blockedMe' });
 
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -225,6 +230,7 @@ export const owner_likes = db.owner_likes;
 export const lost_pets = db.lost_pets;
 export const memories = db.memories;
 export const reports = db.reports;
+export const user_blocks = db.user_blocks;
 
 export { sequelize, Sequelize };
 export default db;

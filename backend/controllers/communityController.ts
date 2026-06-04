@@ -468,12 +468,31 @@ const recomputeEngagementScore = async (postId: string) => {
 // @route   GET /api/community/feed?tab=for_you|trending|nearby&page=1&limit=20
 export const getCommunityFeed = async (req: any, res: Response): Promise<void> => {
   try {
-    const { posts: Post, comments: Comment, likes: Like, saved_posts: SavedPost } = db as any;
+    const { posts: Post, comments: Comment, likes: Like, saved_posts: SavedPost, user_blocks: UserBlock } = db as any;
 
     const tab = (req.query.tab as string) || "for_you";
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, parseInt(req.query.limit as string) || 20);
     const offset = (page - 1) * limit;
+
+    // ── Resolve IDs of users the current user has blocked or been blocked by ──
+    const currentUserId = req.user?.id;
+    const blockedUserIds = new Set<string>();
+    if (currentUserId && UserBlock) {
+      const blocks = await UserBlock.findAll({
+        where: {
+          [Op.or]: [
+            { blockerId: currentUserId },
+            { blockedId: currentUserId },
+          ],
+        },
+        attributes: ['blockerId', 'blockedId'],
+      });
+      blocks.forEach((b: any) => {
+        if (b.blockerId === currentUserId) blockedUserIds.add(b.blockedId);
+        else blockedUserIds.add(b.blockerId);
+      });
+    }
 
     const postIncludes = [
       { model: Comment, as: "comments" },
@@ -481,12 +500,20 @@ export const getCommunityFeed = async (req: any, res: Response): Promise<void> =
       { model: SavedPost, as: "savedPosts", attributes: ["userId", "userType"] },
     ];
 
+    // Helper to exclude blocked users from a where clause
+    const withBlockFilter = (where: any) => {
+      if (blockedUserIds.size > 0) {
+        return { ...where, userId: { [Op.notIn]: Array.from(blockedUserIds) } };
+      }
+      return where;
+    };
+
     let allPosts: any[];
 
     if (tab === "trending") {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       allPosts = await Post.findAll({
-        where: { status: "approved", createdAt: { [Op.gte]: sevenDaysAgo } },
+        where: withBlockFilter({ status: "approved", createdAt: { [Op.gte]: sevenDaysAgo } }),
         include: postIncludes,
         order: [["engagementScore", "DESC"], ["createdAt", "DESC"]],
       });
@@ -501,29 +528,11 @@ export const getCommunityFeed = async (req: any, res: Response): Promise<void> =
         return;
       }
       allPosts = await Post.findAll({
-        where: { status: "approved", city: userCity },
+        where: withBlockFilter({ status: "approved", city: userCity }),
         include: postIncludes,
         order: [["createdAt", "DESC"]],
       });
     } else {
-      // ═══════════════════════════════════════════════════════════════════════
-      // FOR YOU — Two-tier feed algorithm
-      //
-      // Tier 1 – Following feed (top slots, chronological newest-first):
-      //   • Posts from users the current user follows (accepted status only)
-      //   • Max age: 72 hours (3 days) — keeps the following feed fresh
-      //   • Sorted purely by createdAt DESC (latest follower post at very top)
-      //
-      // Tier 2 – Discovery feed (shown after following posts):
-      //   • All other approved posts, max age: 7 days
-      //   • Scored: engagementScore + topicBonus(30) + cityBonus(20) + recencyDecay
-      //   • recencyDecay = max(0, 100 − hoursOld × 1.5)  → 0 after ~67 hours
-      //   • Posts already in Tier 1 are excluded (deduplicated by post id)
-      //   • Followed-user posts older than 72 h get a +40 followBonus so they
-      //     still rank above random strangers even after leaving Tier 1
-      // ═══════════════════════════════════════════════════════════════════════
-
-      const currentUserId = req.user?.id;
       const userCity = (req.user?.city || "").trim().toLowerCase();
       const userTopics: string[] = req.user?.topicInterests || [];
 
@@ -544,11 +553,11 @@ export const getCommunityFeed = async (req: any, res: Response): Promise<void> =
       let tier1Posts: any[] = [];
       if (followedUserIds.size > 0) {
         tier1Posts = await Post.findAll({
-          where: {
+          where: withBlockFilter({
             status: "approved",
             userId: { [Op.in]: Array.from(followedUserIds) },
             createdAt: { [Op.gte]: tier1Cutoff },
-          },
+          }),
           include: postIncludes,
           order: [["createdAt", "DESC"]],
         });
@@ -560,10 +569,10 @@ export const getCommunityFeed = async (req: any, res: Response): Promise<void> =
       // ── Step 3: Tier 2 — Discovery posts (≤ 7 days, excluding Tier 1) ───
       const tier2Cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-      const discoveryWhere: any = {
+      const discoveryWhere: any = withBlockFilter({
         status: "approved",
         createdAt: { [Op.gte]: tier2Cutoff },
-      };
+      });
       if (tier1Ids.size > 0) {
         discoveryWhere.id = { [Op.notIn]: Array.from(tier1Ids) };
       }
@@ -1010,7 +1019,26 @@ export const shareEvent = async (req: any, res: Response): Promise<void> => {
 // @route   GET /api/community/chats
 export const getChats = async (req: any, res: Response): Promise<void> => {
   try {
-    const { conversations: Conversation, messages: Message, pets: Pet } = db as any;
+    const { conversations: Conversation, messages: Message, pets: Pet, user_blocks: UserBlock } = db as any;
+
+    // Gather IDs of users this user has blocked or been blocked by
+    const blockedUserIds = new Set<string>();
+    if (UserBlock) {
+      const blocks = await UserBlock.findAll({
+        where: {
+          [Op.or]: [
+            { blockerId: req.user.id },
+            { blockedId: req.user.id },
+          ],
+        },
+        attributes: ['blockerId', 'blockedId'],
+      });
+      blocks.forEach((b: any) => {
+        if (b.blockerId === req.user.id) blockedUserIds.add(b.blockedId);
+        else blockedUserIds.add(b.blockerId);
+      });
+    }
+
     const conversations = await Conversation.findAll({
       where: {
         [Op.or]: [
@@ -1036,12 +1064,13 @@ export const getChats = async (req: any, res: Response): Promise<void> => {
       return `${bDate || ""}`.localeCompare(`${aDate || ""}`);
     });
 
-    // Deduplicate conversations so we only show one thread per user pair (the newest one)
+    // Deduplicate conversations, AND filter out blocked users
     const seenUsers = new Set();
     const deduplicated = serialized.filter((conv: any) => {
       const otherUser = conv.otherParticipants?.[0];
       if (!otherUser) return false;
       if (seenUsers.has(otherUser.id)) return false;
+      if (blockedUserIds.has(otherUser.id)) return false; // hide blocked chats
       seenUsers.add(otherUser.id);
       return true;
     });
@@ -1074,12 +1103,29 @@ export const getChatById = async (req: any, res: Response): Promise<void> => {
 // @route   POST /api/community/chats/:id/messages
 export const sendMessage = async (req: any, res: Response): Promise<void> => {
   try {
-    const { messages: Message } = db as any;
+    const { messages: Message, user_blocks: UserBlock } = db as any;
     const conversation = await fetchConversation(req.params.id);
 
     if (!conversation || !isConversationParticipant(conversation, req)) {
       res.status(404).json({ message: "Conversation not found" });
       return;
+    }
+
+    // Block check: prevent sending messages to/from blocked users
+    if (UserBlock) {
+      const recipientId = conversation.initiatorId === req.user.id ? conversation.recipientId : conversation.initiatorId;
+      const blockExists = await UserBlock.findOne({
+        where: {
+          [Op.or]: [
+            { blockerId: req.user.id, blockedId: recipientId },
+            { blockerId: recipientId, blockedId: req.user.id },
+          ],
+        },
+      });
+      if (blockExists) {
+        res.status(403).json({ message: "You cannot message this user" });
+        return;
+      }
     }
 
     const text = String(req.body?.text || "").trim();
@@ -1142,11 +1188,50 @@ export const sendMessage = async (req: any, res: Response): Promise<void> => {
   }
 };
 
+// @desc    Mark a chat as read
+// @route   POST /api/community/chats/:id/read
+export const markChatAsRead = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { messages: Message, conversations: Conversation } = db as any;
+    const { id } = req.params;
+    const currentUserId = req.user.id;
+
+    // Update all unread messages in this conversation that were NOT sent by the current user
+    const [updatedCount] = await Message.update(
+      { isRead: true },
+      {
+        where: {
+          conversationId: id,
+          isRead: false,
+          senderId: {
+            [Op.ne]: currentUserId
+          }
+        }
+      }
+    );
+
+    // If any messages were marked as read, emit socket event to the other user
+    if (updatedCount > 0) {
+      const conversation = await Conversation.findByPk(id);
+      if (conversation) {
+        const otherId = conversation.initiatorId === currentUserId ? conversation.recipientId : conversation.initiatorId;
+        const otherType = conversation.initiatorId === currentUserId ? conversation.recipientType : conversation.initiatorType;
+        emitToActor(otherId, otherType, "chat:read", { conversationId: id });
+      }
+    }
+
+    res.status(200).json({ success: true, message: "Chat marked as read" });
+  } catch (error: any) {
+    console.error("markChatAsRead error:", error);
+    res.status(500).json({ message: "Server error marking chat as read", error: error.message });
+  }
+};
+
 // @desc    Start or reuse a chat
 // @route   POST /api/community/chats/start
 export const startChat = async (req: any, res: Response): Promise<void> => {
   try {
-    const { conversations: Conversation, messages: Message } = db as any;
+    const { conversations: Conversation, messages: Message, user_blocks: UserBlock } = db as any;
     const recipientId = String(req.body?.recipientId || "").trim();
     const petId = req.body?.petId ? String(req.body.petId) : null;
     const firstMessage = String(req.body?.message || req.body?.text || "").trim();
@@ -1166,6 +1251,22 @@ export const startChat = async (req: any, res: Response): Promise<void> => {
     if (recipient.id === req.user.id) {
       res.status(400).json({ message: "Cannot start a chat with yourself" });
       return;
+    }
+
+    // Block check
+    if (UserBlock) {
+      const blockExists = await UserBlock.findOne({
+        where: {
+          [Op.or]: [
+            { blockerId: req.user.id, blockedId: recipientId },
+            { blockerId: recipientId, blockedId: req.user.id },
+          ],
+        },
+      });
+      if (blockExists) {
+        res.status(403).json({ message: "You cannot message this user" });
+        return;
+      }
     }
 
     const recipientType = recipient.role === "veterinarian" ? "vet" : "user";

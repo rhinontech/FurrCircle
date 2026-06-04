@@ -36,6 +36,19 @@ export const PrivateAxios = axios.create({
     },
 });
 
+// Extract friendly backend errors for public endpoints (like login)
+PublicAxios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.data?.message) {
+            error.message = error.response.data.message;
+        } else if (error.response?.data?.error) {
+            error.message = error.response.data.error;
+        }
+        return Promise.reject(error);
+    }
+);
+
 PrivateAxios.interceptors.request.use(
     async (config) => {
         try {
@@ -64,6 +77,13 @@ PrivateAxios.interceptors.request.use(
 PrivateAxios.interceptors.response.use(
     (response) => response,
     async (error) => {
+        // Extract friendly backend error message
+        if (error.response?.data?.message) {
+            error.message = error.response.data.message;
+        } else if (error.response?.data?.error) {
+            error.message = error.response.data.error;
+        }
+
         const code = error?.response?.data?.code;
         if (code === 'SUBSCRIPTION_LOCKED') {
             try {

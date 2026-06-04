@@ -32,6 +32,11 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.UUID,
                 allowNull: true,
             },
+            isRead: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
         },
         {
             tableName: "messages",

@@ -40,6 +40,36 @@ if (messaging) {
 
 const queryClient = new QueryClient();
 
+// Helper to handle routing based on FCM payload
+const handleNotificationRedirect = (remoteMessage: any, router: any) => {
+  if (!remoteMessage?.data) return;
+  const { actionType, actionPayload: actionPayloadStr, relatedId } = remoteMessage.data;
+  
+  let actionPayload: any = {};
+  try {
+    if (actionPayloadStr) {
+      actionPayload = JSON.parse(actionPayloadStr);
+    }
+  } catch (e) {}
+
+  if (actionType === 'chat_thread') {
+    const chatId = actionPayload.conversationId || relatedId;
+    if (chatId) router.push(`/chat?id=${chatId}`);
+  } else if (actionType === 'post_detail' || actionType === 'comment_detail') {
+    const postId = actionPayload.postId || relatedId;
+    if (postId) router.push(`/post/${postId}`);
+  } else if (actionType === 'user_profile') {
+    const userId = actionPayload.userId || relatedId;
+    if (userId) router.push(`/u/${userId}`);
+  } else if (actionType === 'event_detail') {
+    // Currently event details might just be rendered inside events screen, we can route there
+    router.push('/events');
+  } else {
+    // Default fallback
+    router.push('/notifications');
+  }
+};
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Poppins_700Bold,
@@ -179,8 +209,29 @@ export default function RootLayout() {
           if (remoteMessage.notification) {
             Alert.alert(
               remoteMessage.notification.title || "New Notification",
-              remoteMessage.notification.body || ""
+              remoteMessage.notification.body || "",
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'View', onPress: () => handleNotificationRedirect(remoteMessage, router) }
+              ]
             );
+          }
+        });
+        
+        // Listen for background clicks (app running in background)
+        messaging().onNotificationOpenedApp((remoteMessage: any) => {
+          console.log("Notification caused app to open from background state:", remoteMessage.notification);
+          handleNotificationRedirect(remoteMessage, router);
+        });
+
+        // Check for killed-state clicks (app completely closed)
+        messaging().getInitialNotification().then((remoteMessage: any) => {
+          if (remoteMessage) {
+            console.log("Notification caused app to open from quit state:", remoteMessage.notification);
+            // Slight delay ensures the root layout and router are fully mounted before pushing
+            setTimeout(() => {
+              handleNotificationRedirect(remoteMessage, router);
+            }, 1000);
           }
         });
         
@@ -234,6 +285,7 @@ export default function RootLayout() {
       <Stack.Screen name="book" options={{ presentation: "card" }} />
       <Stack.Screen name="reels" options={{ presentation: "card" }} />
       <Stack.Screen name="chat" options={{ presentation: "card" }} />
+      <Stack.Screen name="blocked-accounts" options={{ presentation: "card" }} />
       <Stack.Screen name="compose" options={{ presentation: "card" }} />
       <Stack.Screen name="add-pet" options={{ presentation: "card" }} />
       <Stack.Screen name="edit-pet" options={{ presentation: "card" }} />

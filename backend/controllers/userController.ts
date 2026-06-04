@@ -15,7 +15,7 @@ const calculateHealthScore = (pet: any) => {
 // @route   GET /api/users/:handle
 export const getUserByHandle = async (req: any, res: Response): Promise<void> => {
   try {
-    const { users: User, vets: Vet, pets: Pet, posts: Post } = db as any;
+    const { users: User, vets: Vet, pets: Pet, posts: Post, user_blocks: UserBlock } = db as any;
     const { handle } = req.params;
 
     // Search in Users
@@ -37,6 +37,33 @@ export const getUserByHandle = async (req: any, res: Response): Promise<void> =>
     if (!account) {
       res.status(404).json({ message: "User not found" });
       return;
+    }
+
+    // Check if either party has blocked the other
+    if (req.user && req.user.id !== account.id && !isVet) {
+      const block = await UserBlock.findOne({
+        where: {
+          [Op.or]: [
+            { blockerId: req.user.id, blockedId: account.id },
+            { blockerId: account.id, blockedId: req.user.id },
+          ],
+        },
+      });
+      if (block) {
+        const iBlockedThem = block.blockerId === req.user.id;
+        // Return minimal response — don't reveal who blocked whom beyond iBlockedThem
+        res.status(200).json({
+          id: account.id,
+          name: account.name,
+          username: account.username,
+          avatar_url: null,
+          isBlocked: true,
+          iBlockedThem,
+          canViewContent: false,
+          followStatus: 'none',
+        });
+        return;
+      }
     }
 
     // Get their posts count (assuming posts table has userId)
@@ -90,6 +117,7 @@ export const getUserByHandle = async (req: any, res: Response): Promise<void> =>
       followStatus,
       isPrivate,
       canViewContent,
+      isBlocked: false,
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
