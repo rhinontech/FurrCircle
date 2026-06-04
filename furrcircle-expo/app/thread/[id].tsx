@@ -126,7 +126,7 @@ export default function ThreadDetail() {
 
   return (
     <PageContainer>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
           <ScreenHeader title="Discussion" />
           <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>

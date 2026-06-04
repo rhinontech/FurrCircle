@@ -1000,7 +1000,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
 
           {/* Keyboard avoiding content container */}
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{ width: "100%", justifyContent: "flex-end" }}
             pointerEvents="box-none"
           >

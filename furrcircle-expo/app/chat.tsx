@@ -348,7 +348,7 @@ export default function ChatScreen() {
           />
         )}
 
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
           <View style={[styles.inputBar, { backgroundColor: tk.card, borderTopColor: tk.border }]}>
             <TextInput
               value={msgInput}

@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
   StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
-  Keyboard, Modal, Pressable,
+  Modal, Pressable,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,24 +23,6 @@ export default function PostDetail() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const tk = useTokens();
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-
-  useEffect(() => {
-    if (Platform.OS !== "android") return;
-    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
-      setKeyboardHeight(e.endCoordinates.height);
-    });
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
-      setKeyboardHeight(0);
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
-  const spacerHeight = Math.max(0, keyboardHeight - insets.bottom);
-
   const isScreenFocused = useIsFocused();
   const { user } = useAuthStore();
   const [shareOpen, setShareOpen] = useState(false);
@@ -243,8 +225,8 @@ export default function PostDetail() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      enabled={Platform.OS === "ios"}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      enabled={true}
     >
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader 
@@ -561,7 +543,6 @@ export default function PostDetail() {
           </View>
         </Modal>
 
-        {Platform.OS === "android" && <View style={{ height: 0 }} />}
       </View>
     </KeyboardAvoidingView>
   );

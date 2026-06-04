@@ -36,19 +36,18 @@ export function AdaptiveSheet({
     );
   }
 
-  // Mobile: slide-up bottom sheet — backdrop is a separate absoluteFill
-  // so it never interferes with ScrollView / touch in the sheet content
+  // Mobile: slide-up bottom sheet
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlayMobile}>
-        {/* Tap backdrop to close — sits behind the sheet */}
-        <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
-        {/* Sheet content — plain View, no touch interception */}
-        <View style={[styles.sheet, { backgroundColor: tk.card, maxHeight }]}>
+      <Pressable style={styles.overlayMobile} onPress={onClose}>
+        <View
+          style={[styles.sheet, { backgroundColor: tk.card, height: maxHeight }]}
+          onStartShouldSetResponder={() => true}
+        >
           <View style={[styles.handle, { backgroundColor: tk.textMuted }]} />
           {children}
         </View>
-      </View>
+      </Pressable>
     </Modal>
   );
 }
@@ -68,6 +67,8 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
+    overflow: "hidden",
+    width: "100%",
   },
   handle: {
     width: 48,

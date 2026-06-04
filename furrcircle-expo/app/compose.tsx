@@ -109,7 +109,7 @@ export default function ComposeScreen() {
     <PageContainer>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
           <View style={[styles.header, { paddingTop: Platform.OS === "ios" ? insets.top + 16 : 40 }]}>

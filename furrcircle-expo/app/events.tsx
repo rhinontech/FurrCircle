@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, Pressable, StyleSheet,
   ActivityIndicator, Image, Modal, Alert,
 } from "react-native";
 import { ScreenHeader } from "../src/components/ScreenHeader";
@@ -121,6 +121,7 @@ export default function EventsScreen() {
         </ScrollView>
 
         <ScrollView
+          style={{ flex: 1 }}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         >
@@ -140,11 +141,10 @@ export default function EventsScreen() {
               const tint = getTint(e.category);
 
               return (
-                <TouchableOpacity
+                <Pressable
                   key={e.id}
                   onPress={() => setSelectedEvent(e)}
-                  activeOpacity={0.88}
-                  style={[styles.card, { backgroundColor: tint.bg, shadowColor: tk.text }]}
+                  style={({ pressed }) => [styles.card, { backgroundColor: tint.bg, shadowColor: tk.text, opacity: pressed ? 0.88 : 1 }]}
                 >
                   {/* Content row */}
                   <View style={styles.cardRow}>
@@ -212,7 +212,7 @@ export default function EventsScreen() {
                       </View>
                     </View>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               );
             })
           )}
