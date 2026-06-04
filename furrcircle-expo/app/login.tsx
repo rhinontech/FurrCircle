@@ -135,7 +135,8 @@ export default function LoginScreen() {
       } catch (fallbackErr: any) {
         setOtpLoginBusy(false);
         console.error("Backend OTP Login Fallback Error:", fallbackErr);
-        Alert.alert("OTP Failed", fallbackErr.message || "Failed to send verification code via Firebase or backend SMS. Please check formatting.");
+        const backendMsg = fallbackErr.response?.data?.message;
+        Alert.alert("OTP Failed", backendMsg || fallbackErr.message || "Failed to send verification code via Firebase or backend SMS. Please check formatting.");
       }
     }
   }

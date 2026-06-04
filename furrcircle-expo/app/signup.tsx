@@ -133,7 +133,8 @@ export default function SignupScreen() {
         }
       } catch (err: any) {
         setBusy(false);
-        Alert.alert("Sign up failed", err.message || "An error occurred.");
+        const backendMsg = err.response?.data?.message;
+        Alert.alert("Sign up failed", backendMsg || err.message || "An error occurred.");
       }
     } else {
       // Phone flow -> verify via Firebase Phone OTP first, then call backend register
@@ -199,7 +200,8 @@ export default function SignupScreen() {
         } catch (fallbackErr: any) {
           setBusy(false);
           console.error("Backend OTP Fallback Error:", fallbackErr);
-          Alert.alert("OTP Failed", fallbackErr.message || "Could not send verification code via Firebase or backend SMS. Please verify formatting (e.g. +919876543210).");
+          const backendMsg = fallbackErr.response?.data?.message;
+          Alert.alert("OTP Failed", backendMsg || fallbackErr.message || "Could not send verification code via Firebase or backend SMS. Please verify formatting (e.g. +919876543210).");
         }
       }
     }
