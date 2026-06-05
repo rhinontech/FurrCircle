@@ -53,7 +53,7 @@ export default function OtpVerifyScreen() {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [confirm, setConfirm] = useState<any>(null);
-  const [timer, setTimer] = useState(60);
+  const [timer, setTimer] = useState(40);
   const [isResending, setIsResending] = useState(false);
 
   // Reset password fields (if type === 'email-verify-reset')
@@ -83,7 +83,7 @@ export default function OtpVerifyScreen() {
 
       const confirmation = await auth().signInWithPhoneNumber(emailOrPhone);
       setConfirm(confirmation);
-      setTimer(60);
+      setTimer(40);
       setCode("");
     } catch (error: any) {
       console.error("Firebase SMS Resend Error:", error);
@@ -106,7 +106,7 @@ export default function OtpVerifyScreen() {
         await authApi.sendPhoneOtp(emailOrPhone);
         Alert.alert("OTP Sent", "A new verification code has been sent to your phone.");
       }
-      setTimer(60);
+      setTimer(40);
       setCode("");
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to resend verification code.");
