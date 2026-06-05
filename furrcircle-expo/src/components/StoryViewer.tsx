@@ -6,6 +6,7 @@ import {
 } from "react-native";
 import { X, Trash2 } from "lucide-react-native";
 import { useTokens } from "../lib/theme-store";
+import { useBreakpoint } from "../lib/breakpoints";
 import { storyApi } from "../../services/community/storyApi";
 import { Video, ResizeMode } from "expo-av";
 
@@ -39,6 +40,7 @@ interface StoryViewerProps {
 
 export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, onStoryDeleted, onStoryViewed }: StoryViewerProps) {
   const tk = useTokens();
+  const { isTablet } = useBreakpoint();
   const [groupIndex, setGroupIndex] = useState(initialGroupIndex);
   const [storyIndex, setStoryIndex] = useState(0);
   const [mediaLoading, setMediaLoading] = useState(true);
@@ -172,136 +174,138 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
   return (
     <Modal visible={visible} transparent={false} animationType="fade" onRequestClose={onClose}>
       <View style={styles.container} {...panResponder.panHandlers}>
-        {/* Fullscreen media */}
-        {currentStory.mediaType === "video" ? (
-          <Video
-            key={currentStory.id}
-            source={typeof currentStory.mediaUrl === "string" ? { uri: currentStory.mediaUrl } : currentStory.mediaUrl}
-            style={styles.media}
-            resizeMode={ResizeMode.COVER}
-            shouldPlay={visible}
-            isMuted={false}
-            progressUpdateIntervalMillis={50}
-            onPlaybackStatusUpdate={(status: any) => {
-              if (!status.isLoaded) return;
+        <View style={[styles.contentWrapper, isTablet && styles.contentWrapperTablet]}>
+          {/* Fullscreen media */}
+          {currentStory.mediaType === "video" ? (
+            <Video
+              key={currentStory.id}
+              source={typeof currentStory.mediaUrl === "string" ? { uri: currentStory.mediaUrl } : currentStory.mediaUrl}
+              style={styles.media}
+              resizeMode={ResizeMode.COVER}
+              shouldPlay={visible}
+              isMuted={false}
+              progressUpdateIntervalMillis={50}
+              onPlaybackStatusUpdate={(status: any) => {
+                if (!status.isLoaded) return;
 
-              // Toggle loader container on buffering
-              const isBuffering = status.isBuffering && !status.isPlaying;
-              setMediaLoading(isBuffering);
+                // Toggle loader container on buffering
+                const isBuffering = status.isBuffering && !status.isPlaying;
+                setMediaLoading(isBuffering);
 
-              if (status.durationMillis && status.positionMillis !== undefined) {
-                // If not buffering, synchronize progress bar with video duration ratio
-                if (!isBuffering) {
-                  const ratio = status.positionMillis / status.durationMillis;
-                  progress.setValue(ratio);
+                if (status.durationMillis && status.positionMillis !== undefined) {
+                  // If not buffering, synchronize progress bar with video duration ratio
+                  if (!isBuffering) {
+                    const ratio = status.positionMillis / status.durationMillis;
+                    progress.setValue(ratio);
+                  }
                 }
-              }
 
-              if (status.didJustFinish) {
-                handleNext();
-              }
-            }}
-          />
-        ) : (
-          <Image
-            key={currentStory.id}
-            source={typeof currentStory.mediaUrl === "string" ? { uri: currentStory.mediaUrl } : currentStory.mediaUrl}
-            style={styles.media}
-            resizeMode="cover"
-            onLoad={() => {
-              setMediaLoading(false);
-              startProgress(STORY_DURATION);
-            }}
-            onError={() => {
-              setMediaLoading(false);
-              startProgress(STORY_DURATION);
-            }}
-          />
-        )}
+                if (status.didJustFinish) {
+                  handleNext();
+                }
+              }}
+            />
+          ) : (
+            <Image
+              key={currentStory.id}
+              source={typeof currentStory.mediaUrl === "string" ? { uri: currentStory.mediaUrl } : currentStory.mediaUrl}
+              style={styles.media}
+              resizeMode="cover"
+              onLoad={() => {
+                setMediaLoading(false);
+                startProgress(STORY_DURATION);
+              }}
+              onError={() => {
+                setMediaLoading(false);
+                startProgress(STORY_DURATION);
+              }}
+            />
+          )}
 
-        {mediaLoading && (
-          <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color="#fff" />
-          </View>
-        )}
+          {mediaLoading && (
+            <View style={styles.loaderContainer}>
+              <ActivityIndicator size="large" color="#fff" />
+            </View>
+          )}
 
-        {/* Dark overlay at top for readability */}
-        <View style={styles.topOverlay} />
+          {/* Dark overlay at top for readability */}
+          <View style={styles.topOverlay} />
 
-        {/* Progress Bar Indicators */}
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.progressBarContainer}>
-            {currentGroup.stories.map((_, index) => {
-              let width: any = "0%";
-              if (index < storyIndex) {
-                width = "100%";
-              } else if (index === storyIndex) {
+          {/* Progress Bar Indicators */}
+          <SafeAreaView style={styles.safeArea}>
+            <View style={styles.progressBarContainer}>
+              {currentGroup.stories.map((_, index) => {
+                let width: any = "0%";
+                if (index < storyIndex) {
+                  width = "100%";
+                } else if (index === storyIndex) {
+                  return (
+                    <View key={index} style={styles.progressTrack}>
+                      <Animated.View
+                        style={[
+                          styles.progressFill,
+                          {
+                            width: progress.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: ["0%", "100%"],
+                            }),
+                          },
+                        ]}
+                      />
+                    </View>
+                  );
+                }
                 return (
                   <View key={index} style={styles.progressTrack}>
-                    <Animated.View
-                      style={[
-                        styles.progressFill,
-                        {
-                          width: progress.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: ["0%", "100%"],
-                          }),
-                        },
-                      ]}
-                    />
+                    <View style={[styles.progressFill, { width }]} />
                   </View>
                 );
-              }
-              return (
-                <View key={index} style={styles.progressTrack}>
-                  <View style={[styles.progressFill, { width }]} />
-                </View>
-              );
-            })}
-          </View>
-
-          {/* Header (Avatar + Username + Close Button) */}
-          <View style={styles.header}>
-            <Image source={currentGroup.avatar} style={styles.avatar} />
-            <Text style={styles.username}>{currentGroup.username}</Text>
-            <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 12 }}>
-              {currentGroup.userId === "me" && (
-                <TouchableOpacity onPress={handleDeleteStory} style={styles.deleteButton}>
-                  <Trash2 size={22} color="#ff4d4d" />
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <X size={24} color="#fff" />
-              </TouchableOpacity>
+              })}
             </View>
-          </View>
-        </SafeAreaView>
 
-        {/* Center Overlay Text */}
-        {currentStory.overlayText ? (
-          <View style={styles.overlayTextContainer}>
-            <Text style={styles.overlayText}>{currentStory.overlayText}</Text>
-          </View>
-        ) : null}
+            {/* Header (Avatar + Username + Close Button) */}
+            <View style={styles.header}>
+              <Image source={currentGroup.avatar} style={styles.avatar} />
+              <Text style={styles.username}>{currentGroup.username}</Text>
+              <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 12 }}>
+                {currentGroup.userId === "me" && (
+                  <TouchableOpacity onPress={handleDeleteStory} style={styles.deleteButton}>
+                    <Trash2 size={22} color="#ff4d4d" />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                  <X size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </SafeAreaView>
 
-        {/* Caption & View Count */}
-        {(currentStory.caption || currentStory.viewCount !== undefined) && (
-          <View style={styles.captionContainer}>
-            {currentStory.caption ? (
-              <Text style={styles.captionText}>{currentStory.caption}</Text>
-            ) : null}
-            {currentStory.viewCount !== undefined && (
-              <Text style={[styles.viewCountText, { textAlign: "center", marginTop: currentStory.caption ? 6 : 0 }]}>
-                👁️ {currentStory.viewCount} {currentStory.viewCount === 1 ? "view" : "views"}
-              </Text>
-            )}
-          </View>
-        )}
+          {/* Center Overlay Text */}
+          {currentStory.overlayText ? (
+            <View style={styles.overlayTextContainer}>
+              <Text style={styles.overlayText}>{currentStory.overlayText}</Text>
+            </View>
+          ) : null}
 
-        {/* Touch zones for navigation */}
-        <View style={styles.touchZones}>
-          <Pressable style={styles.leftTouch} onPress={handlePrev} />
-          <Pressable style={styles.rightTouch} onPress={handleNext} />
+          {/* Caption & View Count */}
+          {(currentStory.caption || currentStory.viewCount !== undefined) && (
+            <View style={styles.captionContainer}>
+              {currentStory.caption ? (
+                <Text style={styles.captionText}>{currentStory.caption}</Text>
+              ) : null}
+              {currentStory.viewCount !== undefined && (
+                <Text style={[styles.viewCountText, { textAlign: "center", marginTop: currentStory.caption ? 6 : 0 }]}>
+                  👁️ {currentStory.viewCount} {currentStory.viewCount === 1 ? "view" : "views"}
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Touch zones for navigation */}
+          <View style={styles.touchZones}>
+            <Pressable style={styles.leftTouch} onPress={handlePrev} />
+            <Pressable style={styles.rightTouch} onPress={handleNext} />
+          </View>
         </View>
       </View>
     </Modal>
@@ -309,8 +313,10 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
-  media: { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, position: "absolute" },
+  container: { flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" },
+  contentWrapper: { width: "100%", height: "100%", position: "relative", overflow: "hidden" },
+  contentWrapperTablet: { maxWidth: 480, aspectRatio: 9 / 16, alignSelf: "center", borderRadius: 16 },
+  media: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0 },
   topOverlay: { position: "absolute", top: 0, left: 0, right: 0, height: 120, backgroundColor: "rgba(0,0,0,0.35)" },
   safeArea: { zIndex: 10 },
   progressBarContainer: { flexDirection: "row", paddingHorizontal: 16, paddingTop: 10, gap: 4 },

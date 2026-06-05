@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
-  FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, Pressable, Alert
+  FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, Pressable, Alert, Keyboard
 } from "react-native";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { Avatar } from "../src/components/Avatar";
@@ -449,49 +449,54 @@ export default function ChatScreen() {
 
       {/* New Chat Modal */}
       <Modal visible={isNewChatOpen} animationType="slide" transparent onRequestClose={() => setIsNewChatOpen(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setIsNewChatOpen(false)}>
-          <View style={[styles.modalContent, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true}>
-            <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
-            <Text style={[styles.modalTitle, { color: tk.text }]}>New Chat</Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => { Keyboard.dismiss(); setIsNewChatOpen(false); }}>
+            <View style={[styles.modalContent, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true}>
+              <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+              <Text style={[styles.modalTitle, { color: tk.text }]}>New Chat</Text>
 
-            <View style={[styles.searchBar, { backgroundColor: tk.bg, borderColor: tk.border }]}>
-              <Search size={16} color={tk.textMuted} />
-              <TextInput
-                placeholder="Search people..."
-                placeholderTextColor={tk.textMuted}
-                value={searchQuery}
-                onChangeText={handleSearch}
-                style={[styles.searchInput, { color: tk.text }]}
-                autoFocus
-              />
+              <View style={[styles.searchBar, { backgroundColor: tk.bg, borderColor: tk.border }]}>
+                <Search size={16} color={tk.textMuted} />
+                <TextInput
+                  placeholder="Search people..."
+                  placeholderTextColor={tk.textMuted}
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                  style={[styles.searchInput, { color: tk.text }]}
+                  autoFocus
+                />
+              </View>
+
+              {searchLoading ? (
+                <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} />
+              ) : (
+                <FlatList
+                  data={searchResults}
+                  keyExtractor={(item) => item.id}
+                  contentContainerStyle={{ paddingBottom: 40 }}
+                  ListEmptyComponent={
+                    searchQuery.trim() ? <Text style={[styles.emptyText, { color: tk.textMuted }]}>No users found</Text> : null
+                  }
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.searchRow}
+                      onPress={() => handleStartNewChat(item.id)}
+                    >
+                      <Avatar source={item.avatar_url ? { uri: item.avatar_url } : require("../src/assets/doodle-puppy.png")} name={item.name} size={40} />
+                      <View style={{ marginLeft: 12 }}>
+                        <Text style={[styles.searchName, { color: tk.text }]}>{item.name}</Text>
+                        <Text style={[styles.searchHandle, { color: tk.textMuted }]}>@{item.username}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
             </View>
-
-            {searchLoading ? (
-              <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} />
-            ) : (
-              <FlatList
-                data={searchResults}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={{ paddingBottom: 40 }}
-                ListEmptyComponent={
-                  searchQuery.trim() ? <Text style={[styles.emptyText, { color: tk.textMuted }]}>No users found</Text> : null
-                }
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.searchRow}
-                    onPress={() => handleStartNewChat(item.id)}
-                  >
-                    <Avatar source={item.avatar_url ? { uri: item.avatar_url } : require("../src/assets/doodle-puppy.png")} name={item.name} size={40} />
-                    <View style={{ marginLeft: 12 }}>
-                      <Text style={[styles.searchName, { color: tk.text }]}>{item.name}</Text>
-                      <Text style={[styles.searchHandle, { color: tk.textMuted }]}>@{item.username}</Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-              />
-            )}
-          </View>
-        </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
     </View>

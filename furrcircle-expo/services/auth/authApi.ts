@@ -203,6 +203,16 @@ export const resetPasswordDirect = async (emailOrPhone: string, newPassword?: st
     }
 };
 
+export const deleteAccount = async () => {
+    try {
+        const response = await PrivateAxios.delete('/auth/profile');
+        return response.data;
+    } catch (error: any) {
+        console.error("deleteAccount Error:", error?.response?.data || error.message);
+        throw error;
+    }
+};
+
 export const authApi = {
   checkUsername,
   register,
@@ -218,4 +228,5 @@ export const authApi = {
   forgotPassword,
   resetPassword,
   resetPasswordDirect,
+  deleteAccount,
 };
