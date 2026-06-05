@@ -110,7 +110,7 @@ export default function ChatScreen() {
     setSearchQuery(text);
     setSearchLoading(true);
     try {
-      const results = await userApi.searchUsers(text || "a");
+      const results = await userApi.searchFollowers(text || "");
       setSearchResults(results.filter((u: any) => u.id !== user?.id));
     } catch (e) {
       console.error(e);
@@ -474,7 +474,9 @@ export default function ChatScreen() {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={{ paddingBottom: 40 }}
                 ListEmptyComponent={
-                  searchQuery.trim() ? <Text style={[styles.emptyText, { color: tk.textMuted }]}>No users found</Text> : null
+                  <Text style={[styles.emptyText, { color: tk.textMuted }]}>
+                    {searchQuery.trim() ? "No followers match your search" : "You have no followers yet"}
+                  </Text>
                 }
                 renderItem={({ item }) => (
                   <TouchableOpacity

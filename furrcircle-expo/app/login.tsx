@@ -5,12 +5,13 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Constants from "expo-constants";
 import { colors } from "../src/lib/theme";
 import { useAuthStore } from "../src/lib/auth-store";
 import { authApi } from "../services/auth/authApi";
 import { Eye, EyeOff } from "lucide-react-native";
+import { requestNotificationPermissionEarly } from "../helpers/requestNotificationPermission";
 
 const { height } = Dimensions.get("window");
 
@@ -34,6 +35,15 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [otpLoginBusy, setOtpLoginBusy] = useState(false);
+  const [notifDenied, setNotifDenied] = useState(false);
+
+  // Request notification permission early — before first OTP is ever sent.
+  // Without this, first-time users on a fresh install won't receive push OTPs.
+  useEffect(() => {
+    requestNotificationPermissionEarly().then((result) => {
+      if (result === 'denied') setNotifDenied(true);
+    });
+  }, []);
 
   async function handleLogin() {
     if (!identifier.trim() || !password) {
@@ -46,25 +56,19 @@ export default function LoginScreen() {
 
     if (err) {
       if (err.startsWith("unverified:")) {
+        // Account exists but OTP was never completed — backend already re-sent OTP.
+        // Navigate straight to verification without showing an intermediate alert.
         const parts = err.split(":");
-        // parts[1] is userId, parts[2] is emailOrPhone
-        Alert.alert(
-          "Verify Account",
-          "Your account is not verified. Let's verify it now.",
-          [
-            {
-              text: "Verify Now",
-              onPress: () => router.push({
-                pathname: "/otp-verify",
-                params: {
-                  userId: parts[1],
-                  emailOrPhone: parts[2],
-                  type: "email-verify-login"
-                }
-              })
-            }
-          ]
-        );
+        const userId = parts[1];
+        const emailOrPhone = parts.slice(2).join(":"); // handle emails with colons
+        router.push({
+          pathname: "/otp-verify",
+          params: {
+            userId,
+            emailOrPhone,
+            type: "email-verify-login"
+          }
+        });
       } else {
         Alert.alert("Login failed", err);
       }
@@ -72,6 +76,7 @@ export default function LoginScreen() {
       router.replace("/(tabs)");
     }
   }
+
 
   // Handle Firebase Phone OTP Login
   async function handlePhoneOtpLogin() {
@@ -152,6 +157,15 @@ export default function LoginScreen() {
         <View style={[styles.card, { paddingBottom: 40 + insets.bottom }]}>
           <Text style={styles.title}>Welcome back! 🐾</Text>
           <Text style={styles.subtitle}>Sign in to reconnect with your furry world</Text>
+
+          {/* Notification permission denied banner */}
+          {notifDenied && (
+            <View style={styles.notifBanner}>
+              <Text style={styles.notifBannerText}>
+                🔔 Notifications are off. OTP codes will still arrive via email or SMS, but enable notifications in Settings for the best experience.
+              </Text>
+            </View>
+          )}
 
           <View style={styles.field}>
             <Text style={styles.label}>Phone number, email, or username</Text>
@@ -264,4 +278,20 @@ const styles = StyleSheet.create({
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 28 },
   footerText: { fontFamily: "Inter_400Regular", fontSize: 14, color: colors.foreground + "88" },
   footerLink: { fontFamily: "Poppins_600SemiBold", fontSize: 14, color: colors.primary },
+  notifBanner: {
+    backgroundColor: "rgba(251,191,36,0.12)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(251,191,36,0.35)",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  notifBannerText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: "#92400e",
+    lineHeight: 18,
+  },
 });
+

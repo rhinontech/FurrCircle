@@ -184,12 +184,24 @@ export default function RootLayout() {
       try {
         const messaging = getMessaging();
         if (!messaging) return;
-        
-        const authStatus = await messaging().requestPermission();
+
+        // Check the existing permission status — the login screen may have already prompted.
+        // Only request again if the status is not yet determined (first launch before login screen ran).
+        let authStatus = await messaging().hasPermission();
+        const alreadyEnabled =
+          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+        if (!alreadyEnabled) {
+          // If still undetermined, request now (e.g. if user skipped the login screen quickly)
+          authStatus = await messaging().requestPermission();
+        }
+
         const enabled =
           authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
           authStatus === messaging.AuthorizationStatus.PROVISIONAL;
         if (!enabled) return;
+
         const fcmToken = await messaging().getToken();
         let installationId = await SecureStore.getItemAsync("push_installation_id");
         if (!installationId) {
@@ -248,6 +260,7 @@ export default function RootLayout() {
       }
     };
   }, [user?.id]);
+
 
   // Auth guard: redirect based on login state once both fonts + auth are ready
   useEffect(() => {

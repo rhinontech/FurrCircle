@@ -202,11 +202,23 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
         await vet.save();
 
         if (isEmail) {
-          await sendEmail(vet.email, "Verify Your FurrCircle Account", "email-otp", { name: vet.name, otp: otpCode });
+          try {
+            await sendEmail(vet.email, "Verify Your FurrCircle Account", "email-otp", { name: vet.name, otp: otpCode });
+          } catch (emailErr: any) {
+            console.error("[Register:Vet] Email OTP send failed:", emailErr.message);
+            res.status(201).json({ success: true, isVerified: false, userId: vet.id, emailOrPhone: vet.email, role: 'veterinarian', smsFailed: true });
+            return;
+          }
           res.status(201).json({ success: true, isVerified: false, userId: vet.id, emailOrPhone: vet.email, role: 'veterinarian' });
         } else {
-          await sendSmsOtp(vet.phone, otpCode);
-          res.status(201).json({ success: true, isVerified: false, userId: vet.id, emailOrPhone: vet.phone, role: 'veterinarian' });
+          let smsFailed = false;
+          try {
+            await sendSmsOtp(vet.phone, otpCode);
+          } catch (smsErr: any) {
+            console.error("[Register:Vet] SMS OTP send failed:", smsErr.message);
+            smsFailed = true;
+          }
+          res.status(201).json({ success: true, isVerified: false, userId: vet.id, emailOrPhone: vet.phone, role: 'veterinarian', smsFailed });
         }
       } else {
         const token = generateToken(vet.id, 'vet');
@@ -246,11 +258,25 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       await user.save();
 
       if (isEmail) {
-        await sendEmail(user.email, "Verify Your FurrCircle Account", "email-otp", { name: user.name, otp: otpCode });
+        // Email OTP — also non-fatal (log + return smsFailed if it fails)
+        try {
+          await sendEmail(user.email, "Verify Your FurrCircle Account", "email-otp", { name: user.name, otp: otpCode });
+        } catch (emailErr: any) {
+          console.error("[Register] Email OTP send failed:", emailErr.message);
+          res.status(201).json({ success: true, isVerified: false, userId: user.id, emailOrPhone: user.email, role: requestedRole, smsFailed: true });
+          return;
+        }
         res.status(201).json({ success: true, isVerified: false, userId: user.id, emailOrPhone: user.email, role: requestedRole });
       } else {
-        await sendSmsOtp(user.phone, otpCode);
-        res.status(201).json({ success: true, isVerified: false, userId: user.id, emailOrPhone: user.phone, role: requestedRole });
+        // SMS OTP — non-fatal: account is always saved even if SMS delivery fails
+        let smsFailed = false;
+        try {
+          await sendSmsOtp(user.phone, otpCode);
+        } catch (smsErr: any) {
+          console.error("[Register] SMS OTP send failed:", smsErr.message);
+          smsFailed = true;
+        }
+        res.status(201).json({ success: true, isVerified: false, userId: user.id, emailOrPhone: user.phone, role: requestedRole, smsFailed });
       }
     } else {
       const token = generateToken(user.id, 'user');
@@ -825,3 +851,49 @@ export const changePassword = async (req: any, res: Response): Promise<void> => 
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Cancel an in-progress registration — deletes the account ONLY if still unverified
+// @route   DELETE /api/auth/cancel-registration/:userId
+// This is called when the user backs out of OTP screen without verifying.
+// Safe: a verified account can never be deleted through this endpoint.
+export const cancelRegistration = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { users: User, vets: Vet } = db as any;
+    const { userId } = req.params;
+
+    if (!userId) {
+      res.status(400).json({ message: "User ID is required" });
+      return;
+    }
+
+    // Try user table first
+    const user = await User.findByPk(userId);
+    if (user) {
+      if (user.isVerified) {
+        res.status(403).json({ message: "Cannot cancel a verified account" });
+        return;
+      }
+      await user.destroy();
+      res.json({ success: true, message: "Registration cancelled" });
+      return;
+    }
+
+    // Try vet table
+    const vet = await Vet.findByPk(userId);
+    if (vet) {
+      if (vet.isVerified) {
+        res.status(403).json({ message: "Cannot cancel a verified account" });
+        return;
+      }
+      await vet.destroy();
+      res.json({ success: true, message: "Registration cancelled" });
+      return;
+    }
+
+    // Not found — treat as success (idempotent)
+    res.json({ success: true, message: "Registration cancelled" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+

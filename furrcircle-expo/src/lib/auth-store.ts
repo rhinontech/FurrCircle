@@ -58,11 +58,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (identifier, password) => {
     try {
       const data = await authApi.login({ identifier, password });
-      
+
       if (data && !data.isVerified) {
         return `unverified:${data.userId}:${data.emailOrPhone}`;
       }
-      
+
       if (data && data.token) {
         await Promise.all([
           AsyncStorage.setItem(AUTH_KEY, JSON.stringify(data)),
@@ -73,7 +73,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       return "Login failed: No token returned from server";
     } catch (err: any) {
-      return err.message || "Invalid credentials";
+      // Axios throws on non-2xx. The backend sends 403 with { isVerified: false, userId, emailOrPhone }
+      // for unverified accounts — catch that here so we can redirect to OTP.
+      const responseData = err?.response?.data;
+      if (err?.response?.status === 403 && responseData?.isVerified === false && responseData?.userId) {
+        return `unverified:${responseData.userId}:${responseData.emailOrPhone}`;
+      }
+      return err?.response?.data?.message || err.message || "Invalid credentials";
     }
   },
 

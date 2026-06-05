@@ -298,7 +298,20 @@ export default function OtpVerifyScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity
+            onPress={async () => {
+              // If the user backs out during signup, delete the unverified account
+              // so it doesn't become a permanent limbo record in the DB.
+              if ((type === 'email-verify-signup' || type === 'email-verify-login') && userId) {
+                // Only cancel for signup (login flows keep the account)
+                if (type === 'email-verify-signup') {
+                  authApi.cancelRegistration(userId); // fire-and-forget
+                }
+              }
+              router.back();
+            }}
+            style={styles.backBtn}
+          >
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
 

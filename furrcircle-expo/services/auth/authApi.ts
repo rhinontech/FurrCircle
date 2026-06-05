@@ -203,6 +203,16 @@ export const resetPasswordDirect = async (emailOrPhone: string, newPassword?: st
     }
 };
 
+// Called when user backs out of OTP screen during signup — removes unverified account
+export const cancelRegistration = async (userId: string): Promise<void> => {
+    try {
+        await PublicAxios.delete(`/auth/cancel-registration/${userId}`);
+    } catch (error: any) {
+        // Fire-and-forget: silently ignore errors (e.g. account already deleted)
+        console.warn("cancelRegistration Error:", error?.response?.data || error.message);
+    }
+};
+
 export const authApi = {
   checkUsername,
   register,
@@ -218,4 +228,5 @@ export const authApi = {
   forgotPassword,
   resetPassword,
   resetPasswordDirect,
+  cancelRegistration,
 };

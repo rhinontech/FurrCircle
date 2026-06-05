@@ -120,72 +120,24 @@ export default function SignupScreen() {
         setBusy(false);
 
         if (res && res.success === true && res.isVerified === false) {
-          router.push({
-            pathname: "/otp-verify",
-            params: {
-              userId: res.userId,
-              emailOrPhone: res.emailOrPhone,
-              type: "email-verify-signup"
-            }
-          });
-        } else {
-          Alert.alert("Registration complete", "Verification needed.");
-        }
-      } catch (err: any) {
-        setBusy(false);
-        const backendMsg = err.response?.data?.message;
-        Alert.alert("Sign up failed", backendMsg || err.message || "An error occurred.");
-      }
-    } else {
-      // Phone flow -> verify via Firebase Phone OTP first, then call backend register
-      try {
-        const firebaseAuth = getFirebaseAuth();
-        if (firebaseAuth) {
-          console.log(`Requesting Firebase Phone OTP for: ${trimmedInput}`);
-          const confirmation = await firebaseAuth().signInWithPhoneNumber(trimmedInput);
-          setBusy(false);
-
-          router.push({
-            pathname: "/otp-verify",
-            params: {
-              username: username.trim().toLowerCase(),
-              name: name.trim(),
-              emailOrPhone: trimmedInput,
-              password,
-              initialVerificationId: confirmation.verificationId,
-              type: "phone-verify-signup"
-            }
-          });
-        } else {
-          // Expo Go Fallback
-          setBusy(false);
-          Alert.alert("Warning", "Phone verification is not available in Expo Go. Navigating for mock verification.");
-          router.push({
-            pathname: "/otp-verify",
-            params: {
-              username: username.trim().toLowerCase(),
-              name: name.trim(),
-              emailOrPhone: trimmedInput,
-              password,
-              type: "phone-verify-signup"
-            }
-          });
-        }
-      } catch (err: any) {
-        console.warn("Firebase Phone Auth failed. Falling back to backend SMS OTP...", err);
-        try {
-          const res = await authApi.register({
-            username: username.trim().toLowerCase(),
-            name: name.trim(),
-            emailOrPhone: trimmedInput,
-            password,
-            role: "owner",
-            useBackendOtp: true
-          });
-
-          setBusy(false);
-
-          if (res && res.success === true && res.isVerified === false) {
+          const smsFailed = res.smsFailed === true;
+          if (smsFailed) {
+            Alert.alert(
+              "Account Saved ✅",
+              "Your account has been created but we couldn't send the verification email right now. Please tap \"Resend\" on the next screen to try again.",
+              [{
+                text: "Continue to Verify",
+                onPress: () => router.push({
+                  pathname: "/otp-verify",
+                  params: {
+                    userId: res.userId,
+                    emailOrPhone: res.emailOrPhone,
+                    type: "email-verify-signup"
+                  }
+                })
+              }]
+            );
+          } else {
             router.push({
               pathname: "/otp-verify",
               params: {
@@ -194,17 +146,97 @@ export default function SignupScreen() {
                 type: "email-verify-signup"
               }
             });
-          } else {
-            Alert.alert("Registration complete", "Verification needed.");
           }
-        } catch (fallbackErr: any) {
-          setBusy(false);
-          console.error("Backend OTP Fallback Error:", fallbackErr);
-          const backendMsg = fallbackErr.response?.data?.message;
-          Alert.alert("OTP Failed", backendMsg || fallbackErr.message || "Could not send verification code via Firebase or backend SMS. Please verify formatting (e.g. +919876543210).");
+        } else {
+          Alert.alert("Registration complete", "Verification needed.");
         }
+
+      } catch (err: any) {
+        setBusy(false);
+        const backendMsg = err.response?.data?.message;
+        Alert.alert("Sign up failed", backendMsg || err.message || "An error occurred.");
+      }
+    } else {
+      // Phone flow:
+      // 1. Register account with backend FIRST (saves details regardless of OTP outcome)
+      // 2. Then send Firebase OTP — if that fails, fall back to backend SMS resend
+      try {
+        // Step 1: Create the account on the backend (unverified, with backend OTP)
+        const regRes = await authApi.register({
+          username: username.trim().toLowerCase(),
+          name: name.trim(),
+          emailOrPhone: trimmedInput,
+          password,
+          role: "owner",
+          useBackendOtp: true,       // creates account as unverified + sends SMS
+        });
+
+        // Account saved ✅ — whether SMS was sent or not, the user exists in DB.
+        // smsFailed means the SMS couldn't go out but the account IS created.
+        const userId = regRes?.userId;
+        const emailOrPhone = regRes?.emailOrPhone || trimmedInput;
+        const smsFailed = regRes?.smsFailed === true;
+
+        // Step 2: Also try Firebase OTP in parallel for better delivery
+        const firebaseAuth = getFirebaseAuth();
+        if (firebaseAuth && !smsFailed) {
+          try {
+            console.log(`Requesting Firebase Phone OTP for: ${trimmedInput}`);
+            const confirmation = await firebaseAuth().signInWithPhoneNumber(trimmedInput);
+            setBusy(false);
+
+            // Firebase OTP sent → use Firebase-based OTP screen
+            router.push({
+              pathname: "/otp-verify",
+              params: {
+                username: username.trim().toLowerCase(),
+                name: name.trim(),
+                emailOrPhone: trimmedInput,
+                password,
+                initialVerificationId: confirmation.verificationId,
+                type: "phone-verify-signup"
+              }
+            });
+            return;
+          } catch (firebaseErr: any) {
+            // Firebase failed — fall through to backend SMS OTP screen below
+            console.warn("Firebase OTP also failed after backend registration, using backend SMS:", firebaseErr);
+          }
+        }
+
+        // Backend SMS OTP (or smsFailed fallback)
+        setBusy(false);
+
+        if (smsFailed) {
+          // OTP couldn't be sent right now, but account IS created.
+          // Take the user to OTP screen — they can tap Resend once SMS service is back.
+          Alert.alert(
+            "Account Saved ✅",
+            "Your account has been created but we couldn't send the verification code right now. Please tap \"Resend\" on the next screen to try again.",
+            [{
+              text: "Continue to Verify",
+              onPress: () => router.push({
+                pathname: "/otp-verify",
+                params: { userId, emailOrPhone, type: "email-verify-signup" }
+              })
+            }]
+          );
+        } else {
+          // SMS sent via backend → use backend OTP screen
+          router.push({
+            pathname: "/otp-verify",
+            params: { userId, emailOrPhone, type: "email-verify-signup" }
+          });
+        }
+
+      } catch (err: any) {
+        setBusy(false);
+        console.error("Phone signup registration error:", err);
+        const backendMsg = err.response?.data?.message;
+        Alert.alert("Sign up failed", backendMsg || err.message || "An error occurred. Please try again.");
       }
     }
+
   }
 
   const renderUsernameStatus = () => {

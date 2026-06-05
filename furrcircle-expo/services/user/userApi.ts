@@ -97,6 +97,17 @@ export const searchUsers = async (q: string) => {
     }
 };
 
+// Search only among users who follow ME — used in Share To and New Chat
+export const searchFollowers = async (q: string) => {
+    try {
+        const response = await PrivateAxios.get('/users/followers-search', { params: { q } });
+        return response.data;
+    } catch (error: any) {
+        console.error('searchFollowers Error:', error?.response?.data || error.message);
+        return [];
+    }
+};
+
 export const userApi = {
     getUserProfile,
     followUser,
@@ -109,4 +120,6 @@ export const userApi = {
     getFollowers,
     getFollowing,
     searchUsers,
+    searchFollowers,
 };
+

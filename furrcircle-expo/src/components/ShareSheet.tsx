@@ -50,7 +50,7 @@ export function ShareSheet({ open, onClose, postId, petId }: ShareSheetProps) {
   const fetchUsers = async (query: string) => {
     setLoading(true);
     try {
-      const results = await userApi.searchUsers(query || "a"); // "a" just to populate something if empty
+      const results = await userApi.searchFollowers(query || "");
       setUsers(results.filter((u: any) => u.id !== user?.id));
     } catch (err) {
       console.error(err);
@@ -120,7 +120,9 @@ export function ShareSheet({ open, onClose, postId, petId }: ShareSheetProps) {
             {loading ? (
               <Text style={[styles.emptyText, { color: tk.textMuted }]}>Loading...</Text>
             ) : users.length === 0 ? (
-              <Text style={[styles.emptyText, { color: tk.textMuted }]}>No users found</Text>
+              <Text style={[styles.emptyText, { color: tk.textMuted }]}>
+                {search.trim() ? "No followers match your search" : "You have no followers yet"}
+              </Text>
             ) : (
               users.map((m) => {
                 const isSelected = selected.includes(m.id);

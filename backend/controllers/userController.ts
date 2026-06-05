@@ -170,6 +170,7 @@ export const searchUsers = async (req: any, res: Response): Promise<void> => {
     const { follows: Follow } = db as any;
     const users = await User.findAll({
       where: {
+        isVerified: true,
         [Op.or]: [
           { name: { [Op.iLike]: `%${q}%` } },
           { username: { [Op.iLike]: `%${q}%` } },
@@ -193,6 +194,51 @@ export const searchUsers = async (req: any, res: Response): Promise<void> => {
     }));
 
     res.json(results);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Search only among users who follow the current user (for Share To / New Chat)
+// @route   GET /api/users/followers-search?q=...
+export const searchFollowers = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { users: User, follows: Follow } = db as any;
+    const q = String(req.query.q || "").trim();
+    const currentUserId = req.user.id;
+
+    // Get all accepted followers of the current user
+    const followerRows = await Follow.findAll({
+      where: { followingId: currentUserId, status: 'accepted' },
+      attributes: ['followerId'],
+    });
+
+    const followerIds: string[] = followerRows.map((r: any) => r.followerId);
+
+    if (followerIds.length === 0) {
+      res.json([]);
+      return;
+    }
+
+    const whereClause: Record<string, any> = {
+      id: { [Op.in]: followerIds },
+      isVerified: true,
+    };
+
+    if (q) {
+      whereClause[Op.or as any] = [
+        { name: { [Op.iLike]: `%${q}%` } },
+        { username: { [Op.iLike]: `%${q}%` } },
+      ];
+    }
+
+    const users = await User.findAll({
+      where: whereClause,
+      attributes: ['id', 'name', 'username', 'avatar_url', 'city', 'bio'],
+      limit: 50,
+    });
+
+    res.json(users.map((u: any) => u.toJSON()));
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
