@@ -17,12 +17,14 @@ import { useAuthStore } from "../../src/lib/auth-store";
 import { posts as dummyPosts, sampleComments } from "../../src/lib/demo-data";
 import { Video, ResizeMode, Audio } from "expo-av";
 import { useIsFocused } from "@react-navigation/native";
+import { useBreakpoint } from "../../src/lib/breakpoints";
 
 export default function PostDetail() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const tk = useTokens();
+  const { isTablet } = useBreakpoint();
   const isScreenFocused = useIsFocused();
   const { user } = useAuthStore();
   const [shareOpen, setShareOpen] = useState(false);
@@ -379,10 +381,10 @@ export default function PostDetail() {
         <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} postId={post.id} />
 
         {/* Options Menu Modal */}
-        <Modal visible={menuOpen} transparent={true} animationType="slide" onRequestClose={() => setMenuOpen(false)}>
-          <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
-            <View style={[styles.sheet, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true} onTouchEnd={(e) => e.stopPropagation()}>
-              <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+        <Modal visible={menuOpen} transparent={true} animationType={isTablet ? "fade" : "slide"} onRequestClose={() => setMenuOpen(false)}>
+          <Pressable style={[styles.overlay, isTablet && styles.overlayCenter]} onPress={() => setMenuOpen(false)}>
+            <View style={[isTablet ? styles.dialog : styles.sheet, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true} onTouchEnd={(e) => e.stopPropagation()}>
+              {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
               <Text style={[styles.sheetTitle, { color: tk.text }]}>Options</Text>
 
               {/* Save Option */}
@@ -582,6 +584,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  overlayCenter: { justifyContent: "center", alignItems: "center" },
+  dialog: { borderRadius: 24, padding: 24, width: 360, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 10 },
   sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 16, paddingBottom: 28 },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 12, opacity: 0.2 },
   sheetTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, paddingHorizontal: 4, marginBottom: 8 },

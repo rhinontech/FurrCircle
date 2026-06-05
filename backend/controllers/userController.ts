@@ -168,8 +168,32 @@ export const searchUsers = async (req: any, res: Response): Promise<void> => {
     if (!q) { res.json([]); return; }
 
     const { follows: Follow } = db as any;
+    const currentUserId = req.user.id;
+
+    // Find all accepted follow relationships involving req.user.id
+    const followRecords = await Follow.findAll({
+      where: {
+        [Op.or]: [
+          { followerId: currentUserId },
+          { followingId: currentUserId }
+        ],
+        status: 'accepted'
+      },
+      attributes: ['followerId', 'followingId']
+    });
+
+    const relatedUserIds = Array.from(new Set(
+      followRecords.flatMap((f: any) => [f.followerId, f.followingId])
+    )).filter(id => id !== currentUserId);
+
+    if (relatedUserIds.length === 0) {
+      res.json([]);
+      return;
+    }
+
     const users = await User.findAll({
       where: {
+        id: { [Op.in]: relatedUserIds },
         isVerified: true,
         [Op.or]: [
           { name: { [Op.iLike]: `%${q}%` } },

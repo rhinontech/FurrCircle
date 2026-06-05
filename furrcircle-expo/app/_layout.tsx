@@ -208,11 +208,19 @@ export default function RootLayout() {
           installationId = `${Platform.OS}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
           await SecureStore.setItemAsync("push_installation_id", installationId);
         }
+        let pushPref = true;
+        try {
+          const storedPref = await SecureStore.getItemAsync("push_notifications_enabled");
+          if (storedPref !== null) {
+            pushPref = storedPref === "true";
+          }
+        } catch (e) {}
+
         await notificationApi.registerDevice({
           installationId,
           expoPushToken: fcmToken,
           platform: Platform.OS as "ios" | "android",
-          pushEnabled: true,
+          pushEnabled: pushPref,
         });
 
         // Listen for foreground messages

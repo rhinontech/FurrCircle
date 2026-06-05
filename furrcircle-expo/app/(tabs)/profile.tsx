@@ -116,7 +116,7 @@ export default function ProfileScreen() {
         <View style={styles.sectionRow}>
           <Text style={[styles.sectionTitle, { color: tk.text }]}>My pets</Text>
           <TouchableOpacity onPress={() => router.push("/add-pet")} style={styles.addPetBtn}>
-            <Plus size={16} color={colors.coral} /><Text style={styles.addPetText}>Add pet</Text>
+            <Plus size={16} color={colors.primary} /><Text style={styles.addPetText}>Add pet</Text>
           </TouchableOpacity>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 8 }}>
@@ -167,16 +167,16 @@ export default function ProfileScreen() {
                 {sortedReminders.map((r, i) => {
                   const pet = pets.find(p => p.id === r.petId);
                   const IconComponent = r.type === "appointment" ? Stethoscope : r.type === "vaccination" ? Syringe : r.type === "medication" ? Pill : Bell;
-                  
+
                   const dt = new Date(`${r.date}T${r.time || "00:00"}`);
                   const dateText = dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
                   const timeText = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                  
+
                   const tintBg = TINT_COLORS[(i + 1) % TINT_COLORS.length];
 
                   return (
-                    <TouchableOpacity 
-                      key={r.id} 
+                    <TouchableOpacity
+                      key={r.id}
                       onPress={() => router.push(`/vets/reminder?id=${r.id}`)}
                       style={[styles.reminderCardHorizontal, { backgroundColor: tintBg }]}
                       activeOpacity={0.85}
@@ -189,7 +189,7 @@ export default function ProfileScreen() {
                           <Trash2 size={14} color="#ff4d4d" />
                         </TouchableOpacity>
                       </View>
-                      
+
                       <View style={{ marginTop: 8 }}>
                         <Text style={[styles.reminderTitleHorizontal, { color: tk.text }]} numberOfLines={1}>{r.title}</Text>
                         <Text style={{ fontSize: 11, fontFamily: "Poppins_600SemiBold", color: tk.text, opacity: 0.85, marginTop: 2 }}>
@@ -271,35 +271,35 @@ export default function ProfileScreen() {
 function PetPickerModal({ open, onClose, pets, onSelect, tk }: any) {
   return (
     <AdaptiveSheet visible={open} onClose={onClose} maxWidth={420}>
-        <View style={{ padding: 20 }}>
-          <Text style={[styles.modalTitle, { color: tk.text }]}>Choose a Pet</Text>
-          
-          <ScrollView style={styles.petListScroll} showsVerticalScrollIndicator={false}>
-            {pets.length === 0 ? (
-              <Text style={{ textAlign: "center", marginVertical: 20, color: tk.textMuted, fontFamily: "Inter_400Regular" }}>
-                Please add a pet first.
-              </Text>
-            ) : (
-              pets.map((pet: any) => (
-                <TouchableOpacity
-                  key={pet.id}
-                  onPress={() => {
-                    onSelect(pet.id);
-                    onClose();
-                  }}
-                  style={[styles.petRow, { borderBottomColor: tk.border }]}
-                >
-                  <Avatar source={pet.avatar_url ? { uri: pet.avatar_url } : require("../../src/assets/doodle-puppy.png")} name={pet.name} size={40} />
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={[styles.petNameText, { color: tk.text }]}>{pet.name}</Text>
-                    <Text style={[styles.petBreedText, { color: tk.textMuted }]}>{pet.breed || pet.species}</Text>
-                  </View>
-                  <ChevronRight size={16} color={tk.textMuted} />
-                </TouchableOpacity>
-              ))
-            )}
-          </ScrollView>
-        </View>
+      <View style={{ padding: 20 }}>
+        <Text style={[styles.modalTitle, { color: tk.text }]}>Choose a Pet</Text>
+
+        <ScrollView style={styles.petListScroll} showsVerticalScrollIndicator={false}>
+          {pets.length === 0 ? (
+            <Text style={{ textAlign: "center", marginVertical: 20, color: tk.textMuted, fontFamily: "Inter_400Regular" }}>
+              Please add a pet first.
+            </Text>
+          ) : (
+            pets.map((pet: any) => (
+              <TouchableOpacity
+                key={pet.id}
+                onPress={() => {
+                  onSelect(pet.id);
+                  onClose();
+                }}
+                style={[styles.petRow, { borderBottomColor: tk.border }]}
+              >
+                <Avatar source={pet.avatar_url ? { uri: pet.avatar_url } : require("../../src/assets/doodle-puppy.png")} name={pet.name} size={40} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={[styles.petNameText, { color: tk.text }]}>{pet.name}</Text>
+                  <Text style={[styles.petBreedText, { color: tk.textMuted }]}>{pet.breed || pet.species}</Text>
+                </View>
+                <ChevronRight size={16} color={tk.textMuted} />
+              </TouchableOpacity>
+            ))
+          )}
+        </ScrollView>
+      </View>
     </AdaptiveSheet>
   );
 }
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, marginTop: 24, marginBottom: 12 },
   sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 17 },
   addPetBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
-  addPetText: { fontFamily: "Poppins_600SemiBold", fontSize: 13, color: colors.coral },
+  addPetText: { fontFamily: "Poppins_600SemiBold", fontSize: 13, color: colors.primary },
   petCard: { width: 160, borderRadius: 22, padding: 14 },
   petCardImgContainer: {
     width: 68,
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   petCardImgWrap: { width: "100%", height: 72, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.6)" },
   petCardName: { fontFamily: "Poppins_700Bold", fontSize: 15, marginTop: 8 },
   petCardBreed: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  petCardAdd: { width: 160, height:150, borderRadius: 22, borderWidth: 2, borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 4 },
+  petCardAdd: { width: 160, height: 150, borderRadius: 22, borderWidth: 2, borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 4 },
   addPetCardText: { fontFamily: "Poppins_700Bold", fontSize: 13 },
   tilesGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 12, paddingHorizontal: 20 },
   tile: { width: "48%", borderRadius: 16, padding: 16, gap: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },

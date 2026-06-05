@@ -897,3 +897,175 @@ export const cancelRegistration = async (req: Request, res: Response): Promise<v
   }
 };
 
+// @desc    Delete own user or vet account
+// @route   DELETE /api/auth/profile
+export const deleteAccount = async (req: any, res: Response): Promise<void> => {
+  const {
+    users: User,
+    vets: Vet,
+    follows: Follow,
+    posts: Post,
+    comments: Comment,
+    likes: Like,
+    saved_posts: SavedPost,
+    events: Event,
+    event_bookings: EventBooking,
+    reminders: Reminder,
+    saved_vets: SavedVet,
+    adoption_applications: AdoptionApplication,
+    stories: Story,
+    lost_pets: LostPet,
+    circle_members: CircleMember,
+    questions: Question,
+    question_answers: QuestionAnswer,
+    playdate_likes: PlaydateLike,
+    owner_likes: OwnerLike,
+    reports: Report,
+    user_blocks: UserBlock,
+    notifications: Notification,
+    notification_preferences: NotificationPreference,
+    notification_devices: NotificationDevice,
+    pets: Pet,
+    vaccines: Vaccine,
+    medical_records: MedicalRecord,
+    medications: Medication,
+    allergies: Allergy,
+    appointments: Appointment,
+    vitals: Vital,
+    memories: Memory,
+    sequelize
+  } = db as any;
+
+  const isVet = req.userType === 'vet';
+  const Model = isVet ? Vet : User;
+
+  const t = await sequelize.transaction();
+
+  try {
+    const account = await Model.findByPk(req.user.id, { transaction: t });
+    if (!account) {
+      await t.rollback();
+      res.status(404).json({ message: isVet ? "Veterinarian not found" : "User not found" });
+      return;
+    }
+
+    // 1. Delete follow relationships where this user is follower or following
+    await Follow.destroy({
+      where: {
+        [Op.or]: [
+          { followerId: req.user.id },
+          { followingId: req.user.id }
+        ]
+      },
+      transaction: t
+    });
+
+    // 2. Delete blocks where this user is blocker or blocked
+    await UserBlock.destroy({
+      where: {
+        [Op.or]: [
+          { blockerId: req.user.id },
+          { blockedId: req.user.id }
+        ]
+      },
+      transaction: t
+    });
+
+    // 3. Delete reports where this user is reporter or reported
+    await Report.destroy({
+      where: {
+        [Op.or]: [
+          { reporterId: req.user.id },
+          { reportedId: req.user.id }
+        ]
+      },
+      transaction: t
+    });
+
+    // 4. Delete owner likes where this user is liker or target
+    await OwnerLike.destroy({
+      where: {
+        [Op.or]: [
+          { likerId: req.user.id },
+          { targetId: req.user.id }
+        ]
+      },
+      transaction: t
+    });
+
+    // 5. Delete notification-related items
+    const actorType = isVet ? 'vet' : 'user';
+    await Notification.destroy({
+      where: { userId: req.user.id, userType: actorType },
+      transaction: t
+    });
+    await NotificationPreference.destroy({
+      where: { actorId: req.user.id, actorType },
+      transaction: t
+    });
+    await NotificationDevice.destroy({
+      where: { actorId: req.user.id, actorType },
+      transaction: t
+    });
+
+    // 6. Delete posts, comments, likes, saved posts, stories, events, event bookings, questions, answers, reminders, saved vets, circle membership, lost pets (for both user and vet)
+    await Comment.destroy({ where: { userId: req.user.id }, transaction: t });
+    await Like.destroy({ where: { userId: req.user.id }, transaction: t });
+    await SavedPost.destroy({ where: { userId: req.user.id }, transaction: t });
+    await Post.destroy({ where: { userId: req.user.id }, transaction: t });
+    await Story.destroy({ where: { userId: req.user.id }, transaction: t });
+    await EventBooking.destroy({ where: { userId: req.user.id }, transaction: t });
+    await Event.destroy({ where: { organizerId: req.user.id }, transaction: t });
+    await QuestionAnswer.destroy({ where: { userId: req.user.id }, transaction: t });
+    await Question.destroy({ where: { userId: req.user.id }, transaction: t });
+    await Reminder.destroy({ where: { userId: req.user.id }, transaction: t });
+    await SavedVet.destroy({ where: { userId: req.user.id }, transaction: t });
+    await CircleMember.destroy({ where: { userId: req.user.id }, transaction: t });
+    await LostPet.destroy({ where: { userId: req.user.id }, transaction: t });
+
+    // 7. Pet and adoption specific cleanups (for regular users)
+    if (!isVet) {
+      // Get all pets
+      const userPets = await Pet.findAll({ where: { ownerId: req.user.id }, transaction: t });
+      const petIds = userPets.map((p: any) => p.id);
+      if (petIds.length > 0) {
+        await Vaccine.destroy({ where: { petId: petIds }, transaction: t });
+        await MedicalRecord.destroy({ where: { petId: petIds }, transaction: t });
+        await Medication.destroy({ where: { petId: petIds }, transaction: t });
+        await Allergy.destroy({ where: { petId: petIds }, transaction: t });
+        await Appointment.destroy({ where: { petId: petIds }, transaction: t });
+        await Reminder.destroy({ where: { petId: petIds }, transaction: t });
+        await Vital.destroy({ where: { petId: petIds }, transaction: t });
+        await AdoptionApplication.destroy({ where: { petId: petIds }, transaction: t });
+        await Memory.destroy({ where: { petId: petIds }, transaction: t });
+        await PlaydateLike.destroy({
+          where: {
+            [Op.or]: [
+              { swiperPetId: petIds },
+              { targetPetId: petIds }
+            ]
+          },
+          transaction: t
+        });
+        await Pet.destroy({ where: { id: petIds }, transaction: t });
+      }
+
+      await AdoptionApplication.destroy({
+        where: {
+          [Op.or]: [
+            { applicantId: req.user.id },
+            { ownerId: req.user.id }
+          ]
+        },
+        transaction: t
+      });
+    }
+
+    await account.destroy({ transaction: t });
+    await t.commit();
+    res.json({ message: "Account deleted successfully" });
+  } catch (error: any) {
+    await t.rollback();
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -1,5 +1,5 @@
 import express from "express";
-import { registerUser, loginUser, loginOtp, getUserProfile, updateUserProfile, forgotPassword, resetPassword, resetPasswordByEmail, changePassword, getUsersByRole, completeOnboarding, checkUsername, sendEmailOtp, verifyEmailOtp, sendPhoneOtp, cancelRegistration } from "../controllers/authController.ts";
+import { registerUser, loginUser, loginOtp, getUserProfile, updateUserProfile, deleteAccount, forgotPassword, resetPassword, resetPasswordByEmail, changePassword, getUsersByRole, completeOnboarding, checkUsername, sendEmailOtp, verifyEmailOtp, sendPhoneOtp, cancelRegistration } from "../controllers/authController.ts";
 import { protect } from "../middleware/authMiddleware.ts";
 
 const router = express.Router();
@@ -20,7 +20,8 @@ router.delete("/cancel-registration/:userId", cancelRegistration);
 
 router.route("/profile")
   .get(protect, getUserProfile)
-  .put(protect, updateUserProfile);
+  .put(protect, updateUserProfile)
+  .delete(protect, deleteAccount);
 
 router.post("/onboarding-complete", protect, completeOnboarding);
 

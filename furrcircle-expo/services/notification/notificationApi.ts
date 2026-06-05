@@ -65,6 +65,11 @@ export const deleteDevice = async (installationId: string): Promise<void> => {
   await PrivateAxios.delete(`/notifications/devices/${installationId}`);
 };
 
+export const togglePushEnabled = async (pushEnabled: boolean): Promise<{ success: boolean; pushEnabled: boolean }> => {
+  const res = await PrivateAxios.patch('/notifications/devices/push-enabled', { pushEnabled });
+  return res.data;
+};
+
 export const notificationApi = {
   listNotifications,
   getUnreadCounts,
@@ -72,4 +77,5 @@ export const notificationApi = {
   markAllRead,
   registerDevice,
   deleteDevice,
+  togglePushEnabled,
 };

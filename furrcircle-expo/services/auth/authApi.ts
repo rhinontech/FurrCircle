@@ -3,36 +3,36 @@ import { PublicAxios, PrivateAxios } from '../../helpers/PrivateAxios';
 export type UserRole = 'owner' | 'shelter' | 'veterinarian';
 
 export type AuthPayload = {
-  id: string;
-  name: string;
-  username: string;
-  email: string | null;
-  phone: string | null;
-  role: UserRole;
-  token?: string;
-  isVerified?: boolean;
-  hasCompletedOnboarding?: boolean;
-  isPrivate?: boolean;
-  avatar_url?: string;
-  bio?: string;
-  city?: string;
-  address?: string;
-  latitude?: number;
-  longitude?: number;
-  memberSince?: string;
-  // Vet specific
-  hospital_name?: string;
-  profession?: string;
-  experience?: string;
-  working_hours?: string;
-  clinicStampUrl?: string;
-  licenseNumber?: string;
-  rating?: number;
+    id: string;
+    name: string;
+    username: string;
+    email: string | null;
+    phone: string | null;
+    role: UserRole;
+    token?: string;
+    isVerified?: boolean;
+    hasCompletedOnboarding?: boolean;
+    isPrivate?: boolean;
+    avatar_url?: string;
+    bio?: string;
+    city?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+    memberSince?: string;
+    // Vet specific
+    hospital_name?: string;
+    profession?: string;
+    experience?: string;
+    working_hours?: string;
+    clinicStampUrl?: string;
+    licenseNumber?: string;
+    rating?: number;
 };
 
 export type CheckUsernameResponse = {
-  available: boolean;
-  message: string;
+    available: boolean;
+    message: string;
 };
 
 // ==========================
@@ -213,20 +213,31 @@ export const cancelRegistration = async (userId: string): Promise<void> => {
     }
 };
 
+export const deleteAccount = async () => {
+    try {
+        const response = await PrivateAxios.delete('/auth/profile');
+        return response.data;
+    } catch (error: any) {
+        console.error("deleteAccount Error:", error?.response?.data || error.message);
+        throw error;
+    }
+};
+
 export const authApi = {
-  checkUsername,
-  register,
-  requestAdminOtp,
-  verifyAdminOtp,
-  verifyInvitation,
-  sendEmailOtp,
-  sendPhoneOtp,
-  verifyEmailOtp,
-  login,
-  loginOtp,
-  getMe,
-  forgotPassword,
-  resetPassword,
-  resetPasswordDirect,
-  cancelRegistration,
+    checkUsername,
+    register,
+    requestAdminOtp,
+    verifyAdminOtp,
+    verifyInvitation,
+    sendEmailOtp,
+    sendPhoneOtp,
+    verifyEmailOtp,
+    login,
+    loginOtp,
+    getMe,
+    forgotPassword,
+    resetPassword,
+    resetPasswordDirect,
+    cancelRegistration,
+    deleteAccount,
 };
