@@ -741,6 +741,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   const isScreenFocused = useIsFocused();
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
+  const { isTablet } = useBreakpoint();
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -1090,10 +1091,10 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
       </Modal>
 
       {/* Options Menu Modal */}
-      <Modal visible={menuOpen} transparent={true} animationType="slide" onRequestClose={() => setMenuOpen(false)}>
-        <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
-          <View style={[styles.sheet, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true} onTouchEnd={(e) => e.stopPropagation()}>
-            <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+      <Modal visible={menuOpen} transparent={true} animationType={isTablet ? "fade" : "slide"} onRequestClose={() => setMenuOpen(false)}>
+        <Pressable style={[styles.overlay, isTablet && styles.overlayCenter]} onPress={() => setMenuOpen(false)}>
+          <View style={[isTablet ? styles.dialog : styles.sheet, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true} onTouchEnd={(e) => e.stopPropagation()}>
+            {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
             <Text style={[styles.sheetTitle, { color: tk.text }]}>Options</Text>
 
             {/* Save Option */}

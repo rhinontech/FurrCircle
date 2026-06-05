@@ -16,6 +16,7 @@ import { chatApi } from "../../services/chat/chatApi";
 import { blockApi } from "../../services/user/blockApi";
 import { Video, ResizeMode } from "expo-av";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBreakpoint } from "../../src/lib/breakpoints";
 
 const GRID_SIZE = (Dimensions.get("window").width - 12) / 3;
 const puppy = require("../../src/assets/doodle-puppy.png");
@@ -37,6 +38,7 @@ export default function UserProfileScreen() {
   const tk = useTokens();
   const { user: me } = useAuthStore();
   const insets = useSafeAreaInsets();
+  const { isTablet } = useBreakpoint();
 
   const [tab, setTab] = useState<(typeof tabs)[number]>("Posts");
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -387,10 +389,10 @@ export default function UserProfileScreen() {
       </View>
 
       {/* ── 3-dot Menu Modal ── */}
-      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-        <Pressable style={styles.menuOverlay} onPress={() => setMenuOpen(false)}>
-          <Pressable style={[styles.menuSheet, { backgroundColor: tk.card }]} onPress={() => {}}>
-            <View style={styles.menuHandle} />
+      <Modal visible={menuOpen} transparent animationType={isTablet ? "fade" : "slide"} onRequestClose={() => setMenuOpen(false)}>
+        <Pressable style={[styles.menuOverlay, isTablet && styles.menuOverlayCenter]} onPress={() => setMenuOpen(false)}>
+          <Pressable style={[isTablet ? styles.menuDialog : styles.menuSheet, { backgroundColor: tk.card }]} onPress={(e) => e.stopPropagation()}>
+            {!isTablet && <View style={styles.menuHandle} />}
             <TouchableOpacity
               style={styles.menuItem}
               onPress={handleBlockUser}
@@ -526,6 +528,8 @@ const styles = StyleSheet.create({
   petGridBreed: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   // Menu modal
   menuOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  menuOverlayCenter: { justifyContent: "center", alignItems: "center" },
+  menuDialog: { borderRadius: 24, padding: 24, width: 360, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 10 },
   menuSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12, paddingHorizontal: 16, paddingBottom: 28 },
   menuHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#ccc", alignSelf: "center", marginBottom: 12 },
   menuItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },

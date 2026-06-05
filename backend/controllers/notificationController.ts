@@ -203,3 +203,28 @@ export const deleteNotificationDevice = async (req: Request, res: Response): Pro
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Toggle push notifications for all devices of the authenticated user
+// @route   PATCH /api/notifications/devices/push-enabled
+export const togglePushEnabled = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { notification_devices: NotificationDevice } = db as any;
+    const actorId = (req as any).user?.id;
+    const actorType = (req as any).userType || "user";
+    const { pushEnabled } = req.body;
+
+    if (pushEnabled === undefined) {
+      res.status(400).json({ message: "pushEnabled field is required" });
+      return;
+    }
+
+    await NotificationDevice.update(
+      { pushEnabled: Boolean(pushEnabled) },
+      { where: { actorId, actorType } }
+    );
+
+    res.json({ success: true, pushEnabled: Boolean(pushEnabled) });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

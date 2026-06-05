@@ -1,6 +1,6 @@
 import {
   View, Text, ScrollView, TouchableOpacity, Switch,
-  StyleSheet, Modal, Pressable, Alert,
+  StyleSheet, Modal, Pressable, Alert, ActivityIndicator,
 } from "react-native";
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
@@ -13,7 +13,10 @@ import {
   Bell, Trash2, ChevronRight, LogOut,
 } from "lucide-react-native";
 import { userApi } from "../services/user/userApi";
+import { authApi } from "../services/auth/authApi";
 import { blockApi } from "../services/user/blockApi";
+import { notificationApi } from "../services/notification/notificationApi";
+import * as SecureStore from "expo-secure-store";
 import { LocationPickerModal, LocationResult } from "../src/components/LocationPickerModal";
 import * as Location from 'expo-location';
 import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
@@ -45,14 +48,53 @@ export default function SettingsScreen() {
   const [twoFA, setTwoFA] = useState(false);
   const [pushNotifs, setPushNotifs] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isLocationModalVisible, setLocationModalVisible] = useState(false);
   const [blockedCount, setBlockedCount] = useState<number | null>(null);
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await authApi.deleteAccount();
+      setConfirmDelete(false);
+      Alert.alert("Account Deleted", "Your account has been permanently removed.");
+      await logout();
+      router.replace("/login");
+    } catch (err: any) {
+      console.error("Failed to delete account:", err);
+      Alert.alert("Error", err.message || "Failed to delete account. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     blockApi.getBlockedUsers()
       .then(list => setBlockedCount(list.length))
       .catch(() => setBlockedCount(0));
+
+    SecureStore.getItemAsync("push_notifications_enabled")
+      .then((val) => {
+        if (val !== null) {
+          setPushNotifs(val === "true");
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  const togglePushNotifs = async (val: boolean) => {
+    setPushNotifs(val);
+    try {
+      await SecureStore.setItemAsync("push_notifications_enabled", val ? "true" : "false");
+      await notificationApi.togglePushEnabled(val);
+    } catch (err) {
+      console.error("Failed to toggle push notifications:", err);
+      setPushNotifs(!val);
+      try {
+        await SecureStore.setItemAsync("push_notifications_enabled", !val ? "true" : "false");
+      } catch {}
+    }
+  };
 
   const togglePrivateProfile = async (val: boolean) => {
     // Optimistic update
@@ -122,7 +164,7 @@ export default function SettingsScreen() {
         <Section title="Notifications" tk={tk}>
           <Row tk={tk} icon={Bell} iconBg="rgba(255,217,61,0.4)" iconColor={colors.foreground}
             label="Push notifications" sub="Likes, comments, matches"
-            toggle={pushNotifs} onToggle={setPushNotifs} />
+            toggle={pushNotifs} onToggle={togglePushNotifs} />
         </Section>
 
         {/* <Section title="Account" tk={tk}>
@@ -167,11 +209,23 @@ export default function SettingsScreen() {
               Your pets, posts, and circles will be removed. This can't be undone.
             </Text>
             <View style={styles.modalActions}>
-              <TouchableOpacity onPress={() => setConfirmDelete(false)} style={[styles.modalBtn, { backgroundColor: tk.bg }]}>
+              <TouchableOpacity
+                onPress={() => setConfirmDelete(false)}
+                style={[styles.modalBtn, { backgroundColor: tk.bg }]}
+                disabled={isDeleting}
+              >
                 <Text style={[styles.modalBtnText, { color: tk.text }]}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setConfirmDelete(false)} style={[styles.modalBtn, styles.modalBtnDanger]}>
-                <Text style={[styles.modalBtnText, { color: "#fff" }]}>Delete</Text>
+              <TouchableOpacity
+                onPress={handleDeleteAccount}
+                style={[styles.modalBtn, styles.modalBtnDanger]}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={[styles.modalBtnText, { color: "#fff" }]}>Delete</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
