@@ -223,6 +223,48 @@ export const searchUsers = async (req: any, res: Response): Promise<void> => {
   }
 };
 
+// @desc    Search ALL active users (for Circle / community discover — no follow restriction)
+// @route   GET /api/users/all-search?q=...
+export const searchAllUsers = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { users: User, follows: Follow } = db as any;
+    const q = String(req.query.q || "").trim();
+    const currentUserId = req.user.id;
+
+    const whereClause: Record<string, any> = {
+      id: { [Op.ne]: currentUserId }, // exclude self
+      isVerified: true,
+    };
+
+    if (q) {
+      whereClause[Op.or as any] = [
+        { name: { [Op.iLike]: `%${q}%` } },
+        { username: { [Op.iLike]: `%${q}%` } },
+      ];
+    }
+
+    const users = await User.findAll({
+      where: whereClause,
+      attributes: ['id', 'name', 'username', 'avatar_url', 'city', 'bio'],
+      limit: 30,
+      order: [['name', 'ASC']],
+    });
+
+    const results = await Promise.all(users.map(async (u: any) => {
+      const data = u.toJSON();
+      let followStatus = 'none';
+      const follow = await Follow.findOne({ where: { followerId: currentUserId, followingId: data.id } });
+      if (follow) followStatus = follow.status;
+      const followersCount = await Follow.count({ where: { followingId: data.id, status: 'accepted' } });
+      return { ...data, followStatus, followersCount };
+    }));
+
+    res.json(results);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Search only among users who follow the current user (for Share To / New Chat)
 // @route   GET /api/users/followers-search?q=...
 export const searchFollowers = async (req: any, res: Response): Promise<void> => {

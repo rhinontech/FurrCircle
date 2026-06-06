@@ -108,7 +108,7 @@ export default function CommunityScreen() {
           circleApi.getAllCircles(),
           questionApi.getQuestions({ q: searchQuery }),
           feedApi.getFeed("for_you", 1, 50),
-          userApi.searchUsers(searchQuery),
+          userApi.searchAllUsers(searchQuery),
         ]);
         const q = searchQuery.trim().toLowerCase();
         const filteredCircles = (circles || []).filter((c: any) =>
