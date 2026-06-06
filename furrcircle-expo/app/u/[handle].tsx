@@ -7,6 +7,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Share2, MapPin, Grid3x3, Bookmark, Bone, Play, MoreVertical, ShieldOff, Flag, ChevronRight, X, Check } from "lucide-react-native";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { ShareSheet } from "../../src/components/ShareSheet";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
@@ -47,6 +48,7 @@ export default function UserProfileScreen() {
   const [isBlocking, setIsBlocking] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportStep, setReportStep] = useState(1);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Tab data
   const [posts, setPosts] = useState<any[]>([]);
@@ -170,7 +172,10 @@ export default function UserProfileScreen() {
           title={`@${handle}`}
           right={
             <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-              <TouchableOpacity style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}>
+              <TouchableOpacity
+                onPress={() => setShareOpen(true)}
+                style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
+              >
                 <Share2 size={20} color={tk.text} />
               </TouchableOpacity>
               {!isOwnProfile && (
@@ -482,6 +487,12 @@ export default function UserProfileScreen() {
           )}
         </View>
       </Modal>
+      {/* Share Sheet */}
+      <ShareSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        username={handle}
+      />
     </PageContainer>
   );
 }

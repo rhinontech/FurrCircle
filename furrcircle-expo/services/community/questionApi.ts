@@ -72,6 +72,7 @@ export const getQuestionById = async (questionId: string) => {
 
 export const questionApi = {
     getQuestions,
+    getQuestionById,
     createQuestion,
     upvoteQuestion,
     addAnswer,

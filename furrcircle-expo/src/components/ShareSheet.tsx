@@ -18,9 +18,12 @@ interface ShareSheetProps {
   onClose: () => void;
   postId?: string | null;
   petId?: string | null;
+  username?: string | null;
+  threadId?: string | null;
+  circleId?: string | null;
 }
 
-export function ShareSheet({ open, onClose, postId, petId }: ShareSheetProps) {
+export function ShareSheet({ open, onClose, postId, petId, username, threadId, circleId }: ShareSheetProps) {
   const tk = useTokens();
   const { user } = useAuthStore();
   const [search, setSearch] = useState("");
@@ -76,6 +79,15 @@ export function ShareSheet({ open, onClose, postId, petId }: ShareSheetProps) {
     } else if (petId) {
       shareLink = `Check out this pet! furrcircle://pet/${petId}`;
       typeName = "Pet";
+    } else if (username) {
+      shareLink = `Check out this profile! furrcircle://profile/${username}`;
+      typeName = "Profile";
+    } else if (threadId) {
+      shareLink = `Check out this discussion! furrcircle://thread/${threadId}`;
+      typeName = "Discussion";
+    } else if (circleId) {
+      shareLink = `Check out this circle! furrcircle://circle/${circleId}`;
+      typeName = "Circle";
     }
     
     if (!shareLink) return;

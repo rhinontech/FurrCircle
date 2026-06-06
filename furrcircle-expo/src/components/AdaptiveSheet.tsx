@@ -1,4 +1,4 @@
-import { Modal, View, Pressable, StyleSheet } from "react-native";
+import { Modal, View, Pressable, StyleSheet, DimensionValue } from "react-native";
 import { useBreakpoint } from "../lib/breakpoints";
 import { useTokens } from "../lib/theme-store";
 
@@ -7,7 +7,7 @@ interface AdaptiveSheetProps {
   onClose: () => void;
   children: React.ReactNode;
   maxWidth?: number;
-  maxHeight?: string | number;
+  maxHeight?: DimensionValue;
 }
 
 export function AdaptiveSheet({
@@ -41,7 +41,7 @@ export function AdaptiveSheet({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.overlayMobile} onPress={onClose}>
         <View
-          style={[styles.sheet, { backgroundColor: tk.card, height: maxHeight }]}
+          style={[styles.sheet, { backgroundColor: tk.card, maxHeight }]}
           onStartShouldSetResponder={() => true}
         >
           <View style={[styles.handle, { backgroundColor: tk.textMuted }]} />

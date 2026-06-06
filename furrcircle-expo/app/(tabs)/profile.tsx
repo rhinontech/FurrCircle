@@ -207,6 +207,15 @@ export default function ProfileScreen() {
           );
         })()}
 
+
+        {/* Log care */}
+        <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Log care</Text>
+        <View style={styles.tilesRowThree}>
+          <TileThree onPress={() => setPetPickerTarget("vaccine")} icon={Syringe} label="Log Vaccine" tintColor="rgba(76,175,80,0.15)" tk={tk} />
+          <TileThree onPress={() => setPetPickerTarget("vitals")} icon={Activity} label="Log Vitals" tintColor="rgba(255,107,107,0.15)" tk={tk} />
+          <TileThree onPress={() => setPetPickerTarget("meds")} icon={Pill} label="Log Meds" tintColor="rgba(255,111,207,0.15)" tk={tk} />
+        </View>
+
         {/* Quick access */}
         <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Quick access</Text>
         <View style={styles.tilesGrid}>
@@ -216,14 +225,7 @@ export default function ProfileScreen() {
           <Tile onPress={() => router.push("/care")} icon={Stethoscope} label="Care" tintColor="rgba(37,99,235,0.1)" tk={tk} />
         </View>
 
-        {/* Log care */}
-        <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Log care</Text>
-        <View style={styles.tilesGrid}>
-          <Tile onPress={() => setPetPickerTarget("vaccine")} icon={Syringe} label="Log Vaccine" tintColor="rgba(76,175,80,0.15)" tk={tk} />
-          <Tile onPress={() => setPetPickerTarget("vitals")} icon={Activity} label="Log Vitals" tintColor="rgba(255,107,107,0.15)" tk={tk} />
-          <Tile onPress={() => setPetPickerTarget("meds")} icon={Pill} label="Log Meds" tintColor="rgba(255,111,207,0.15)" tk={tk} />
-          <View style={{ width: "48%" }} />
-        </View>
+
 
         {/* Activity */}
         <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Activity</Text>
@@ -322,6 +324,17 @@ function Tile({ onPress, icon: Icon, label, tintColor, tk }: any) {
         <Icon size={20} color={tk.text} strokeWidth={2} />
       </View>
       <Text style={[styles.tileLabel, { color: tk.text }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function TileThree({ onPress, icon: Icon, label, tintColor, tk }: any) {
+  return (
+    <TouchableOpacity onPress={onPress} style={[styles.tileThree, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+      <View style={[styles.tileIconBgCenter, { backgroundColor: tintColor }]}>
+        <Icon size={18} color={tk.text} strokeWidth={2} />
+      </View>
+      <Text style={[styles.tileLabelCenter, { color: tk.text }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -443,4 +456,8 @@ const styles = StyleSheet.create({
   petRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1 },
   petNameText: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },
   petBreedText: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
+  tilesRowThree: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 20, gap: 8 },
+  tileThree: { flex: 1, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 6, alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
+  tileIconBgCenter: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  tileLabelCenter: { fontFamily: "Poppins_700Bold", fontSize: 11, textAlign: "center" },
 });

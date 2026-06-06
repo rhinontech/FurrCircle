@@ -251,21 +251,54 @@ export default function FeedScreen() {
     }
   };
 
-  const handleAddStory = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Required", "Please allow gallery access to share stories.");
-      return;
+  const handleAddStory = () => {
+    Alert.alert(
+      "Add Story",
+      "Choose a media source for your story",
+      [
+        {
+          text: "Open Camera",
+          onPress: () => handleAddStorySource("camera"),
+        },
+        {
+          text: "Choose from Gallery",
+          onPress: () => handleAddStorySource("gallery"),
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ]
+    );
+  };
+
+  const handleAddStorySource = async (source: "camera" | "gallery") => {
+    if (source === "gallery") {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "Please allow gallery access to share stories.");
+        return;
+      }
+    } else {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "Please allow camera access to capture stories.");
+        return;
+      }
     }
 
     try {
       setCompressing(true);
-      const result = await ImagePicker.launchImageLibraryAsync({
+      const options = {
         mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsEditing: false,
         quality: 0.8,
         videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
-      });
+      };
+
+      const result = source === "gallery"
+        ? await ImagePicker.launchImageLibraryAsync(options)
+        : await ImagePicker.launchCameraAsync(options);
 
       setCompressing(false);
 
@@ -876,9 +909,8 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
             <Avatar name={displayName} size={44} />
           )}
           <View style={styles.cardMeta}>
-            <Text style={[styles.petName, { color: tk.text }]}>{displayName}</Text>
-            <Text style={[styles.petOwner, { color: tk.textMuted }]}>
-              {post.owner ? `by ${post.owner}` : `@${author.username || "parent"}`} · {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : post.time || "now"}
+            <Text style={[styles.petName, { color: tk.text }]}>
+              {author.username || "parent"}
             </Text>
           </View>
         </TouchableOpacity>
@@ -1431,7 +1463,7 @@ const styles = StyleSheet.create({
   card: { borderRadius: 24, alignSelf: "stretch", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
   cardHeader: { flexDirection: "row", alignItems: "center", padding: 16, paddingBottom: 0, gap: 10 },
   cardMeta: { flex: 1 },
-  petName: { fontFamily: "Poppins_700Bold", fontSize: 14, lineHeight: 20 },
+  petName: { fontFamily: "Poppins_700Bold", fontSize: 15, lineHeight: 20 },
   petOwner: { fontSize: 11, fontFamily: "Inter_400Regular" },
   typeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   typeBadgeText: { fontFamily: "Poppins_700Bold", fontSize: 10, color: "#fff" },

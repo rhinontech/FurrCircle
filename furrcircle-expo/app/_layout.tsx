@@ -331,6 +331,7 @@ export default function RootLayout() {
       <Stack.Screen name="settings" options={{ presentation: "card" }} />
       <Stack.Screen name="today" options={{ presentation: "card" }} />
       <Stack.Screen name="events" options={{ presentation: "card" }} />
+      <Stack.Screen name="event/[id]" options={{ presentation: "card" }} />
       <Stack.Screen name="lost" options={{ presentation: "card" }} />
       <Stack.Screen name="memory" options={{ presentation: "card" }} />
       <Stack.Screen name="book" options={{ presentation: "card" }} />

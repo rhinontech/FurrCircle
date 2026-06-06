@@ -7,9 +7,10 @@ import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
-import { MapPin, Users, Calendar, Clock, X, CalendarDays } from "lucide-react-native";
+import { MapPin, Users, Calendar, Clock, CalendarDays } from "lucide-react-native";
 import { eventApi } from "../services/community/eventApi";
-import { useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
 
 const filters = ["All", "Adoption", "Playdate", "Training", "Meetup"] as const;
@@ -50,32 +51,19 @@ const parseEventDate = (dateStr?: string) => {
 
 export default function EventsScreen() {
   const tk = useTokens();
+  const router = useRouter();
   const { eventId } = useLocalSearchParams<{ eventId?: string }>();
 
   const [active, setActive] = useState<string>("All");
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [bookingInProgress, setBookingInProgress] = useState(false);
 
   useEffect(() => {
     if (eventId) {
-      const loadSpecificEvent = async () => {
-        try {
-          const detail = await eventApi.getEventById(eventId);
-          if (detail) {
-            setSelectedEvent(detail);
-          }
-        } catch (err) {
-          console.error("Failed to load specific event from notification:", err);
-          // Fallback to searching in events list
-          const found = events.find(e => String(e.id) === String(eventId));
-          if (found) setSelectedEvent(found);
-        }
-      };
-      loadSpecificEvent();
+      router.replace(`/event/${eventId}` as any);
     }
-  }, [eventId, events.length]);
+  }, [eventId]);
 
   const fetchEvents = async () => {
     try {
@@ -99,9 +87,6 @@ export default function EventsScreen() {
       setEvents((prev) => prev.map((e) =>
         e.id === id ? { ...e, isBooked: true, attendeeCount: (e.attendeeCount || 0) + 1 } : e
       ));
-      if (selectedEvent?.id === id) {
-        setSelectedEvent((prev: any) => ({ ...prev, isBooked: true, attendeeCount: (prev.attendeeCount || 0) + 1 }));
-      }
     } catch (err: any) {
       Alert.alert("Booking Failed", err?.response?.data?.message || "Something went wrong.");
     } finally {
@@ -164,13 +149,13 @@ export default function EventsScreen() {
               return (
                 <Pressable
                   key={e.id}
-                  onPress={() => setSelectedEvent(e)}
+                  onPress={() => router.push(`/event/${e.id}` as any)}
                   style={({ pressed }) => [styles.card, { backgroundColor: tint.bg, shadowColor: tk.text, opacity: pressed ? 0.88 : 1 }]}
                 >
                   {/* Content row */}
                   <View style={styles.cardRow}>
                     {/* Date box */}
-                    <View style={styles.dateBox}>
+                    <View style={[styles.dateBox, { backgroundColor: tk.card }]}>
                       <Text style={[styles.dateDay, { color: tk.text }]}>{day}</Text>
                       <Text style={[styles.dateMonth, { color: tint.badge }]}>{month}</Text>
                     </View>
@@ -239,99 +224,7 @@ export default function EventsScreen() {
           )}
         </ScrollView>
 
-        {/* Event Detail Modal */}
-        <AdaptiveSheet visible={!!selectedEvent} onClose={() => setSelectedEvent(null)} maxWidth={560} maxHeight="92%">
-            <View style={{ flex: 1 }}>
-              <ScrollView
-                style={{ flex: 1 }}
-                contentContainerStyle={styles.modalBody}
-                showsVerticalScrollIndicator={false}
-                bounces={true}
-              >
-                {/* Image with close button overlaid */}
-                <View style={{ position: "relative" }}>
-                  {selectedEvent?.imageUrl ? (
-                    <Image source={{ uri: selectedEvent.imageUrl }} style={styles.modalImage} resizeMode="cover" />
-                  ) : (
-                    <View style={[styles.modalImagePlaceholder, { backgroundColor: getTint(selectedEvent?.category).bg }]}>
-                      <CalendarDays size={56} color={getTint(selectedEvent?.category).badge} style={{ opacity: 0.5 }} />
-                    </View>
-                  )}
-                  <TouchableOpacity
-                    onPress={() => setSelectedEvent(null)}
-                    style={[styles.modalCloseBtn, { backgroundColor: "rgba(0,0,0,0.4)" }]}
-                  >
-                    <X size={18} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-                {/* Content below image */}
-                <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
-                {/* Category + booked */}
-                <View style={styles.modalBadgeRow}>
-                  <View style={[styles.typeBadge, { backgroundColor: getTint(selectedEvent?.category).badge + "20" }]}>
-                    <Text style={[styles.typeBadgeText, { color: getTint(selectedEvent?.category).text }]}>
-                      {(selectedEvent?.category || "General").toUpperCase()}
-                    </Text>
-                  </View>
-                  {selectedEvent?.isBooked && (
-                    <View style={[styles.typeBadge, { backgroundColor: colors.success + "20" }]}>
-                      <Text style={[styles.typeBadgeText, { color: colors.success }]}>✓ GOING</Text>
-                    </View>
-                  )}
-                </View>
-
-                <Text style={[styles.modalTitle, { color: tk.text }]}>{selectedEvent?.title}</Text>
-
-                {/* Info grid */}
-                <View style={[styles.infoGrid, { borderColor: tk.border }]}>
-                  {[
-                    { icon: <Calendar size={15} color={colors.primary} />, label: "Date", value: selectedEvent?.date },
-                    { icon: <Clock size={15} color={colors.primary} />, label: "Time", value: selectedEvent?.time || "TBA" },
-                    { icon: <MapPin size={15} color={colors.primary} />, label: "Location", value: selectedEvent?.location || selectedEvent?.venue || "TBA" },
-                    { icon: <Users size={15} color={colors.primary} />, label: "Attending", value: `${selectedEvent?.attendeeCount || 0} people going` },
-                  ].map(({ icon, label, value }, i) => (
-                    <View
-                      key={i}
-                      style={[styles.infoRow, { borderBottomColor: tk.border, borderBottomWidth: i < 3 ? 1 : 0 }]}
-                    >
-                      <View style={[styles.infoIconWrap, { backgroundColor: colors.primary + "12" }]}>{icon}</View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.infoLabel, { color: tk.textMuted }]}>{label}</Text>
-                        <Text style={[styles.infoValue, { color: tk.text }]}>{value}</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-
-                {selectedEvent?.description ? (
-                  <View style={styles.descSection}>
-                    <Text style={[styles.sectionLabel, { color: tk.textMuted }]}>About</Text>
-                    <Text style={[styles.descText, { color: tk.text }]}>{selectedEvent.description}</Text>
-                  </View>
-                ) : null}
-
-                <TouchableOpacity
-                  disabled={selectedEvent?.isBooked || bookingInProgress}
-                  onPress={() => handleBookEvent(selectedEvent.id)}
-                  style={[
-                    styles.detailRsvpBtn,
-                    { backgroundColor: selectedEvent?.isBooked ? tk.inputBg : tk.text },
-                    bookingInProgress && { opacity: 0.7 },
-                  ]}
-                  activeOpacity={0.85}
-                >
-                  {bookingInProgress ? (
-                    <ActivityIndicator size="small" color={tk.bg} />
-                  ) : (
-                    <Text style={[styles.detailRsvpBtnText, { color: selectedEvent?.isBooked ? tk.textMuted : tk.bg }]}>
-                      {selectedEvent?.isBooked ? "You're Going! 🎉" : "Book / RSVP"}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                </View>{/* end content padding wrapper */}
-              </ScrollView>
-            </View>
-        </AdaptiveSheet>
+        {/* Event Detail is now handled on a separate page */}
       </View>
     </PageContainer>
   );
@@ -364,7 +257,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 80,
     borderRadius: 18,
-    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
