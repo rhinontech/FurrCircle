@@ -836,6 +836,16 @@ export default function ChatScreen() {
     );
   }
 
+  const displayConversations = useMemo(() => {
+    return conversations
+      .filter((c) => c.lastMessage)
+      .sort((a, b) => {
+        const dateA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+        const dateB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+  }, [conversations]);
+
   // --- Render List View ---
   return (
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
@@ -855,7 +865,7 @@ export default function ChatScreen() {
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
-      ) : conversations.length === 0 ? (
+      ) : displayConversations.length === 0 ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 40 }}>
           <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: tk.card, justifyContent: "center", alignItems: "center", marginBottom: 16 }}>
             <MessageCircle size={40} color={tk.textMuted} />
@@ -873,7 +883,7 @@ export default function ChatScreen() {
         </View>
       ) : (
         <FlatList
-          data={conversations}
+          data={displayConversations}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 80 }}
           renderItem={({ item: c }) => {

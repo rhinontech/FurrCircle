@@ -53,22 +53,6 @@ export const getQuestions = async (req: any, res: Response): Promise<void> => {
     }
 };
 
-// ─── GET /api/questions/:id ───────────────────────────────────────────────────
-export const getQuestionById = async (req: any, res: Response): Promise<void> => {
-    try {
-        const { questions: Question, question_answers: QuestionAnswer } = db as any;
-        const q = await Question.findByPk(req.params.id, {
-            include: [{ model: QuestionAnswer, as: "answers", attributes: ["id"] }],
-        });
-        if (!q) { res.status(404).json({ message: "Question not found" }); return; }
-        const payload = toPlain(q);
-        const author = await resolveUser(payload.userId);
-        res.json({ ...payload, answerCount: (payload.answers || []).length, author });
-    } catch (err: any) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
 // ─── POST /api/questions ──────────────────────────────────────────────────────
 export const createQuestion = async (req: any, res: Response): Promise<void> => {
     try {
