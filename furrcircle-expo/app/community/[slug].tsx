@@ -1,8 +1,9 @@
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
-import { Users, Plus, ThumbsUp, MessageCircle, ChevronRight } from "lucide-react-native";
+import { Users, Plus, ThumbsUp, MessageCircle, ChevronRight, Share2 } from "lucide-react-native";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { PageContainer } from "../../src/components/PageContainer";
+import { ShareSheet } from "../../src/components/ShareSheet";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
@@ -29,6 +30,7 @@ export default function CommunityDetail() {
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -110,7 +112,14 @@ export default function CommunityDetail() {
   return (
     <PageContainer>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title={circle.name} />
+        <ScreenHeader
+          title={circle.name}
+          right={
+            <TouchableOpacity onPress={() => setShareOpen(true)} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}>
+              <Share2 size={20} color={tk.text} />
+            </TouchableOpacity>
+          }
+        />
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
           {/* Cover */}
           <View style={[styles.cover, { backgroundColor: coverBg }]}>
@@ -217,6 +226,12 @@ export default function CommunityDetail() {
 
         </ScrollView>
       </View>
+      {/* Share Sheet */}
+      <ShareSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        circleId={slug}
+      />
     </PageContainer>
   );
 }

@@ -7,6 +7,7 @@ import { useLocalSearchParams, useFocusEffect } from "expo-router";
 import { ArrowUp, MessageCircle, Share2, ShieldAlert, Trash2 } from "lucide-react-native";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { PageContainer } from "../../src/components/PageContainer";
+import { ShareSheet } from "../../src/components/ShareSheet";
 import { Avatar } from "../../src/components/Avatar";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
@@ -26,6 +27,7 @@ export default function ThreadDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [upvoted, setUpvoted] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const dummy = dummyThreads.find(t => t.id === id);
 
@@ -165,7 +167,7 @@ export default function ThreadDetail() {
                   <MessageCircle size={16} color={tk.textMuted} />
                   <Text style={[styles.actionText, { color: tk.textMuted }]}>{answers.length}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.shareBtn}>
+                <TouchableOpacity onPress={() => setShareOpen(true)} style={styles.shareBtn}>
                   <Share2 size={20} color={tk.text} />
                 </TouchableOpacity>
                 {isOwner && (
@@ -234,6 +236,12 @@ export default function ThreadDetail() {
           </View>
         </View>
       </KeyboardAvoidingView>
+      {/* Share Sheet */}
+      <ShareSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        threadId={id}
+      />
     </PageContainer>
   );
 }

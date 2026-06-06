@@ -36,19 +36,54 @@ export default function ComposeScreen() {
   const [tags, setTags] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const pickPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission required", "Please allow gallery access.");
-      return;
+  const pickPhoto = () => {
+    Alert.alert(
+      "Add Photo or Video",
+      "Choose a media source for your post",
+      [
+        {
+          text: "Open Camera",
+          onPress: () => handlePickPhotoSource("camera"),
+        },
+        {
+          text: "Choose from Gallery",
+          onPress: () => handlePickPhotoSource("gallery"),
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ]
+    );
+  };
+
+  const handlePickPhotoSource = async (source: "camera" | "gallery") => {
+    if (source === "gallery") {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission required", "Please allow gallery access.");
+        return;
+      }
+    } else {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission required", "Please allow camera access.");
+        return;
+      }
     }
+
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
+      const options = {
         mediaTypes: ImagePicker.MediaTypeOptions.All,
         allowsEditing: true,
         quality: 0.8,
         videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
-      });
+      };
+
+      const result = source === "gallery"
+        ? await ImagePicker.launchImageLibraryAsync(options)
+        : await ImagePicker.launchCameraAsync(options);
+
       if (!result.canceled && result.assets?.[0]) {
         const asset = result.assets[0];
         const isVideo = asset.type === 'video' || asset.mimeType?.startsWith('video/');

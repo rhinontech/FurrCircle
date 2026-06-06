@@ -62,8 +62,12 @@ const handleNotificationRedirect = (remoteMessage: any, router: any) => {
     const userId = actionPayload.userId || relatedId;
     if (userId) router.push(`/u/${userId}`);
   } else if (actionType === 'event_detail') {
-    // Currently event details might just be rendered inside events screen, we can route there
-    router.push('/events');
+    const eventId = actionPayload.eventId || relatedId;
+    if (eventId) {
+      router.push(`/event/${eventId}` as any);
+    } else {
+      router.push('/events');
+    }
   } else {
     // Default fallback
     router.push('/notifications');
@@ -301,6 +305,7 @@ export default function RootLayout() {
       <Stack.Screen name="settings" options={{ presentation: "card" }} />
       <Stack.Screen name="today" options={{ presentation: "card" }} />
       <Stack.Screen name="events" options={{ presentation: "card" }} />
+      <Stack.Screen name="event/[id]" options={{ presentation: "card" }} />
       <Stack.Screen name="lost" options={{ presentation: "card" }} />
       <Stack.Screen name="memory" options={{ presentation: "card" }} />
       <Stack.Screen name="book" options={{ presentation: "card" }} />

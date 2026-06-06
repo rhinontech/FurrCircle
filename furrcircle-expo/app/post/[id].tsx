@@ -251,11 +251,10 @@ export default function PostDetail() {
             )}
             <View style={{ flex: 1 }}>
               <TouchableOpacity onPress={() => author.username && router.push(isDummy ? `/user/${author.username}` : `/u/${author.username}`)}>
-                <Text style={[styles.authorName, { color: tk.text }]}>{displayName}</Text>
+                <Text style={[styles.authorName, { color: tk.text }]}>
+                  {author.username || "parent"}
+                </Text>
               </TouchableOpacity>
-              <Text style={[styles.postMeta, { color: tk.textMuted }]}>
-                {post.owner ? `by ${post.owner}` : post.category ? `${post.category} · ` : ''}{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : post.time || ''}
-              </Text>
             </View>
           </View>
 

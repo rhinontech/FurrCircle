@@ -1,19 +1,23 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
-  FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, Pressable, Alert, Keyboard
+  FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, Pressable, Alert, Keyboard, Image
 } from "react-native";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { Avatar } from "../src/components/Avatar";
 import { colors } from "../src/lib/theme";
-import { useTokens } from "../src/lib/theme-store";
-import { Send, Plus, Search, MessageCircle, Check, CheckCheck } from "lucide-react-native";
+import { Send, Plus, Search, MessageCircle, Check, CheckCheck, ChevronRight, Users } from "lucide-react-native";
 import { useAuthStore } from "../src/lib/auth-store";
 import { chatApi } from "../services/chat/chatApi";
 import { userApi } from "../services/user/userApi";
+import { circleApi } from "../services/community/circleApi";
+import { questionApi } from "../services/community/questionApi";
 import { socketService } from "../services/socket/socketService";
 import { useNotificationStore } from "../src/lib/notification-store";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { feedApi } from "../services/community/feedApi";
+import { Video, ResizeMode } from "expo-av";
+import { useTokens } from "@/lib/theme-store";
 
 // --- Helpers ---
 const formatTime = (dateStr: string) => {
@@ -51,6 +55,401 @@ const getDateGroup = (dateStr: string) => {
 
   return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 };
+
+// --- Shared Post Card for Chat Messages ---
+function SharedPostCard({ postId, isMe, tk, router }: { postId: string; isMe: boolean; tk: any; router: any }) {
+  const [post, setPost] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const fetchPost = async () => {
+      try {
+        const data = await feedApi.getPostById(postId);
+        if (active) {
+          setPost(data);
+        }
+      } catch (err) {
+        console.error("Failed to load shared post details", err);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+    fetchPost();
+    return () => { active = false; };
+  }, [postId]);
+
+  if (loading) {
+    return (
+      <View style={[styles.sharedCardPlaceholder, { backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.border }]}>
+        <ActivityIndicator size="small" color={isMe ? "#fff" : colors.primary} />
+      </View>
+    );
+  }
+
+  if (!post) {
+    return (
+      <TouchableOpacity
+        onPress={() => router.push(`/post/${postId}`)}
+        style={[styles.sharedCardFallback, { backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border }]}
+        activeOpacity={0.7}
+      >
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Post</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  const author = post.author || {};
+  const displayName = author.name || "parent";
+  const avatarSource = author.avatarUrl || author.avatar_url ? { uri: author.avatarUrl || author.avatar_url } : null;
+
+  const TINT: Record<string, string> = {
+    dogs: "#FF6B6B22", cats: "#FF6FCF22", rescue: "#4CAF5022",
+    health: "#2563EB18", training: "#FFD93D44", milestone: "#FF6FCF22",
+    photo: "#FF6B6B22", reel: "#2563EB18", general: "#FFD93D22",
+  };
+  const tintColor = post.tintColor || TINT[(post.category || "").toLowerCase()] || "#FF6B6B22";
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push(`/post/${postId}`)}
+      activeOpacity={0.9}
+      style={[
+        styles.sharedCardContainer,
+        { 
+          backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.bg, 
+          borderColor: isMe ? "rgba(255,255,255,0.2)" : tk.border 
+        }
+      ]}
+    >
+      {/* Header */}
+      <View style={styles.sharedCardHeader}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+          {avatarSource?.uri ? (
+            <Image source={{ uri: avatarSource.uri }} style={{ width: 32, height: 32, borderRadius: 16 }} />
+          ) : (
+            <Avatar name={displayName} size={32} />
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.sharedCardPetName, { color: isMe ? "#fff" : tk.text }]} numberOfLines={1}>
+              {author.username || "parent"}
+            </Text>
+          </View>
+        </View>
+
+        {/* Type badges */}
+        {post.type === "rescue" && <View style={[styles.sharedCardTypeBadge, { backgroundColor: colors.success }]}><Text style={styles.sharedCardTypeBadgeText}>RESCUE</Text></View>}
+        {post.type === "milestone" && <View style={[styles.sharedCardTypeBadge, { backgroundColor: colors.pinky }]}><Text style={styles.sharedCardTypeBadgeText}>MILESTONE</Text></View>}
+        {!post.type && post.category === "Adoption" && <View style={[styles.sharedCardTypeBadge, { backgroundColor: colors.success }]}><Text style={styles.sharedCardTypeBadgeText}>ADOPTION</Text></View>}
+        {!post.type && post.category === "Lost & Found" && <View style={[styles.sharedCardTypeBadge, { backgroundColor: colors.coral }]}><Text style={styles.sharedCardTypeBadgeText}>LOST & FOUND</Text></View>}
+        {!post.type && post.category === "Training" && <View style={[styles.sharedCardTypeBadge, { backgroundColor: colors.primary }]}><Text style={styles.sharedCardTypeBadgeText}>TRAINING</Text></View>}
+        {!post.type && post.category === "Health" && <View style={[styles.sharedCardTypeBadge, { backgroundColor: "#2563EB" }]}><Text style={styles.sharedCardTypeBadgeText}>HEALTH</Text></View>}
+      </View>
+
+      {/* Image or Video */}
+      {(post.image || post.imageUrl) ? (
+        <View style={[styles.sharedCardImageWrapper, { backgroundColor: tintColor }]}>
+          {post.image ? (
+            <Image source={post.image} style={styles.sharedCardPostImage} resizeMode="contain" />
+          ) : post.imageUrl ? (
+            post.imageUrl.match(/\.(mp4|mov|quicktime|3gp|mpeg|avi|wmv|flv|mkv|webm)(\?|$)/i) ? (
+              <Video
+                source={{ uri: post.imageUrl }}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode={ResizeMode.COVER}
+                isMuted={true}
+                shouldPlay={true}
+                isLooping
+              />
+            ) : (
+              <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+            )
+          ) : null}
+        </View>
+      ) : (
+        <View style={{ paddingHorizontal: 10, paddingVertical: 8 }}>
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: isMe ? "#fff" : tk.text }} numberOfLines={3}>
+            {post.content}
+          </Text>
+        </View>
+      )}
+
+
+
+      {/* Tags */}
+      {post.tags && post.tags.length > 0 ? (
+        <Text style={styles.sharedCardTags} numberOfLines={1}>{post.tags.map((t: string) => `#${t}`).join("  ")}</Text>
+      ) : post.category ? (
+        <Text style={styles.sharedCardTags} numberOfLines={1}>#{post.category}</Text>
+      ) : null}
+    </TouchableOpacity>
+  );
+}
+
+// --- Shared Profile Card for Chat Messages ---
+function SharedProfileCard({ username, isMe, tk, router }: { username: string; isMe: boolean; tk: any; router: any }) {
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const fetchProfile = async () => {
+      try {
+        const data = await userApi.getUserProfile(username);
+        if (active) {
+          setProfile(data);
+        }
+      } catch (err) {
+        console.error("Failed to load shared profile details", err);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+    fetchProfile();
+    return () => { active = false; };
+  }, [username]);
+
+  if (loading) {
+    return (
+      <View style={[styles.sharedCardPlaceholder, { backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.border }]}>
+        <ActivityIndicator size="small" color={isMe ? "#fff" : colors.primary} />
+      </View>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <TouchableOpacity
+        onPress={() => router.push(`/u/${username}`)}
+        style={[styles.sharedCardFallback, { backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border }]}
+        activeOpacity={0.7}
+      >
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Profile</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  const displayName = profile.name || "parent";
+  const avatarSource = profile.avatar_url || profile.avatarUrl ? { uri: profile.avatar_url || profile.avatarUrl } : null;
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push(`/u/${username}`)}
+      activeOpacity={0.9}
+      style={[
+        styles.sharedProfileCardContainer,
+        { 
+          backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.bg, 
+        }
+      ]}
+    >
+      <View style={styles.sharedProfileCardContent}>
+        {avatarSource?.uri ? (
+          <Image source={{ uri: avatarSource.uri }} style={styles.sharedProfileAvatar} />
+        ) : (
+          <Avatar name={displayName} size={50} />
+        )}
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.sharedProfileName, { color: isMe ? "#fff" : tk.text }]} numberOfLines={1}>
+            {displayName}
+          </Text>
+          <Text style={[styles.sharedProfileUsername, { color: isMe ? "rgba(255,255,255,0.7)" : tk.textMuted }]} numberOfLines={1}>
+            {profile.username || username}
+          </Text>
+        </View>
+      </View>
+      
+      <View style={[styles.sharedProfileDivider, { backgroundColor: isMe ? "rgba(255,255,255,0.15)" : tk.border }]} />
+      
+      <View style={styles.sharedProfileFooter}>
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: colors.primary, fontSize: 12 }}>View Profile</Text>
+        <ChevronRight size={16} color={colors.primary} />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// --- Shared Circle Card for Chat Messages ---
+function SharedCircleCard({ circleId, isMe, tk, router }: { circleId: string; isMe: boolean; tk: any; router: any }) {
+  const [circle, setCircle] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const fetchCircle = async () => {
+      try {
+        const data = await circleApi.getCircleById(circleId);
+        if (active) {
+          setCircle(data);
+        }
+      } catch (err) {
+        console.error("Failed to load shared circle details", err);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+    fetchCircle();
+    return () => { active = false; };
+  }, [circleId]);
+
+  if (loading) {
+    return (
+      <View style={[styles.sharedCardPlaceholder, { backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.border }]}>
+        <ActivityIndicator size="small" color={isMe ? "#fff" : colors.primary} />
+      </View>
+    );
+  }
+
+  if (!circle) {
+    return (
+      <TouchableOpacity
+        onPress={() => router.push(`/community/${circleId}`)}
+        style={[styles.sharedCardFallback, { backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border }]}
+        activeOpacity={0.7}
+      >
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Circle</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push(`/community/${circleId}`)}
+      activeOpacity={0.9}
+      style={[
+        styles.sharedCircleCardContainer,
+        { 
+          backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.bg, 
+        }
+      ]}
+    >
+      <View style={styles.sharedCircleCardContent}>
+        {circle.coverImage ? (
+          <Image source={{ uri: circle.coverImage }} style={styles.sharedCircleAvatar} />
+        ) : (
+          <View style={[styles.sharedCircleAvatar, { backgroundColor: colors.primary + "20", alignItems: "center", justifyContent: "center" }]}>
+            <Users size={24} color={colors.primary} />
+          </View>
+        )}
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.sharedCircleName, { color: isMe ? "#fff" : tk.text }]} numberOfLines={1}>
+            {circle.name}
+          </Text>
+          <Text style={[styles.sharedCircleMembers, { color: isMe ? "rgba(255,255,255,0.7)" : tk.textMuted }]} numberOfLines={1}>
+            {circle.memberCount || 0} members · {circle.category || "General"}
+          </Text>
+        </View>
+      </View>
+      
+      <View style={[styles.sharedCircleDivider, { backgroundColor: isMe ? "rgba(255,255,255,0.15)" : tk.border }]} />
+      
+      <View style={styles.sharedCircleFooter}>
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: colors.primary, fontSize: 12 }}>View Circle</Text>
+        <ChevronRight size={16} color={colors.primary} />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// --- Shared Thread Card for Chat Messages ---
+function SharedThreadCard({ threadId, isMe, tk, router }: { threadId: string; isMe: boolean; tk: any; router: any }) {
+  const [thread, setThread] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const fetchThread = async () => {
+      try {
+        const data = await questionApi.getQuestionById(threadId);
+        if (active) {
+          setThread(data);
+        }
+      } catch (err) {
+        console.error("Failed to load shared thread details", err);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+    fetchThread();
+    return () => { active = false; };
+  }, [threadId]);
+
+  if (loading) {
+    return (
+      <View style={[styles.sharedCardPlaceholder, { backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.border }]}>
+        <ActivityIndicator size="small" color={isMe ? "#fff" : colors.primary} />
+      </View>
+    );
+  }
+
+  if (!thread) {
+    return (
+      <TouchableOpacity
+        onPress={() => router.push(`/thread/${threadId}`)}
+        style={[styles.sharedCardFallback, { backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border }]}
+        activeOpacity={0.7}
+      >
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Discussion</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  const askerName = thread.author?.name || "Someone";
+  const formattedTime = thread.createdAt ? new Date(thread.createdAt).toLocaleDateString() : "";
+
+  const handlePress = () => {
+    router.push({
+      pathname: `/thread/${threadId}`,
+      params: {
+        id: thread.id,
+        title: thread.title,
+        body: thread.body || "",
+        tags: thread.tags?.[0] || "",
+        askerName: askerName,
+        time: formattedTime,
+        upvotes: thread.upvotes || 0,
+        questionUserId: thread.userId || thread.author?.id || "",
+      }
+    });
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      activeOpacity={0.9}
+      style={[
+        styles.sharedThreadCardContainer,
+        { 
+          backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.bg, 
+        }
+      ]}
+    >
+      <View style={styles.sharedThreadCardContent}>
+        <Text style={[styles.sharedThreadTitle, { color: isMe ? "#fff" : tk.text }]} numberOfLines={2}>
+          {thread.title}
+        </Text>
+        <Text style={[styles.sharedThreadAsker, { color: isMe ? "rgba(255,255,255,0.7)" : tk.textMuted }]} numberOfLines={1}>
+          Asked by <Text style={{ fontFamily: "Poppins_700Bold", color: isMe ? "#fff" : tk.text }}>{askerName}</Text>
+        </Text>
+      </View>
+      
+      <View style={[styles.sharedThreadDivider, { backgroundColor: isMe ? "rgba(255,255,255,0.15)" : tk.border }]} />
+      
+      <View style={styles.sharedThreadFooter}>
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: colors.primary, fontSize: 12 }}>View Discussion</Text>
+        <ChevronRight size={16} color={colors.primary} />
+      </View>
+    </TouchableOpacity>
+  );
+}
 
 // --- Main Component ---
 export default function ChatScreen() {
@@ -221,18 +620,63 @@ export default function ChatScreen() {
     const match = text.match(/furrcircle:\/\/post\/([A-Za-z0-9-]+)/);
     if (match) {
       const postId = match[1];
-      const prefixText = text.replace(match[0], "").trim();
+      let prefixText = text.replace(match[0], "").trim();
+      if (prefixText === "Check out this post!") {
+        prefixText = "";
+      }
 
       return (
         <View>
           {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
-          <TouchableOpacity
-            onPress={() => router.push(`/post/${postId}`)}
-            style={{ backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border, padding: 12, borderRadius: 12, alignItems: "center" }}
-            activeOpacity={0.7}
-          >
-            <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Post</Text>
-          </TouchableOpacity>
+          <SharedPostCard postId={postId} isMe={isMe} tk={tk} router={router} />
+        </View>
+      );
+    }
+
+    const profileMatch = text.match(/furrcircle:\/\/profile\/([A-Za-z0-9_-]+)/);
+    if (profileMatch) {
+      const username = profileMatch[1];
+      let prefixText = text.replace(profileMatch[0], "").trim();
+      if (prefixText === "Check out this profile!") {
+        prefixText = "";
+      }
+
+      return (
+        <View>
+          {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
+          <SharedProfileCard username={username} isMe={isMe} tk={tk} router={router} />
+        </View>
+      );
+    }
+
+    const circleMatch = text.match(/furrcircle:\/\/circle\/([A-Za-z0-9_-]+)/);
+    if (circleMatch) {
+      const circleId = circleMatch[1];
+      let prefixText = text.replace(circleMatch[0], "").trim();
+      if (prefixText === "Check out this circle!") {
+        prefixText = "";
+      }
+
+      return (
+        <View>
+          {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
+          <SharedCircleCard circleId={circleId} isMe={isMe} tk={tk} router={router} />
+        </View>
+      );
+    }
+
+    const threadMatch = text.match(/furrcircle:\/\/thread\/([A-Za-z0-9_-]+)/);
+    if (threadMatch) {
+      const threadId = threadMatch[1];
+      let prefixText = text.replace(threadMatch[0], "").trim();
+      if (prefixText === "Check out this discussion!") {
+        prefixText = "";
+      }
+
+      return (
+        <View>
+          {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
+          <SharedThreadCard threadId={threadId} isMe={isMe} tk={tk} router={router} />
         </View>
       );
     }
@@ -317,6 +761,11 @@ export default function ChatScreen() {
               }
 
               const isMe = item.sender?.id === user?.id;
+              const isPostShare = item.text && item.text.includes("furrcircle://post/");
+              const isProfileShare = item.text && item.text.includes("furrcircle://profile/");
+              const isCircleShare = item.text && item.text.includes("furrcircle://circle/");
+              const isThreadShare = item.text && item.text.includes("furrcircle://thread/");
+              const isCardShare = isPostShare || isProfileShare || isCircleShare || isThreadShare;
               return (
                 <View style={isMe ? styles.msgRowMe : styles.msgRowOther}>
                   {!isMe && (
@@ -324,20 +773,35 @@ export default function ChatScreen() {
                       <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={28} />
                     </TouchableOpacity>
                   )}
-                  <View style={[
-                    isMe ? styles.bubbleMe : styles.bubbleOther,
-                    !isMe && { backgroundColor: tk.card }
-                  ]}>
+                  <View style={
+                    isCardShare
+                      ? [
+                          isMe ? styles.sharedBubbleMe : styles.sharedBubbleOther,
+                          { backgroundColor: tk.card, borderColor: tk.border, borderWidth: 1 }
+                        ]
+                      : [
+                          isMe ? styles.bubbleMe : styles.bubbleOther,
+                          !isMe && { backgroundColor: tk.card }
+                        ]
+                  }>
                     {renderMessageContent(item.text, isMe, tk, router)}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: isMe ? "flex-end" : "flex-start", gap: 4 }}>
-                      <Text style={[styles.timeText, { color: isMe ? "rgba(255,255,255,0.7)" : tk.textMuted }]}>
+                    <View style={{ 
+                      flexDirection: 'row', 
+                      alignItems: 'center', 
+                      alignSelf: isMe ? "flex-end" : "flex-start", 
+                      gap: 4,
+                      paddingHorizontal: isCardShare ? 12 : 0,
+                      paddingBottom: isCardShare ? 8 : 0,
+                      marginTop: isCardShare ? -4 : 0
+                    }}>
+                      <Text style={[styles.timeText, { color: (isMe && !isCardShare) ? "rgba(255,255,255,0.7)" : tk.textMuted }]}>
                         {formatTime(item.createdAt)}
                       </Text>
                       {isMe && (
                         (item.isRead || item.readAt || item.seen) ? (
                           <CheckCheck size={14} color="#60a5fa" />
                         ) : (
-                          <Check size={14} color="rgba(255,255,255,0.7)" />
+                          <Check size={14} color={(isMe && !isCardShare) ? "rgba(255,255,255,0.7)" : tk.textMuted} />
                         )
                       )}
                     </View>
@@ -525,6 +989,8 @@ const styles = StyleSheet.create({
   msgRowMe: { flexDirection: "row", justifyContent: "flex-end", marginBottom: 4 },
   bubbleOther: { borderRadius: 20, borderBottomLeftRadius: 4, padding: 12, paddingHorizontal: 16, maxWidth: "75%", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 1 },
   bubbleMe: { borderRadius: 20, borderBottomRightRadius: 4, padding: 12, paddingHorizontal: 16, maxWidth: "75%", backgroundColor: colors.primary },
+  sharedBubbleMe: { borderRadius: 20, borderBottomRightRadius: 4, padding: 0, maxWidth: "75%", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 1 },
+  sharedBubbleOther: { borderRadius: 20, borderBottomLeftRadius: 4, padding: 0, maxWidth: "75%", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 1 },
   bubbleText: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
   timeText: { fontSize: 10, fontFamily: "Inter_400Regular", marginTop: 4 },
   inputBar: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1 },
@@ -542,4 +1008,44 @@ const styles = StyleSheet.create({
   searchName: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
   searchHandle: { fontSize: 12, fontFamily: "Inter_400Regular" },
   emptyText: { textAlign: "center", marginTop: 20, fontFamily: "Inter_400Regular" },
+
+  // Shared Post Card styles
+  sharedCardPlaceholder: { width: 220, height: 120, borderRadius: 16, justifyContent: "center", alignItems: "center" },
+  sharedCardFallback: { padding: 12, borderRadius: 12, alignItems: "center", minWidth: 150 },
+  sharedCardContainer: { width: 230, overflow: "hidden" },
+  sharedCardHeader: { flexDirection: "row", alignItems: "center", padding: 8, gap: 8 },
+  sharedCardPetName: { fontFamily: "Poppins_700Bold", fontSize: 12 },
+  sharedCardTypeBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10 },
+  sharedCardTypeBadgeText: { fontFamily: "Poppins_700Bold", fontSize: 8, color: "#fff" },
+  sharedCardImageWrapper: { width: "100%", height: 140, justifyContent: "center", alignItems: "center", overflow: "hidden" },
+  sharedCardPostImage: { width: "100%", height: "100%" },
+  sharedCardCaption: { fontFamily: "Inter_400Regular", fontSize: 11, lineHeight: 15, paddingHorizontal: 8, paddingTop: 6 },
+  sharedCardCaptionBold: { fontFamily: "Poppins_700Bold" },
+  sharedCardTags: { fontSize: 10, color: colors.primary, fontFamily: "Poppins_600SemiBold", paddingHorizontal: 8, paddingBottom: 8, marginTop: 4 },
+
+  // Shared Profile Card styles
+  sharedProfileCardContainer: { width: 230, overflow: "hidden" },
+  sharedProfileCardContent: { flexDirection: "row", alignItems: "center", padding: 12, gap: 12 },
+  sharedProfileAvatar: { width: 50, height: 50, borderRadius: 25 },
+  sharedProfileName: { fontFamily: "Poppins_700Bold", fontSize: 14 },
+  sharedProfileUsername: { fontFamily: "Inter_400Regular", fontSize: 12 },
+  sharedProfileDivider: { height: 1 },
+  sharedProfileFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 12 },
+
+  // Shared Circle Card styles
+  sharedCircleCardContainer: { width: 230, overflow: "hidden" },
+  sharedCircleCardContent: { flexDirection: "row", alignItems: "center", padding: 12, gap: 12 },
+  sharedCircleAvatar: { width: 50, height: 50, borderRadius: 25, overflow: "hidden" },
+  sharedCircleName: { fontFamily: "Poppins_700Bold", fontSize: 14 },
+  sharedCircleMembers: { fontFamily: "Inter_400Regular", fontSize: 12 },
+  sharedCircleDivider: { height: 1 },
+  sharedCircleFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 12 },
+
+  // Shared Thread Card styles
+  sharedThreadCardContainer: { width: 230, overflow: "hidden" },
+  sharedThreadCardContent: { padding: 12, gap: 6 },
+  sharedThreadTitle: { fontFamily: "Poppins_700Bold", fontSize: 14, lineHeight: 20 },
+  sharedThreadAsker: { fontFamily: "Inter_400Regular", fontSize: 12 },
+  sharedThreadDivider: { height: 1 },
+  sharedThreadFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 12 },
 });

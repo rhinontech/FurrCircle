@@ -30,7 +30,7 @@ const CARD_WIDTH = width - 40;
 const SWIPE_THRESHOLD = width * 0.3;
 
 type Mode = "Playdate" | "Adoption" | "Breed" | "Owner";
-const modes: Mode[] = ["Playdate", "Adoption", "Breed", "Owner"];
+const modes: Mode[] = ["Playdate", "Adoption", "Breed"/*, "Owner"*/];
 
 // Tint colours by species / fallback
 const TINTS = ["#FFEBEE", "#E3F2FD", "#FFFDE7", "#FCE4EC", "#E8F5E9", "#F3E5F5"];
@@ -147,7 +147,8 @@ export default function MatchScreen() {
         setCards(data.map(mapPetToCard));
       } else if (m === "Adoption") {
         const data = await petApi.discoverPets();
-        setCards(data.map(mapPetToCard));
+        const filtered = data.filter((pet: any) => (pet.ownerId || pet.owner?.id) !== user?.id);
+        setCards(filtered.map(mapPetToCard));
       } else if (m === "Breed") {
         const breedPet = myPets.find((p: any) => p.isBreedingOpen) || myPets[0];
         if (!breedPet || !breedPet.isBreedingOpen) { setLoading(false); return; }
