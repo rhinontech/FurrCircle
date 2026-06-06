@@ -165,6 +165,11 @@ db.questions.hasMany(db.question_answers, { foreignKey: 'questionId', as: 'answe
 db.question_answers.belongsTo(db.questions, { foreignKey: 'questionId' });
 db.question_answers.belongsTo(db.users, { foreignKey: 'userId', as: 'author', constraints: false });
 
+// Question Votes
+db.question_votes.belongsTo(db.questions, { foreignKey: 'questionId', as: 'question' });
+db.question_votes.belongsTo(db.users, { foreignKey: 'userId', as: 'voter' });
+db.questions.hasMany(db.question_votes, { foreignKey: 'questionId', as: 'votes' });
+
 // Playdate Likes
 db.playdate_likes.belongsTo(db.users, { foreignKey: 'swiperId', as: 'swiper' });
 db.playdate_likes.belongsTo(db.pets, { foreignKey: 'swiperPetId', as: 'swiperPet' });
@@ -225,6 +230,7 @@ export const circles = db.circles;
 export const circle_members = db.circle_members;
 export const questions = db.questions;
 export const question_answers = db.question_answers;
+export const question_votes = db.question_votes;
 export const playdate_likes = db.playdate_likes;
 export const owner_likes = db.owner_likes;
 export const lost_pets = db.lost_pets;

@@ -97,6 +97,17 @@ export const searchUsers = async (q: string) => {
     }
 };
 
+// Search ALL active users — used in Circle / community search (no follow restriction)
+export const searchAllUsers = async (q: string) => {
+    try {
+        const response = await PrivateAxios.get('/users/all-search', { params: { q } });
+        return response.data;
+    } catch (error: any) {
+        console.error('searchAllUsers Error:', error?.response?.data || error.message);
+        return [];
+    }
+};
+
 // Search only among users who follow ME — used in Share To and New Chat
 export const searchFollowers = async (q: string) => {
     try {
@@ -120,6 +131,7 @@ export const userApi = {
     getFollowers,
     getFollowing,
     searchUsers,
+    searchAllUsers,
     searchFollowers,
 };
 

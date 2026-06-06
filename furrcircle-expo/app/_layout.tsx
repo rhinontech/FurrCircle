@@ -53,21 +53,47 @@ const handleNotificationRedirect = (remoteMessage: any, router: any) => {
   } catch (e) {}
 
   if (actionType === 'chat_thread') {
-    const chatId = actionPayload.conversationId || relatedId;
-    if (chatId) router.push(`/chat?id=${chatId}`);
-  } else if (actionType === 'post_detail' || actionType === 'comment_detail') {
+    const chatId = actionPayload.conversationId || actionPayload.id || relatedId;
+    if (chatId) {
+      router.push(`/chat?id=${chatId}`);
+    } else {
+      router.push('/chat');
+    }
+  } else if (actionType === 'like' || actionType === 'comment' || actionType === 'post_detail' || actionType === 'comment_detail') {
     const postId = actionPayload.postId || relatedId;
     if (postId) router.push(`/post/${postId}`);
-  } else if (actionType === 'user_profile') {
-    const userId = actionPayload.userId || relatedId;
+  } else if (actionType === 'profile' || actionType === 'user_profile') {
+    const userId = actionPayload.id || actionPayload.userId || relatedId;
     if (userId) router.push(`/u/${userId}`);
   } else if (actionType === 'event_detail') {
-    const eventId = actionPayload.eventId || relatedId;
+    const eventId = actionPayload.eventId || actionPayload.id || relatedId;
     if (eventId) {
-      router.push(`/event/${eventId}` as any);
+      router.push(`/events?eventId=${eventId}`);
     } else {
       router.push('/events');
     }
+  } else if (actionType === 'events_list') {
+    router.push('/events');
+  } else if (actionType === 'question_detail' || actionType === 'thread') {
+    const questionId = actionPayload.questionId || actionPayload.id || relatedId;
+    if (questionId) {
+      router.push(`/thread/${questionId}`);
+    } else {
+      router.push('/notifications');
+    }
+  } else if (actionType === 'reminder' || actionType === 'vaccine' || actionType === 'medication') {
+    router.push('/today');
+  } else if (actionType === 'appointment_detail') {
+    const appointmentId = actionPayload.appointmentId || relatedId;
+    if (appointmentId) {
+      router.push(`/book?id=${appointmentId}`);
+    } else {
+      router.push('/book');
+    }
+  } else if (actionType === 'discover') {
+    router.push('/discover');
+  } else if (actionType === 'community') {
+    router.push('/community');
   } else {
     // Default fallback
     router.push('/notifications');

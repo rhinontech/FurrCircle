@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Pressable, StyleSheet,
   ActivityIndicator, Image, Modal, Alert,
@@ -10,6 +10,8 @@ import { useTokens } from "../src/lib/theme-store";
 import { MapPin, Users, Calendar, Clock, CalendarDays } from "lucide-react-native";
 import { eventApi } from "../services/community/eventApi";
 import { useFocusEffect, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
+import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
 
 const filters = ["All", "Adoption", "Playdate", "Training", "Meetup"] as const;
 
@@ -50,10 +52,18 @@ const parseEventDate = (dateStr?: string) => {
 export default function EventsScreen() {
   const tk = useTokens();
   const router = useRouter();
+  const { eventId } = useLocalSearchParams<{ eventId?: string }>();
+
   const [active, setActive] = useState<string>("All");
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookingInProgress, setBookingInProgress] = useState(false);
+
+  useEffect(() => {
+    if (eventId) {
+      router.replace(`/event/${eventId}` as any);
+    }
+  }, [eventId]);
 
   const fetchEvents = async () => {
     try {

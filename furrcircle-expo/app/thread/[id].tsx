@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image,
@@ -16,6 +16,17 @@ import { questionApi } from "../../services/community/questionApi";
 import { useRouter } from "expo-router";
 import { threads as dummyThreads } from "../../src/lib/demo-data";
 
+const formatRelTime = (iso?: string): string => {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60_000);
+  if (m < 1) return "Just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+};
+
 export default function ThreadDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -26,8 +37,11 @@ export default function ThreadDetail() {
   const [answerText, setAnswerText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [upvoted, setUpvoted] = useState(false);
+  const [upvoteCount, setUpvoteCount] = useState(0);
+  const [upvoteInit, setUpvoteInit] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [questionData, setQuestionData] = useState<any>(null);
 
   const dummy = dummyThreads.find(t => t.id === id);
 
@@ -42,18 +56,24 @@ export default function ThreadDetail() {
     }
 
     setLoading(true);
-    questionApi.getAnswers(id)
-      .then((answersData) => {
-        setAnswers(answersData || []);
-      })
-      .catch(console.error)
+    Promise.all([
+      questionApi.getQuestionById(id).catch(() => null),
+      questionApi.getAnswers(id).catch(() => [])
+    ]).then(([qData, answersData]) => {
+      if (qData) {
+        setQuestionData(qData);
+        setUpvoteCount(qData.upvotes || 0);
+        setUpvoted(!!qData.hasVoted);
+      }
+      setAnswers(answersData || []);
+    }).catch(console.error)
       .finally(() => setLoading(false));
   }, [id, dummy]));
 
   // The question is passed via route params or we parse it
-  const { title, body, tags, askerName, time, upvotes, questionUserId } = useLocalSearchParams<any>();
+  const { title, body, tags, askerName, time, upvotes, hasVoted: hasVotedParam, questionUserId } = useLocalSearchParams<any>();
 
-  const isOwner = !dummy && user?.id && questionUserId && user.id === questionUserId;
+  const isOwner = !dummy && user?.id && (questionData?.userId || questionUserId) && user.id === (questionData?.userId || questionUserId);
 
   const handleDelete = () => {
     Alert.alert(
@@ -78,17 +98,44 @@ export default function ThreadDetail() {
     );
   };
 
-  const displayTitle = title || dummy?.title || "Question";
-  const displayBody = body || dummy?.body || "";
-  const displayTags = tags || dummy?.tag || "";
-  const displayAsker = askerName || dummy?.asker || "Someone";
-  const displayTime = time || dummy?.time || "";
+  const displayTitle = questionData?.title || title || dummy?.title || "Question";
+  const displayBody = questionData?.body || body || dummy?.body || "";
+  const displayTags = questionData?.tags ? (Array.isArray(questionData.tags) ? questionData.tags.join(", ") : questionData.tags) : (tags || dummy?.tag || "");
+  const displayAsker = questionData?.author?.name || askerName || dummy?.asker || "Someone";
+  const displayTime = questionData?.createdAt ? formatRelTime(questionData.createdAt) : (time || dummy?.time || "");
   const displayUpvotes = Number(upvotes || dummy?.upvotes || 0);
 
+  // Initialise upvote count + voted state once from params (only on first render, if no backend questionData is loaded yet)
+  useEffect(() => {
+    if (!upvoteInit && !questionData) {
+      setUpvoteCount(displayUpvotes);
+      // hasVotedParam is "1" (voted) or "0" / undefined (not voted)
+      setUpvoted(hasVotedParam === "1");
+      setUpvoteInit(true);
+    }
+  }, [displayUpvotes, hasVotedParam, upvoteInit, questionData]);
+
   const handleUpvote = async () => {
-    setUpvoted(v => !v);
-    if (dummy) return;
-    try { await questionApi.upvoteQuestion(id!); } catch { }
+    if (dummy) {
+      // Optimistic local toggle for demo data
+      setUpvoted(v => !v);
+      setUpvoteCount(c => upvoted ? Math.max(0, c - 1) : c + 1);
+      return;
+    }
+    // Optimistic update
+    const newVoted = !upvoted;
+    setUpvoted(newVoted);
+    setUpvoteCount(c => newVoted ? c + 1 : Math.max(0, c - 1));
+    try {
+      const result = await questionApi.upvoteQuestion(id!);
+      // Sync with actual server values
+      setUpvoted(result.voted);
+      setUpvoteCount(result.upvotes);
+    } catch {
+      // Revert on failure
+      setUpvoted(!newVoted);
+      setUpvoteCount(c => newVoted ? Math.max(0, c - 1) : c + 1);
+    }
   };
 
   const handleSubmitAnswer = async () => {
@@ -157,10 +204,10 @@ export default function ThreadDetail() {
 
               {/* Vote + action row */}
               <View style={[styles.actionRow, { borderTopColor: tk.border, borderBottomColor: tk.border }]}>
-                <TouchableOpacity onPress={handleUpvote} style={[styles.voteGroup, { backgroundColor: tk.card, borderColor: tk.border, borderWidth: 1 }]}>
+                <TouchableOpacity onPress={handleUpvote} style={[styles.voteGroup, { backgroundColor: tk.card, borderColor: upvoted ? colors.coral : tk.border, borderWidth: 1 }]}>
                   <ArrowUp size={16} color={upvoted ? colors.coral : tk.text} />
                   <Text style={[styles.voteCount, { color: upvoted ? colors.coral : tk.text }]}>
-                    {displayUpvotes + (upvoted ? 1 : 0)}
+                    {upvoteCount}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionBtn}>

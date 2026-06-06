@@ -18,12 +18,20 @@ export const getUserByHandle = async (req: any, res: Response): Promise<void> =>
     const { users: User, vets: Vet, pets: Pet, posts: Post, user_blocks: UserBlock } = db as any;
     const { handle } = req.params;
 
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(handle);
+
     // Search in Users
     let isVet = false;
     let account = await User.findOne({
       where: { username: { [Op.iLike]: handle } },
       attributes: ['id', 'name', 'username', 'avatar_url', 'bio', 'city', 'role', 'isVerified', 'createdAt', 'isPrivate'],
     });
+
+    if (!account && isUUID) {
+      account = await User.findByPk(handle, {
+        attributes: ['id', 'name', 'username', 'avatar_url', 'bio', 'city', 'role', 'isVerified', 'createdAt', 'isPrivate'],
+      });
+    }
 
     if (!account) {
       // Search in Vets
@@ -32,6 +40,13 @@ export const getUserByHandle = async (req: any, res: Response): Promise<void> =>
         attributes: ['id', 'name', 'username', 'avatar_url', 'bio', 'city', 'profession', 'hospital_name', 'rating', 'isVerified', 'createdAt'],
       });
       isVet = !!account;
+
+      if (!account && isUUID) {
+        account = await Vet.findByPk(handle, {
+          attributes: ['id', 'name', 'username', 'avatar_url', 'bio', 'city', 'profession', 'hospital_name', 'rating', 'isVerified', 'createdAt'],
+        });
+        isVet = !!account;
+      }
     }
 
     if (!account) {
@@ -213,6 +228,48 @@ export const searchUsers = async (req: any, res: Response): Promise<void> => {
       } else if (req.user && req.user.id === data.id) {
         followStatus = 'self';
       }
+      const followersCount = await Follow.count({ where: { followingId: data.id, status: 'accepted' } });
+      return { ...data, followStatus, followersCount };
+    }));
+
+    res.json(results);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Search ALL active users (for Circle / community discover — no follow restriction)
+// @route   GET /api/users/all-search?q=...
+export const searchAllUsers = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { users: User, follows: Follow } = db as any;
+    const q = String(req.query.q || "").trim();
+    const currentUserId = req.user.id;
+
+    const whereClause: Record<string, any> = {
+      id: { [Op.ne]: currentUserId }, // exclude self
+      isVerified: true,
+    };
+
+    if (q) {
+      whereClause[Op.or as any] = [
+        { name: { [Op.iLike]: `%${q}%` } },
+        { username: { [Op.iLike]: `%${q}%` } },
+      ];
+    }
+
+    const users = await User.findAll({
+      where: whereClause,
+      attributes: ['id', 'name', 'username', 'avatar_url', 'city', 'bio'],
+      limit: 30,
+      order: [['name', 'ASC']],
+    });
+
+    const results = await Promise.all(users.map(async (u: any) => {
+      const data = u.toJSON();
+      let followStatus = 'none';
+      const follow = await Follow.findOne({ where: { followerId: currentUserId, followingId: data.id } });
+      if (follow) followStatus = follow.status;
       const followersCount = await Follow.count({ where: { followingId: data.id, status: 'accepted' } });
       return { ...data, followStatus, followersCount };
     }));

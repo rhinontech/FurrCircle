@@ -14,8 +14,9 @@ const resolveUser = async (userId: string) => {
 // ?q=<search>     → text search in title/body/tags
 export const getQuestions = async (req: any, res: Response): Promise<void> => {
     try {
-        const { questions: Question, question_answers: QuestionAnswer } = db as any;
+        const { questions: Question, question_answers: QuestionAnswer, question_votes: QuestionVote } = db as any;
         const { circleId, q } = req.query;
+        const currentUserId = req.user?.id;
         const where: any = {};
 
         if (circleId) where.circleId = circleId;
@@ -38,7 +39,12 @@ export const getQuestions = async (req: any, res: Response): Promise<void> => {
             questions.map(async (q: any) => {
                 const payload = toPlain(q);
                 const author = await resolveUser(payload.userId);
-                return { ...payload, answerCount: (payload.answers || []).length, author };
+                let hasVoted = false;
+                if (currentUserId && QuestionVote) {
+                    const vote = await QuestionVote.findOne({ where: { questionId: payload.id, userId: currentUserId } });
+                    hasVoted = !!vote;
+                }
+                return { ...payload, answerCount: (payload.answers || []).length, author, hasVoted };
             })
         );
         res.json(result);
@@ -88,14 +94,51 @@ export const createQuestion = async (req: any, res: Response): Promise<void> => 
 };
 
 // ─── POST /api/questions/:id/vote ─────────────────────────────────────────────
+// Toggles the current user's upvote: first call adds a vote, second call removes it.
 export const upvoteQuestion = async (req: any, res: Response): Promise<void> => {
     try {
-        const { questions: Question } = db as any;
-        const question = await Question.findByPk(req.params.id);
+        const { questions: Question, question_votes: QuestionVote } = db as any;
+        const currentUserId = req.user.id;
+        const questionId = req.params.id;
+
+        const question = await Question.findByPk(questionId);
         if (!question) { res.status(404).json({ message: "Question not found" }); return; }
-        question.upvotes = (question.upvotes || 0) + 1;
-        await question.save();
-        res.json({ upvotes: question.upvotes });
+
+        // Check if this user has already voted
+        const existingVote = await QuestionVote.findOne({ where: { questionId, userId: currentUserId } });
+
+        if (existingVote) {
+            // Toggle OFF — remove vote
+            await existingVote.destroy();
+            question.upvotes = Math.max(0, (question.upvotes || 1) - 1);
+            await question.save();
+            res.json({ upvotes: question.upvotes, voted: false });
+        } else {
+            // Toggle ON — add vote
+            await QuestionVote.create({ questionId, userId: currentUserId });
+            question.upvotes = (question.upvotes || 0) + 1;
+            await question.save();
+
+            // Notify the question author (skip self-votes)
+            if (question.userId !== currentUserId) {
+                const { createRichNotification } = await import("../services/notificationService.ts");
+                createRichNotification({
+                    actorId: question.userId,
+                    actorType: "user",
+                    type: "question_upvote",
+                    category: "activity",
+                    title: "Question Upvoted",
+                    message: `${req.user.name || "Someone"} upvoted your question: "${question.title}"`,
+                    relatedId: question.id,
+                    relatedType: "question",
+                    actionType: "question_detail",
+                    actionPayload: { questionId: question.id },
+                    sendPush: true,
+                }).catch(console.error);
+            }
+
+            res.json({ upvotes: question.upvotes, voted: true });
+        }
     } catch (err: any) {
         res.status(500).json({ message: err.message });
     }
@@ -119,6 +162,24 @@ export const addAnswer = async (req: any, res: Response): Promise<void> => {
 
         // Increment answer count
         await Question.increment("answerCount", { where: { id: req.params.id } });
+
+        // Notify the question author (skip self-answers)
+        if (question.userId !== req.user.id) {
+            const { createRichNotification } = await import("../services/notificationService.ts");
+            createRichNotification({
+                actorId: question.userId,
+                actorType: "user",
+                type: "question_answer",
+                category: "activity",
+                title: "New answer to your question",
+                message: String(text).trim().slice(0, 80),
+                relatedId: question.id,
+                relatedType: "question",
+                actionType: "question_detail",
+                actionPayload: { questionId: question.id },
+                sendPush: true,
+            }).catch(console.error);
+        }
 
         const author = await resolveUser(req.user.id);
         res.status(201).json({ ...toPlain(answer), author });
@@ -160,6 +221,36 @@ export const getAnswers = async (req: any, res: Response): Promise<void> => {
             })
         );
         res.json(result);
+    } catch (err: any) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// ─── GET /api/questions/:id ───────────────────────────────────────────────────
+export const getQuestionById = async (req: any, res: Response): Promise<void> => {
+    try {
+        const { questions: Question, question_answers: QuestionAnswer, question_votes: QuestionVote } = db as any;
+        const currentUserId = req.user?.id;
+        const questionId = req.params.id;
+
+        const question = await Question.findByPk(questionId, {
+            include: [{ model: QuestionAnswer, as: "answers", attributes: ["id"] }],
+        });
+
+        if (!question) {
+            res.status(404).json({ message: "Question not found" });
+            return;
+        }
+
+        const payload = toPlain(question);
+        const author = await resolveUser(payload.userId);
+        let hasVoted = false;
+        if (currentUserId && QuestionVote) {
+            const vote = await QuestionVote.findOne({ where: { questionId, userId: currentUserId } });
+            hasVoted = !!vote;
+        }
+
+        res.json({ ...payload, answerCount: (payload.answers || []).length, author, hasVoted });
     } catch (err: any) {
         res.status(500).json({ message: err.message });
     }

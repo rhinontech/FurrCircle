@@ -5,7 +5,7 @@ import {
 } from "react-native";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Plus, Flame, Search, X, Hash, HelpCircle, Users, ChevronRight, Camera, Calendar } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { PageContainer } from "../../src/components/PageContainer";
@@ -97,37 +97,54 @@ export default function CommunityScreen() {
     setRefreshing(false);
   }, [loadCircles, loadTrending]);
 
-  // Debounced backend search
+  // Core search executor — extracted so it can be called by debounce AND by focus refresh
+  const runSearch = useCallback(async (q: string, silent = false) => {
+    if (!q.trim()) { setSearchResults(null); return; }
+    if (!silent) setSearching(true);
+    try {
+      const [circles, questions, posts, people] = await Promise.all([
+        circleApi.getAllCircles(),
+        questionApi.getQuestions({ q }),
+        feedApi.getFeed("for_you", 1, 50),
+        userApi.searchAllUsers(q),
+      ]);
+      const term = q.trim().toLowerCase();
+      const filteredCircles = (circles || []).filter((c: any) =>
+        c.name?.toLowerCase().includes(term) || c.description?.toLowerCase().includes(term)
+      );
+      const filteredPosts = (posts?.posts || []).filter((p: any) =>
+        p.content?.toLowerCase().includes(term)
+      );
+      const allTags: string[] = [];
+      (posts?.posts || []).forEach((p: any) => { if (p.category) allTags.push(p.category); });
+      const uniqueTags = [...new Set(allTags)].filter(t => t.toLowerCase().includes(term));
+
+      setSearchResults({ circles: filteredCircles, questions: questions || [], posts: filteredPosts, tags: uniqueTags, people: people || [], pets: [] });
+    } catch { if (!silent) setSearchResults(null); }
+    finally { if (!silent) setSearching(false); }
+  }, []);
+
+  // Debounced search triggered by query changes
   useEffect(() => {
     if (!searchQuery.trim()) { setSearchResults(null); return; }
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(async () => {
-      try {
-        setSearching(true);
-        const [circles, questions, posts, people] = await Promise.all([
-          circleApi.getAllCircles(),
-          questionApi.getQuestions({ q: searchQuery }),
-          feedApi.getFeed("for_you", 1, 50),
-          userApi.searchUsers(searchQuery),
-        ]);
-        const q = searchQuery.trim().toLowerCase();
-        const filteredCircles = (circles || []).filter((c: any) =>
-          c.name?.toLowerCase().includes(q) || c.description?.toLowerCase().includes(q)
-        );
-        const filteredPosts = (posts?.posts || []).filter((p: any) =>
-          p.content?.toLowerCase().includes(q)
-        );
-        // Extract unique tags from posts
-        const allTags: string[] = [];
-        (posts?.posts || []).forEach((p: any) => { if (p.category) allTags.push(p.category); });
-        const uniqueTags = [...new Set(allTags)].filter(t => t.toLowerCase().includes(q));
-
-        setSearchResults({ circles: filteredCircles, questions: questions || [], posts: filteredPosts, tags: uniqueTags, people: people || [], pets: [] });
-      } catch { setSearchResults(null); }
-      finally { setSearching(false); }
-    }, 400);
+    searchTimeout.current = setTimeout(() => runSearch(searchQuery), 400);
     return () => clearTimeout(searchTimeout.current);
-  }, [searchQuery]);
+  }, [searchQuery, runSearch]);
+
+  // When screen regains focus (user returns from thread), silently refresh
+  // only the questions in current search results to pick up updated upvote/hasVoted state
+  useFocusEffect(useCallback(() => {
+    if (searchQuery.trim()) {
+      questionApi.getQuestions({ q: searchQuery })
+        .then((questions: any[]) => {
+          if (questions?.length) {
+            setSearchResults((prev: any) => prev ? { ...prev, questions } : prev);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [searchQuery]));
 
   const handleCreateCircle = async (name: string, description: string, category: string, coverImage?: string) => {
     try {
@@ -332,14 +349,15 @@ export default function CommunityScreen() {
                               askerName: q.author?.name || "Someone",
                               time: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : "",
                               upvotes: q.upvotes || 0,
+                              hasVoted: q.hasVoted ? "1" : "0",
                               questionUserId: q.userId || q.author?.id || "",
                             },
                           })}
                         >
-                          <View style={[styles.resultIcon, { backgroundColor: "#FFD93D44" }]}><HelpCircle size={18} color="#B8860B" /></View>
+                          <View style={[styles.resultIcon, { backgroundColor: q.hasVoted ? colors.primary + "22" : "#FFD93D44" }]}><HelpCircle size={18} color={q.hasVoted ? colors.primary : "#B8860B"} /></View>
                           <View style={{ flex: 1 }}>
                             <Text style={[styles.resultTitle, { color: tk.text }]} numberOfLines={2}>{q.title}</Text>
-                            <Text style={[styles.resultMeta, { color: tk.textMuted }]}>{q.upvotes} upvotes · {q.answerCount} answers</Text>
+                            <Text style={[styles.resultMeta, { color: q.hasVoted ? colors.primary : tk.textMuted }]}>{q.upvotes} upvotes{q.hasVoted ? " · Upvoted ✓" : ""} · {q.answerCount} answers</Text>
                           </View>
                         </TouchableOpacity>
                       ))}
@@ -411,6 +429,7 @@ export default function CommunityScreen() {
                           askerName: q.author?.name || "Someone",
                           time: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : "",
                           upvotes: q.upvotes || 0,
+                          hasVoted: q.hasVoted ? "1" : "0",
                           questionUserId: q.userId || q.author?.id || "",
                         },
                       })}

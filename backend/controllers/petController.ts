@@ -284,17 +284,23 @@ export const getPetById = async (req: any, res: Response): Promise<void> => {
     const hasPrivateAccess = isOwner || await canViewPrivatePet(req.params.id, req);
 
     if (!hasPrivateAccess) {
-      // Check if viewer follows the pet owner (accepted) — followers can see the public pet profile
-      const { follows: Follow } = db as any;
+      const { follows: Follow, users: User } = db as any;
+
+      // Check if the pet owner has a public profile
+      const owner = await User.findByPk(payload.ownerId, { attributes: ['isPrivate'] });
+      const ownerIsPublic = !owner?.isPrivate;
+
+      // Check if viewer follows the pet owner (accepted) — followers get extra health info
       const followRecord = await Follow.findOne({
         where: { followerId: req.user.id, followingId: payload.ownerId, status: 'accepted' },
       });
       const isFollower = !!followRecord;
 
-      if (isPublicListing || isFollower) {
-        // Return public-safe profile — basic info, personality, vaccines shown to followers
+      if (isPublicListing || ownerIsPublic || isFollower) {
+        // Return public-safe profile
         const publicPayload = toPublicPetPayload(pet, req.user?.id);
         if (isFollower) {
+          // Followers see a bit more detail
           publicPayload.Vaccines = payload.Vaccines;
           publicPayload.Allergies = payload.Allergies;
           publicPayload.personality = payload.personality;
@@ -495,13 +501,20 @@ export const getPetMemories = async (req: any, res: Response): Promise<void> => 
     if (!pet) { res.status(404).json({ message: "Pet not found" }); return; }
 
     if (pet.ownerId !== req.user.id) {
-      const { users: User } = db as any;
+      const { users: User, follows: Follow } = db as any;
       const owner = await User.findByPk(pet.ownerId, { attributes: ['isPrivate'] });
-      // Private profile owners are still visible if the pet is listed for adoption/foster
       const isListedPublicly = pet.isAdoptionOpen || pet.isFosterOpen;
-      if (owner?.isPrivate && !isListedPublicly) {
-        res.status(403).json({ message: "Not authorized to view memories" });
-        return;
+      const ownerIsPublic = !owner?.isPrivate;
+
+      if (!isListedPublicly && !ownerIsPublic) {
+        // Private profile — only followers can view memories
+        const followRecord = await Follow.findOne({
+          where: { followerId: req.user.id, followingId: pet.ownerId, status: 'accepted' },
+        });
+        if (!followRecord) {
+          res.status(403).json({ message: "Not authorized to view memories" });
+          return;
+        }
       }
     }
 
