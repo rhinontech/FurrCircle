@@ -38,7 +38,8 @@ export default function CommunityDetail() {
         questionApi.getQuestions({ circleId: slug }),
       ]);
       setCircle(circleData);
-      setQuestions(questionsData || []);
+      // Initialise each question with hasVoted from server
+      setQuestions((questionsData || []).map((q: any) => ({ ...q, hasVoted: !!q.hasVoted })));
     } catch (err) {
       console.error("Failed to load circle:", err);
     } finally {
@@ -73,10 +74,26 @@ export default function CommunityDetail() {
   };
 
   const handleUpvote = async (questionId: string) => {
+    // Optimistic toggle immediately
+    setQuestions(prev => prev.map(q =>
+      q.id === questionId
+        ? { ...q, hasVoted: !q.hasVoted, upvotes: q.hasVoted ? Math.max(0, (q.upvotes || 1) - 1) : (q.upvotes || 0) + 1 }
+        : q
+    ));
     try {
-      await questionApi.upvoteQuestion(questionId);
-      setQuestions(prev => prev.map(q => q.id === questionId ? { ...q, upvotes: (q.upvotes || 0) + 1 } : q));
-    } catch {}
+      const result = await questionApi.upvoteQuestion(questionId);
+      // Sync with real server values
+      setQuestions(prev => prev.map(q =>
+        q.id === questionId ? { ...q, upvotes: result.upvotes, hasVoted: result.voted } : q
+      ));
+    } catch {
+      // Revert optimistic update on failure
+      setQuestions(prev => prev.map(q =>
+        q.id === questionId
+          ? { ...q, hasVoted: !q.hasVoted, upvotes: q.hasVoted ? (q.upvotes || 0) + 1 : Math.max(0, (q.upvotes || 1) - 1) }
+          : q
+      ));
+    }
   };
 
   if (loading) {
@@ -187,6 +204,7 @@ export default function CommunityDetail() {
                     askerName: q.author?.name || "Someone",
                     time: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : "",
                     upvotes: q.upvotes || 0,
+                    hasVoted: q.hasVoted ? "1" : "0",
                     questionUserId: q.userId || q.author?.id || "",
                   },
                 })}
@@ -200,8 +218,8 @@ export default function CommunityDetail() {
                 {q.body ? <Text style={[styles.threadBody, { color: tk.textMuted }]} numberOfLines={2}>{q.body}</Text> : null}
                 <View style={styles.threadFooter}>
                   <TouchableOpacity onPress={(e) => { (e as any).stopPropagation?.(); handleUpvote(q.id); }} style={styles.threadAction}>
-                    <ThumbsUp size={13} color={tk.textMuted} />
-                    <Text style={[styles.threadMeta, { color: tk.textMuted }]}>{q.upvotes} upvotes</Text>
+                    <ThumbsUp size={13} color={q.hasVoted ? colors.primary : tk.textMuted} fill={q.hasVoted ? colors.primary : "none"} />
+                    <Text style={[styles.threadMeta, { color: q.hasVoted ? colors.primary : tk.textMuted, fontFamily: q.hasVoted ? "Poppins_600SemiBold" : "Inter_400Regular" }]}>{q.upvotes} upvotes</Text>
                   </TouchableOpacity>
                   <View style={styles.threadAction}>
                     <MessageCircle size={13} color={tk.textMuted} />

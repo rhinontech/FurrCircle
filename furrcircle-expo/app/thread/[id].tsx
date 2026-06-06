@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image,
@@ -25,6 +25,8 @@ export default function ThreadDetail() {
   const [answerText, setAnswerText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [upvoted, setUpvoted] = useState(false);
+  const [upvoteCount, setUpvoteCount] = useState(0);
+  const [upvoteInit, setUpvoteInit] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const dummy = dummyThreads.find(t => t.id === id);
@@ -49,7 +51,7 @@ export default function ThreadDetail() {
   }, [id, dummy]));
 
   // The question is passed via route params or we parse it
-  const { title, body, tags, askerName, time, upvotes, questionUserId } = useLocalSearchParams<any>();
+  const { title, body, tags, askerName, time, upvotes, hasVoted: hasVotedParam, questionUserId } = useLocalSearchParams<any>();
 
   const isOwner = !dummy && user?.id && questionUserId && user.id === questionUserId;
 
@@ -83,10 +85,37 @@ export default function ThreadDetail() {
   const displayTime = time || dummy?.time || "";
   const displayUpvotes = Number(upvotes || dummy?.upvotes || 0);
 
+  // Initialise upvote count + voted state once from params (only on first render)
+  useEffect(() => {
+    if (!upvoteInit) {
+      setUpvoteCount(displayUpvotes);
+      // hasVotedParam is "1" (voted) or "0" / undefined (not voted)
+      setUpvoted(hasVotedParam === "1");
+      setUpvoteInit(true);
+    }
+  }, [displayUpvotes, hasVotedParam, upvoteInit]);
+
   const handleUpvote = async () => {
-    setUpvoted(v => !v);
-    if (dummy) return;
-    try { await questionApi.upvoteQuestion(id!); } catch { }
+    if (dummy) {
+      // Optimistic local toggle for demo data
+      setUpvoted(v => !v);
+      setUpvoteCount(c => upvoted ? Math.max(0, c - 1) : c + 1);
+      return;
+    }
+    // Optimistic update
+    const newVoted = !upvoted;
+    setUpvoted(newVoted);
+    setUpvoteCount(c => newVoted ? c + 1 : Math.max(0, c - 1));
+    try {
+      const result = await questionApi.upvoteQuestion(id!);
+      // Sync with actual server values
+      setUpvoted(result.voted);
+      setUpvoteCount(result.upvotes);
+    } catch {
+      // Revert on failure
+      setUpvoted(!newVoted);
+      setUpvoteCount(c => newVoted ? Math.max(0, c - 1) : c + 1);
+    }
   };
 
   const handleSubmitAnswer = async () => {
@@ -155,10 +184,10 @@ export default function ThreadDetail() {
 
               {/* Vote + action row */}
               <View style={[styles.actionRow, { borderTopColor: tk.border, borderBottomColor: tk.border }]}>
-                <TouchableOpacity onPress={handleUpvote} style={[styles.voteGroup, { backgroundColor: tk.card, borderColor: tk.border, borderWidth: 1 }]}>
+                <TouchableOpacity onPress={handleUpvote} style={[styles.voteGroup, { backgroundColor: tk.card, borderColor: upvoted ? colors.coral : tk.border, borderWidth: 1 }]}>
                   <ArrowUp size={16} color={upvoted ? colors.coral : tk.text} />
                   <Text style={[styles.voteCount, { color: upvoted ? colors.coral : tk.text }]}>
-                    {displayUpvotes + (upvoted ? 1 : 0)}
+                    {upvoteCount}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionBtn}>
