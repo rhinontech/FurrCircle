@@ -46,7 +46,8 @@ export default function PetPublicProfile() {
 
   const handleMessageOwner = async () => {
     if (!pet || !pet.ownerId) return;
-    const introMessage = `I am interested to adopt your pet named ${pet.name}!`;
+    const action = pet.isFosterOpen ? "foster" : "adopt";
+    const introMessage = `I am interested to ${action} your pet named ${pet.name}! furrcircle://pet/${pet.id}`;
     try {
       const conv = await chatApi.startChat(pet.ownerId, introMessage);
       if (conv?.id) {

@@ -6,9 +6,10 @@ import {
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { Avatar } from "../src/components/Avatar";
 import { colors } from "../src/lib/theme";
-import { Send, Plus, Search, MessageCircle, Check, CheckCheck, ChevronRight, Users } from "lucide-react-native";
+import { Send, Plus, Search, MessageCircle, Check, CheckCheck, ChevronRight, Users, Heart } from "lucide-react-native";
 import { useAuthStore } from "../src/lib/auth-store";
 import { chatApi } from "../services/chat/chatApi";
+import { petApi } from "../services/pet/petApi";
 import { userApi } from "../services/user/userApi";
 import { circleApi } from "../services/community/circleApi";
 import { questionApi } from "../services/community/questionApi";
@@ -60,6 +61,7 @@ const getDateGroup = (dateStr: string) => {
 function SharedPostCard({ postId, isMe, tk, router }: { postId: string; isMe: boolean; tk: any; router: any }) {
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleted, setIsDeleted] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -67,10 +69,17 @@ function SharedPostCard({ postId, isMe, tk, router }: { postId: string; isMe: bo
       try {
         const data = await feedApi.getPostById(postId);
         if (active) {
-          setPost(data);
+          if (data) {
+            setPost(data);
+          } else {
+            setIsDeleted(true);
+          }
         }
       } catch (err) {
         console.error("Failed to load shared post details", err);
+        if (active) {
+          setIsDeleted(true);
+        }
       } finally {
         if (active) {
           setLoading(false);
@@ -83,8 +92,16 @@ function SharedPostCard({ postId, isMe, tk, router }: { postId: string; isMe: bo
 
   if (loading) {
     return (
-      <View style={[styles.sharedCardPlaceholder, { backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.border }]}>
-        <ActivityIndicator size="small" color={isMe ? "#fff" : colors.primary} />
+      <View style={[styles.sharedCardPlaceholder, { backgroundColor: tk.border }]}>
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (isDeleted) {
+    return (
+      <View style={[styles.sharedCardFallback, { backgroundColor: tk.bg, padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", borderStyle: "dashed", borderWidth: 1, borderColor: tk.border, width: "100%", minHeight: 80 }]}>
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: tk.textMuted, fontSize: 13, textAlign: "center" }}>This post got deleted</Text>
       </View>
     );
   }
@@ -93,10 +110,10 @@ function SharedPostCard({ postId, isMe, tk, router }: { postId: string; isMe: bo
     return (
       <TouchableOpacity
         onPress={() => router.push(`/post/${postId}`)}
-        style={[styles.sharedCardFallback, { backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border }]}
+        style={[styles.sharedCardFallback, { backgroundColor: tk.border }]}
         activeOpacity={0.7}
       >
-        <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Post</Text>
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: tk.text, fontSize: 13 }}>View Shared Post</Text>
       </TouchableOpacity>
     );
   }
@@ -119,8 +136,8 @@ function SharedPostCard({ postId, isMe, tk, router }: { postId: string; isMe: bo
       style={[
         styles.sharedCardContainer,
         { 
-          backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.bg, 
-          borderColor: isMe ? "rgba(255,255,255,0.2)" : tk.border 
+          backgroundColor: tk.bg, 
+          borderColor: tk.border 
         }
       ]}
     >
@@ -133,7 +150,7 @@ function SharedPostCard({ postId, isMe, tk, router }: { postId: string; isMe: bo
             <Avatar name={displayName} size={32} />
           )}
           <View style={{ flex: 1 }}>
-            <Text style={[styles.sharedCardPetName, { color: isMe ? "#fff" : tk.text }]} numberOfLines={1}>
+            <Text style={[styles.sharedCardPetName, { color: tk.text }]} numberOfLines={1}>
               {author.username || "parent"}
             </Text>
           </View>
@@ -170,7 +187,7 @@ function SharedPostCard({ postId, isMe, tk, router }: { postId: string; isMe: bo
         </View>
       ) : (
         <View style={{ paddingHorizontal: 10, paddingVertical: 8 }}>
-          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: isMe ? "#fff" : tk.text }} numberOfLines={3}>
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: tk.text }} numberOfLines={3}>
             {post.content}
           </Text>
         </View>
@@ -192,6 +209,7 @@ function SharedPostCard({ postId, isMe, tk, router }: { postId: string; isMe: bo
 function SharedProfileCard({ username, isMe, tk, router }: { username: string; isMe: boolean; tk: any; router: any }) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleted, setIsDeleted] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -199,10 +217,17 @@ function SharedProfileCard({ username, isMe, tk, router }: { username: string; i
       try {
         const data = await userApi.getUserProfile(username);
         if (active) {
-          setProfile(data);
+          if (data) {
+            setProfile(data);
+          } else {
+            setIsDeleted(true);
+          }
         }
       } catch (err) {
         console.error("Failed to load shared profile details", err);
+        if (active) {
+          setIsDeleted(true);
+        }
       } finally {
         if (active) {
           setLoading(false);
@@ -213,10 +238,18 @@ function SharedProfileCard({ username, isMe, tk, router }: { username: string; i
     return () => { active = false; };
   }, [username]);
 
+  if (isDeleted) {
+    return (
+      <View style={[styles.sharedCardFallback, { backgroundColor: tk.bg, padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", borderStyle: "dashed", borderWidth: 1, borderColor: tk.border, width: "100%", minHeight: 80 }]}>
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: tk.textMuted, fontSize: 13, textAlign: "center" }}>This profile got deleted</Text>
+      </View>
+    );
+  }
+
   if (loading) {
     return (
-      <View style={[styles.sharedCardPlaceholder, { backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.border }]}>
-        <ActivityIndicator size="small" color={isMe ? "#fff" : colors.primary} />
+      <View style={[styles.sharedCardPlaceholder, { backgroundColor: tk.border }]}>
+        <ActivityIndicator size="small" color={colors.primary} />
       </View>
     );
   }
@@ -225,10 +258,10 @@ function SharedProfileCard({ username, isMe, tk, router }: { username: string; i
     return (
       <TouchableOpacity
         onPress={() => router.push(`/u/${username}`)}
-        style={[styles.sharedCardFallback, { backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border }]}
+        style={[styles.sharedCardFallback, { backgroundColor: tk.border }]}
         activeOpacity={0.7}
       >
-        <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Profile</Text>
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: tk.text, fontSize: 13 }}>View Shared Profile</Text>
       </TouchableOpacity>
     );
   }
@@ -243,7 +276,7 @@ function SharedProfileCard({ username, isMe, tk, router }: { username: string; i
       style={[
         styles.sharedProfileCardContainer,
         { 
-          backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.bg, 
+          backgroundColor: tk.bg, 
         }
       ]}
     >
@@ -254,16 +287,16 @@ function SharedProfileCard({ username, isMe, tk, router }: { username: string; i
           <Avatar name={displayName} size={50} />
         )}
         <View style={{ flex: 1 }}>
-          <Text style={[styles.sharedProfileName, { color: isMe ? "#fff" : tk.text }]} numberOfLines={1}>
+          <Text style={[styles.sharedProfileName, { color: tk.text }]} numberOfLines={1}>
             {displayName}
           </Text>
-          <Text style={[styles.sharedProfileUsername, { color: isMe ? "rgba(255,255,255,0.7)" : tk.textMuted }]} numberOfLines={1}>
+          <Text style={[styles.sharedProfileUsername, { color: tk.textMuted }]} numberOfLines={1}>
             {profile.username || username}
           </Text>
         </View>
       </View>
       
-      <View style={[styles.sharedProfileDivider, { backgroundColor: isMe ? "rgba(255,255,255,0.15)" : tk.border }]} />
+      <View style={[styles.sharedProfileDivider, { backgroundColor: tk.border }]} />
       
       <View style={styles.sharedProfileFooter}>
         <Text style={{ fontFamily: "Poppins_600SemiBold", color: colors.primary, fontSize: 12 }}>View Profile</Text>
@@ -277,6 +310,7 @@ function SharedProfileCard({ username, isMe, tk, router }: { username: string; i
 function SharedCircleCard({ circleId, isMe, tk, router }: { circleId: string; isMe: boolean; tk: any; router: any }) {
   const [circle, setCircle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleted, setIsDeleted] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -284,10 +318,17 @@ function SharedCircleCard({ circleId, isMe, tk, router }: { circleId: string; is
       try {
         const data = await circleApi.getCircleById(circleId);
         if (active) {
-          setCircle(data);
+          if (data) {
+            setCircle(data);
+          } else {
+            setIsDeleted(true);
+          }
         }
       } catch (err) {
         console.error("Failed to load shared circle details", err);
+        if (active) {
+          setIsDeleted(true);
+        }
       } finally {
         if (active) {
           setLoading(false);
@@ -298,10 +339,18 @@ function SharedCircleCard({ circleId, isMe, tk, router }: { circleId: string; is
     return () => { active = false; };
   }, [circleId]);
 
+  if (isDeleted) {
+    return (
+      <View style={[styles.sharedCardFallback, { backgroundColor: tk.bg, padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", borderStyle: "dashed", borderWidth: 1, borderColor: tk.border, width: "100%", minHeight: 80 }]}>
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: tk.textMuted, fontSize: 13, textAlign: "center" }}>This circle got deleted</Text>
+      </View>
+    );
+  }
+
   if (loading) {
     return (
-      <View style={[styles.sharedCardPlaceholder, { backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.border }]}>
-        <ActivityIndicator size="small" color={isMe ? "#fff" : colors.primary} />
+      <View style={[styles.sharedCardPlaceholder, { backgroundColor: tk.border }]}>
+        <ActivityIndicator size="small" color={colors.primary} />
       </View>
     );
   }
@@ -310,10 +359,10 @@ function SharedCircleCard({ circleId, isMe, tk, router }: { circleId: string; is
     return (
       <TouchableOpacity
         onPress={() => router.push(`/community/${circleId}`)}
-        style={[styles.sharedCardFallback, { backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border }]}
+        style={[styles.sharedCardFallback, { backgroundColor: tk.border }]}
         activeOpacity={0.7}
       >
-        <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Circle</Text>
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: tk.text, fontSize: 13 }}>View Shared Circle</Text>
       </TouchableOpacity>
     );
   }
@@ -325,7 +374,7 @@ function SharedCircleCard({ circleId, isMe, tk, router }: { circleId: string; is
       style={[
         styles.sharedCircleCardContainer,
         { 
-          backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.bg, 
+          backgroundColor: tk.bg, 
         }
       ]}
     >
@@ -338,16 +387,16 @@ function SharedCircleCard({ circleId, isMe, tk, router }: { circleId: string; is
           </View>
         )}
         <View style={{ flex: 1 }}>
-          <Text style={[styles.sharedCircleName, { color: isMe ? "#fff" : tk.text }]} numberOfLines={1}>
+          <Text style={[styles.sharedCircleName, { color: tk.text }]} numberOfLines={1}>
             {circle.name}
           </Text>
-          <Text style={[styles.sharedCircleMembers, { color: isMe ? "rgba(255,255,255,0.7)" : tk.textMuted }]} numberOfLines={1}>
+          <Text style={[styles.sharedCircleMembers, { color: tk.textMuted }]} numberOfLines={1}>
             {circle.memberCount || 0} members · {circle.category || "General"}
           </Text>
         </View>
       </View>
       
-      <View style={[styles.sharedCircleDivider, { backgroundColor: isMe ? "rgba(255,255,255,0.15)" : tk.border }]} />
+      <View style={[styles.sharedCircleDivider, { backgroundColor: tk.border }]} />
       
       <View style={styles.sharedCircleFooter}>
         <Text style={{ fontFamily: "Poppins_600SemiBold", color: colors.primary, fontSize: 12 }}>View Circle</Text>
@@ -361,6 +410,7 @@ function SharedCircleCard({ circleId, isMe, tk, router }: { circleId: string; is
 function SharedThreadCard({ threadId, isMe, tk, router }: { threadId: string; isMe: boolean; tk: any; router: any }) {
   const [thread, setThread] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleted, setIsDeleted] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -368,10 +418,17 @@ function SharedThreadCard({ threadId, isMe, tk, router }: { threadId: string; is
       try {
         const data = await questionApi.getQuestionById(threadId);
         if (active) {
-          setThread(data);
+          if (data) {
+            setThread(data);
+          } else {
+            setIsDeleted(true);
+          }
         }
       } catch (err) {
         console.error("Failed to load shared thread details", err);
+        if (active) {
+          setIsDeleted(true);
+        }
       } finally {
         if (active) {
           setLoading(false);
@@ -382,10 +439,18 @@ function SharedThreadCard({ threadId, isMe, tk, router }: { threadId: string; is
     return () => { active = false; };
   }, [threadId]);
 
+  if (isDeleted) {
+    return (
+      <View style={[styles.sharedCardFallback, { backgroundColor: tk.bg, padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", borderStyle: "dashed", borderWidth: 1, borderColor: tk.border, width: "100%", minHeight: 80 }]}>
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: tk.textMuted, fontSize: 13, textAlign: "center" }}>This discussion got deleted</Text>
+      </View>
+    );
+  }
+
   if (loading) {
     return (
-      <View style={[styles.sharedCardPlaceholder, { backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.border }]}>
-        <ActivityIndicator size="small" color={isMe ? "#fff" : colors.primary} />
+      <View style={[styles.sharedCardPlaceholder, { backgroundColor: tk.border }]}>
+        <ActivityIndicator size="small" color={colors.primary} />
       </View>
     );
   }
@@ -394,10 +459,10 @@ function SharedThreadCard({ threadId, isMe, tk, router }: { threadId: string; is
     return (
       <TouchableOpacity
         onPress={() => router.push(`/thread/${threadId}`)}
-        style={[styles.sharedCardFallback, { backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border }]}
+        style={[styles.sharedCardFallback, { backgroundColor: tk.border }]}
         activeOpacity={0.7}
       >
-        <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Discussion</Text>
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: tk.text, fontSize: 13 }}>View Shared Discussion</Text>
       </TouchableOpacity>
     );
   }
@@ -428,26 +493,128 @@ function SharedThreadCard({ threadId, isMe, tk, router }: { threadId: string; is
       style={[
         styles.sharedThreadCardContainer,
         { 
-          backgroundColor: isMe ? "rgba(255,255,255,0.12)" : tk.bg, 
+          backgroundColor: tk.bg, 
         }
       ]}
     >
       <View style={styles.sharedThreadCardContent}>
-        <Text style={[styles.sharedThreadTitle, { color: isMe ? "#fff" : tk.text }]} numberOfLines={2}>
+        <Text style={[styles.sharedThreadTitle, { color: tk.text }]} numberOfLines={2}>
           {thread.title}
         </Text>
-        <Text style={[styles.sharedThreadAsker, { color: isMe ? "rgba(255,255,255,0.7)" : tk.textMuted }]} numberOfLines={1}>
-          Asked by <Text style={{ fontFamily: "Poppins_700Bold", color: isMe ? "#fff" : tk.text }}>{askerName}</Text>
+        <Text style={[styles.sharedThreadAsker, { color: tk.textMuted }]} numberOfLines={1}>
+          Asked by <Text style={{ fontFamily: "Poppins_700Bold", color: tk.text }}>{askerName}</Text>
         </Text>
       </View>
       
-      <View style={[styles.sharedThreadDivider, { backgroundColor: isMe ? "rgba(255,255,255,0.15)" : tk.border }]} />
+      <View style={[styles.sharedThreadDivider, { backgroundColor: tk.border }]} />
       
       <View style={styles.sharedThreadFooter}>
         <Text style={{ fontFamily: "Poppins_600SemiBold", color: colors.primary, fontSize: 12 }}>View Discussion</Text>
         <ChevronRight size={16} color={colors.primary} />
       </View>
     </TouchableOpacity>
+  );
+}
+
+// --- Shared Pet Card for Chat Messages ---
+function SharedPetCard({ petId, isMe, tk, router }: { petId: string; isMe: boolean; tk: any; router: any }) {
+  const [pet, setPet] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isDeleted, setIsDeleted] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const fetchPet = async () => {
+      try {
+        const data = await petApi.getPetById(petId);
+        if (active) {
+          if (data) {
+            setPet(data);
+          } else {
+            setIsDeleted(true);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load shared pet details", err);
+        if (active) {
+          setIsDeleted(true);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+    fetchPet();
+    return () => { active = false; };
+  }, [petId]);
+
+  if (loading) {
+    return (
+      <View style={[styles.sharedCardPlaceholder, { backgroundColor: tk.border }]}>
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (isDeleted) {
+    return (
+      <View style={[styles.sharedCardFallback, { backgroundColor: tk.bg, padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", borderStyle: "dashed", borderWidth: 1, borderColor: tk.border, width: "100%", minHeight: 80 }]}>
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: tk.textMuted, fontSize: 13, textAlign: "center" }}>This pet got deleted</Text>
+      </View>
+    );
+  }
+
+  const petImage = pet.avatarUrl || pet.avatar_url;
+  const breedAge = [pet.breed, pet.age].filter(Boolean).join(" · ") || pet.species || "Pet";
+
+  return (
+    <View
+      style={[
+        styles.sharedCircleCardContainer,
+        { 
+          backgroundColor: tk.bg, 
+        }
+      ]}
+    >
+      {/* Pet Image on top */}
+      <View style={styles.sharedCardImageWrapper}>
+        <TouchableOpacity
+          onPress={() => router.push(`/p/${petId}`)}
+          activeOpacity={0.9}
+          style={{ width: "100%", height: "100%" }}
+        >
+          {petImage ? (
+            <Image source={{ uri: petImage }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+          ) : (
+            <View style={[styles.sharedCardPlaceholder, { backgroundColor: tk.border, width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }]}>
+              <Heart size={40} color={colors.primary} />
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Pet details at the bottom */}
+      <View style={{ padding: 12, gap: 4 }}>
+        <Text style={[styles.sharedCircleName, { color: tk.text }]} numberOfLines={1}>
+          {pet.name}
+        </Text>
+        <Text style={[styles.sharedCircleMembers, { color: tk.textMuted }]} numberOfLines={1}>
+          {breedAge}
+        </Text>
+      </View>
+      
+      <View style={[styles.sharedCircleDivider, { backgroundColor: tk.border }]} />
+      
+      <TouchableOpacity
+        onPress={() => router.push(`/p/${petId}`)}
+        activeOpacity={0.7}
+        style={styles.sharedCircleFooter}
+      >
+        <Text style={{ fontFamily: "Poppins_600SemiBold", color: colors.primary, fontSize: 12 }}>View Pet Profile</Text>
+        <ChevronRight size={16} color={colors.primary} />
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -627,7 +794,7 @@ export default function ChatScreen() {
 
       return (
         <View>
-          {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
+          {prefixText ? <Text style={[styles.bubbleText, { color: tk.text, paddingHorizontal: 12, paddingTop: 10, marginBottom: 8 }]}>{prefixText}</Text> : null}
           <SharedPostCard postId={postId} isMe={isMe} tk={tk} router={router} />
         </View>
       );
@@ -643,7 +810,7 @@ export default function ChatScreen() {
 
       return (
         <View>
-          {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
+          {prefixText ? <Text style={[styles.bubbleText, { color: tk.text, paddingHorizontal: 12, paddingTop: 10, marginBottom: 8 }]}>{prefixText}</Text> : null}
           <SharedProfileCard username={username} isMe={isMe} tk={tk} router={router} />
         </View>
       );
@@ -659,7 +826,7 @@ export default function ChatScreen() {
 
       return (
         <View>
-          {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
+          {prefixText ? <Text style={[styles.bubbleText, { color: tk.text, paddingHorizontal: 12, paddingTop: 10, marginBottom: 8 }]}>{prefixText}</Text> : null}
           <SharedCircleCard circleId={circleId} isMe={isMe} tk={tk} router={router} />
         </View>
       );
@@ -675,7 +842,7 @@ export default function ChatScreen() {
 
       return (
         <View>
-          {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
+          {prefixText ? <Text style={[styles.bubbleText, { color: tk.text, paddingHorizontal: 12, paddingTop: 10, marginBottom: 8 }]}>{prefixText}</Text> : null}
           <SharedThreadCard threadId={threadId} isMe={isMe} tk={tk} router={router} />
         </View>
       );
@@ -688,14 +855,12 @@ export default function ChatScreen() {
 
       return (
         <View>
-          {prefixText ? <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, marginBottom: 8 }]}>{prefixText}</Text> : null}
-          <TouchableOpacity
-            onPress={() => router.push(`/p/${petId}`)}
-            style={{ backgroundColor: isMe ? "rgba(255,255,255,0.2)" : tk.border, padding: 12, borderRadius: 12, alignItems: "center" }}
-            activeOpacity={0.7}
-          >
-            <Text style={{ fontFamily: "Poppins_600SemiBold", color: isMe ? "#fff" : tk.text, fontSize: 13 }}>View Shared Pet</Text>
-          </TouchableOpacity>
+          <SharedPetCard petId={petId} isMe={isMe} tk={tk} router={router} />
+          {prefixText ? (
+            <Text style={[styles.bubbleText, { color: tk.text, marginTop: 10, marginBottom: 12, paddingHorizontal: 12 }]}>
+              {prefixText}
+            </Text>
+          ) : null}
         </View>
       );
     }
@@ -775,7 +940,8 @@ export default function ChatScreen() {
               const isProfileShare = item.text && item.text.includes("furrcircle://profile/");
               const isCircleShare = item.text && item.text.includes("furrcircle://circle/");
               const isThreadShare = item.text && item.text.includes("furrcircle://thread/");
-              const isCardShare = isPostShare || isProfileShare || isCircleShare || isThreadShare;
+              const isPetShare = item.text && item.text.includes("furrcircle://pet/");
+              const isCardShare = isPostShare || isProfileShare || isCircleShare || isThreadShare || isPetShare;
               return (
                 <View style={isMe ? styles.msgRowMe : styles.msgRowOther}>
                   {!isMe && (
@@ -787,7 +953,7 @@ export default function ChatScreen() {
                     isCardShare
                       ? [
                           isMe ? styles.sharedBubbleMe : styles.sharedBubbleOther,
-                          { backgroundColor: tk.card, borderColor: tk.border, borderWidth: 1 }
+                          { backgroundColor: tk.bg, borderColor: tk.border, borderWidth: 1, width: 230 }
                         ]
                       : [
                           isMe ? styles.bubbleMe : styles.bubbleOther,
@@ -802,7 +968,7 @@ export default function ChatScreen() {
                       gap: 4,
                       paddingHorizontal: isCardShare ? 12 : 0,
                       paddingBottom: isCardShare ? 8 : 0,
-                      marginTop: isCardShare ? -4 : 0
+                      marginTop: isCardShare ? 6 : 0
                     }}>
                       <Text style={[styles.timeText, { color: (isMe && !isCardShare) ? "rgba(255,255,255,0.7)" : tk.textMuted }]}>
                         {formatTime(item.createdAt)}
@@ -1022,7 +1188,7 @@ const styles = StyleSheet.create({
   // Shared Post Card styles
   sharedCardPlaceholder: { width: 220, height: 120, borderRadius: 16, justifyContent: "center", alignItems: "center" },
   sharedCardFallback: { padding: 12, borderRadius: 12, alignItems: "center", minWidth: 150 },
-  sharedCardContainer: { width: 230, overflow: "hidden" },
+  sharedCardContainer: { width: "100%", overflow: "hidden", borderTopLeftRadius: 19, borderTopRightRadius: 19 },
   sharedCardHeader: { flexDirection: "row", alignItems: "center", padding: 8, gap: 8 },
   sharedCardPetName: { fontFamily: "Poppins_700Bold", fontSize: 12 },
   sharedCardTypeBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10 },
@@ -1034,7 +1200,7 @@ const styles = StyleSheet.create({
   sharedCardTags: { fontSize: 10, color: colors.primary, fontFamily: "Poppins_600SemiBold", paddingHorizontal: 8, paddingBottom: 8, marginTop: 4 },
 
   // Shared Profile Card styles
-  sharedProfileCardContainer: { width: 230, overflow: "hidden" },
+  sharedProfileCardContainer: { width: "100%", overflow: "hidden", borderTopLeftRadius: 19, borderTopRightRadius: 19 },
   sharedProfileCardContent: { flexDirection: "row", alignItems: "center", padding: 12, gap: 12 },
   sharedProfileAvatar: { width: 50, height: 50, borderRadius: 25 },
   sharedProfileName: { fontFamily: "Poppins_700Bold", fontSize: 14 },
@@ -1043,7 +1209,7 @@ const styles = StyleSheet.create({
   sharedProfileFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 12 },
 
   // Shared Circle Card styles
-  sharedCircleCardContainer: { width: 230, overflow: "hidden" },
+  sharedCircleCardContainer: { width: "100%", overflow: "hidden", borderTopLeftRadius: 19, borderTopRightRadius: 19 },
   sharedCircleCardContent: { flexDirection: "row", alignItems: "center", padding: 12, gap: 12 },
   sharedCircleAvatar: { width: 50, height: 50, borderRadius: 25, overflow: "hidden" },
   sharedCircleName: { fontFamily: "Poppins_700Bold", fontSize: 14 },
@@ -1052,7 +1218,7 @@ const styles = StyleSheet.create({
   sharedCircleFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 12 },
 
   // Shared Thread Card styles
-  sharedThreadCardContainer: { width: 230, overflow: "hidden" },
+  sharedThreadCardContainer: { width: "100%", overflow: "hidden", borderTopLeftRadius: 19, borderTopRightRadius: 19 },
   sharedThreadCardContent: { padding: 12, gap: 6 },
   sharedThreadTitle: { fontFamily: "Poppins_700Bold", fontSize: 14, lineHeight: 20 },
   sharedThreadAsker: { fontFamily: "Inter_400Regular", fontSize: 12 },
