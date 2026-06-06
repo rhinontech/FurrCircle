@@ -7,7 +7,7 @@ import { petApi } from "../../services/pet/petApi";
 import { placesApi } from "../../services/places/placesApi";
 import { reminderApi } from "../../services/reminder/reminderApi";
 import { colors } from "../../src/lib/theme";
-import { useTokens } from "../../src/lib/theme-store";
+import { useTokens, useThemeStore } from "../../src/lib/theme-store";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ChevronDown, Calendar, Clock } from "lucide-react-native";
 
@@ -15,6 +15,7 @@ export default function SetReminderScreen() {
   const router = useRouter();
   const { id, vetId } = useLocalSearchParams<{ id?: string; vetId?: string }>();
   const tk = useTokens();
+  const dark = useThemeStore((s) => s.dark);
 
   const [pets, setPets] = useState<any[]>([]);
   const [selectedPet, setSelectedPet] = useState<string>("");
@@ -254,6 +255,7 @@ export default function SetReminderScreen() {
                   mode="date"
                   display="default"
                   minimumDate={new Date()}
+                  themeVariant={dark ? "dark" : "light"}
                   onChange={(e, d) => d && setDate(d)}
                 />
               </View>
@@ -283,6 +285,7 @@ export default function SetReminderScreen() {
                   value={time}
                   mode="time"
                   display="default"
+                  themeVariant={dark ? "dark" : "light"}
                   onChange={(e, t) => t && setTime(t)}
                 />
               </View>

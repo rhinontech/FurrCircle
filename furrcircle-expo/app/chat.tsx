@@ -721,6 +721,16 @@ export default function ChatScreen() {
     return result.reverse(); // FlatList inverted expects newest first
   }, [messages, selectedChat]);
 
+  const displayConversations = useMemo(() => {
+    return conversations
+      .filter((c) => c.lastMessage)
+      .sort((a, b) => {
+        const dateA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+        const dateB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+  }, [conversations]);
+
   // --- Render Detail View ---
   if (selectedChat) {
     const otherUser = getOtherParticipant(chatDetail) || { name: "Loading...", avatar_url: null };
@@ -835,16 +845,6 @@ export default function ChatScreen() {
       </View>
     );
   }
-
-  const displayConversations = useMemo(() => {
-    return conversations
-      .filter((c) => c.lastMessage)
-      .sort((a, b) => {
-        const dateA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
-        const dateB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
-        return dateB - dateA;
-      });
-  }, [conversations]);
 
   // --- Render List View ---
   return (
