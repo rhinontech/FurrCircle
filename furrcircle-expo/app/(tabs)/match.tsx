@@ -50,6 +50,7 @@ function mapPetToCard(pet: any, index: number) {
     ownerAvatar: pet.owner?.avatar_url,
     species: pet.species,
     isBreedingOpen: pet.isBreedingOpen,
+    isFosterOpen: pet.isFosterOpen,
   };
 }
 
@@ -321,16 +322,21 @@ export default function MatchScreen() {
 
     setApplyingAdoption(true);
     try {
-      // 1. Submit adoption application
+      const isFoster = card.isFosterOpen;
+      const appType = isFoster ? "foster" : "adoption";
+      const appMsg = isFoster ? "I'm interested in fostering this pet!" : "I'm interested in adopting this pet!";
+      const action = isFoster ? "foster" : "adopt";
+
+      // 1. Submit application
       try {
-        await PrivateAxios.post("/adoptions/apply", { petId: card.id, type: "adoption", message: "I'm interested in adopting this pet!" });
+        await PrivateAxios.post("/adoptions/apply", { petId: card.id, type: appType, message: appMsg });
       } catch (applyErr: any) {
         // If the user already applied (409 Conflict), we log a warning and proceed so they can still chat
-        console.warn("Adoption application failed or already exists:", applyErr?.response?.data || applyErr.message);
+        console.warn("Application failed or already exists:", applyErr?.response?.data || applyErr.message);
       }
 
       // 2. Start the chat with the owner and send the deep link message
-      const introMessage = `I am interested to adopt this pet! furrcircle://pet/${card.id}`;
+      const introMessage = `I am interested to ${action} this pet! furrcircle://pet/${card.id}`;
       const conv = await chatApi.startChat(card.ownerId, introMessage);
 
       // 3. Send the image URL if available so the owner gets a photo message
