@@ -15,6 +15,17 @@ import { questionApi } from "../../services/community/questionApi";
 import { useRouter } from "expo-router";
 import { threads as dummyThreads } from "../../src/lib/demo-data";
 
+const formatRelTime = (iso?: string): string => {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60_000);
+  if (m < 1) return "Just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+};
+
 export default function ThreadDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -28,6 +39,7 @@ export default function ThreadDetail() {
   const [upvoteCount, setUpvoteCount] = useState(0);
   const [upvoteInit, setUpvoteInit] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [questionData, setQuestionData] = useState<any>(null);
 
   const dummy = dummyThreads.find(t => t.id === id);
 
@@ -42,18 +54,24 @@ export default function ThreadDetail() {
     }
 
     setLoading(true);
-    questionApi.getAnswers(id)
-      .then((answersData) => {
-        setAnswers(answersData || []);
-      })
-      .catch(console.error)
+    Promise.all([
+      questionApi.getQuestionById(id).catch(() => null),
+      questionApi.getAnswers(id).catch(() => [])
+    ]).then(([qData, answersData]) => {
+      if (qData) {
+        setQuestionData(qData);
+        setUpvoteCount(qData.upvotes || 0);
+        setUpvoted(!!qData.hasVoted);
+      }
+      setAnswers(answersData || []);
+    }).catch(console.error)
       .finally(() => setLoading(false));
   }, [id, dummy]));
 
   // The question is passed via route params or we parse it
   const { title, body, tags, askerName, time, upvotes, hasVoted: hasVotedParam, questionUserId } = useLocalSearchParams<any>();
 
-  const isOwner = !dummy && user?.id && questionUserId && user.id === questionUserId;
+  const isOwner = !dummy && user?.id && (questionData?.userId || questionUserId) && user.id === (questionData?.userId || questionUserId);
 
   const handleDelete = () => {
     Alert.alert(
@@ -78,22 +96,22 @@ export default function ThreadDetail() {
     );
   };
 
-  const displayTitle = title || dummy?.title || "Question";
-  const displayBody = body || dummy?.body || "";
-  const displayTags = tags || dummy?.tag || "";
-  const displayAsker = askerName || dummy?.asker || "Someone";
-  const displayTime = time || dummy?.time || "";
+  const displayTitle = questionData?.title || title || dummy?.title || "Question";
+  const displayBody = questionData?.body || body || dummy?.body || "";
+  const displayTags = questionData?.tags ? (Array.isArray(questionData.tags) ? questionData.tags.join(", ") : questionData.tags) : (tags || dummy?.tag || "");
+  const displayAsker = questionData?.author?.name || askerName || dummy?.asker || "Someone";
+  const displayTime = questionData?.createdAt ? formatRelTime(questionData.createdAt) : (time || dummy?.time || "");
   const displayUpvotes = Number(upvotes || dummy?.upvotes || 0);
 
-  // Initialise upvote count + voted state once from params (only on first render)
+  // Initialise upvote count + voted state once from params (only on first render, if no backend questionData is loaded yet)
   useEffect(() => {
-    if (!upvoteInit) {
+    if (!upvoteInit && !questionData) {
       setUpvoteCount(displayUpvotes);
       // hasVotedParam is "1" (voted) or "0" / undefined (not voted)
       setUpvoted(hasVotedParam === "1");
       setUpvoteInit(true);
     }
-  }, [displayUpvotes, hasVotedParam, upvoteInit]);
+  }, [displayUpvotes, hasVotedParam, upvoteInit, questionData]);
 
   const handleUpvote = async () => {
     if (dummy) {

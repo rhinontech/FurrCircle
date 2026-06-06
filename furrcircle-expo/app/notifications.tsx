@@ -144,19 +144,60 @@ export default function NotificationsScreen() {
 
     const p = n.actionPayload || {};
     switch (n.actionType) {
-      case "profile":
-        if (p.id) router.push(`/u/${p.id}` as any);
+      case "profile": {
+        const userId = p.id || p.userId || n.relatedId;
+        if (userId) router.push(`/u/${userId}` as any);
         break;
+      }
       case "like":
-      case "comment":
-        if (p.postId) router.push(`/post/${p.postId}` as any);
+      case "comment": {
+        const postId = p.postId || n.relatedId;
+        if (postId) router.push(`/post/${postId}` as any);
         break;
+      }
       case "reminder":
         // Navigate to care/today screen which shows reminders
         router.push("/today" as any);
         break;
-      case "appointment_detail":
-        if (p.appointmentId) router.push({ pathname: "/book", params: { id: p.appointmentId } });
+      case "appointment_detail": {
+        const appointmentId = p.appointmentId || n.relatedId;
+        if (appointmentId) router.push({ pathname: "/book", params: { id: appointmentId } });
+        break;
+      }
+      case "chat_thread": {
+        const chatId = p.conversationId || p.id || n.relatedId;
+        if (chatId) {
+          router.push({ pathname: "/chat", params: { id: chatId } });
+        } else {
+          router.push("/chat" as any);
+        }
+        break;
+      }
+      case "event_detail": {
+        const eventId = p.eventId || p.id || n.relatedId;
+        if (eventId) {
+          router.push({ pathname: "/events", params: { eventId } });
+        } else {
+          router.push("/events" as any);
+        }
+        break;
+      }
+      case "question_detail":
+      case "thread": {
+        const questionId = p.questionId || p.id || n.relatedId;
+        if (questionId) {
+          router.push(`/thread/${questionId}` as any);
+        }
+        break;
+      }
+      case "events_list":
+        router.push("/events" as any);
+        break;
+      case "discover":
+        router.push("/discover" as any);
+        break;
+      case "community":
+        router.push("/community" as any);
         break;
       default:
         break;
@@ -247,25 +288,10 @@ export default function NotificationsScreen() {
             </>
           )}
 
-          {/* ── Reminders ────────────────────────────────────────────────── */}
-          {reminderNotifs.length > 0 && (
-            <>
-              <SectionLabel label="Reminders" tk={tk} />
-              {reminderNotifs.map(n => (
-                <NotifRow key={n.id} n={n} tk={tk} onPress={() => handleTap(n)} />
-              ))}
-            </>
-          )}
-
-          {/* ── Activity (like / comment / follow / appointment) ─────────── */}
-          {activityNotifs.length > 0 && (
-            <>
-              <SectionLabel label="Activity" tk={tk} />
-              {activityNotifs.map(n => (
-                <NotifRow key={n.id} n={n} tk={tk} onPress={() => handleTap(n)} />
-              ))}
-            </>
-          )}
+          {/* ── Notifications List ───────────────────────────────────────── */}
+          {mergedNotifications.map(n => (
+            <NotifRow key={n.id} n={n} tk={tk} onPress={() => handleTap(n)} />
+          ))}
 
           {/* ── Empty state ──────────────────────────────────────────────── */}
           {pendingRequests.length === 0 && mergedNotifications.length === 0 && (

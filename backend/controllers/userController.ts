@@ -18,12 +18,20 @@ export const getUserByHandle = async (req: any, res: Response): Promise<void> =>
     const { users: User, vets: Vet, pets: Pet, posts: Post, user_blocks: UserBlock } = db as any;
     const { handle } = req.params;
 
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(handle);
+
     // Search in Users
     let isVet = false;
     let account = await User.findOne({
       where: { username: { [Op.iLike]: handle } },
       attributes: ['id', 'name', 'username', 'avatar_url', 'bio', 'city', 'role', 'isVerified', 'createdAt', 'isPrivate'],
     });
+
+    if (!account && isUUID) {
+      account = await User.findByPk(handle, {
+        attributes: ['id', 'name', 'username', 'avatar_url', 'bio', 'city', 'role', 'isVerified', 'createdAt', 'isPrivate'],
+      });
+    }
 
     if (!account) {
       // Search in Vets
@@ -32,6 +40,13 @@ export const getUserByHandle = async (req: any, res: Response): Promise<void> =>
         attributes: ['id', 'name', 'username', 'avatar_url', 'bio', 'city', 'profession', 'hospital_name', 'rating', 'isVerified', 'createdAt'],
       });
       isVet = !!account;
+
+      if (!account && isUUID) {
+        account = await Vet.findByPk(handle, {
+          attributes: ['id', 'name', 'username', 'avatar_url', 'bio', 'city', 'profession', 'hospital_name', 'rating', 'isVerified', 'createdAt'],
+        });
+        isVet = !!account;
+      }
     }
 
     if (!account) {

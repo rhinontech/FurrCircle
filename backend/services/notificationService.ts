@@ -49,6 +49,9 @@ const defaultActionFromRelated = (relatedType?: string, relatedId?: string) => {
       return { actionType: "appointment_detail", actionPayload: relatedId ? { appointmentId: relatedId } : null };
     case "event":
       return { actionType: relatedId ? "event_detail" : "events_list", actionPayload: relatedId ? { eventId: relatedId } : null };
+    case "question":
+    case "thread":
+      return { actionType: "question_detail", actionPayload: relatedId ? { questionId: relatedId } : null };
     case "adoption_application":
       return { actionType: "notifications", actionPayload: null };
     case "vaccine":

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Pressable, StyleSheet,
   ActivityIndicator, Image, Modal, Alert,
@@ -9,7 +9,7 @@ import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 import { MapPin, Users, Calendar, Clock, X, CalendarDays } from "lucide-react-native";
 import { eventApi } from "../services/community/eventApi";
-import { useFocusEffect } from "expo-router";
+import { useLocalSearchParams, useFocusEffect } from "expo-router";
 import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
 
 const filters = ["All", "Adoption", "Playdate", "Training", "Meetup"] as const;
@@ -50,11 +50,32 @@ const parseEventDate = (dateStr?: string) => {
 
 export default function EventsScreen() {
   const tk = useTokens();
+  const { eventId } = useLocalSearchParams<{ eventId?: string }>();
+
   const [active, setActive] = useState<string>("All");
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [bookingInProgress, setBookingInProgress] = useState(false);
+
+  useEffect(() => {
+    if (eventId) {
+      const loadSpecificEvent = async () => {
+        try {
+          const detail = await eventApi.getEventById(eventId);
+          if (detail) {
+            setSelectedEvent(detail);
+          }
+        } catch (err) {
+          console.error("Failed to load specific event from notification:", err);
+          // Fallback to searching in events list
+          const found = events.find(e => String(e.id) === String(eventId));
+          if (found) setSelectedEvent(found);
+        }
+      };
+      loadSpecificEvent();
+    }
+  }, [eventId, events.length]);
 
   const fetchEvents = async () => {
     try {
