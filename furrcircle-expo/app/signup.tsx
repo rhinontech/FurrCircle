@@ -358,9 +358,9 @@ export default function SignupScreen() {
           {/* <TouchableOpacity style={styles.socialBtn} onPress={() => Alert.alert("Coming soon", "Apple Sign-in coming soon!")}>
             <Text style={styles.socialBtnText}>🍎  Continue with Apple</Text>
           </TouchableOpacity> */}
-          <TouchableOpacity style={[styles.socialBtn, { marginTop: 12 }]} onPress={() => Alert.alert("Coming soon", "Google Sign-in coming soon!")}>
+          {/* <TouchableOpacity style={[styles.socialBtn, { marginTop: 12 }]} onPress={() => Alert.alert("Coming soon", "Google Sign-in coming soon!")}>
             <Text style={styles.socialBtnText}>🌐  Continue with Google</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <View style={[styles.footer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 0 }]}>
             <Text style={styles.footerText}>Already have an account? </Text>
