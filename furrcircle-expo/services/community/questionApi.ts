@@ -78,5 +78,4 @@ export const questionApi = {
     addAnswer,
     getAnswers,
     deleteQuestion,
-    getQuestionById,
 };
