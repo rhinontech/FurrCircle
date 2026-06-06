@@ -234,9 +234,9 @@ export default function LoginScreen() {
           {/* <TouchableOpacity style={[styles.socialBtn, { marginTop: 12 }]} onPress={() => Alert.alert("Coming soon", "Apple Sign-in coming soon!")}>
             <Text style={styles.socialBtnText}>🍎  Continue with Apple</Text>
           </TouchableOpacity> */}
-          <TouchableOpacity style={[styles.socialBtn, { marginTop: 12 }]} onPress={() => Alert.alert("Coming soon", "Google Sign-in coming soon!")}>
+          {/* <TouchableOpacity style={[styles.socialBtn, { marginTop: 12 }]} onPress={() => Alert.alert("Coming soon", "Google Sign-in coming soon!")}>
             <Text style={styles.socialBtnText}>🌐  Continue with Google</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account? </Text>
