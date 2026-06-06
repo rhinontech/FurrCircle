@@ -288,13 +288,20 @@ export const searchFollowers = async (req: any, res: Response): Promise<void> =>
     const q = String(req.query.q || "").trim();
     const currentUserId = req.user.id;
 
-    // Get all accepted followers of the current user
-    const followerRows = await Follow.findAll({
-      where: { followingId: currentUserId, status: 'accepted' },
-      attributes: ['followerId'],
+    // Get all accepted follows involving the current user (either follower or following)
+    const followRows = await Follow.findAll({
+      where: {
+        [Op.or]: [
+          { followingId: currentUserId, status: 'accepted' },
+          { followerId: currentUserId, status: 'accepted' }
+        ]
+      },
+      attributes: ['followerId', 'followingId'],
     });
 
-    const followerIds: string[] = followerRows.map((r: any) => r.followerId);
+    const followerIds: string[] = Array.from(new Set(
+      followRows.map((r: any) => r.followerId === currentUserId ? r.followingId : r.followerId)
+    ));
 
     if (followerIds.length === 0) {
       res.json([]);

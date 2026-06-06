@@ -7,7 +7,7 @@ import { petApi } from "../../services/pet/petApi";
 import { appointmentApi } from "../../services/appointment/appointmentApi";
 import { reminderApi } from "../../services/reminder/reminderApi";
 import { colors } from "../../src/lib/theme";
-import { useTokens } from "../../src/lib/theme-store";
+import { useTokens, useThemeStore } from "../../src/lib/theme-store";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ChevronDown } from "lucide-react-native";
 
@@ -15,6 +15,7 @@ export default function BookVetScreen() {
   const router = useRouter();
   const { vetId } = useLocalSearchParams<{ vetId: string }>();
   const tk = useTokens();
+  const dark = useThemeStore((s) => s.dark);
 
   const [pets, setPets] = useState<any[]>([]);
   const [selectedPet, setSelectedPet] = useState<string>("");
@@ -129,6 +130,7 @@ export default function BookVetScreen() {
               mode="date"
               display="default"
               minimumDate={new Date()}
+              themeVariant={dark ? "dark" : "light"}
               onChange={(e, d) => d && setDate(d)}
             />
           </View>
@@ -156,6 +158,7 @@ export default function BookVetScreen() {
               value={time}
               mode="time"
               display="default"
+              themeVariant={dark ? "dark" : "light"}
               onChange={(e, t) => t && setTime(t)}
             />
           </View>
