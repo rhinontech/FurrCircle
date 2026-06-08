@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   View, Text, Image, Modal, StyleSheet, Dimensions,
-  TouchableOpacity, Animated, Pressable, SafeAreaView, PanResponder, Alert,
+  TouchableOpacity, Animated, Pressable, PanResponder, Alert,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { X, Trash2 } from "lucide-react-native";
 import { useTokens } from "../lib/theme-store";
 import { useBreakpoint } from "../lib/breakpoints";
 import { storyApi } from "../../services/community/storyApi";
 import { Video, ResizeMode } from "expo-av";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const STORY_DURATION = 4000; // 4 seconds per story
@@ -41,6 +43,7 @@ interface StoryViewerProps {
 export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, onStoryDeleted, onStoryViewed }: StoryViewerProps) {
   const tk = useTokens();
   const { isTablet } = useBreakpoint();
+  const insets = useSafeAreaInsets();
   const [groupIndex, setGroupIndex] = useState(initialGroupIndex);
   const [storyIndex, setStoryIndex] = useState(0);
   const [mediaLoading, setMediaLoading] = useState(true);
@@ -75,7 +78,7 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
     if (animationRef.current) {
       animationRef.current.stop();
     }
-    
+
     animationRef.current = Animated.timing(progress, {
       toValue: 1,
       duration: duration,
@@ -156,7 +159,7 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
       }
 
       if (currentStory.id && !currentStory.id.startsWith("my-")) {
-        storyApi.viewStory(currentStory.id).catch(() => {});
+        storyApi.viewStory(currentStory.id).catch(() => { });
         if (onStoryViewed) {
           onStoryViewed(currentStory.id, currentGroup.userId);
         }
@@ -232,7 +235,7 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
           <View style={styles.topOverlay} />
 
           {/* Progress Bar Indicators */}
-          <SafeAreaView style={styles.safeArea}>
+          <View style={[styles.safeArea, { paddingTop: Math.max(insets.top, 10) }]}>
             <View style={styles.progressBarContainer}>
               {currentGroup.stories.map((_, index) => {
                 let width: any = "0%";
@@ -278,7 +281,7 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
                 </TouchableOpacity>
               </View>
             </View>
-          </SafeAreaView>
+          </View>
 
           {/* Center Overlay Text */}
           {currentStory.overlayText ? (
@@ -289,7 +292,7 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
 
           {/* Caption & View Count */}
           {(currentStory.caption || currentStory.viewCount !== undefined) && (
-            <View style={styles.captionContainer}>
+            <View style={[styles.captionContainer, { bottom: Math.max(insets.bottom, 16) + 40 }]}>
               {currentStory.caption ? (
                 <Text style={styles.captionText}>{currentStory.caption}</Text>
               ) : null}
@@ -317,9 +320,9 @@ const styles = StyleSheet.create({
   contentWrapper: { width: "100%", height: "100%", position: "relative", overflow: "hidden" },
   contentWrapperTablet: { maxWidth: 480, aspectRatio: 9 / 16, alignSelf: "center", borderRadius: 16 },
   media: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0 },
-  topOverlay: { position: "absolute", top: 0, left: 0, right: 0, height: 120, backgroundColor: "rgba(0,0,0,0.35)" },
+  topOverlay: { position: "absolute", top: 0, left: 0, right: 0, height: Platform.OS === 'ios' ? 135 : 100, backgroundColor: "rgba(0,0,0,0.35)" },
   safeArea: { zIndex: 10 },
-  progressBarContainer: { flexDirection: "row", paddingHorizontal: 16, paddingTop: 10, gap: 4 },
+  progressBarContainer: { flexDirection: "row", paddingHorizontal: 16, paddingTop: 0, gap: 4 },
   progressTrack: { flex: 1, height: 3, backgroundColor: "rgba(255, 255, 255, 0.35)", borderRadius: 1.5, overflow: "hidden" },
   progressFill: { height: "100%", backgroundColor: "#fff" },
   header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, marginTop: 12, gap: 10 },
