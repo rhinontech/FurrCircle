@@ -48,7 +48,7 @@ export const followUser = async (req: any, res: Response): Promise<void> => {
         relatedId: followerId,
         relatedType: "user",
         actionType: "profile",
-        actionPayload: { id: followerId },
+        actionPayload: { id: followerId, username: req.user.username },
       });
     } else {
       await createRichNotification({
@@ -61,7 +61,7 @@ export const followUser = async (req: any, res: Response): Promise<void> => {
         relatedId: followerId,
         relatedType: "user",
         actionType: "notifications",
-        actionPayload: { followId: follow.id, followerId },
+        actionPayload: { followId: follow.id, followerId, username: req.user.username },
         sendPush: true,
       });
     }
@@ -122,7 +122,7 @@ export const acceptRequest = async (req: any, res: Response): Promise<void> => {
       relatedId: followingId,
       relatedType: "user",
       actionType: "profile",
-      actionPayload: { id: followingId },
+      actionPayload: { id: followingId, username: req.user.username },
       sendPush: true,
     });
 
@@ -160,7 +160,7 @@ export const rejectRequest = async (req: any, res: Response): Promise<void> => {
       relatedId: followingId,
       relatedType: "user",
       actionType: "profile",
-      actionPayload: { id: followingId },
+      actionPayload: { id: followingId, username: req.user.username },
       sendPush: false, // Quiet — no push for rejection, just in-app
     }).catch(() => {}); // fire and forget
 

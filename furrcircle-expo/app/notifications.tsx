@@ -145,8 +145,8 @@ export default function NotificationsScreen() {
     const p = n.actionPayload || {};
     switch (n.actionType) {
       case "profile": {
-        const userId = p.id || p.userId || n.relatedId;
-        if (userId) router.push(`/u/${userId}` as any);
+        const handle = p.username || p.id || p.userId || n.relatedId;
+        if (handle) router.push(`/u/${handle}` as any);
         break;
       }
       case "like":

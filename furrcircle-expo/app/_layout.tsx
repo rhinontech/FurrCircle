@@ -63,8 +63,8 @@ const handleNotificationRedirect = (remoteMessage: any, router: any) => {
     const postId = actionPayload.postId || relatedId;
     if (postId) router.push(`/post/${postId}`);
   } else if (actionType === 'profile' || actionType === 'user_profile') {
-    const userId = actionPayload.id || actionPayload.userId || relatedId;
-    if (userId) router.push(`/u/${userId}`);
+    const handle = actionPayload.username || actionPayload.id || actionPayload.userId || relatedId;
+    if (handle) router.push(`/u/${handle}`);
   } else if (actionType === 'event_detail') {
     const eventId = actionPayload.eventId || actionPayload.id || relatedId;
     if (eventId) {

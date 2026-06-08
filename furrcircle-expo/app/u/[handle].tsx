@@ -55,7 +55,8 @@ export default function UserProfileScreen() {
   const [saved, setSaved] = useState<any[]>([]);
   const [loadingTab, setLoadingTab] = useState(false);
 
-  const isOwnProfile = me?.username === handle;
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(handle || "");
+  const isOwnProfile = me?.username === handle || (isUUID && me?.id === handle) || (userProfile && me?.username === userProfile.username);
 
   const handleFollowToggle = async () => {
     if (!userProfile) return;
@@ -84,8 +85,9 @@ export default function UserProfileScreen() {
 
   const handleBlockUser = () => {
     setMenuOpen(false);
+    const userDisplay = userProfile?.username || handle;
     Alert.alert(
-      `Block @${handle}?`,
+      `Block @${userDisplay}?`,
       `They won't be able to see your profile or contact you. They won't be notified that you blocked them.`,
       [
         { text: "Cancel", style: "cancel" },
@@ -145,22 +147,29 @@ export default function UserProfileScreen() {
       if (!handle) return;
       setLoading(true);
       userApi.getUserProfile(handle as string)
-        .then(data => { setUserProfile(data); setLoading(false); })
-        .catch(err => { console.error("Failed to load profile:", err); setLoading(false); });
+        .then(data => {
+          setUserProfile(data);
+          setLoading(false);
 
-      // Load posts (own or other)
-      setLoadingTab(true);
-      const postsPromise = isOwnProfile ? feedApi.getMyPosts() : feedApi.getUserPosts(handle);
-      postsPromise
-        .then(setPosts)
-        .catch(() => setPosts([]))
-        .finally(() => setLoadingTab(false));
+          // Fetch posts and saved posts using resolved username / check ownership
+          setLoadingTab(true);
+          const isOwn = me?.username === data.username || me?.id === data.id;
+          const postsPromise = isOwn ? feedApi.getMyPosts() : feedApi.getUserPosts(data.username);
 
-      // Load saved only for own profile
-      if (isOwnProfile) {
-        feedApi.getSavedPosts().then(setSaved).catch(() => setSaved([]));
-      }
-    }, [handle, isOwnProfile])
+          postsPromise
+            .then(setPosts)
+            .catch(() => setPosts([]))
+            .finally(() => setLoadingTab(false));
+
+          if (isOwn) {
+            feedApi.getSavedPosts().then(setSaved).catch(() => setSaved([]));
+          }
+        })
+        .catch(err => {
+          console.error("Failed to load profile:", err);
+          setLoading(false);
+        });
+    }, [handle, me?.username, me?.id])
   );
 
   const gridData = tab === "Posts" ? posts : tab === "Saved" ? saved : [];
@@ -169,7 +178,7 @@ export default function UserProfileScreen() {
     <PageContainer>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
-          title={`@${handle}`}
+          title={userProfile?.username ? `@${userProfile.username}` : `@${handle}`}
           right={
             <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
               <TouchableOpacity
@@ -404,7 +413,7 @@ export default function UserProfileScreen() {
               disabled={isBlocking}
             >
               <ShieldOff size={22} color="#EF4444" />
-              <Text style={[styles.menuItemText, { color: "#EF4444" }]}>Block @{handle}</Text>
+              <Text style={[styles.menuItemText, { color: "#EF4444" }]}>Block @{userProfile?.username || handle}</Text>
             </TouchableOpacity>
             <View style={[styles.menuDivider, { backgroundColor: tk.border }]} />
             <TouchableOpacity style={styles.menuItem} onPress={handleReportUser}>
@@ -491,7 +500,7 @@ export default function UserProfileScreen() {
       <ShareSheet
         open={shareOpen}
         onClose={() => setShareOpen(false)}
-        username={handle}
+        username={userProfile?.username || handle}
       />
     </PageContainer>
   );
