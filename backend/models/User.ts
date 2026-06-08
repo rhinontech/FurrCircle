@@ -80,6 +80,11 @@ export default (sequelize: Sequelize) => {
                 allowNull: false,
                 defaultValue: false,
             },
+            twoFactorEnabled: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
             petTypeInterests: {
                 type: DataTypes.ARRAY(DataTypes.STRING),
                 allowNull: true,

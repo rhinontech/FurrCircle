@@ -45,7 +45,7 @@ export default function SettingsScreen() {
   }
 
   const privateProfile = user?.isPrivate || false;
-  const [twoFA, setTwoFA] = useState(false);
+  const twoFactorEnabled = user?.twoFactorEnabled || false;
   const [pushNotifs, setPushNotifs] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -111,6 +111,21 @@ export default function SettingsScreen() {
     }
   };
 
+  const toggleTwoFA = async (val: boolean) => {
+    // Optimistic update
+    if (user) await setSession({ ...user, twoFactorEnabled: val });
+    try {
+      const res = await userApi.updateProfile({ twoFactorEnabled: val });
+      if (res.success && res.user && user) {
+        await setSession({ ...user, ...res.user });
+      }
+    } catch (err) {
+      // Revert on failure
+      if (user) await setSession({ ...user, twoFactorEnabled: !val });
+      console.error('Failed to update two-factor auth settings', err);
+    }
+  };
+
 
 
   const handleManualLocationSelect = async (loc: LocationResult) => {
@@ -143,7 +158,7 @@ export default function SettingsScreen() {
             toggle={privateProfile} onToggle={togglePrivateProfile} />
           <Row tk={tk} icon={Lock} iconBg="rgba(76,175,80,0.15)" iconColor={colors.success}
             label="Two-factor auth" sub="Extra step on new logins"
-            toggle={twoFA} onToggle={setTwoFA} />
+            toggle={twoFactorEnabled} onToggle={toggleTwoFA} />
           <TouchableOpacity onPress={() => router.push('/blocked-accounts' as any)} activeOpacity={0.8}>
             <View pointerEvents="none">
               <Row tk={tk} icon={ShieldAlert} iconBg="rgba(255,107,107,0.15)" iconColor={colors.coral}

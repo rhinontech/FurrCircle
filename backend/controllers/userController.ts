@@ -143,7 +143,7 @@ export const updateProfile = async (req: any, res: Response): Promise<void> => {
   try {
     const { users: User } = db as any;
     const userId = req.user.id;
-    const { isPrivate, name, username, city, address, bio, avatar_url, latitude, longitude } = req.body;
+    const { isPrivate, name, username, city, address, bio, avatar_url, latitude, longitude, twoFactorEnabled } = req.body;
 
     const user = await User.findByPk(userId);
     if (!user) {
@@ -168,6 +168,7 @@ export const updateProfile = async (req: any, res: Response): Promise<void> => {
     if (avatar_url !== undefined) user.avatar_url = avatar_url;
     if (latitude !== undefined) user.latitude = latitude;
     if (longitude !== undefined) user.longitude = longitude;
+    if (twoFactorEnabled !== undefined) user.twoFactorEnabled = twoFactorEnabled;
 
     await user.save();
     res.json({ success: true, user: user.toJSON() });

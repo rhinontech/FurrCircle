@@ -13,6 +13,7 @@ export type AuthPayload = {
     isVerified?: boolean;
     hasCompletedOnboarding?: boolean;
     isPrivate?: boolean;
+    twoFactorEnabled?: boolean;
     avatar_url?: string;
     bio?: string;
     city?: string;

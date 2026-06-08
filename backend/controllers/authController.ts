@@ -48,6 +48,7 @@ const buildAuthPayload = async (subject: any, userType: 'user' | 'vet', token?: 
     city: subject.city,
     address: subject.address,
     isPrivate: subject.isPrivate,
+    twoFactorEnabled: subject.twoFactorEnabled,
     memberSince: toMemberSince(subject.createdAt),
   };
 
@@ -377,6 +378,31 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
         return;
       }
 
+      // Check 2FA
+      if (user.twoFactorEnabled) {
+        const otpCode = generateOtp();
+        user.otpCode = otpCode;
+        user.otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
+        await user.save();
+
+        if (user.email) {
+          await sendEmail(user.email, "Verify Your FurrCircle Account", "email-otp", { name: user.name, otp: otpCode });
+        } else if (user.phone) {
+          await sendSmsOtp(user.phone, otpCode);
+        }
+
+        res.json({
+          success: true,
+          twoFactorRequired: true,
+          userId: user.id,
+          emailOrPhone: user.email || user.phone,
+          message: user.email 
+            ? "Two-factor authentication is enabled. A verification code has been sent to your email."
+            : "Two-factor authentication is enabled. A verification code has been sent to your phone."
+        });
+        return;
+      }
+
       const token = generateToken(user.id, 'user');
       res.json(await buildAuthPayload(user, 'user', token));
       return;
@@ -405,6 +431,31 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
           message: vet.email 
             ? "Account is not verified. A verification code has been sent to your email."
             : "Account is not verified. A verification code has been sent to your phone."
+        });
+        return;
+      }
+
+      // Check 2FA
+      if (vet.twoFactorEnabled) {
+        const otpCode = generateOtp();
+        vet.otpCode = otpCode;
+        vet.otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
+        await vet.save();
+
+        if (vet.email) {
+          await sendEmail(vet.email, "Verify Your FurrCircle Account", "email-otp", { name: vet.name, otp: otpCode });
+        } else if (vet.phone) {
+          await sendSmsOtp(vet.phone, otpCode);
+        }
+
+        res.json({
+          success: true,
+          twoFactorRequired: true,
+          userId: vet.id,
+          emailOrPhone: vet.email || vet.phone,
+          message: vet.email 
+            ? "Two-factor authentication is enabled. A verification code has been sent to your email."
+            : "Two-factor authentication is enabled. A verification code has been sent to your phone."
         });
         return;
       }
@@ -594,7 +645,7 @@ export const updateUserProfile = async (req: any, res: Response): Promise<void> 
         return;
       }
 
-      const vetFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email', 'hospital_name', 'profession', 'experience', 'working_hours', 'clinicStampUrl', 'licenseNumber', 'username'];
+      const vetFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email', 'hospital_name', 'profession', 'experience', 'working_hours', 'clinicStampUrl', 'licenseNumber', 'username', 'twoFactorEnabled'];
       vetFields.forEach(field => {
         if (req.body[field] !== undefined) vet[field] = req.body[field];
       });
@@ -611,7 +662,7 @@ export const updateUserProfile = async (req: any, res: Response): Promise<void> 
       return;
     }
 
-    const userFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email', 'username'];
+    const userFields = [...PROFILE_IMAGE_FIELDS, 'name', 'email', 'username', 'twoFactorEnabled'];
     userFields.forEach(field => {
       if (req.body[field] !== undefined) user[field] = req.body[field];
     });

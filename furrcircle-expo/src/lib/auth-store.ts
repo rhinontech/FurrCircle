@@ -63,6 +63,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return `unverified:${data.userId}:${data.emailOrPhone}`;
       }
 
+      if (data && data.twoFactorRequired) {
+        return `2fa:${data.userId}:${data.emailOrPhone}`;
+      }
+
       if (data && data.token) {
         await Promise.all([
           AsyncStorage.setItem(AUTH_KEY, JSON.stringify(data)),

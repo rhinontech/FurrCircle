@@ -69,6 +69,19 @@ export default function LoginScreen() {
             type: "email-verify-login"
           }
         });
+      } else if (err.startsWith("2fa:")) {
+        // Two-factor authentication is enabled.
+        const parts = err.split(":");
+        const userId = parts[1];
+        const emailOrPhone = parts.slice(2).join(":");
+        router.push({
+          pathname: "/otp-verify",
+          params: {
+            userId,
+            emailOrPhone,
+            type: "email-verify-login"
+          }
+        });
       } else {
         Alert.alert("Login failed", err);
       }

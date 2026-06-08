@@ -178,7 +178,7 @@ export default function UserProfileScreen() {
     <PageContainer>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
-          title={userProfile?.username ? `@${userProfile.username}` : `@${handle}`}
+          title={userProfile?.username ? `@${userProfile.username}` : (isUUID ? "Profile" : `@${handle}`)}
           right={
             <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
               <TouchableOpacity

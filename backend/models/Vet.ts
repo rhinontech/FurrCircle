@@ -81,6 +81,11 @@ export default (sequelize: Sequelize) => {
                 allowNull: false,
                 defaultValue: false,
             },
+            twoFactorEnabled: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
             bio: {
                 type: DataTypes.TEXT,
                 allowNull: true,

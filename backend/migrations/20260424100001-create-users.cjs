@@ -69,6 +69,11 @@ module.exports = {
         allowNull: false,
         defaultValue: false,
       },
+      twoFactorEnabled: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       otpCode: {
         type: Sequelize.STRING,
         allowNull: true

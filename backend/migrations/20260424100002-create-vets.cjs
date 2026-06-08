@@ -82,6 +82,11 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
+      twoFactorEnabled: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       username: {
         type: Sequelize.STRING,
         allowNull: false,
