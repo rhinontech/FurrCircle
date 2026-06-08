@@ -4,7 +4,7 @@ import {
   TouchableOpacity, Animated, Pressable, PanResponder, Alert,
   ActivityIndicator, Platform, FlatList,
 } from "react-native";
-import { X, Trash2 } from "lucide-react-native";
+import { X, Trash2, ChevronUp } from "lucide-react-native";
 import { useTokens } from "../lib/theme-store";
 import { useBreakpoint } from "../lib/breakpoints";
 import { storyApi } from "../../services/community/storyApi";
@@ -372,26 +372,34 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
             </View>
           ) : null}
 
-          {/* Caption & View Count */}
-          {(currentStory.caption || (currentGroup.userId === "me" && currentStory.viewCount !== undefined)) && (
-            <View style={[styles.captionContainer, { bottom: Math.max(insets.bottom, 16) + 40 }]}>
-              {currentStory.caption ? (
-                <Text style={styles.captionText}>{currentStory.caption}</Text>
-              ) : null}
-              {currentGroup.userId === "me" && currentStory.viewCount !== undefined && (() => {
-                const count = localViewCounts[currentStory.id] !== undefined
-                  ? localViewCounts[currentStory.id]
-                  : currentStory.viewCount;
-                return (
-                  <TouchableOpacity onPress={handleOpenViewers} style={{ marginTop: currentStory.caption ? 6 : 0, alignSelf: "center", paddingVertical: 4, paddingHorizontal: 12 }}>
-                    <Text style={[styles.viewCountText, { textAlign: "center", textDecorationLine: "underline" }]}>
-                      👁️ {count} {count === 1 ? "view" : "views"}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })()}
+          {/* Caption */}
+          {currentStory.caption ? (
+            <View style={[
+              styles.captionContainer,
+              { bottom: (currentGroup.userId === "me" && currentStory.viewCount !== undefined) ? Math.max(insets.bottom, 10) + 54 : Math.max(insets.bottom, 16) }
+            ]}>
+              <Text style={styles.captionText}>{currentStory.caption}</Text>
             </View>
-          )}
+          ) : null}
+
+          {/* View Count floating button at the bottom center (Instagram style) */}
+          {currentGroup.userId === "me" && currentStory.viewCount !== undefined && (() => {
+            const count = localViewCounts[currentStory.id] !== undefined
+              ? localViewCounts[currentStory.id]
+              : currentStory.viewCount;
+            return (
+              <TouchableOpacity
+                onPress={handleOpenViewers}
+                style={[styles.floatingViewCount, { bottom: Math.max(insets.bottom, 10) }]}
+                activeOpacity={0.8}
+              >
+                <ChevronUp size={16} color="rgba(255, 255, 255, 0.85)" style={styles.chevronUp} />
+                <Text style={styles.viewCountTextBottom}>
+                  {count} {count === 1 ? "view" : "views"}
+                </Text>
+              </TouchableOpacity>
+            );
+          })()}
 
           {/* Touch zones for navigation */}
           <View style={styles.touchZones}>
@@ -509,6 +517,29 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 11,
     marginTop: 1,
+  },
+  floatingViewCount: {
+    position: "absolute",
+    alignSelf: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 4,
+    zIndex: 10,
+  },
+  chevronUp: {
+    marginTop: -1,
+  },
+  viewCountTextBottom: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
   },
   loaderContainer: {
     ...StyleSheet.absoluteFillObject,
