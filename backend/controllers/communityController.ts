@@ -5,6 +5,20 @@ import { createNotification, createRichNotification } from "../services/notifica
 import { sendEmail } from "../services/emailService.ts";
 import { emitToActor, isUserOnline } from "../services/realtimeService.ts";
 
+const getCleanNotificationBody = (text: string): string => {
+  const safeText = String(text || "");
+  const clean = safeText.replace(/furrcircle:\/\/\S*/g, "").replace(/\s+/g, " ").trim();
+  if (!clean) {
+    if (safeText.includes("furrcircle://post/")) return "Shared a post";
+    if (safeText.includes("furrcircle://profile/")) return "Shared a profile";
+    if (safeText.includes("furrcircle://circle/")) return "Shared a circle";
+    if (safeText.includes("furrcircle://thread/")) return "Shared a discussion";
+    if (safeText.includes("furrcircle://pet/")) return "Shared a pet";
+    return "Sent a link";
+  }
+  return clean.length > 80 ? clean.substring(0, 80) + "…" : clean;
+};
+
 const toPlain = (value: any) => (value && typeof value.toJSON === "function" ? value.toJSON() : value);
 
 const createProfileResolver = () => {
@@ -96,7 +110,11 @@ const serializePost = async (
   const comments = await Promise.all(
     (payload.comments || [])
       .slice()
-      .sort((a: any, b: any) => `${a.createdAt || ""}`.localeCompare(`${b.createdAt || ""}`))
+      .sort((a: any, b: any) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeA - timeB;
+      })
       .map((comment: any) => serializeComment(comment, resolveProfile))
   );
 
@@ -151,9 +169,14 @@ const serializeConversation = async (
   const messages = await Promise.all(
     (payload.messages || [])
       .slice()
-      .sort((a: any, b: any) => `${a.createdAt || ""}`.localeCompare(`${b.createdAt || ""}`))
+      .sort((a: any, b: any) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeA - timeB;
+      })
       .map((message: any) => serializeMessage(message, resolveProfile))
   );
+
   const lastMessage = messages[messages.length - 1] || null;
 
   return {
@@ -713,14 +736,14 @@ export const toggleLike = async (req: any, res: Response): Promise<void> => {
     if (existingLike) {
       await existingLike.destroy();
       res.json({ liked: false, message: "Post unliked" });
-      recomputeEngagementScore(req.params.id).catch(() => {});
+      recomputeEngagementScore(req.params.id).catch(() => { });
       return;
     }
 
     await Like.create({ postId: req.params.id, userId: req.user.id, userType: req.userType || "user" });
     res.json({ liked: true, message: "Post liked" });
 
-    recomputeEngagementScore(req.params.id).catch(() => {});
+    recomputeEngagementScore(req.params.id).catch(() => { });
 
     // Notify post author (fire and forget, skip self-likes)
     if (post.userId !== req.user.id || post.userType !== (req.userType || "user")) {
@@ -730,14 +753,14 @@ export const toggleLike = async (req: any, res: Response): Promise<void> => {
         type: "like",
         category: "activity",
         title: `${req?.user?.name?.split(' ')[0] || 'Someone'} liked your post`,
-        actionType:"like",
-        actionPayload:{
-          postId:post.id,
+        actionType: "like",
+        actionPayload: {
+          postId: post.id,
         },
         message: post.content ? String(post.content).slice(0, 80) : "Your post got a like",
         relatedId: post.id,
         sendPush: true,
-      }).catch(() => {});
+      }).catch(() => { });
     }
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -793,7 +816,7 @@ export const sharePost = async (req: any, res: Response): Promise<void> => {
 
     res.json({ shareCount: post.shareCount });
 
-    recomputeEngagementScore(req.params.id).catch(() => {});
+    recomputeEngagementScore(req.params.id).catch(() => { });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -827,7 +850,7 @@ export const addComment = async (req: any, res: Response): Promise<void> => {
     const resolveProfile = createProfileResolver();
     res.status(201).json({ comment: await serializeComment(comment, resolveProfile) });
 
-    recomputeEngagementScore(req.params.id).catch(() => {});
+    recomputeEngagementScore(req.params.id).catch(() => { });
 
     // Notify post author (fire and forget, skip self-comments)
     if (post.userId !== req.user.id || post.userType !== (req.userType || "user")) {
@@ -837,15 +860,15 @@ export const addComment = async (req: any, res: Response): Promise<void> => {
         type: "comment",
         category: "activity",
         title: "New comment on your post",
-        actionType:"comment",
-        actionPayload:{
-          postId:post.id,
-          commentId:comment.id,
+        actionType: "comment",
+        actionPayload: {
+          postId: post.id,
+          commentId: comment.id,
         },
         message: String(text).trim().slice(0, 80),
         relatedId: post.id,
         sendPush: true,
-      }).catch(() => {});
+      }).catch(() => { });
     }
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -1059,9 +1082,9 @@ export const getChats = async (req: any, res: Response): Promise<void> => {
     );
 
     serialized.sort((a: any, b: any) => {
-      const aDate = a.lastMessage?.createdAt || a.updatedAt || a.createdAt;
-      const bDate = b.lastMessage?.createdAt || b.updatedAt || b.createdAt;
-      return `${bDate || ""}`.localeCompare(`${aDate || ""}`);
+      const aTime = new Date(a.lastMessage?.createdAt || a.updatedAt || a.createdAt).getTime();
+      const bTime = new Date(b.lastMessage?.createdAt || b.updatedAt || b.createdAt).getTime();
+      return bTime - aTime;
     });
 
     // Deduplicate conversations, AND filter out blocked users
@@ -1173,7 +1196,7 @@ export const sendMessage = async (req: any, res: Response): Promise<void> => {
         recipientType,
         "chat",
         `New message from ${req.user.name || "Someone"}`,
-        text.length > 80 ? text.substring(0, 80) + "…" : text,
+        getCleanNotificationBody(text),
         conversation.id,
         "chat"
       );
@@ -1290,7 +1313,7 @@ export const startChat = async (req: any, res: Response): Promise<void> => {
 
     // We removed petId from the 'where' clause so that 1-on-1 chats 
     // are ALWAYS reused, preventing duplicate conversation threads.
-    
+
     let conversation = await Conversation.findOne({ where });
     if (conversation && petId && conversation.petId !== petId) {
       // Optionally update the petId if a new one is provided and we are reusing a chat
@@ -1338,7 +1361,7 @@ export const startChat = async (req: any, res: Response): Promise<void> => {
           recipientType,
           "chat",
           `New message from ${req.user.name || "Someone"}`,
-          firstMessage.length > 80 ? firstMessage.substring(0, 80) + "…" : firstMessage,
+          getCleanNotificationBody(firstMessage),
           conversation.id,
           "chat"
         );

@@ -636,9 +636,11 @@ export default function ChatScreen() {
   const clearChatUnread = useNotificationStore((s) => s.clearChatUnread);
 
   // --- List View Methods ---
-  const loadConversations = async () => {
+  const loadConversations = async (showLoader = true) => {
     try {
-      setLoading(true);
+      if (showLoader) {
+        setLoading(true);
+      }
       const data = await chatApi.getChats();
       setConversations(data);
     } catch (err) {
@@ -650,16 +652,40 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (!selectedChat) {
-      loadConversations();
+      loadConversations(conversations.length === 0);
     }
   }, [selectedChat]);
 
   // Handle global socket events for list view
   useEffect(() => {
     const unsub = socketService.on("chat:message", (data: any) => {
-      // If we're in the list view, just reload conversations to get the latest message and sort order
-      if (!selectedChat) {
-        loadConversations();
+      if (data.conversationId && data.message) {
+        setConversations((prevConvs) => {
+          const index = prevConvs.findIndex((c) => c.id === data.conversationId);
+          if (index === -1) {
+            // New conversation, fetch latest list silently
+            loadConversations(false);
+            return prevConvs;
+          }
+
+          const updatedConversations = [...prevConvs];
+          const conversationToUpdate = { 
+            ...updatedConversations[index],
+            lastMessage: data.message,
+            updatedAt: data.message.createdAt,
+          };
+
+          // Increment unread count if we are not currently viewing this chat
+          if (selectedChat !== data.conversationId) {
+            conversationToUpdate.unreadCount = (conversationToUpdate.unreadCount || 0) + 1;
+          }
+
+          // Move the updated conversation to the top
+          updatedConversations.splice(index, 1);
+          updatedConversations.unshift(conversationToUpdate);
+
+          return updatedConversations;
+        });
       }
     });
     return () => unsub();
@@ -719,6 +745,13 @@ export default function ChatScreen() {
       clearChatUnread(); // Mark all chats read when opening a specific chat
       // Also inform the backend
       chatApi.markChatAsRead(selectedChat).catch(() => { });
+
+      // Update local conversations state to reset unread count of the selected chat
+      setConversations((prevConvs) =>
+        prevConvs.map((c) =>
+          c.id === selectedChat ? { ...c, unreadCount: 0 } : c
+        )
+      );
     }
   }, [selectedChat]);
 
@@ -871,18 +904,41 @@ export default function ChatScreen() {
   // Group messages by date for dividers (must be at top level to follow Rules of Hooks)
   const groupedMessages = useMemo(() => {
     if (!selectedChat) return [];
-    const groups: { [key: string]: any[] } = {};
-    messages.forEach(m => {
-      const d = getDateGroup(m.createdAt);
-      if (!groups[d]) groups[d] = [];
-      groups[d].push(m);
+
+    // Sort messages chronologically (oldest to newest) to prevent out-of-order rendering
+    const sortedMessages = [...messages].sort((a, b) => {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
+
+    // Group messages by start of the day
+    const dayGroups: { dayTimestamp: number; dateText: string; messages: any[] }[] = [];
+
+    sortedMessages.forEach(m => {
+      const msgDate = new Date(m.createdAt);
+      const startOfDay = new Date(msgDate.getFullYear(), msgDate.getMonth(), msgDate.getDate()).getTime();
+
+      let group = dayGroups.find(g => g.dayTimestamp === startOfDay);
+      if (!group) {
+        group = {
+          dayTimestamp: startOfDay,
+          dateText: getDateGroup(m.createdAt),
+          messages: []
+        };
+        dayGroups.push(group);
+      }
+      group.messages.push(m);
+    });
+
+    // Sort the day groups chronologically (oldest day first)
+    dayGroups.sort((a, b) => a.dayTimestamp - b.dayTimestamp);
+
     // Flatten into renderable array with dividers
     const result: any[] = [];
-    Object.keys(groups).forEach(date => {
-      result.push({ type: 'divider', text: date, id: `div-${date}` });
-      result.push(...groups[date].map(m => ({ ...m, type: 'message' })));
+    dayGroups.forEach(group => {
+      result.push({ type: 'divider', text: group.dateText, id: `div-${group.dayTimestamp}` });
+      result.push(...group.messages.map(m => ({ ...m, type: 'message' })));
     });
+
     return result.reverse(); // FlatList inverted expects newest first
   }, [messages, selectedChat]);
 
