@@ -4,14 +4,18 @@ import db from "../models/index.ts";
 
 const toPlain = (value: any) => (value && typeof value.toJSON === "function" ? value.toJSON() : value);
 
-const serializeStory = (story: any, viewerIds: Set<string>) => {
+const serializeStory = (story: any, viewerIds: Set<string>, currentUserId: string) => {
     const payload = toPlain(story);
+    const viewCount = payload.userId === currentUserId
+        ? (payload.views || []).filter((v: any) => v.viewerId !== currentUserId).length
+        : payload.viewCount || 0;
+
     return {
         id: payload.id,
         mediaUrl: payload.mediaUrl,
         mediaType: payload.mediaType,
         caption: payload.caption || null,
-        viewCount: payload.viewCount || 0,
+        viewCount,
         viewedByMe: viewerIds.has(payload.id),
         createdAt: payload.createdAt,
         expiresAt: payload.expiresAt,
@@ -48,6 +52,11 @@ export const getStoriesForCity = async (req: any, res: Response): Promise<void> 
                     as: "author",
                     attributes: ["id", "name", "avatar_url"],
                 },
+                {
+                    model: StoryView,
+                    as: "views",
+                    attributes: ["id", "viewerId"],
+                },
             ],
             order: [["createdAt", "DESC"]],
         });
@@ -80,7 +89,7 @@ export const getStoriesForCity = async (req: any, res: Response): Promise<void> 
                     stories: [],
                 };
             }
-            groups[uid].stories.push(serializeStory(story, viewedIds));
+            groups[uid].stories.push(serializeStory(story, viewedIds, req.user.id));
         }
 
         // Sort each group: unviewed groups first
@@ -107,18 +116,19 @@ export const getMyStory = async (req: any, res: Response): Promise<void> => {
 
         const myStories = await Story.findAll({
             where: { userId: req.user.id, expiresAt: { [Op.gt]: now } },
-            include: [{ model: StoryView, as: "views", attributes: ["id"] }],
+            include: [{ model: StoryView, as: "views", attributes: ["id", "viewerId"] }],
             order: [["createdAt", "ASC"]],
         });
 
         const serialized = myStories.map((story: any) => {
             const payload = toPlain(story);
+            const viewCount = (payload.views || []).filter((v: any) => v.viewerId !== req.user.id).length;
             return {
                 id: payload.id,
                 mediaUrl: payload.mediaUrl,
                 mediaType: payload.mediaType,
                 caption: payload.caption || null,
-                viewCount: payload.viewCount || 0,
+                viewCount,
                 viewedByMe: true,
                 createdAt: payload.createdAt,
                 expiresAt: payload.expiresAt,
@@ -176,6 +186,12 @@ export const viewStory = async (req: any, res: Response): Promise<void> => {
             return;
         }
 
+        // If the viewer is the author of the story, don't increment view count or record view
+        if (story.userId === req.user.id) {
+            res.json({ viewCount: story.viewCount });
+            return;
+        }
+
         const [, created] = await StoryView.findOrCreate({
             where: { storyId, viewerId: req.user.id, viewerType: req.userType || "user" },
         });
@@ -204,13 +220,13 @@ export const getStoryViewers = async (req: any, res: Response): Promise<void> =>
         }
 
         const views = await StoryView.findAll({
-            where: { storyId: req.params.id },
+            where: { storyId: req.params.id, viewerId: { [Op.ne]: req.user.id } },
             order: [["createdAt", "DESC"]],
         });
 
         const viewerIds = views.map((v: any) => v.viewerId);
         const users = viewerIds.length
-            ? await User.findAll({ where: { id: viewerIds }, attributes: ["id", "name", "avatar_url"] })
+            ? await User.findAll({ where: { id: viewerIds }, attributes: ["id", "name", "username", "avatar_url"] })
             : [];
         const userMap = new Map(users.map((u: any) => [u.id, toPlain(u)]));
 
@@ -220,6 +236,7 @@ export const getStoryViewers = async (req: any, res: Response): Promise<void> =>
             return {
                 id: payload.viewerId,
                 name: u?.name || "User",
+                username: u?.username || null,
                 avatarUrl: u?.avatar_url || null,
                 viewedAt: payload.createdAt,
             };

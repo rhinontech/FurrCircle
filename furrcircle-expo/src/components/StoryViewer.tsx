@@ -2,15 +2,28 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   View, Text, Image, Modal, StyleSheet, Dimensions,
   TouchableOpacity, Animated, Pressable, PanResponder, Alert,
-  ActivityIndicator,
-  Platform,
+  ActivityIndicator, Platform, FlatList,
 } from "react-native";
-import { X, Trash2 } from "lucide-react-native";
+import { X, Trash2, ChevronUp } from "lucide-react-native";
 import { useTokens } from "../lib/theme-store";
 import { useBreakpoint } from "../lib/breakpoints";
 import { storyApi } from "../../services/community/storyApi";
 import { Video, ResizeMode } from "expo-av";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { colors } from "../lib/theme";
+import { useRouter } from "expo-router";
+
+const formatViewerTime = (dateStr: string) => {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+};
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const STORY_DURATION = 4000; // 4 seconds per story
@@ -41,12 +54,18 @@ interface StoryViewerProps {
 }
 
 export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, onStoryDeleted, onStoryViewed }: StoryViewerProps) {
+  const router = useRouter();
   const tk = useTokens();
   const { isTablet } = useBreakpoint();
   const insets = useSafeAreaInsets();
   const [groupIndex, setGroupIndex] = useState(initialGroupIndex);
   const [storyIndex, setStoryIndex] = useState(0);
   const [mediaLoading, setMediaLoading] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
+  const [viewers, setViewers] = useState<any[]>([]);
+  const [loadingViewers, setLoadingViewers] = useState(false);
+  const [showViewersSheet, setShowViewersSheet] = useState(false);
+  const [localViewCounts, setLocalViewCounts] = useState<Record<string, number>>({});
   const progress = useRef(new Animated.Value(0)).current;
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -79,6 +98,8 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
       animationRef.current.stop();
     }
 
+    if (isPaused) return;
+
     animationRef.current = Animated.timing(progress, {
       toValue: 1,
       duration: duration,
@@ -90,6 +111,60 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
         handleNext();
       }
     });
+  };
+
+  useEffect(() => {
+    if (isPaused) {
+      if (animationRef.current) {
+        animationRef.current.stop();
+      }
+    } else {
+      if (visible && currentStory && !mediaLoading && currentStory.mediaType !== "video") {
+        const currentVal = (progress as any)._value || 0;
+        const remainingDuration = STORY_DURATION * (1 - currentVal);
+
+        if (animationRef.current) {
+          animationRef.current.stop();
+        }
+
+        animationRef.current = Animated.timing(progress, {
+          toValue: 1,
+          duration: remainingDuration > 0 ? remainingDuration : STORY_DURATION,
+          useNativeDriver: false,
+        });
+
+        animationRef.current.start(({ finished }) => {
+          if (finished) {
+            handleNext();
+          }
+        });
+      }
+    }
+  }, [isPaused, mediaLoading]);
+
+  const handleOpenViewers = async () => {
+    if (!currentStory?.id) return;
+    setIsPaused(true);
+    setShowViewersSheet(true);
+    setLoadingViewers(true);
+    try {
+      const data = await storyApi.getStoryViewers(currentStory.id);
+      const list = data.viewers || [];
+      setViewers(list);
+      setLocalViewCounts((prev) => ({
+        ...prev,
+        [currentStory.id]: list.length,
+      }));
+    } catch (err) {
+      console.error("Failed to load story viewers", err);
+    } finally {
+      setLoadingViewers(false);
+    }
+  };
+
+  const handleCloseViewers = () => {
+    setShowViewersSheet(false);
+    setIsPaused(false);
   };
 
   const handleNext = () => {
@@ -154,6 +229,7 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
     if (visible && currentStory) {
       setMediaLoading(true);
       progress.setValue(0);
+      setIsPaused(false);
       if (animationRef.current) {
         animationRef.current.stop();
       }
@@ -185,11 +261,13 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
               source={typeof currentStory.mediaUrl === "string" ? { uri: currentStory.mediaUrl } : currentStory.mediaUrl}
               style={styles.media}
               resizeMode={ResizeMode.COVER}
-              shouldPlay={visible}
+              shouldPlay={visible && !isPaused}
               isMuted={false}
               progressUpdateIntervalMillis={50}
               onPlaybackStatusUpdate={(status: any) => {
                 if (!status.isLoaded) return;
+
+                if (isPaused) return;
 
                 // Toggle loader container on buffering
                 const isBuffering = status.isBuffering && !status.isPlaying;
@@ -216,11 +294,15 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
               resizeMode="cover"
               onLoad={() => {
                 setMediaLoading(false);
-                startProgress(STORY_DURATION);
+                if (!isPaused) {
+                  startProgress(STORY_DURATION);
+                }
               }}
               onError={() => {
                 setMediaLoading(false);
-                startProgress(STORY_DURATION);
+                if (!isPaused) {
+                  startProgress(STORY_DURATION);
+                }
               }}
             />
           )}
@@ -290,19 +372,34 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
             </View>
           ) : null}
 
-          {/* Caption & View Count */}
-          {(currentStory.caption || currentStory.viewCount !== undefined) && (
-            <View style={[styles.captionContainer, { bottom: Math.max(insets.bottom, 16) + 40 }]}>
-              {currentStory.caption ? (
-                <Text style={styles.captionText}>{currentStory.caption}</Text>
-              ) : null}
-              {currentStory.viewCount !== undefined && (
-                <Text style={[styles.viewCountText, { textAlign: "center", marginTop: currentStory.caption ? 6 : 0 }]}>
-                  👁️ {currentStory.viewCount} {currentStory.viewCount === 1 ? "view" : "views"}
-                </Text>
-              )}
+          {/* Caption */}
+          {currentStory.caption ? (
+            <View style={[
+              styles.captionContainer,
+              { bottom: (currentGroup.userId === "me" && currentStory.viewCount !== undefined) ? Math.max(insets.bottom, 10) + 54 : Math.max(insets.bottom, 16) }
+            ]}>
+              <Text style={styles.captionText}>{currentStory.caption}</Text>
             </View>
-          )}
+          ) : null}
+
+          {/* View Count floating button at the bottom center (Instagram style) */}
+          {currentGroup.userId === "me" && currentStory.viewCount !== undefined && (() => {
+            const count = localViewCounts[currentStory.id] !== undefined
+              ? localViewCounts[currentStory.id]
+              : currentStory.viewCount;
+            return (
+              <TouchableOpacity
+                onPress={handleOpenViewers}
+                style={[styles.floatingViewCount, { bottom: Math.max(insets.bottom, 10) }]}
+                activeOpacity={0.8}
+              >
+                <ChevronUp size={16} color="rgba(255, 255, 255, 0.85)" style={styles.chevronUp} />
+                <Text style={styles.viewCountTextBottom}>
+                  {count} {count === 1 ? "view" : "views"}
+                </Text>
+              </TouchableOpacity>
+            );
+          })()}
 
           {/* Touch zones for navigation */}
           <View style={styles.touchZones}>
@@ -311,6 +408,67 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
           </View>
         </View>
       </View>
+
+      {/* Viewers Bottom Sheet Modal */}
+      <Modal
+        visible={showViewersSheet}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleCloseViewers}
+      >
+        <Pressable style={styles.sheetOverlay} onPress={handleCloseViewers}>
+          <Pressable style={styles.sheetContent} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.sheetHeader}>
+              <View style={styles.sheetDragIndicator} />
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", width: "100%", marginTop: 12 }}>
+                <Text style={styles.sheetTitle}>Viewers ({viewers.length})</Text>
+                <TouchableOpacity onPress={handleCloseViewers} style={styles.sheetCloseButton}>
+                  <X size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {loadingViewers ? (
+              <View style={styles.sheetLoader}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : viewers.length === 0 ? (
+              <View style={styles.sheetEmpty}>
+                <Text style={styles.sheetEmptyText}>No views yet</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={viewers}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.viewerList}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.viewerRow}
+                    onPress={() => {
+                      if (item.username) {
+                        handleCloseViewers();
+                        onClose();
+                        router.push(`/u/${item.username}`);
+                      }
+                    }}
+                  >
+                    <Image
+                      source={item.avatarUrl ? { uri: item.avatarUrl } : require("../assets/doodle-puppy.png")}
+                      style={styles.viewerAvatar}
+                    />
+                    <View style={styles.viewerInfo}>
+                      <Text style={styles.viewerName}>{item.name}</Text>
+                      <Text style={styles.viewerTime}>
+                        {formatViewerTime(item.viewedAt)}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Modal>
   );
 }
@@ -360,11 +518,118 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 1,
   },
+  floatingViewCount: {
+    position: "absolute",
+    alignSelf: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 4,
+    zIndex: 10,
+  },
+  chevronUp: {
+    marginTop: -1,
+  },
+  viewCountTextBottom: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+  },
   loaderContainer: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.45)",
     zIndex: 2,
+  },
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  sheetContent: {
+    backgroundColor: "#1a1a1a",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    maxHeight: "60%",
+    minHeight: 300,
+  },
+  sheetHeader: {
+    alignItems: "center",
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
+  },
+  sheetDragIndicator: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#555",
+    borderRadius: 2,
+    marginTop: 8,
+  },
+  sheetTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontFamily: "Poppins_700Bold",
+  },
+  sheetCloseButton: {
+    padding: 6,
+    borderRadius: 16,
+    backgroundColor: "#333",
+  },
+  sheetLoader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  sheetEmpty: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  sheetEmptyText: {
+    color: "#888",
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+  },
+  viewerList: {
+    paddingVertical: 12,
+  },
+  viewerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2a2a2a",
+  },
+  viewerAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 12,
+  },
+  viewerInfo: {
+    flex: 1,
+  },
+  viewerName: {
+    color: "#fff",
+    fontSize: 15,
+    fontFamily: "Poppins_600SemiBold",
+  },
+  viewerTime: {
+    color: "#888",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    marginTop: 2,
   },
 });
