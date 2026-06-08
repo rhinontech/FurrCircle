@@ -1,7 +1,7 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, Image, KeyboardAvoidingView } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, Image, KeyboardAvoidingView, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
-import { Camera } from "lucide-react-native";
+import { Camera, LocateFixed } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
@@ -11,6 +11,8 @@ import { colors } from "../src/lib/theme";
 import { useTokens, useThemeStore } from "../src/lib/theme-store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { LocationPickerModal, LocationResult } from "../src/components/LocationPickerModal";
+import * as Location from "expo-location";
 
 const PERSONALITY_TAGS = ["Friendly", "Playful", "Calm", "Active", "Independent", "Cuddly", "Protective", "Curious"];
 
@@ -30,7 +32,11 @@ export default function EditPetScreen() {
   const [photo, setPhoto] = useState<string | undefined>();
   const [personality, setPersonality] = useState<string[]>([]);
   const [microchipId, setMicrochipId] = useState("");
+  const [weight, setWeight] = useState("");
+  const [city, setCity] = useState("");
   const [saving, setSaving] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [isLocationModalVisible, setLocationModalVisible] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -53,6 +59,8 @@ export default function EditPetScreen() {
           }
           if (pet.avatar_url) setPhoto(pet.avatar_url);
           if (pet.microchip_id) setMicrochipId(pet.microchip_id);
+          if (pet.weight) setWeight(pet.weight);
+          if (pet.city) setCity(pet.city);
           if (pet.personality && Array.isArray(pet.personality) && pet.personality.length > 0) {
             setPersonality(pet.personality);
           } else if (pet.description) {
@@ -72,6 +80,50 @@ export default function EditPetScreen() {
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images", quality: 0.8 });
     if (!result.canceled) setPhoto(result.assets[0].uri);
+  };
+
+  const handleLocationSelect = (loc: LocationResult) => {
+    setLocationModalVisible(false);
+    setCity(loc.city);
+  };
+
+  const handleAutoLocate = async () => {
+    setLocating(true);
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission denied', 'Allow location access in device settings.');
+        return;
+      }
+      let location = await Location.getLastKnownPositionAsync();
+      if (!location) {
+        location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      }
+      
+      if (!location) {
+        Alert.alert('Error', 'Failed to fetch location.');
+        setLocating(false);
+        return;
+      }
+      
+      const lat = location.coords.latitude;
+      const lon = location.coords.longitude;
+      
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
+        headers: { 'User-Agent': 'FurrCircleApp/1.0' }
+      });
+      const data = await response.json();
+      
+      if (data && data.address) {
+        const foundCity = data.address.city || data.address.town || data.address.village || data.address.county || "Unknown City";
+        setCity(foundCity);
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to fetch current location.');
+    } finally {
+      setLocating(false);
+    }
   };
 
   const toggleTag = (t: string) =>
@@ -108,6 +160,8 @@ export default function EditPetScreen() {
         birth_date: birthDate.toISOString().split('T')[0],
         avatar_url: avatarUrl,
         microchip_id: microchipId.trim() || null,
+        weight: weight.trim() || null,
+        city: city.trim() || null,
         personality
       });
       router.back();
@@ -173,6 +227,25 @@ export default function EditPetScreen() {
 
         <Text style={[styles.label, { color: tk.textMuted }]}>Breed</Text>
         <TextInput value={breed} onChangeText={setBreed} placeholder="e.g. Border Collie" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+
+        <Text style={[styles.label, { color: tk.textMuted }]}>Weight</Text>
+        <TextInput value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder="e.g. 12" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+
+        <Text style={[styles.label, { color: tk.textMuted }]}>City</Text>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <TouchableOpacity
+            style={[styles.input, { flex: 1, backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, justifyContent: 'center' }]}
+            onPress={() => setLocationModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={{ color: city ? tk.text : tk.textMuted, fontFamily: "Inter_400Regular" }}>
+              {city || "Select your city"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleAutoLocate} disabled={locating} style={[styles.input, { width: 52, paddingHorizontal: 0, alignItems: "center", justifyContent: "center", backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border }]}>
+            {locating ? <ActivityIndicator size="small" color={colors.primary} /> : <LocateFixed size={20} color={colors.primary} />}
+          </TouchableOpacity>
+        </View>
 
         <Text style={[styles.label, { color: tk.textMuted }]}>Gender</Text>
         <View style={styles.toggle}>
@@ -243,6 +316,12 @@ export default function EditPetScreen() {
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
+
+      <LocationPickerModal
+        visible={isLocationModalVisible}
+        onClose={() => setLocationModalVisible(false)}
+        onSelectLocation={handleLocationSelect}
+      />
     </PageContainer>
   );
 }
