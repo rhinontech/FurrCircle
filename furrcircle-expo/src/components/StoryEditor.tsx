@@ -8,6 +8,7 @@ import { X, Check, Volume2, VolumeX } from "lucide-react-native";
 import { useTokens } from "../lib/theme-store";
 import { colors } from "../lib/theme";
 import { Video, ResizeMode } from "expo-av";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -22,6 +23,7 @@ interface StoryEditorProps {
 
 export function StoryEditor({ visible, imageUri, mediaType, loading = false, onCancel, onSave }: StoryEditorProps) {
   const tk = useTokens();
+  const insets = useSafeAreaInsets();
   const [overlayText, setOverlayText] = useState("");
   const [caption, setCaption] = useState("");
   const [mediaLoading, setMediaLoading] = useState(true);
@@ -75,14 +77,14 @@ export function StoryEditor({ visible, imageUri, mediaType, loading = false, onC
           {mediaType === "video" && (
             <TouchableOpacity
               onPress={() => setIsMuted(!isMuted)}
-              style={styles.muteFloatingBtn}
+              style={[styles.muteFloatingBtn, { top: Math.max(insets.top, 16) + 60 }]}
             >
               {isMuted ? <VolumeX size={20} color="#fff" /> : <Volume2 size={20} color="#fff" />}
             </TouchableOpacity>
           )}
 
           {/* Top Controls */}
-          <View style={styles.topBar}>
+          <View style={[styles.topBar, { top: Math.max(insets.top, 16) }]}>
             <TouchableOpacity onPress={onCancel} disabled={loading} style={[styles.iconBtn, loading && { opacity: 0.5 }]}>
               <X size={24} color="#fff" />
             </TouchableOpacity>
@@ -123,7 +125,7 @@ export function StoryEditor({ visible, imageUri, mediaType, loading = false, onC
           <View style={{ flex: 1 }} />
 
           {/* Bottom Caption Input */}
-          <View style={styles.bottomBar}>
+          <View style={[styles.bottomBar, { marginBottom: Math.max(insets.bottom, 16) }]}>
             <View style={styles.captionContainer}>
               <TextInput
                 value={caption}

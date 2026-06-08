@@ -471,7 +471,7 @@ export default function FeedScreen() {
       {compressing && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>Compressing video...</Text>
+          <Text style={styles.loadingText}>Compressing...</Text>
         </View>
       )}
     </View>
@@ -1273,7 +1273,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                   We use these reports to show you less of this kind of content in the future.
                 </Text>
               </View>
-              
+
               <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                 <TouchableOpacity
                   style={[styles.doneBtn, { backgroundColor: colors.primary }]}
