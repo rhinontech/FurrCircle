@@ -136,41 +136,8 @@ export default function SignupScreen() {
 
       setBusy(false);
 
-      if (regRes && regRes.success === true && regRes.isVerified === false) {
-        const userId = regRes?.userId;
-        const returnedEmailOrPhone = regRes?.emailOrPhone || trimmedEmail.toLowerCase();
-        const smsFailed = regRes?.smsFailed === true; // Treat email send failure similarly if indicated
-
-        if (smsFailed) {
-          Alert.alert(
-            "Account Saved ✅",
-            "Your account has been created but we couldn't send the verification email right now. Please tap \"Resend\" on the next screen to try again.",
-            [{
-              text: "Continue to Verify",
-              onPress: () => router.push({
-                pathname: "/otp-verify",
-                params: {
-                  userId,
-                  emailOrPhone: returnedEmailOrPhone,
-                  email: trimmedEmail.toLowerCase(),
-                  phone: fullPhone,
-                  type: "email-verify-signup"
-                }
-              })
-            }]
-          );
-        } else {
-          router.push({
-            pathname: "/otp-verify",
-            params: {
-              userId,
-              emailOrPhone: returnedEmailOrPhone,
-              email: trimmedEmail.toLowerCase(),
-              phone: fullPhone,
-              type: "email-verify-signup"
-            }
-          });
-        }
+      if (regRes && regRes.token) {
+        await setSession(regRes);
       } else {
         Alert.alert("Registration complete", "Verification needed.");
       }

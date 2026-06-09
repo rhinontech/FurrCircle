@@ -193,7 +193,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
         email,
         phone,
         password: hashedPassword,
-        isVerified: isEmail ? false : !useBackendOtp,
+        isVerified: true,
         hospital_name,
         profession,
         city,
@@ -201,37 +201,9 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
         isPrivate: false,
       });
 
-      if (isEmail || useBackendOtp) {
-        const otpCode = generateOtp();
-        const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
-        vet.otpCode = otpCode;
-        vet.otpExpiry = otpExpiry;
-        await vet.save();
-
-        if (isEmail) {
-          try {
-            await sendEmail(vet.email, "Verify Your FurrCircle Account", "email-otp", { name: vet.name, otp: otpCode });
-          } catch (emailErr: any) {
-            console.error("[Register:Vet] Email OTP send failed:", emailErr.message);
-            res.status(201).json({ success: true, isVerified: false, userId: vet.id, emailOrPhone: vet.email, role: 'veterinarian', smsFailed: true });
-            return;
-          }
-          res.status(201).json({ success: true, isVerified: false, userId: vet.id, emailOrPhone: vet.email, role: 'veterinarian' });
-        } else {
-          let smsFailed = false;
-          try {
-            await sendSmsOtp(vet.phone, otpCode);
-          } catch (smsErr: any) {
-            console.error("[Register:Vet] SMS OTP send failed:", smsErr.message);
-            smsFailed = true;
-          }
-          res.status(201).json({ success: true, isVerified: false, userId: vet.id, emailOrPhone: vet.phone, role: 'veterinarian', smsFailed });
-        }
-      } else {
-        const token = generateToken(vet.id, 'vet');
-        res.status(201).json(await buildAuthPayload(vet, 'vet', token));
-        sendEmail(vet.email || '', "Welcome to FurrCircle!", "welcome", { name: vet.name });
-      }
+      const token = generateToken(vet.id, 'vet');
+      res.status(201).json(await buildAuthPayload(vet, 'vet', token));
+      sendEmail(vet.email || '', "Welcome to FurrCircle!", "welcome", { name: vet.name });
       return;
     }
 
@@ -251,45 +223,15 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       phone,
       password: hashedPassword,
       role: requestedRole,
-      isVerified: isEmail ? false : !useBackendOtp,
+      isVerified: true,
       city,
       address,
       isPrivate: false,
     });
 
-    if (isEmail || useBackendOtp) {
-      const otpCode = generateOtp();
-      const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
-      user.otpCode = otpCode;
-      user.otpExpiry = otpExpiry;
-      await user.save();
-
-      if (isEmail) {
-        // Email OTP — also non-fatal (log + return smsFailed if it fails)
-        try {
-          await sendEmail(user.email, "Verify Your FurrCircle Account", "email-otp", { name: user.name, otp: otpCode });
-        } catch (emailErr: any) {
-          console.error("[Register] Email OTP send failed:", emailErr.message);
-          res.status(201).json({ success: true, isVerified: false, userId: user.id, emailOrPhone: user.email, role: requestedRole, smsFailed: true });
-          return;
-        }
-        res.status(201).json({ success: true, isVerified: false, userId: user.id, emailOrPhone: user.email, role: requestedRole });
-      } else {
-        // SMS OTP — non-fatal: account is always saved even if SMS delivery fails
-        let smsFailed = false;
-        try {
-          await sendSmsOtp(user.phone, otpCode);
-        } catch (smsErr: any) {
-          console.error("[Register] SMS OTP send failed:", smsErr.message);
-          smsFailed = true;
-        }
-        res.status(201).json({ success: true, isVerified: false, userId: user.id, emailOrPhone: user.phone, role: requestedRole, smsFailed });
-      }
-    } else {
-      const token = generateToken(user.id, 'user');
-      res.status(201).json(await buildAuthPayload(user, 'user', token));
-      sendEmail(user.email || '', "Welcome to FurrCircle!", "welcome", { name: user.name });
-    }
+    const token = generateToken(user.id, 'user');
+    res.status(201).json(await buildAuthPayload(user, 'user', token));
+    sendEmail(user.email || '', "Welcome to FurrCircle!", "welcome", { name: user.name });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
