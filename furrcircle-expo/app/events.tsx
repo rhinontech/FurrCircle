@@ -147,78 +147,98 @@ export default function EventsScreen() {
               const tint = getTint(e.category);
 
               return (
-                <Pressable
+                <View
                   key={e.id}
-                  onPress={() => router.push(`/event/${e.id}` as any)}
-                  style={({ pressed }) => [styles.card, { backgroundColor: tint.bg, shadowColor: tk.text, opacity: pressed ? 0.88 : 1 }]}
+                  style={[
+                    styles.shadowContainer,
+                    {
+                      backgroundColor: tk.card,
+                      shadowColor: tk.text,
+                      borderColor: tk.border,
+                      borderWidth: 1,
+                      borderLeftWidth: 6,
+                      borderLeftColor: tint.badge,
+                    },
+                  ]}
                 >
-                  {/* Content row */}
-                  <View style={styles.cardRow}>
-                    {/* Date box */}
-                    <View style={[styles.dateBox, { backgroundColor: tk.card }]}>
-                      <Text style={[styles.dateDay, { color: tk.text }]}>{day}</Text>
-                      <Text style={[styles.dateMonth, { color: tint.badge }]}>{month}</Text>
-                    </View>
+                  <Pressable
+                    onPress={() => router.push(`/event/${e.id}` as any)}
+                    style={({ pressed }) => [
+                      styles.card,
+                      {
+                        backgroundColor: tk.card,
+                        opacity: pressed ? 0.88 : 1,
+                      },
+                    ]}
+                  >
+                    {/* Content row */}
+                    <View style={styles.cardRow}>
+                      {/* Date box */}
+                      <View style={[styles.dateBox, { backgroundColor: tint.bg }]}>
+                        <Text style={[styles.dateDay, { color: tk.text }]}>{day}</Text>
+                        <Text style={[styles.dateMonth, { color: tint.badge }]}>{month}</Text>
+                      </View>
 
-                    {/* Info */}
-                    <View style={styles.cardInfo}>
-                      <View style={styles.badgeRow}>
-                        <View style={[styles.typeBadge, { backgroundColor: "rgba(255,255,255,0.7)" }]}>
-                          <Text style={[styles.typeBadgeText, { color: tint.text }]}>
-                            {(e.category || "General").toUpperCase()}
-                          </Text>
-                        </View>
-                        {e.isBooked && (
-                          <View style={[styles.typeBadge, { backgroundColor: colors.success + "22" }]}>
-                            <Text style={[styles.typeBadgeText, { color: colors.success }]}>✓ GOING</Text>
+                      {/* Info */}
+                      <View style={styles.cardInfo}>
+                        <View style={styles.badgeRow}>
+                          <View style={[styles.typeBadge, { backgroundColor: tint.bg }]}>
+                            <Text style={[styles.typeBadgeText, { color: tint.badge }]}>
+                              {(e.category || "General").toUpperCase()}
+                            </Text>
                           </View>
-                        )}
-                      </View>
+                          {e.isBooked && (
+                            <View style={[styles.typeBadge, { backgroundColor: colors.success + "22" }]}>
+                              <Text style={[styles.typeBadgeText, { color: colors.success }]}>✓ GOING</Text>
+                            </View>
+                          )}
+                        </View>
 
-                      <Text style={[styles.cardTitle, { color: tk.text }]} numberOfLines={2}>
-                        {e.title}
-                      </Text>
-
-                      <Text style={[styles.cardDate, { color: tk.textMuted }]}>
-                        {e.date}{e.time ? ` · ${e.time}` : ""}
-                      </Text>
-
-                      <View style={styles.metaRow}>
-                        <MapPin size={11} color={tk.textMuted} />
-                        <Text style={[styles.metaText, { color: tk.textMuted }]} numberOfLines={1}>
-                          {e.location || e.venue || "TBA"}
+                        <Text style={[styles.cardTitle, { color: tk.text }]} numberOfLines={2}>
+                          {e.title}
                         </Text>
-                      </View>
 
-                      <View style={styles.bottomRow}>
+                        <Text style={[styles.cardDate, { color: tk.textMuted }]}>
+                          {e.date}{e.time ? ` · ${e.time}` : ""}
+                        </Text>
+
                         <View style={styles.metaRow}>
-                          <Users size={13} color={tk.textMuted} />
-                          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: tk.textMuted }}>
-                            {e.attendeeCount || 0} going
+                          <MapPin size={11} color={tk.textMuted} />
+                          <Text style={[styles.metaText, { color: tk.textMuted }]} numberOfLines={1}>
+                            {e.location || e.venue || "TBA"}
                           </Text>
                         </View>
-                        <TouchableOpacity
-                          onPress={(ev) => {
-                            ev.stopPropagation();
-                            if (e.isBooked) {
-                              Alert.alert("Already Booked", "You're already going to this event!");
-                            } else {
-                              handleBookEvent(e.id);
-                            }
-                          }}
-                          style={[
-                            styles.rsvpBtn,
-                            { backgroundColor: e.isBooked ? "rgba(0,0,0,0.08)" : tk.text },
-                          ]}
-                        >
-                          <Text style={[styles.rsvpText, { color: e.isBooked ? tk.textMuted : tk.bg }]}>
-                            {e.isBooked ? "Booked" : "RSVP"}
-                          </Text>
-                        </TouchableOpacity>
+
+                        <View style={styles.bottomRow}>
+                          <View style={styles.metaRow}>
+                            <Users size={13} color={tk.textMuted} />
+                            <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: tk.textMuted }}>
+                              {e.attendeeCount || 0} going
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={(ev) => {
+                              ev.stopPropagation();
+                              if (e.isBooked) {
+                                Alert.alert("Already Booked", "You're already going to this event!");
+                              } else {
+                                handleBookEvent(e.id);
+                              }
+                            }}
+                            style={[
+                              styles.rsvpBtn,
+                              { backgroundColor: e.isBooked ? "rgba(0,0,0,0.08)" : tk.text },
+                            ]}
+                          >
+                            <Text style={[styles.rsvpText, { color: e.isBooked ? tk.textMuted : tk.bg }]}>
+                              {e.isBooked ? "Booked" : "RSVP"}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                </Pressable>
+                  </Pressable>
+                </View>
               );
             })
           )}
@@ -241,14 +261,17 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: 20, paddingBottom: 100, paddingTop: 4 },
 
   // Card — matches lovable tinted card style
-  card: {
+  shadowContainer: {
     borderRadius: 24,
-    marginBottom: 12,
-    overflow: "hidden",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
+    shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 3,
+    marginBottom: 12,
+  },
+  card: {
+    borderRadius: 24,
+    overflow: "hidden",
   },
   cardRow: { flexDirection: "row", gap: 12, padding: 16 },
 

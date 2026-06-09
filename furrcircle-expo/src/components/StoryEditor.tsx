@@ -49,7 +49,7 @@ export function StoryEditor({ visible, imageUri, mediaType, loading = false, onC
             <Video
               source={{ uri: imageUri }}
               style={styles.previewImage}
-              resizeMode={ResizeMode.COVER}
+              resizeMode={ResizeMode.CONTAIN}
               shouldPlay={true}
               isLooping={true}
               isMuted={isMuted}
@@ -61,7 +61,7 @@ export function StoryEditor({ visible, imageUri, mediaType, loading = false, onC
             <Image
               source={{ uri: imageUri }}
               style={styles.previewImage}
-              resizeMode="cover"
+              resizeMode="contain"
               onLoadStart={() => setMediaLoading(true)}
               onLoad={() => setMediaLoading(false)}
               onError={() => setMediaLoading(false)}

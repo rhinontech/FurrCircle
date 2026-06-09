@@ -784,6 +784,26 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   const [deleting, setDeleting] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportStep, setReportStep] = useState(1);
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (post.image) {
+      try {
+        const source = Image.resolveAssetSource(post.image);
+        if (source && source.width && source.height) {
+          setAspectRatio(source.width / source.height);
+        }
+      } catch (err) {
+        console.warn("Failed to resolve asset source", err);
+      }
+    } else if (post.imageUrl && !post.imageUrl.match(/\.(mp4|mov|quicktime|3gp|mpeg|avi|wmv|flv|mkv|webm)(\?|$)/i)) {
+      Image.getSize(post.imageUrl, (w, h) => {
+        setAspectRatio(w / h);
+      }, (err) => {
+        console.warn("Failed to get image size for feed:", err);
+      });
+    }
+  }, [post.image, post.imageUrl]);
 
   const isDummy = dummyPosts.some(d => d.id === post.id);
   const isOwner = !isDummy && post.userId === user?.id;
@@ -932,7 +952,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
       <TouchableOpacity
         onPress={() => router.push(`/post/${post.id}`)}
         activeOpacity={0.9}
-        style={[styles.imageWrapper, { backgroundColor: tintColor }]}
+        style={[styles.imageWrapper, { backgroundColor: tintColor, aspectRatio: aspectRatio || 1 }]}
       >
         {post.image ? (
           <Image source={post.image} style={styles.postImage} resizeMode="contain" />
@@ -942,10 +962,15 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
               <Video
                 source={{ uri: post.imageUrl }}
                 style={{ width: "100%", height: "100%" }}
-                resizeMode={ResizeMode.COVER}
+                resizeMode={ResizeMode.CONTAIN}
                 isMuted={isMuted}
                 shouldPlay={isActive && isScreenFocused}
                 isLooping
+                onReadyForDisplay={(event) => {
+                  if (event?.naturalSize) {
+                    setAspectRatio(event.naturalSize.width / event.naturalSize.height);
+                  }
+                }}
                 onPlaybackStatusUpdate={(status: any) => {
                   if (!status.isLoaded) {
                     setIsVideoLoading(true);
@@ -975,7 +1000,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
               </TouchableOpacity>
             </View>
           ) : (
-            <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+            <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
           )
         ) : (
           <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.text, padding: 20, textAlign: "center", lineHeight: 22 }}>
@@ -1467,7 +1492,7 @@ const styles = StyleSheet.create({
   petOwner: { fontSize: 11, fontFamily: "Inter_400Regular" },
   typeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   typeBadgeText: { fontFamily: "Poppins_700Bold", fontSize: 10, color: "#fff" },
-  imageWrapper: { width: "92%", alignSelf: "center", aspectRatio: 1, marginTop: 12, marginBottom: 4, borderRadius: 16, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  imageWrapper: { width: "92%", alignSelf: "center", marginTop: 12, marginBottom: 4, borderRadius: 16, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   postImage: { width: "80%", height: "80%" },
   actions: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, gap: 16 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
