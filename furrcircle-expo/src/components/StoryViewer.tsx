@@ -260,7 +260,7 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
               key={currentStory.id}
               source={typeof currentStory.mediaUrl === "string" ? { uri: currentStory.mediaUrl } : currentStory.mediaUrl}
               style={styles.media}
-              resizeMode={ResizeMode.COVER}
+              resizeMode={ResizeMode.CONTAIN}
               shouldPlay={visible && !isPaused}
               isMuted={false}
               progressUpdateIntervalMillis={50}
@@ -291,7 +291,7 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
               key={currentStory.id}
               source={typeof currentStory.mediaUrl === "string" ? { uri: currentStory.mediaUrl } : currentStory.mediaUrl}
               style={styles.media}
-              resizeMode="cover"
+              resizeMode="contain"
               onLoad={() => {
                 setMediaLoading(false);
                 if (!isPaused) {

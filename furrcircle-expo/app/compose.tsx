@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -35,6 +35,19 @@ export default function ComposeScreen() {
   );
   const [tags, setTags] = useState("");
   const [loading, setLoading] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (imageUri && mediaType === "image") {
+      Image.getSize(imageUri, (w, h) => {
+        setAspectRatio(w / h);
+      }, (err) => {
+        console.warn("Failed to get image size for preview:", err);
+      });
+    } else if (!imageUri) {
+      setAspectRatio(null);
+    }
+  }, [imageUri, mediaType]);
 
   const pickPhoto = () => {
     Alert.alert(
@@ -75,7 +88,7 @@ export default function ComposeScreen() {
     try {
       const options = {
         mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: true,
+        allowsEditing: false,
         quality: 0.8,
         videoExportPreset: ImagePicker.VideoExportPreset.H264_1280x720,
       };
@@ -97,6 +110,9 @@ export default function ComposeScreen() {
           setMediaType("video");
         } else {
           setMediaType("image");
+        }
+        if (asset.width && asset.height) {
+          setAspectRatio(asset.width / asset.height);
         }
         setImageUri(asset.uri);
       }
@@ -170,20 +186,25 @@ export default function ComposeScreen() {
             {/* Photo */}
             <TouchableOpacity onPress={pickPhoto} style={[styles.photoZone, { backgroundColor: tk.card, borderColor: tk.border }]} activeOpacity={0.8}>
               {imageUri ? (
-                <View style={{ position: "relative", width: "100%", height: 240 }}>
+                <View style={{ position: "relative", width: "100%", aspectRatio: aspectRatio || 4/3 }}>
                   {mediaType === "video" ? (
                     <Video
                       source={{ uri: imageUri }}
-                      style={styles.previewImage}
-                      resizeMode={ResizeMode.COVER}
+                      style={{ width: "100%", height: "100%" }}
+                      resizeMode={ResizeMode.CONTAIN}
                       isMuted={true}
                       shouldPlay
                       isLooping
+                      onReadyForDisplay={(event) => {
+                        if (event?.naturalSize) {
+                          setAspectRatio(event.naturalSize.width / event.naturalSize.height);
+                        }
+                      }}
                     />
                   ) : (
-                    <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="cover" />
+                    <Image source={{ uri: imageUri }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
                   )}
-                  <TouchableOpacity onPress={(e) => { (e as any).stopPropagation?.(); setImageUri(null); setMediaType(null); }} style={styles.removeImg}>
+                  <TouchableOpacity onPress={(e) => { (e as any).stopPropagation?.(); setImageUri(null); setMediaType(null); setAspectRatio(null); }} style={styles.removeImg}>
                     <X size={14} color={colors.white} />
                   </TouchableOpacity>
                 </View>

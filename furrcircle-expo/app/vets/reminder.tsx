@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, ActivityIndicator, KeyboardAvoidingView } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
@@ -159,178 +159,183 @@ export default function SetReminderScreen() {
 
   return (
     <PageContainer>
-      <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title={id ? "Edit Reminder" : "Set Reminder"} />
-        
-        {loadingVet ? (
-          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
-        ) : (
-          <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 20 }}>
-            
-            {/* Select Pet */}
-            <Text style={[styles.label, { color: tk.textMuted }]}>Select Pet</Text>
-            <TouchableOpacity 
-              onPress={() => {
-                setShowPetDropdown(!showPetDropdown);
-                setShowTypeDropdown(false);
-              }} 
-              style={[styles.dropdownHeader, { backgroundColor: tk.inputBg, borderColor: tk.border }]} 
-              activeOpacity={0.8}
-            >
-              <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.text }}>
-                {selectedPet ? pets.find(p => p.id === selectedPet)?.name || "Select a pet" : "Select a pet"}
-              </Text>
-              <ChevronDown size={20} color={tk.textMuted} />
-            </TouchableOpacity>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={[styles.container, { backgroundColor: tk.bg }]}>
+          <ScreenHeader title={id ? "Edit Reminder" : "Set Reminder"} />
+          
+          {loadingVet ? (
+            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+          ) : (
+            <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 20 }} keyboardShouldPersistTaps="handled">
+              
+              {/* Select Pet */}
+              <Text style={[styles.label, { color: tk.textMuted }]}>Select Pet</Text>
+              <TouchableOpacity 
+                onPress={() => {
+                  setShowPetDropdown(!showPetDropdown);
+                  setShowTypeDropdown(false);
+                }} 
+                style={[styles.dropdownHeader, { backgroundColor: tk.inputBg, borderColor: tk.border }]} 
+                activeOpacity={0.8}
+              >
+                <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.text }}>
+                  {selectedPet ? pets.find(p => p.id === selectedPet)?.name || "Select a pet" : "Select a pet"}
+                </Text>
+                <ChevronDown size={20} color={tk.textMuted} />
+              </TouchableOpacity>
 
-            {showPetDropdown && (
-              <View style={[styles.dropdownMenu, { backgroundColor: tk.card, borderColor: tk.border }]}>
-                {pets.map((p) => (
-                  <TouchableOpacity 
-                    key={p.id} 
-                    style={[styles.dropdownItem, { borderBottomColor: tk.border }]} 
-                    onPress={() => { setSelectedPet(p.id); setShowPetDropdown(false); }}
-                  >
-                    <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: selectedPet === p.id ? colors.primary : tk.text }}>
-                      {p.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-                {pets.length === 0 && (
-                  <View style={styles.dropdownItem}>
-                    <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.textMuted }}>No pets found</Text>
-                  </View>
-                )}
-              </View>
-            )}
+              {showPetDropdown && (
+                <View style={[styles.dropdownMenu, { backgroundColor: tk.card, borderColor: tk.border }]}>
+                  {pets.map((p) => (
+                    <TouchableOpacity 
+                      key={p.id} 
+                      style={[styles.dropdownItem, { borderBottomColor: tk.border }]} 
+                      onPress={() => { setSelectedPet(p.id); setShowPetDropdown(false); }}
+                    >
+                      <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: selectedPet === p.id ? colors.primary : tk.text }}>
+                        {p.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                  {pets.length === 0 && (
+                    <View style={styles.dropdownItem}>
+                      <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.textMuted }}>No pets found</Text>
+                    </View>
+                  )}
+                </View>
+              )}
 
-            {/* Reminder Title */}
-            <Text style={[styles.label, { color: tk.textMuted }]}>Reminder Title</Text>
-            <TextInput 
-              value={title} 
-              onChangeText={setTitle} 
-              placeholder="e.g. Vet checkup appointment" 
-              placeholderTextColor={tk.textMuted} 
-              style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} 
-            />
+              {/* Reminder Title */}
+              <Text style={[styles.label, { color: tk.textMuted }]}>Reminder Title</Text>
+              <TextInput 
+                value={title} 
+                onChangeText={setTitle} 
+                placeholder="e.g. Vet checkup appointment" 
+                placeholderTextColor={tk.textMuted} 
+                style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} 
+              />
 
-            {/* Reminder Type */}
-            <Text style={[styles.label, { color: tk.textMuted }]}>Reminder Type</Text>
-            <TouchableOpacity 
-              onPress={() => {
-                setShowTypeDropdown(!showTypeDropdown);
-                setShowPetDropdown(false);
-              }} 
-              style={[styles.dropdownHeader, { backgroundColor: tk.inputBg, borderColor: tk.border }]} 
-              activeOpacity={0.8}
-            >
-              <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.text }}>
-                {reminderTypes.find(t => t.value === type)?.label || "Select Type"}
-              </Text>
-              <ChevronDown size={20} color={tk.textMuted} />
-            </TouchableOpacity>
+              {/* Reminder Type */}
+              <Text style={[styles.label, { color: tk.textMuted }]}>Reminder Type</Text>
+              <TouchableOpacity 
+                onPress={() => {
+                  setShowTypeDropdown(!showTypeDropdown);
+                  setShowPetDropdown(false);
+                }} 
+                style={[styles.dropdownHeader, { backgroundColor: tk.inputBg, borderColor: tk.border }]} 
+                activeOpacity={0.8}
+              >
+                <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.text }}>
+                  {reminderTypes.find(t => t.value === type)?.label || "Select Type"}
+                </Text>
+                <ChevronDown size={20} color={tk.textMuted} />
+              </TouchableOpacity>
 
-            {showTypeDropdown && (
-              <View style={[styles.dropdownMenu, { backgroundColor: tk.card, borderColor: tk.border }]}>
-                {reminderTypes.map((t) => (
-                  <TouchableOpacity 
-                    key={t.value} 
-                    style={[styles.dropdownItem, { borderBottomColor: tk.border }]} 
-                    onPress={() => { setType(t.value); setShowTypeDropdown(false); }}
-                  >
-                    <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: type === t.value ? colors.primary : tk.text }}>
-                      {t.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+              {showTypeDropdown && (
+                <View style={[styles.dropdownMenu, { backgroundColor: tk.card, borderColor: tk.border }]}>
+                  {reminderTypes.map((t) => (
+                    <TouchableOpacity 
+                      key={t.value} 
+                      style={[styles.dropdownItem, { borderBottomColor: tk.border }]} 
+                      onPress={() => { setType(t.value); setShowTypeDropdown(false); }}
+                    >
+                      <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: type === t.value ? colors.primary : tk.text }}>
+                        {t.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
 
-            {/* Date */}
-            <Text style={[styles.label, { color: tk.textMuted }]}>Date</Text>
-            {Platform.OS === 'ios' ? (
-              <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
-                <DateTimePicker
-                  value={date}
-                  mode="date"
-                  display="default"
-                  minimumDate={new Date()}
-                  themeVariant={dark ? "dark" : "light"}
-                  onChange={(e, d) => d && setDate(d)}
-                />
-              </View>
-            ) : (
-              <>
-                <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.pickerInput, { backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border }]} activeOpacity={0.8}>
-                  <Calendar size={18} color={tk.textMuted} style={{ marginRight: 10 }} />
-                  <Text style={{ color: tk.text, fontFamily: "Inter_400Regular", fontSize: 15 }}>{date.toLocaleDateString()}</Text>
-                </TouchableOpacity>
-                {showDatePicker && (
+              {/* Date */}
+              <Text style={[styles.label, { color: tk.textMuted }]}>Date</Text>
+              {Platform.OS === 'ios' ? (
+                <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
                   <DateTimePicker
                     value={date}
                     mode="date"
                     display="default"
                     minimumDate={new Date()}
-                    onChange={(e, d) => { setShowDatePicker(false); if (d) setDate(d); }}
+                    themeVariant={dark ? "dark" : "light"}
+                    onChange={(e, d) => d && setDate(d)}
                   />
-                )}
-              </>
-            )}
+                </View>
+              ) : (
+                <>
+                  <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.pickerInput, { backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border }]} activeOpacity={0.8}>
+                    <Calendar size={18} color={tk.textMuted} style={{ marginRight: 10 }} />
+                    <Text style={{ color: tk.text, fontFamily: "Inter_400Regular", fontSize: 15 }}>{date.toLocaleDateString()}</Text>
+                  </TouchableOpacity>
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={date}
+                      mode="date"
+                      display="default"
+                      minimumDate={new Date()}
+                      onChange={(e, d) => { setShowDatePicker(false); if (d) setDate(d); }}
+                    />
+                  )}
+                </>
+              )}
 
-            {/* Time */}
-            <Text style={[styles.label, { color: tk.textMuted }]}>Time</Text>
-            {Platform.OS === 'ios' ? (
-              <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
-                <DateTimePicker
-                  value={time}
-                  mode="time"
-                  display="default"
-                  themeVariant={dark ? "dark" : "light"}
-                  onChange={(e, t) => t && setTime(t)}
-                />
-              </View>
-            ) : (
-              <>
-                <TouchableOpacity onPress={() => setShowTimePicker(true)} style={[styles.pickerInput, { backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border }]} activeOpacity={0.8}>
-                  <Clock size={18} color={tk.textMuted} style={{ marginRight: 10 }} />
-                  <Text style={{ color: tk.text, fontFamily: "Inter_400Regular", fontSize: 15 }}>
-                    {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </TouchableOpacity>
-                {showTimePicker && (
+              {/* Time */}
+              <Text style={[styles.label, { color: tk.textMuted }]}>Time</Text>
+              {Platform.OS === 'ios' ? (
+                <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
                   <DateTimePicker
                     value={time}
                     mode="time"
                     display="default"
-                    onChange={(e, t) => { setShowTimePicker(false); if (t) setTime(t); }}
+                    themeVariant={dark ? "dark" : "light"}
+                    onChange={(e, t) => t && setTime(t)}
                   />
-                )}
-              </>
-            )}
+                </View>
+              ) : (
+                <>
+                  <TouchableOpacity onPress={() => setShowTimePicker(true)} style={[styles.pickerInput, { backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border }]} activeOpacity={0.8}>
+                    <Clock size={18} color={tk.textMuted} style={{ marginRight: 10 }} />
+                    <Text style={{ color: tk.text, fontFamily: "Inter_400Regular", fontSize: 15 }}>
+                      {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </TouchableOpacity>
+                  {showTimePicker && (
+                    <DateTimePicker
+                      value={time}
+                      mode="time"
+                      display="default"
+                      onChange={(e, t) => { setShowTimePicker(false); if (t) setTime(t); }}
+                    />
+                  )}
+                </>
+              )}
 
-            {/* Notes */}
-            <Text style={[styles.label, { color: tk.textMuted }]}>Notes / Reason</Text>
-            <TextInput 
-              value={notes} 
-              onChangeText={setNotes} 
-              placeholder="Add details, prep instructions, etc." 
-              placeholderTextColor={tk.textMuted} 
-              style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border, minHeight: 80 }]} 
-              multiline
-            />
+              {/* Notes */}
+              <Text style={[styles.label, { color: tk.textMuted }]}>Notes / Reason</Text>
+              <TextInput 
+                value={notes} 
+                onChangeText={setNotes} 
+                placeholder="Add details, prep instructions, etc." 
+                placeholderTextColor={tk.textMuted} 
+                style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border, minHeight: 80 }]} 
+                multiline
+              />
 
-            {/* Save Button */}
-            <TouchableOpacity 
-              onPress={save} 
-              disabled={saving || !selectedPet} 
-              style={[styles.saveBtn, (!selectedPet || saving) && { opacity: 0.6 }]} 
-              activeOpacity={0.85}
-            >
-              <Text style={styles.saveBtnText}>{saving ? "Saving Changes…" : (id ? "Save Changes" : "Set Reminder")}</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        )}
-      </View>
+              {/* Save Button */}
+              <TouchableOpacity 
+                onPress={save} 
+                disabled={saving || !selectedPet} 
+                style={[styles.saveBtn, (!selectedPet || saving) && { opacity: 0.6 }]} 
+                activeOpacity={0.85}
+              >
+                <Text style={styles.saveBtnText}>{saving ? "Saving Changes…" : (id ? "Save Changes" : "Set Reminder")}</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          )}
+        </View>
+      </KeyboardAvoidingView>
     </PageContainer>
   );
 }

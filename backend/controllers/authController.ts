@@ -124,7 +124,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     const username = req.body.username?.trim().toLowerCase();
     const emailOrPhone = req.body.emailOrPhone?.trim();
 
-    if (!username || !emailOrPhone || !password) {
+    if (!username || (!emailOrPhone && !req.body.email && !req.body.phone) || !password) {
       res.status(400).json({ message: "Username, email/phone, and password are required" });
       return;
     }
@@ -146,13 +146,18 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // Parse emailOrPhone
-    const isEmail = emailOrPhone.includes("@");
-    const email = isEmail ? emailOrPhone.toLowerCase() : null;
-    const phone = isEmail ? null : emailOrPhone;
+    // Parse emailOrPhone or read email/phone directly
+    const isEmail = emailOrPhone ? emailOrPhone.includes("@") : !!req.body.email;
+    let email = req.body.email?.trim().toLowerCase() || null;
+    let phone = req.body.phone?.trim() || null;
+
+    if (!email && !phone && emailOrPhone) {
+      email = isEmail ? emailOrPhone.toLowerCase() : null;
+      phone = isEmail ? null : emailOrPhone;
+    }
 
     // Check email/phone duplicates
-    if (isEmail) {
+    if (email) {
       const [userByEmail, vetByEmail] = await Promise.all([
         User.findOne({ where: { email: { [Op.iLike]: email } } }),
         Vet.findOne({ where: { email: { [Op.iLike]: email } } }),
@@ -161,7 +166,8 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
         res.status(400).json({ message: "An account with this email already exists" });
         return;
       }
-    } else {
+    }
+    if (phone) {
       const [userByPhone, vetByPhone] = await Promise.all([
         User.findOne({ where: { phone } }),
         Vet.findOne({ where: { phone } }),

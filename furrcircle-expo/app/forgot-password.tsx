@@ -37,10 +37,19 @@ export default function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false);
 
   async function handleSendResetCode() {
-    const trimmedInput = identifier.trim();
+    let trimmedInput = identifier.trim();
     if (!trimmedInput) {
       Alert.alert("Missing field", "Please enter your username, email, or phone number.");
       return;
+    }
+
+    const isNumeric = /^\d+$/.test(trimmedInput);
+    if (isNumeric) {
+      if (trimmedInput.length !== 10) {
+        Alert.alert("Invalid Phone Number", "Phone number must be exactly 10 digits.");
+        return;
+      }
+      trimmedInput = `+91${trimmedInput}`;
     }
 
     setLoading(true);

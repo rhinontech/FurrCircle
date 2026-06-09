@@ -47,6 +47,28 @@ export default function PostDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (post) {
+      if (post.image) {
+        try {
+          const source = Image.resolveAssetSource(post.image);
+          if (source && source.width && source.height) {
+            setAspectRatio(source.width / source.height);
+          }
+        } catch (err) {
+          console.warn("Failed to resolve asset source", err);
+        }
+      } else if (post.imageUrl && !post.imageUrl.match(/\.(mp4|mov|quicktime|3gp|mpeg|avi|wmv|flv|mkv|webm)(\?|$)/i)) {
+        Image.getSize(post.imageUrl, (w, h) => {
+          setAspectRatio(w / h);
+        }, (err) => {
+          console.warn("Failed to get image size for feed:", err);
+        });
+      }
+    }
+  }, [post]);
 
   const TINT: Record<string, string> = {
     dogs: "#FF6B6B22", cats: "#FF6FCF22", rescue: "#4CAF5022",
@@ -260,21 +282,26 @@ export default function PostDetail() {
 
           {/* Image */}
           {post.image ? (
-            <View style={[styles.imageWrapper, { backgroundColor: post.tintColor || tintColor }]}>
+            <View style={[styles.imageWrapper, { backgroundColor: post.tintColor || tintColor, aspectRatio: aspectRatio || 1 }]}>
               <Image source={post.image} style={styles.image} resizeMode="contain" />
             </View>
           ) : post.imageUrl ? (
-            <View style={[styles.imageWrapper, { backgroundColor: tintColor }]}>
+            <View style={[styles.imageWrapper, { backgroundColor: tintColor, aspectRatio: aspectRatio || 1 }]}>
               {post.imageUrl.match(/\.(mp4|mov|quicktime|3gp|mpeg|avi|wmv|flv|mkv|webm)(\?|$)/i) ? (
                 <View style={{ width: "100%", height: "100%", position: "relative" }}>
                   <Video
                     source={{ uri: post.imageUrl }}
                     style={{ width: "100%", height: "100%" }}
-                    resizeMode={ResizeMode.COVER}
+                    resizeMode={ResizeMode.CONTAIN}
                     isMuted={isMuted}
                     shouldPlay={isScreenFocused}
                     isLooping
                     useNativeControls={false}
+                    onReadyForDisplay={(event) => {
+                      if (event?.naturalSize) {
+                        setAspectRatio(event.naturalSize.width / event.naturalSize.height);
+                      }
+                    }}
                     onPlaybackStatusUpdate={(status: any) => {
                       if (!status.isLoaded) {
                         setIsVideoLoading(true);
@@ -301,7 +328,7 @@ export default function PostDetail() {
                   </TouchableOpacity>
                 </View>
               ) : (
-                <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
               )}
             </View>
           ) : null}
@@ -555,7 +582,7 @@ const styles = StyleSheet.create({
   authorAvatar: { width: 44, height: 44, borderRadius: 22 },
   authorName: { fontFamily: "Poppins_700Bold", fontSize: 15 },
   postMeta: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  imageWrapper: { width: "92%", alignSelf: "center", aspectRatio: 1, borderRadius: 16, overflow: "hidden", marginBottom: 8, alignItems: "center", justifyContent: "center" },
+  imageWrapper: { width: "92%", alignSelf: "center", borderRadius: 16, overflow: "hidden", marginBottom: 8, alignItems: "center", justifyContent: "center" },
   image: { width: "80%", height: "80%" },
   actions: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, gap: 16, paddingVertical: 8 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },

@@ -46,12 +46,23 @@ export default function LoginScreen() {
   }, []);
 
   async function handleLogin() {
-    if (!identifier.trim() || !password) {
+    let trimmed = identifier.trim();
+    if (!trimmed || !password) {
       Alert.alert("Missing fields", "Please enter your username/email/phone and password.");
       return;
     }
+
+    const isNumeric = /^\d+$/.test(trimmed);
+    if (isNumeric) {
+      if (trimmed.length !== 10) {
+        Alert.alert("Invalid Phone Number", "Phone number must be exactly 10 digits.");
+        return;
+      }
+      trimmed = `+91${trimmed}`;
+    }
+
     setBusy(true);
-    const err = await login(identifier.trim(), password);
+    const err = await login(trimmed, password);
     setBusy(false);
 
     if (err) {
@@ -93,16 +104,25 @@ export default function LoginScreen() {
 
   // Handle Firebase Phone OTP Login
   async function handlePhoneOtpLogin() {
-    const trimmedInput = identifier.trim();
+    let trimmedInput = identifier.trim();
     if (!trimmedInput) {
       Alert.alert("Error", "Please enter your phone number first (+91...)");
       return;
     }
 
-    const isPhone = /^[+0-9]+$/.test(trimmedInput);
-    if (!isPhone) {
-      Alert.alert("Invalid Phone", "Please enter a valid phone number (e.g. +919876543210) for OTP login.");
-      return;
+    const isNumeric = /^\d+$/.test(trimmedInput);
+    if (isNumeric) {
+      if (trimmedInput.length !== 10) {
+        Alert.alert("Invalid Phone Number", "Phone number must be exactly 10 digits.");
+        return;
+      }
+      trimmedInput = `+91${trimmedInput}`;
+    } else {
+      const isPhone = /^[+0-9]+$/.test(trimmedInput);
+      if (!isPhone) {
+        Alert.alert("Invalid Phone", "Please enter a valid phone number (e.g. +919876543210) for OTP login.");
+        return;
+      }
     }
 
     setOtpLoginBusy(true);
