@@ -989,17 +989,17 @@ export const bookEvent = async (req: any, res: Response): Promise<void> => {
     const serializedEvent = await serializeEvent(eventPayload, req.user.id, req.userType || "user", resolveProfile);
 
     // Notify organizer about the new booking (if booker is not the organizer)
-    if (event.organizerId && event.organizerId !== req.user.id) {
-      await createNotification(
-        event.organizerId,
-        "user",
-        "event",
-        "New Event Booking",
-        `Someone has booked a spot for "${event.title}".`,
-        event.id,
-        "event"
-      );
-    }
+    // if (event.organizerId && event.organizerId !== req.user.id) {
+    //   await createNotification(
+    //     event.organizerId,
+    //     "user",
+    //     "event",
+    //     "New Event Booking",
+    //     `Someone has booked a spot for "${event.title}".`,
+    //     event.id,
+    //     "event"
+    //   );
+    // }
     // Send booking confirmation email to the booker
     if (req.user.email) {
       sendEmail(req.user.email, `You're booked for ${event.title}!`, "event-booking-confirmation", {

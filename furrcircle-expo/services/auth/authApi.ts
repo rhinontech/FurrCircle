@@ -54,6 +54,8 @@ export const register = async (payload: {
     username: string;
     name: string;
     emailOrPhone: string;
+    email?: string;
+    phone?: string;
     password?: string;
     role: UserRole;
     city?: string;

@@ -47,7 +47,9 @@ export default function OtpVerifyScreen() {
     initialVerificationId,
     username,
     name,
-    password
+    password,
+    email,
+    phone
   } = params as any;
 
   const [code, setCode] = useState("");
@@ -143,6 +145,8 @@ export default function OtpVerifyScreen() {
             const res = await authApi.register({
               username,
               name,
+              email: email || undefined,
+              phone: phone || undefined,
               emailOrPhone,
               password,
               role: "owner"
@@ -196,6 +200,8 @@ export default function OtpVerifyScreen() {
           const res = await authApi.register({
             username,
             name,
+            email: email || undefined,
+            phone: phone || undefined,
             emailOrPhone,
             password,
             role: "owner"

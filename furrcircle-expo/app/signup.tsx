@@ -31,7 +31,8 @@ export default function SignupScreen() {
 
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
-  const [emailOrPhone, setEmailOrPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -91,7 +92,10 @@ export default function SignupScreen() {
   }, [username]);
 
   async function handleSignup() {
-    if (!username.trim() || !name.trim() || !emailOrPhone.trim() || !password) {
+    const trimmedEmail = email.trim();
+    const trimmedPhone = phone.trim();
+
+    if (!username.trim() || !name.trim() || !trimmedEmail || !trimmedPhone || !password) {
       Alert.alert("Missing fields", "Please fill in all fields.");
       return;
     }
@@ -101,140 +105,81 @@ export default function SignupScreen() {
       return;
     }
 
-    const trimmedInput = emailOrPhone.trim();
-    const isEmail = trimmedInput.includes("@");
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      Alert.alert("Invalid email", "Please enter a valid email address.");
+      return;
+    }
 
+    // Phone validation
+    if (trimmedPhone.length < 10) {
+      Alert.alert("Invalid phone number", "Phone number must be at least 10 digits long.");
+      return;
+    }
+
+    const fullPhone = `+91${trimmedPhone}`;
     setBusy(true);
 
-    if (isEmail) {
-      // Email flow -> register first, get unverified state, then verify OTP
-      try {
-        const res = await authApi.register({
-          username: username.trim().toLowerCase(),
-          name: name.trim(),
-          emailOrPhone: trimmedInput.toLowerCase(),
-          password,
-          role: "owner"
-        });
+    try {
+      // Create the account on the backend.
+      // We pass emailOrPhone as the email address, which tells the backend to trigger the email OTP verification flow.
+      const regRes = await authApi.register({
+        username: username.trim().toLowerCase(),
+        name: name.trim(),
+        email: trimmedEmail.toLowerCase(),
+        phone: fullPhone,
+        emailOrPhone: trimmedEmail.toLowerCase(),
+        password,
+        role: "owner"
+      });
 
-        setBusy(false);
+      setBusy(false);
 
-        if (res && res.success === true && res.isVerified === false) {
-          const smsFailed = res.smsFailed === true;
-          if (smsFailed) {
-            Alert.alert(
-              "Account Saved ✅",
-              "Your account has been created but we couldn't send the verification email right now. Please tap \"Resend\" on the next screen to try again.",
-              [{
-                text: "Continue to Verify",
-                onPress: () => router.push({
-                  pathname: "/otp-verify",
-                  params: {
-                    userId: res.userId,
-                    emailOrPhone: res.emailOrPhone,
-                    type: "email-verify-signup"
-                  }
-                })
-              }]
-            );
-          } else {
-            router.push({
-              pathname: "/otp-verify",
-              params: {
-                userId: res.userId,
-                emailOrPhone: res.emailOrPhone,
-                type: "email-verify-signup"
-              }
-            });
-          }
-        } else {
-          Alert.alert("Registration complete", "Verification needed.");
-        }
-
-      } catch (err: any) {
-        setBusy(false);
-        const backendMsg = err.response?.data?.message;
-        Alert.alert("Sign up failed", backendMsg || err.message || "An error occurred.");
-      }
-    } else {
-      // Phone flow:
-      // 1. Register account with backend FIRST (saves details regardless of OTP outcome)
-      // 2. Then send Firebase OTP — if that fails, fall back to backend SMS resend
-      try {
-        // Step 1: Create the account on the backend (unverified, with backend OTP)
-        const regRes = await authApi.register({
-          username: username.trim().toLowerCase(),
-          name: name.trim(),
-          emailOrPhone: trimmedInput,
-          password,
-          role: "owner",
-          useBackendOtp: true,       // creates account as unverified + sends SMS
-        });
-
-        // Account saved ✅ — whether SMS was sent or not, the user exists in DB.
-        // smsFailed means the SMS couldn't go out but the account IS created.
+      if (regRes && regRes.success === true && regRes.isVerified === false) {
         const userId = regRes?.userId;
-        const emailOrPhone = regRes?.emailOrPhone || trimmedInput;
-        const smsFailed = regRes?.smsFailed === true;
-
-        // Step 2: Also try Firebase OTP in parallel for better delivery
-        const firebaseAuth = getFirebaseAuth();
-        if (firebaseAuth && !smsFailed) {
-          try {
-            console.log(`Requesting Firebase Phone OTP for: ${trimmedInput}`);
-            const confirmation = await firebaseAuth().signInWithPhoneNumber(trimmedInput);
-            setBusy(false);
-
-            // Firebase OTP sent → use Firebase-based OTP screen
-            router.push({
-              pathname: "/otp-verify",
-              params: {
-                username: username.trim().toLowerCase(),
-                name: name.trim(),
-                emailOrPhone: trimmedInput,
-                password,
-                initialVerificationId: confirmation.verificationId,
-                type: "phone-verify-signup"
-              }
-            });
-            return;
-          } catch (firebaseErr: any) {
-            // Firebase failed — fall through to backend SMS OTP screen below
-            console.warn("Firebase OTP also failed after backend registration, using backend SMS:", firebaseErr);
-          }
-        }
-
-        // Backend SMS OTP (or smsFailed fallback)
-        setBusy(false);
+        const returnedEmailOrPhone = regRes?.emailOrPhone || trimmedEmail.toLowerCase();
+        const smsFailed = regRes?.smsFailed === true; // Treat email send failure similarly if indicated
 
         if (smsFailed) {
-          // OTP couldn't be sent right now, but account IS created.
-          // Take the user to OTP screen — they can tap Resend once SMS service is back.
           Alert.alert(
             "Account Saved ✅",
-            "Your account has been created but we couldn't send the verification code right now. Please tap \"Resend\" on the next screen to try again.",
+            "Your account has been created but we couldn't send the verification email right now. Please tap \"Resend\" on the next screen to try again.",
             [{
               text: "Continue to Verify",
               onPress: () => router.push({
                 pathname: "/otp-verify",
-                params: { userId, emailOrPhone, type: "email-verify-signup" }
+                params: {
+                  userId,
+                  emailOrPhone: returnedEmailOrPhone,
+                  email: trimmedEmail.toLowerCase(),
+                  phone: fullPhone,
+                  type: "email-verify-signup"
+                }
               })
             }]
           );
         } else {
-          // SMS sent via backend → use backend OTP screen
           router.push({
             pathname: "/otp-verify",
-            params: { userId, emailOrPhone, type: "email-verify-signup" }
+            params: {
+              userId,
+              emailOrPhone: returnedEmailOrPhone,
+              email: trimmedEmail.toLowerCase(),
+              phone: fullPhone,
+              type: "email-verify-signup"
+            }
           });
         }
-
-      } catch (err: any) {
-        setBusy(false);
-        console.error("Phone signup registration error:", err);
-        const backendMsg = err.response?.data?.message;
-        Alert.alert("Sign up failed", backendMsg || err.message || "An error occurred. Please try again.");
+      } else {
+        Alert.alert("Registration complete", "Verification needed.");
       }
+
+    } catch (err: any) {
+      setBusy(false);
+      console.error("Signup registration error:", err);
+      const backendMsg = err.response?.data?.message;
+      Alert.alert("Sign up failed", backendMsg || err.message || "An error occurred. Please try again.");
     }
 
   }
@@ -299,19 +244,41 @@ export default function SignupScreen() {
             />
           </View>
 
-          {/* Phone or email */}
+          {/* Email */}
           <View style={styles.field}>
-            <Text style={styles.label}>Phone number or email</Text>
+            <Text style={styles.label}>Email Address</Text>
             <TextInput
               style={styles.input}
-              placeholder="you@example.com or +919876543210"
+              placeholder="you@example.com"
               placeholderTextColor={colors.foreground + "44"}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
-              value={emailOrPhone}
-              onChangeText={setEmailOrPhone}
+              value={email}
+              onChangeText={setEmail}
             />
+          </View>
+
+          {/* Phone number */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Phone Number</Text>
+            <View style={styles.phoneInputContainer}>
+              <Text style={styles.phonePrefix}>+91</Text>
+              <TextInput
+                style={styles.phoneInput}
+                placeholder="9876543210"
+                placeholderTextColor={colors.foreground + "44"}
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={10}
+                value={phone}
+                onChangeText={(text) => {
+                  const filtered = text.replace(/[^0-9]/g, "");
+                  setPhone(filtered);
+                }}
+              />
+            </View>
           </View>
 
           {/* Password */}
@@ -392,6 +359,9 @@ const styles = StyleSheet.create({
   inputSuccess: { borderColor: "green" },
   inputErrorStyle: { borderColor: "red" },
   inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, paddingRight: 16 },
+  phoneInputContainer: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, paddingHorizontal: 16 },
+  phonePrefix: { fontFamily: "Inter_600SemiBold", fontSize: 15, color: colors.foreground, marginRight: 8, borderRightWidth: 1.5, borderRightColor: colors.border, paddingRight: 10 },
+  phoneInput: { flex: 1, paddingVertical: 13, fontFamily: "Inter_400Regular", fontSize: 15, color: colors.foreground },
   eyeBtn: { paddingVertical: 13, paddingLeft: 8 },
   eyeText: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.primary },
   terms: { fontFamily: "Inter_400Regular", fontSize: 12, color: colors.foreground + "77", lineHeight: 18, marginBottom: 24 },
