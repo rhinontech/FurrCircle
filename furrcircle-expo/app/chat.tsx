@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, Pressable, Alert, Keyboard, Image
 } from "react-native";
+import { tints } from "../src/lib/theme";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { Avatar } from "../src/components/Avatar";
 import { colors } from "../src/lib/theme";
@@ -627,6 +628,7 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true);
 
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
+  const [listSearchQuery, setListSearchQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -943,14 +945,22 @@ export default function ChatScreen() {
   }, [messages, selectedChat]);
 
   const displayConversations = useMemo(() => {
+    const q = listSearchQuery.toLowerCase().trim();
     return conversations
       .filter((c) => c.lastMessage)
+      .filter((c) => {
+        if (!q) return true;
+        const other = getOtherParticipant(c);
+        const name = (other?.name || "").toLowerCase();
+        const username = (other?.username || "").toLowerCase();
+        return name.includes(q) || username.includes(q);
+      })
       .sort((a, b) => {
         const dateA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
         const dateB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
         return dateB - dateA;
       });
-  }, [conversations]);
+  }, [conversations, listSearchQuery]);
 
   // --- Render Detail View ---
   if (selectedChat) {
@@ -1068,6 +1078,8 @@ export default function ChatScreen() {
     );
   }
 
+  const AVATAR_TINTS = [tints.sunshine, tints.primary, tints.pinky, tints.coral, tints.success];
+
   // --- Render List View ---
   return (
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
@@ -1083,6 +1095,18 @@ export default function ChatScreen() {
         }
       />
 
+      {/* Search pill */}
+      <View style={[styles.searchPill, { backgroundColor: tk.card }]}>
+        <Search size={18} color={tk.textMuted} />
+        <TextInput
+          value={listSearchQuery}
+          onChangeText={setListSearchQuery}
+          placeholder="Search chats"
+          placeholderTextColor={tk.textMuted}
+          style={[styles.searchPillInput, { color: tk.text }]}
+        />
+      </View>
+
       {loading ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -1092,38 +1116,43 @@ export default function ChatScreen() {
           <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: tk.card, justifyContent: "center", alignItems: "center", marginBottom: 16 }}>
             <MessageCircle size={40} color={tk.textMuted} />
           </View>
-          <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 18, color: tk.text, textAlign: "center" }}>No messages yet</Text>
-          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, textAlign: "center", marginTop: 8 }}>
-            Start a conversation with a friend or a vet!
+          <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 18, color: tk.text, textAlign: "center" }}>
+            {listSearchQuery ? "No results found" : "No messages yet"}
           </Text>
-          <TouchableOpacity
-            style={[styles.startChatBtn, { backgroundColor: colors.primary }]}
-            onPress={() => setIsNewChatOpen(true)}
-          >
-            <Text style={{ fontFamily: "Poppins_600SemiBold", color: "#fff" }}>New Chat</Text>
-          </TouchableOpacity>
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, textAlign: "center", marginTop: 8 }}>
+            {listSearchQuery ? "Try a different name" : "Start a conversation with a friend or a vet!"}
+          </Text>
+          {!listSearchQuery && (
+            <TouchableOpacity
+              style={[styles.startChatBtn, { backgroundColor: colors.primary }]}
+              onPress={() => setIsNewChatOpen(true)}
+            >
+              <Text style={{ fontFamily: "Poppins_600SemiBold", color: "#fff" }}>New Chat</Text>
+            </TouchableOpacity>
+          )}
         </View>
       ) : (
         <FlatList
           data={displayConversations}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 80 }}
-          renderItem={({ item: c }) => {
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 100 }}
+          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+          renderItem={({ item: c, index }) => {
             const otherUser = getOtherParticipant(c);
             if (!otherUser) return null;
 
-            // Determine if there's unread logic here if we add lastRead marker, for now we just show it
-            // if we have unread badge and the last message isn't ours. We'll simplify.
             const hasUnread = c.unreadCount > 0 || (c.lastMessage && !c.lastMessage.readAt && !c.lastMessage.seen && c.lastMessage.sender?.id !== user?.id);
+            const unreadCount = c.unreadCount || 0;
+            const tintBg = AVATAR_TINTS[index % AVATAR_TINTS.length];
 
             return (
               <TouchableOpacity
                 onPress={() => setSelectedChat(c.id)}
-                style={[styles.chatRow, { backgroundColor: tk.card, borderBottomColor: tk.border }]}
+                style={[styles.chatCard, { backgroundColor: tk.card }]}
                 activeOpacity={0.8}
               >
-                <View style={styles.avatarWrap}>
-                  <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={50} />
+                <View style={[styles.avatarTintWrap, { backgroundColor: tintBg }]}>
+                  <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={52} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.chatName, { color: tk.text, fontFamily: hasUnread ? "Poppins_700Bold" : "Poppins_600SemiBold" }]}>{otherUser.name}</Text>
@@ -1131,17 +1160,30 @@ export default function ChatScreen() {
                     {c.lastMessage?.text || "Started a conversation"}
                   </Text>
                 </View>
-                <View style={{ alignItems: "flex-end", gap: 4 }}>
+                <View style={{ alignItems: "flex-end", gap: 6 }}>
                   <Text style={[styles.chatTime, { color: hasUnread ? colors.coral : tk.textMuted }]}>
                     {formatRelativeTime(c.lastMessage?.createdAt || c.updatedAt)}
                   </Text>
-                  {hasUnread && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.coral }} />}
+                  {hasUnread && (
+                    <View style={styles.unreadBadge}>
+                      <Text style={styles.unreadBadgeText}>{unreadCount > 99 ? "99+" : unreadCount > 0 ? String(unreadCount) : "•"}</Text>
+                    </View>
+                  )}
                 </View>
               </TouchableOpacity>
             );
           }}
         />
       )}
+
+      {/* FAB */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setIsNewChatOpen(true)}
+        activeOpacity={0.85}
+      >
+        <Plus size={26} color="#fff" strokeWidth={2.5} />
+      </TouchableOpacity>
 
       {/* New Chat Modal */}
       <Modal visible={isNewChatOpen} animationType="slide" transparent onRequestClose={() => setIsNewChatOpen(false)}>
@@ -1207,9 +1249,75 @@ const styles = StyleSheet.create({
   headerIconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   startChatBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24, marginTop: 20 },
 
-  // List view
-  chatRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
-  avatarWrap: { position: "relative" },
+  // Search pill
+  searchPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 12,
+    borderRadius: 99,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    shadowColor: "#1E3A8A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 3,
+  },
+  searchPillInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
+
+  // List view — card rows
+  chatCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 20,
+    shadowColor: "#1E3A8A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 2,
+  },
+  avatarTintWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+    flexShrink: 0,
+  },
+  unreadBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.coral,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+  },
+  unreadBadgeText: { color: "#fff", fontSize: 10, fontFamily: "Poppins_700Bold" },
+  fab: {
+    position: "absolute",
+    bottom: 28,
+    right: 20,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
   chatName: { fontFamily: "Poppins_700Bold", fontSize: 15 },
   chatLastMsg: { fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 2 },
   chatTime: { fontSize: 11, fontFamily: "Inter_400Regular" },
