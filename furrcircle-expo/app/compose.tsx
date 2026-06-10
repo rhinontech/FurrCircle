@@ -249,7 +249,7 @@ export default function ComposeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 12 },
-  closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
+  closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   headerTitle: { fontFamily: "Poppins_700Bold", fontSize: 18 },
   shareBtn: { backgroundColor: colors.primary, borderRadius: 20, paddingHorizontal: 20, paddingVertical: 8, minWidth: 70, alignItems: "center", justifyContent: "center" },
   shareBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14, color: colors.white },

@@ -369,7 +369,7 @@ export default function EditProfileScreen() {
             <TouchableOpacity 
               style={[
                 styles.saveBtn, 
-                (isSaveDisabled || saving) && { backgroundColor: tk.border, shadowColor: "transparent", elevation: 0 }
+                (isSaveDisabled || saving) && { backgroundColor: tk.border }
               ]} 
               onPress={handleSave}
               disabled={isSaveDisabled || saving}
@@ -406,11 +406,6 @@ const styles = StyleSheet.create({
     borderRadius: 45, 
     borderWidth: 3, 
     position: "relative",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3
   },
   avatarImg: { width: "100%", height: "100%", borderRadius: 42 },
   cameraOverlay: {
@@ -467,11 +462,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: 12,
-    shadowColor: colors.coral,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4
   },
   saveBtnText: {
     fontFamily: "Poppins_700Bold",

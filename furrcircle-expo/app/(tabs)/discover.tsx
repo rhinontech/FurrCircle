@@ -212,9 +212,8 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 12,
     borderRadius: 28, paddingHorizontal: 16, paddingVertical: 14,
     marginHorizontal: 20, marginBottom: 4,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2,
   },
-  searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
+  searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular", paddingVertical: 0 },
   sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, marginTop: 24, marginBottom: 12 },
   sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 17 },
   seeAll: { fontFamily: "Poppins_600SemiBold", fontSize: 12, color: colors.primary },
@@ -223,7 +222,6 @@ const styles = StyleSheet.create({
   vetRow: {
     flexDirection: "row", alignItems: "center", gap: 12,
     borderRadius: 24, padding: 12,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2,
   },
   vetIcon: { width: 64, height: 64, borderRadius: 16, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   vetImg: { width: "80%", height: "80%" },
@@ -238,7 +236,6 @@ const styles = StyleSheet.create({
   callBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
   filterBtn: {
     borderRadius: 24, paddingHorizontal: 16, paddingVertical: 8,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 1,
   },
   filterBtnActive: { backgroundColor: colors.foreground },
   filterBtnText: { fontFamily: "Poppins_700Bold", fontSize: 12, color: colors.foreground + "99" },
@@ -246,7 +243,6 @@ const styles = StyleSheet.create({
   petsGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, gap: 12, marginTop: 12 },
   petCard: {
     width: "47%", borderRadius: 24, overflow: "hidden",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2,
   },
   petImageBg: { height: 128, alignItems: "center", justifyContent: "center", position: "relative" },
   petImage: { width: "80%", height: "80%" },

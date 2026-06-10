@@ -257,7 +257,7 @@ export default function CommunityDetail() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   cover: { height: 180, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  info: { borderRadius: 24, margin: 16, padding: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 3 },
+  info: { borderRadius: 24, margin: 16, padding: 20 },
   circleName: { fontFamily: "Poppins_700Bold", fontSize: 22 },
   categoryBadge: { alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3, marginTop: 6 },
   categoryText: { fontFamily: "Poppins_600SemiBold", fontSize: 11 },
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 17 },
   askBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
   askBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 13, color: colors.primary },
-  threadCard: { borderRadius: 16, padding: 16, marginHorizontal: 16, marginBottom: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  threadCard: { borderRadius: 16, padding: 16, marginHorizontal: 16, marginBottom: 10 },
   threadTag: { alignSelf: "flex-start", backgroundColor: "rgba(255,107,107,0.15)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 8 },
   threadTagText: { fontFamily: "Poppins_700Bold", fontSize: 10, color: colors.coral },
   threadTitle: { fontFamily: "Poppins_700Bold", fontSize: 14, lineHeight: 20 },

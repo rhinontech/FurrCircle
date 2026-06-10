@@ -52,7 +52,7 @@ export default function BookScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  vetCard: { borderRadius: 20, padding: 20, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2 },
+  vetCard: { borderRadius: 20, padding: 20, marginBottom: 20 },
   vetName: { fontFamily: "Poppins_700Bold", fontSize: 18 },
   vetSpec: { fontSize: 13, color: colors.success, fontFamily: "Poppins_600SemiBold", marginTop: 2 },
   sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 15, marginBottom: 12, marginTop: 4 },

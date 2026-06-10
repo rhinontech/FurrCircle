@@ -509,7 +509,7 @@ export default function UserProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   px5: { paddingHorizontal: 20 },
-  profileCard: { borderRadius: 24, padding: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 3 },
+  profileCard: { borderRadius: 24, padding: 20 },
   profileTop: { flexDirection: "row", alignItems: "center", gap: 16 },
   avatarWrap: { width: 80, height: 80, borderRadius: 40, overflow: "hidden", backgroundColor: "rgba(255,107,107,0.2)" },
   avatarImg: { width: "100%", height: "100%" },
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
   // Pets rail
   petsScroll: { flexGrow: 0, marginTop: 16 },
   petsContent: { paddingHorizontal: 20, gap: 10 },
-  petChip: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 20, paddingLeft: 6, paddingRight: 16, paddingVertical: 6, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 2 },
+  petChip: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 20, paddingLeft: 6, paddingRight: 16, paddingVertical: 6 },
   petAvatar: { width: 32, height: 32, borderRadius: 16, overflow: "hidden", backgroundColor: "rgba(255,107,107,0.2)" },
   petAvatarImg: { width: "100%", height: "100%" },
   petName: { fontFamily: "Poppins_700Bold", fontSize: 14 },
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
   // Menu modal
   menuOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   menuOverlayCenter: { justifyContent: "center", alignItems: "center" },
-  menuDialog: { borderRadius: 24, padding: 24, width: 360, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 10 },
+  menuDialog: { borderRadius: 24, padding: 24, width: 360 },
   menuSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12, paddingHorizontal: 16, paddingBottom: 28 },
   menuHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#ccc", alignSelf: "center", marginBottom: 12 },
   menuItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },

@@ -125,7 +125,7 @@ export default function ProfileScreen() {
               <View style={[styles.petCardImgWrap, { overflow: "hidden" }]}>
                 {p.avatar_url?.startsWith('http') ? <Image source={{ uri: p.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" /> : null}
                 {(p.isAdoptionOpen || p.isFosterOpen) && (
-                  <View style={{ position: 'absolute', top: 6, right: 6, backgroundColor: colors.coral, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2 }}>
+                  <View style={{ position: 'absolute', top: 6, right: 6, backgroundColor: colors.coral, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
                     <Text style={{ color: colors.white, fontSize: 9, fontFamily: 'Poppins_700Bold' }}>
                       {p.isAdoptionOpen && p.isFosterOpen ? "ADOPT/FOSTER" : p.isAdoptionOpen ? "ADOPT" : "FOSTER"}
                     </Text>
@@ -344,14 +344,14 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 8, paddingBottom: 12 },
   title: { fontFamily: "Poppins_700Bold", fontSize: 28 },
   headerActions: { flexDirection: "row", gap: 8 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
-  userCard: { flexDirection: "row", alignItems: "center", gap: 16, borderRadius: 24, padding: 16, marginHorizontal: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
+  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  userCard: { flexDirection: "row", alignItems: "center", gap: 16, borderRadius: 24, padding: 16, marginHorizontal: 20 },
   userName: { fontFamily: "Poppins_700Bold", fontSize: 20 },
   userMeta: { fontSize: 13, fontFamily: "Inter_400Regular" },
   statsRow: { flexDirection: "row", gap: 12, marginTop: 8 },
   statText: { fontSize: 12, fontFamily: "Inter_400Regular" },
   statNum: { fontFamily: "Poppins_700Bold" },
-  dangerRow: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, padding: 16, marginHorizontal: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1, marginTop: 24 },
+  dangerRow: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, padding: 16, marginHorizontal: 20, marginTop: 24 },
   dangerIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(239,68,68,0.12)", alignItems: "center", justifyContent: "center" },
   dangerLabel: { fontFamily: "Poppins_700Bold", fontSize: 14, color: "#EF4444" },
   dangerSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
@@ -379,11 +379,11 @@ const styles = StyleSheet.create({
   petCardAdd: { width: 160, height: 150, borderRadius: 22, borderWidth: 2, borderStyle: "dashed", alignItems: "center", justifyContent: "center", gap: 4 },
   addPetCardText: { fontFamily: "Poppins_700Bold", fontSize: 13 },
   tilesGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 12, paddingHorizontal: 20 },
-  tile: { width: "48%", borderRadius: 16, padding: 16, gap: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
+  tile: { width: "48%", borderRadius: 16, padding: 16, gap: 10 },
   tileIconBg: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   tileLabel: { fontFamily: "Poppins_700Bold", fontSize: 13 },
   activityList: { gap: 10, paddingHorizontal: 20 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, padding: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 16, padding: 16 },
   rowIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   rowLabel: { fontFamily: "Poppins_700Bold", fontSize: 15 },
   rowMeta: { fontSize: 13, fontFamily: "Inter_400Regular" },
@@ -396,11 +396,6 @@ const styles = StyleSheet.create({
     padding: 16,
     marginHorizontal: 20,
     marginTop: 28,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
   logoutIconBg: {
     width: 36,
@@ -457,7 +452,7 @@ const styles = StyleSheet.create({
   petNameText: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },
   petBreedText: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
   tilesRowThree: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 20, gap: 8 },
-  tileThree: { flex: 1, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 6, alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1 },
+  tileThree: { flex: 1, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 6, alignItems: "center", justifyContent: "center", gap: 8 },
   tileIconBgCenter: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   tileLabelCenter: { fontFamily: "Poppins_700Bold", fontSize: 11, textAlign: "center" },
 });
