@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Heart, X, Star, ArrowLeft, ArrowRight, MapPin } from "lucide-react-native";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import * as Location from "expo-location";
 import { colors } from "../../src/lib/theme";
 import { useTokens, useThemeStore } from "../../src/lib/theme-store";
@@ -24,6 +24,7 @@ import { matchApi, type Coords } from "../../services/match/matchApi";
 import { petApi } from "../../services/pet/petApi";
 import { PrivateAxios } from "../../helpers/PrivateAxios";
 import { chatApi } from "../../services/chat/chatApi";
+import { useLocationStore } from "../../src/lib/location-store";
 
 const { width, height } = Dimensions.get("window");
 const CARD_WIDTH = width - 40;
@@ -85,7 +86,9 @@ export default function MatchScreen() {
   const [dragDir, setDragDir] = useState<"next" | "prev">("next");
   const [cards, setCards] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [coords, setCoords] = useState<Coords | null>(null);
+  const lat = useLocationStore(s => s.latitude);
+  const lng = useLocationStore(s => s.longitude);
+  const coords = useMemo(() => lat && lng ? { lat, lng } : null, [lat, lng]);
   const [myPets, setMyPets] = useState<any[]>([]);
   const [matchModal, setMatchModal] = useState<{ visible: boolean; conversationId?: string; matchName?: string; matchAvatar?: any }>({ visible: false });
   const [applyingAdoption, setApplyingAdoption] = useState(false);
@@ -100,22 +103,6 @@ export default function MatchScreen() {
   });
   const likeOpacity = swipeAnim.x.interpolate({ inputRange: [0, width * 0.2], outputRange: [0, 1], extrapolate: "clamp" });
   const nopeOpacity = swipeAnim.x.interpolate({ inputRange: [-width * 0.2, 0], outputRange: [1, 0], extrapolate: "clamp" });
-
-  // Request location on mount
-  useEffect(() => {
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === "granted") {
-          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          const c = { lat: loc.coords.latitude, lng: loc.coords.longitude };
-          setCoords(c);
-          // Update user's location on backend (fire-and-forget)
-          PrivateAxios.patch("/auth/profile", { latitude: c.lat, longitude: c.lng }).catch(() => { });
-        }
-      } catch { }
-    })();
-  }, []);
 
   // Load user's pets
   useEffect(() => {

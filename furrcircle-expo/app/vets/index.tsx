@@ -9,6 +9,7 @@ import { placesApi } from "../../services/places/placesApi";
 import { colors } from "../../src/lib/theme";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { useLocationStore } from "../../src/lib/location-store";
 
 type SortKey = "default" | "alpha_asc" | "alpha_desc" | "rating" | "distance";
 
@@ -29,8 +30,8 @@ export default function AllVetsScreen() {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("default");
   const [sortOpen, setSortOpen] = useState(false);
-
-  const cityLabel = String(user?.city || "").trim();
+  const locationCity = useLocationStore(s => s.city);
+  const cityLabel = String(locationCity || "").trim();
   
   useEffect(() => {
     if (!cityLabel) {
@@ -126,7 +127,7 @@ export default function AllVetsScreen() {
               <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: tk.textMuted, textAlign: "center", marginBottom: 12 }}>
                 Please set your home city to see nearby vets.
               </Text>
-              <TouchableOpacity onPress={() => router.push("/edit-profile")} style={{ backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 }}>
+              <TouchableOpacity onPress={() => router.push("/settings")} style={{ backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 }}>
                 <Text style={{ color: colors.white, fontFamily: "Inter_600SemiBold", fontSize: 14 }}>Add Location</Text>
               </TouchableOpacity>
             </View>

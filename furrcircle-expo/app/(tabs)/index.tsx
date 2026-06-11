@@ -32,6 +32,7 @@ import { useIsFocused } from "@react-navigation/native";
 import Svg, { Path, Circle } from "react-native-svg";
 import { useNotificationStore } from "../../src/lib/notification-store";
 import { chatApi } from "../../services/chat/chatApi";
+import { useLocationStore } from "../../src/lib/location-store";
 
 export default function FeedScreen() {
   const { refresh } = useLocalSearchParams<{ refresh?: string }>();
@@ -58,6 +59,11 @@ export default function FeedScreen() {
       playsInSilentModeIOS: true,
     }).catch(() => { });
   }, []);
+
+  const fetchLiveLocation = useLocationStore(s => s.fetchLiveLocation);
+  useEffect(() => {
+    fetchLiveLocation();
+  }, [fetchLiveLocation]);
 
   // Story states
   const [storyGroups, setStoryGroups] = useState<any[]>([]);
@@ -490,6 +496,7 @@ function FeedHeader() {
   const user = useAuthStore(s => s.user);
   const setSession = useAuthStore(s => s.setSession);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const updateLocation = useLocationStore(s => s.updateLocation);
 
   // Live unread count from WebSocket-backed store
   const unreadCount = useNotificationStore((s) => s.unreadCount);
@@ -514,10 +521,7 @@ function FeedHeader() {
   const handleLocationSelect = async (loc: LocationResult) => {
     setLocationModalVisible(false);
     try {
-      const res = await userApi.updateProfile({ latitude: loc.latitude, longitude: loc.longitude, city: loc.city, address: loc.address });
-      if (res.success && res.user && user) {
-        await setSession({ ...user, ...res.user });
-      }
+      updateLocation(loc.city || null, loc.latitude, loc.longitude);
     } catch (err) {
       console.error('Failed to update location', err);
       Alert.alert('Error', 'Failed to save location.');

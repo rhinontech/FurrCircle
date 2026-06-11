@@ -18,6 +18,7 @@ import { useTokens } from "../../src/lib/theme-store";
 import { placesApi } from "../../services/places/placesApi";
 import { petApi } from "../../services/pet/petApi";
 import { useAuthStore } from "../../src/lib/auth-store";
+import { useLocationStore } from "../../src/lib/location-store";
 
 type Mode = "all" | "adoption" | "foster";
 
@@ -26,6 +27,7 @@ export default function DiscoverScreen() {
   const router = useRouter();
   const tk = useTokens();
   const { user } = useAuthStore();
+  const locationCity = useLocationStore(s => s.city);
   const [mode, setMode] = useState<Mode>("all");
   const [nearbyVets, setNearbyVets] = useState<any[]>([]);
   const [allPets, setAllPets] = useState<any[]>([]);
@@ -34,8 +36,8 @@ export default function DiscoverScreen() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      if (user?.city) {
-        const vetsData = await placesApi.getVetsByCity(user.city);
+      if (locationCity) {
+        const vetsData = await placesApi.getVetsByCity(locationCity);
         setNearbyVets(vetsData.items || []);
       }
       const petsData = await petApi.discoverPets();
@@ -50,8 +52,8 @@ export default function DiscoverScreen() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (user?.city) {
-          const vetsData = await placesApi.getVetsByCity(user.city);
+        if (locationCity) {
+          const vetsData = await placesApi.getVetsByCity(locationCity);
           setNearbyVets(vetsData.items || []);
         }
 
@@ -62,7 +64,7 @@ export default function DiscoverScreen() {
       }
     };
     fetchData();
-  }, [user?.city]);
+  }, [locationCity]);
 
   const pets = allPets.filter((p) =>
     mode === "all" ? p.isAdoptionOpen || p.isFosterOpen : mode === "adoption" ? p.isAdoptionOpen : p.isFosterOpen
@@ -97,8 +99,8 @@ export default function DiscoverScreen() {
           </View>
 
           <View style={styles.vetList}>
-            {!user?.city ? (
-              <TouchableOpacity onPress={() => router.push("/edit-profile")} style={[styles.vetRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+            {!locationCity ? (
+              <TouchableOpacity onPress={() => router.push("/settings")} style={[styles.vetRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
                 <View style={[styles.vetIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
                   <MapPin size={28} color={colors.primary} />
                 </View>
@@ -128,10 +130,10 @@ export default function DiscoverScreen() {
                     <View style={styles.vetMeta}>
                       <Star size={12} color={colors.sunshine} fill={colors.sunshine} />
                       <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{v.rating || "N/A"}</Text>
-                      {user?.city && (
+                      {locationCity && (
                         <>
                           <MapPin size={12} color={tk.textMuted} />
-                          <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{user.city}</Text>
+                          <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{locationCity}</Text>
                         </>
                       )}
                     </View>

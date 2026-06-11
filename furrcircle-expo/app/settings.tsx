@@ -20,6 +20,7 @@ import * as SecureStore from "expo-secure-store";
 import { LocationPickerModal, LocationResult } from "../src/components/LocationPickerModal";
 import * as Location from 'expo-location';
 import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
+import { useLocationStore } from "../src/lib/location-store";
 
 
 export default function SettingsScreen() {
@@ -30,6 +31,8 @@ export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const setSession = useAuthStore((s) => s.setSession);
   const router = useRouter();
+  const locationCity = useLocationStore(s => s.city);
+  const updateLocation = useLocationStore(s => s.updateLocation);
 
   function handleLogout() {
     Alert.alert("Sign out", "Are you sure you want to sign out?", [
@@ -131,10 +134,7 @@ export default function SettingsScreen() {
   const handleManualLocationSelect = async (loc: LocationResult) => {
     setLocationModalVisible(false);
     try {
-      const res = await userApi.updateProfile({ latitude: loc.latitude, longitude: loc.longitude, city: loc.city, address: loc.address });
-      if (res.success && res.user && user) {
-        await setSession({ ...user, ...res.user });
-      }
+      updateLocation(loc.city || null, loc.latitude, loc.longitude);
     } catch (err) {
       console.error('Failed to update location manually', err);
       Alert.alert('Error', 'Failed to save location.');
@@ -171,7 +171,7 @@ export default function SettingsScreen() {
           <TouchableOpacity onPress={() => setLocationModalVisible(true)} activeOpacity={0.8}>
             <View pointerEvents="none">
               <Row tk={tk} icon={MapPin} iconBg="rgba(37,99,235,0.1)" iconColor={colors.primary}
-                label="Home city" sub={user?.city || "Tap to set location"} isLink />
+                label="Home city" sub={locationCity || "Tap to set location"} isLink />
             </View>
           </TouchableOpacity>
         </Section>
