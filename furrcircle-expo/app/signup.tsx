@@ -137,6 +137,7 @@ export default function SignupScreen() {
       setBusy(false);
 
       if (regRes && regRes.token) {
+        useAuthStore.getState().setJustSignedUp(true);
         await setSession(regRes);
       } else {
         Alert.alert("Registration complete", "Verification needed.");

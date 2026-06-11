@@ -16,6 +16,8 @@ const AUTH_KEY = "furr:auth";
 type AuthState = {
   user: AuthPayload | null;
   loading: boolean;
+  justSignedUp: boolean;
+  setJustSignedUp: (v: boolean) => void;
   hydrate: () => Promise<void>;
   login: (identifier: string, password?: string) => Promise<string | null>;
   logout: () => Promise<void>;
@@ -25,6 +27,8 @@ type AuthState = {
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   loading: true,
+  justSignedUp: false,
+  setJustSignedUp: (v) => set({ justSignedUp: v }),
 
   hydrate: async () => {
     try {

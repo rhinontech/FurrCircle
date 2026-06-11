@@ -151,8 +151,9 @@ export default function OtpVerifyScreen() {
               password,
               role: "owner"
             });
+            useAuthStore.getState().setJustSignedUp(true);
             await setSession(res);
-            router.replace("/(tabs)");
+            router.replace("/onboarding");
           } else {
             const res = await authApi.loginOtp(emailOrPhone);
             await setSession(res);
@@ -206,8 +207,9 @@ export default function OtpVerifyScreen() {
             password,
             role: "owner"
           });
+          useAuthStore.getState().setJustSignedUp(true);
           await setSession(res);
-          router.replace("/(tabs)");
+          router.replace("/onboarding");
         } else if (type === "phone-verify-login") {
           const res = await authApi.loginOtp(emailOrPhone);
           await setSession(res);
@@ -232,9 +234,13 @@ export default function OtpVerifyScreen() {
         } else {
           // Signup or login email OTP verification
           const res = await authApi.verifyEmailOtp(userId, code);
+          const isSignup = type === "email-verify-signup";
+          if (isSignup) {
+            useAuthStore.getState().setJustSignedUp(true);
+          }
           await setSession(res);
           setLoading(false);
-          router.replace("/(tabs)");
+          router.replace(isSignup ? "/onboarding" : "/(tabs)");
         }
       } catch (err: any) {
         setLoading(false);
