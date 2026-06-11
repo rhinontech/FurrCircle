@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
   StyleSheet,
   Dimensions,
   Image,
+  Animated,
+  Easing,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -41,6 +43,27 @@ export default function ForgotPasswordScreen() {
   
   const [identifier, setIdentifier] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const startsWithNumber = /^\d/.test(identifier);
+  const prefixAnim = useRef(new Animated.Value(startsWithNumber ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(prefixAnim, {
+      toValue: startsWithNumber ? 1 : 0,
+      duration: 220,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: false,
+    }).start();
+  }, [startsWithNumber]);
+
+  const animWidth = prefixAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 46],
+  });
+  const animOpacity = prefixAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
 
   async function handleSendResetCode() {
     let trimmedInput = identifier.trim();
@@ -211,15 +234,39 @@ export default function ForgotPasswordScreen() {
 
             <View style={styles.field}>
               <Text style={[styles.label, { color: tk.textMuted }]}>Username, email, or phone</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: tk.glassChip, borderColor: tk.glassBorder, color: tk.text }]}
-                placeholder="Alex or you@example.com or +91..."
-                placeholderTextColor={tk.textMuted}
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={identifier}
-                onChangeText={setIdentifier}
-              />
+              <View style={{ backgroundColor: tk.glassChip, borderColor: tk.glassBorder, paddingLeft: 16, flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 14 }}>
+                <Animated.View style={{
+                  width: animWidth,
+                  opacity: animOpacity,
+                  overflow: "hidden",
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}>
+                  <View style={{ width: 46, flexDirection: "row", alignItems: "center" }}>
+                    <Text style={{
+                      fontFamily: "Inter_600SemiBold",
+                      fontSize: 15,
+                      color: tk.text,
+                    }}>+91</Text>
+                    <View style={{
+                      width: 1.5,
+                      height: 16,
+                      backgroundColor: tk.glassBorder,
+                      marginLeft: 8,
+                      marginRight: 8,
+                    }} />
+                  </View>
+                </Animated.View>
+                <TextInput
+                  style={{ flex: 1, paddingVertical: 13, paddingHorizontal: 0, fontFamily: "Inter_400Regular", fontSize: 15, color: tk.text }}
+                  placeholder="Alex or you@example.com or +91..."
+                  placeholderTextColor={tk.textMuted}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  value={identifier}
+                  onChangeText={setIdentifier}
+                />
+              </View>
             </View>
 
             <TouchableOpacity 

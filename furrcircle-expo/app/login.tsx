@@ -1,11 +1,11 @@
 import {
   View, Text, Image, TextInput, TouchableOpacity,
   StyleSheet, Dimensions, KeyboardAvoidingView, Platform,
-  ScrollView, ActivityIndicator, Alert,
+  ScrollView, ActivityIndicator, Alert, Animated, Easing,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Constants from "expo-constants";
 import { colors } from "../src/lib/theme";
 import { useAuthStore } from "../src/lib/auth-store";
@@ -41,6 +41,27 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false);
   const [otpLoginBusy, setOtpLoginBusy] = useState(false);
   const [notifDenied, setNotifDenied] = useState(false);
+
+  const startsWithNumber = /^\d/.test(identifier);
+  const prefixAnim = useRef(new Animated.Value(startsWithNumber ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(prefixAnim, {
+      toValue: startsWithNumber ? 1 : 0,
+      duration: 220,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: false,
+    }).start();
+  }, [startsWithNumber]);
+
+  const animWidth = prefixAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 46],
+  });
+  const animOpacity = prefixAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
 
   useEffect(() => {
     requestNotificationPermissionEarly().then((result) => {
@@ -124,15 +145,39 @@ export default function LoginScreen() {
 
             <View style={styles.field}>
               <Text style={[styles.label, { color: tk.textMuted }]}>Phone number, email, or username</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: tk.glassChip, borderColor: tk.glassBorder, color: tk.text }]}
-                placeholder="Username, email, or phone (+91...)"
-                placeholderTextColor={tk.textMuted}
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={identifier}
-                onChangeText={setIdentifier}
-              />
+              <View style={[styles.inputRow, { backgroundColor: tk.glassChip, borderColor: tk.glassBorder, paddingLeft: 16 }]}>
+                <Animated.View style={{
+                  width: animWidth,
+                  opacity: animOpacity,
+                  overflow: "hidden",
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}>
+                  <View style={{ width: 46, flexDirection: "row", alignItems: "center" }}>
+                    <Text style={{
+                      fontFamily: "Inter_600SemiBold",
+                      fontSize: 15,
+                      color: tk.text,
+                    }}>+91</Text>
+                    <View style={{
+                      width: 1.5,
+                      height: 16,
+                      backgroundColor: tk.glassBorder,
+                      marginLeft: 8,
+                      marginRight: 8,
+                    }} />
+                  </View>
+                </Animated.View>
+                <TextInput
+                  style={[styles.inputText, { color: tk.text, paddingLeft: 0 }]}
+                  placeholder="Username, email, or phone (+91...)"
+                  placeholderTextColor={tk.textMuted}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  value={identifier}
+                  onChangeText={setIdentifier}
+                />
+              </View>
             </View>
 
             <View style={styles.field}>
@@ -206,6 +251,7 @@ const styles = StyleSheet.create({
   field: { marginBottom: 16 },
   label: { fontFamily: "Inter_600SemiBold", fontSize: 13, marginBottom: 6 },
   input: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontFamily: "Inter_400Regular", fontSize: 15 },
+  inputText: { flex: 1, paddingVertical: 13, paddingHorizontal: 0, fontFamily: "Inter_400Regular", fontSize: 15, backgroundColor: "transparent" },
   inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 14, paddingRight: 16 },
   eyeBtn: { paddingVertical: 13, paddingLeft: 8 },
   forgotBtn: { alignSelf: "flex-end", marginBottom: 24 },
