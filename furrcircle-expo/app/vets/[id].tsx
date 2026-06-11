@@ -9,6 +9,7 @@ import { Stethoscope, MapPin, Star, Clock, Phone, Globe } from "../../src/compon
 import { useEffect, useState } from "react";
 import { placesApi } from "../../services/places/placesApi";
 import { ActivityIndicator, Linking, Alert } from "react-native";
+import { VetHeaderBackground } from "../../src/components/ui/VetHeaderBackground";
 
 export default function VetProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -55,7 +56,7 @@ export default function VetProfileScreen() {
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title="Vet Details" />
         <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-          <View style={[styles.headerBg, { backgroundColor: "rgba(37,99,235,0.1)" }]} />
+          <VetHeaderBackground />
           
           {loading ? (
             <View style={{ paddingTop: 100, alignItems: "center" }}>
