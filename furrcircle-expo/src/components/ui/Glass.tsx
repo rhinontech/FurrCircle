@@ -61,12 +61,14 @@ export function GlassBlur({
   style,
   strong = false,
   intensity = 50,
+  overlayColor,
 }: {
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
   /** Use the more opaque overlay (sheets/dialogs that need legibility). */
   strong?: boolean;
   intensity?: number;
+  overlayColor?: string;
 }) {
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
@@ -81,7 +83,7 @@ export function GlassBlur({
       <View
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: strong ? tk.glassStrong : tk.blurOverlay },
+          { backgroundColor: overlayColor ?? (strong ? tk.glassStrong : tk.blurOverlay) },
         ]}
       />
       {children}

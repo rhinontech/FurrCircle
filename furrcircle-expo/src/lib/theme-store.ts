@@ -34,6 +34,9 @@ export const lightTokens = {
   glassBorder: "rgba(255,255,255,0.75)",
   glassHighlight: "rgba(255,255,255,0.95)",
   blurOverlay: "rgba(255,255,255,0.42)",
+  // Navigation Bar
+  tabBarBg: "rgba(219, 234, 254, 0.72)", // light bluish glass (Tailwind blue-100 overlay)
+  tabBarBorder: "rgba(37, 99, 235, 0.22)", // tinted blue border
 };
 
 export const darkTokens = {
@@ -50,6 +53,9 @@ export const darkTokens = {
   glassBorder: "rgba(255,255,255,0.10)",
   glassHighlight: "rgba(255,255,255,0.09)",
   blurOverlay: "rgba(15,15,26,0.45)",
+  // Navigation Bar
+  tabBarBg: "rgba(20, 20, 35, 0.65)", // dark glass
+  tabBarBorder: "rgba(255, 255, 255, 0.12)", // subtle white border
 };
 
 export type Tokens = typeof lightTokens;

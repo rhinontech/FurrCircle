@@ -90,10 +90,11 @@ export default function TabsLayout() {
             },
             tabBarBackground: () => (
               <GlassBlur
+                overlayColor={tk.tabBarBg}
                 style={[
                   StyleSheet.absoluteFillObject,
                   styles.tabBarGlass,
-                  { borderColor: tk.glassBorder },
+                  { borderColor: tk.tabBarBorder },
                 ]}
               />
             ),
