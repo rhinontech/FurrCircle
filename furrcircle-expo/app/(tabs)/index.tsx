@@ -35,6 +35,7 @@ import { chatApi } from "../../services/chat/chatApi";
 import { useLocationStore } from "../../src/lib/location-store";
 import { LinearGradient } from "expo-linear-gradient";
 import { GlassCard, glassSurface } from "../../src/components/ui/Glass";
+import { tabBarClearance } from "../../src/lib/tabbar";
 
 export default function FeedScreen() {
   const { refresh } = useLocalSearchParams<{ refresh?: string }>();
@@ -421,14 +422,14 @@ export default function FeedScreen() {
         }
         showsVerticalScrollIndicator={false}
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 120, paddingTop: 12 }}
+        contentContainerStyle={{ paddingBottom: 140, paddingTop: 12 }}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
       />
 
       <TouchableOpacity
         onPress={() => setComposeOpen(true)}
-        style={[styles.fab, { bottom: 76 + (insets.bottom > 0 ? insets.bottom : 8) }]}
+        style={[styles.fab, { bottom: tabBarClearance(insets.bottom) }]}
         activeOpacity={0.85}
       >
         <LinearGradient

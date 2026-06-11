@@ -86,7 +86,7 @@ export default function ProfileScreen() {
   return (
     <View style={{ flex: 1, paddingTop: insets.top }}>
       <ScrollView style={styles.container}
-        showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
 
         <View style={styles.header}>
           <Text style={[styles.title, { color: tk.text }]}>Profile</Text>

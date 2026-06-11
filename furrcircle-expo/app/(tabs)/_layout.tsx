@@ -8,6 +8,7 @@ import { useBreakpoint } from "../../src/lib/breakpoints";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassBlur } from "../../src/components/ui/Glass";
 import { AmbientBackground } from "../../src/components/ui/AmbientBackground";
+import { TAB_BAR_HEIGHT, tabBarBottom } from "../../src/lib/tabbar";
 
 export default function TabsLayout() {
   const tk = useTokens();
@@ -57,15 +58,21 @@ export default function TabsLayout() {
             sceneStyle: { backgroundColor: "transparent" },
             tabBarStyle: {
               position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: keyboardHeight > 0 ? -keyboardHeight : 0,
+              // Same margin on all three sides, Instagram-style (capped so it
+              // never gets chunky on Android 3-button nav where the bottom
+              // offset has to clear the system bar). Must use start/end —
+              // the library anchors the bar with start/end: 0, which beats
+              // left/right in RN's style resolution.
+              start: Math.min(tabBarBottom(insets.bottom), 18),
+              end: Math.min(tabBarBottom(insets.bottom), 18),
+              bottom: keyboardHeight > 0 ? -keyboardHeight : tabBarBottom(insets.bottom),
               backgroundColor: "transparent",
               borderTopWidth: 0,
               elevation: 0,
               paddingTop: 6,
-              paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-              height: 60 + (insets.bottom > 0 ? insets.bottom : 8),
+              paddingBottom: 8,
+              height: TAB_BAR_HEIGHT,
+              borderRadius: 32,
             },
             tabBarBackground: () => (
               <GlassBlur
@@ -95,12 +102,10 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
 
-  // Rounded glass slab behind the floating tab bar
+  // Glass pill behind the floating tab bar
   tabBarGlass: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderRadius: 32,
     borderWidth: 1,
-    borderBottomWidth: 0,
   },
 
   // Desktop 3-column row — fills the whole screen width

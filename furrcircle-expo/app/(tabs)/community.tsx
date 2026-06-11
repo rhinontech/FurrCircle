@@ -19,6 +19,7 @@ import { userApi } from "../../services/user/userApi";
 import { AdaptiveSheet } from "../../src/components/AdaptiveSheet";
 import { LinearGradient } from "expo-linear-gradient";
 import { glassSurface } from "../../src/components/ui/Glass";
+import { tabBarClearance } from "../../src/lib/tabbar";
 
 type FilterType = "all" | "people" | "pets" | "posts" | "circles" | "questions" | "tags";
 const FILTERS: { key: FilterType; label: string }[] = [
@@ -189,7 +190,7 @@ export default function CommunityScreen() {
         <ScrollView
           style={styles.container}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 140 }}
           keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
@@ -504,7 +505,7 @@ export default function CommunityScreen() {
         {!isSearchActive && (
           <TouchableOpacity
             onPress={() => setCreateOpen(true)}
-            style={[styles.fab, { bottom: 76 + (insets.bottom > 0 ? insets.bottom : 8) }]}
+            style={[styles.fab, { bottom: tabBarClearance(insets.bottom) }]}
             activeOpacity={0.85}
           >
             <LinearGradient

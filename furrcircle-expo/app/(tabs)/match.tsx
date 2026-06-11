@@ -26,6 +26,7 @@ import { PrivateAxios } from "../../helpers/PrivateAxios";
 import { chatApi } from "../../services/chat/chatApi";
 import { useLocationStore } from "../../src/lib/location-store";
 import { glassSurface } from "../../src/components/ui/Glass";
+import { tabBarClearance } from "../../src/lib/tabbar";
 
 const { width, height } = Dimensions.get("window");
 const CARD_WIDTH = width - 40;
@@ -394,7 +395,7 @@ export default function MatchScreen() {
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top, paddingBottom: 64 + (insets.bottom > 0 ? insets.bottom : 8) }}
+      contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top, paddingBottom: tabBarClearance(insets.bottom, 8) }}
       scrollEnabled={!topCard || loading}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
