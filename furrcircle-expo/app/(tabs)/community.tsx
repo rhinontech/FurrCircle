@@ -6,7 +6,7 @@ import {
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { Plus, Flame, Search, X, Hash, HelpCircle, Users, ChevronRight, Camera, Calendar } from "lucide-react-native";
+import { Plus, Flame, Search, X, Hash, HelpCircle, Users, ChevronRight, Camera, Calendar } from "../../src/components/ui/icons";
 import * as ImagePicker from "expo-image-picker";
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";

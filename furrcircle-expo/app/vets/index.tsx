@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { View, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator, StyleSheet, Linking } from "react-native";
 import { Text } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft, Search, Stethoscope, MapPin, Star, ChevronRight, Check, Phone } from "lucide-react-native";
+import { ChevronLeft, Search, Stethoscope, MapPin, Star, ChevronRight, Check, Phone } from "../../src/components/ui/icons";
 import { useTokens } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { placesApi } from "../../services/places/placesApi";

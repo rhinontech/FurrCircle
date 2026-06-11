@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
-import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, MessageCircle, Sparkles, X, Edit2 } from "lucide-react-native";
+import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, MessageCircle, Sparkles, X, Edit2 } from "../../src/components/ui/icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";

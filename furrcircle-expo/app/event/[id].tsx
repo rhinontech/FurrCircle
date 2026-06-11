@@ -8,7 +8,7 @@ import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
-import { MapPin, Users, Calendar, Clock, CalendarDays } from "lucide-react-native";
+import { MapPin, Users, Calendar, Clock, CalendarDays } from "../../src/components/ui/icons";
 import { eventApi } from "../../services/community/eventApi";
 
 const TINTS: Record<string, { bg: string; badge: string; text: string }> = {

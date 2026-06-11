@@ -10,7 +10,7 @@ import {
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check, Edit2, Trash2, Info, Flag } from "lucide-react-native";
+import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check, Edit2, Trash2, Info, Flag } from "../../src/components/ui/icons";
 import { useState, useEffect, useCallback, useRef } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { posts as dummyPosts, sampleComments, type Post } from "../../src/lib/demo-data";

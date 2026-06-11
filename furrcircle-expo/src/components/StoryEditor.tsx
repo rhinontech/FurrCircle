@@ -4,7 +4,7 @@ import {
   TextInput, TouchableOpacity, KeyboardAvoidingView, Platform,
   ActivityIndicator, Pressable, Keyboard,
 } from "react-native";
-import { X, Check, Volume2, VolumeX } from "lucide-react-native";
+import { X, Check, Volume2, VolumeX } from "./ui/icons";
 import { useTokens } from "../lib/theme-store";
 import { colors } from "../lib/theme";
 import { Video, ResizeMode } from "expo-av";

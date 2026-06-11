@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Modal, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
 import { useTokens } from '../lib/theme-store';
-import { MapPin, X, Search, LocateFixed } from 'lucide-react-native';
+import { MapPin, X, Search, LocateFixed } from './ui/icons';
 
 export interface LocationResult {
   address: string;

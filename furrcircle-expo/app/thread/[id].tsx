@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image,
 } from "react-native";
 import { useLocalSearchParams, useFocusEffect } from "expo-router";
-import { ArrowUp, MessageCircle, Share2, ShieldAlert, Trash2 } from "lucide-react-native";
+import { ArrowUp, MessageCircle, Share2, ShieldAlert, Trash2 } from "../../src/components/ui/icons";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ShareSheet } from "../../src/components/ShareSheet";

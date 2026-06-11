@@ -9,7 +9,7 @@ import { reminderApi } from "../../services/reminder/reminderApi";
 import { colors } from "../../src/lib/theme";
 import { useTokens, useThemeStore } from "../../src/lib/theme-store";
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { ChevronDown } from "lucide-react-native";
+import { ChevronDown } from "../../src/components/ui/icons";
 
 export default function BookVetScreen() {
   const router = useRouter();

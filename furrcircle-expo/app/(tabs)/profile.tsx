@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, Modal, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
-import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut, Clock, Trash2, Syringe, Pill, Activity } from "lucide-react-native";
+import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut, Clock, Trash2, Syringe, Pill, Activity } from "../../src/components/ui/icons";
 import { useCallback, useState } from "react";
 import { getPets, type Pet } from "../../src/lib/pets-store";
 import { colors } from "../../src/lib/theme";

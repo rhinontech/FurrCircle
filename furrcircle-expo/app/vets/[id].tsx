@@ -1,11 +1,11 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
-import { Stethoscope, MapPin, Star, Clock, Phone, Globe } from "lucide-react-native";
+import { Stethoscope, MapPin, Star, Clock, Phone, Globe } from "../../src/components/ui/icons";
 import { useEffect, useState } from "react";
 import { placesApi } from "../../services/places/placesApi";
 import { ActivityIndicator, Linking, Alert } from "react-native";
@@ -68,11 +68,10 @@ export default function VetProfileScreen() {
           ) : (
             <View style={styles.content}>
               <View style={[styles.avatarBox, { backgroundColor: tk.card, borderColor: tk.border }]}>
-                <Stethoscope size={40} color={colors.primary} />
+                <Image source={require("../../src/assets/doodle-vet.png")} style={styles.avatarImg} resizeMode="contain" />
               </View>
 
               <Text style={[styles.name, { color: tk.text }]}>{vet.name || "Veterinary Clinic"}</Text>
-              <Text style={[styles.spec, { color: tk.textMuted }]}>{vet.primaryType || "General Veterinary Care"}</Text>
 
               <View style={styles.metaRow}>
                 {vet.rating ? (
@@ -154,8 +153,9 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   headerBg: { height: 120, width: "100%", position: "absolute", top: 0 },
   content: { paddingHorizontal: 24, paddingTop: 60 },
-  avatarBox: { width: 90, height: 90, borderRadius: 24, borderWidth: 4, alignItems: "center", justifyContent: "center", marginBottom: 16 },
-  name: { fontFamily: "Poppins_700Bold", fontSize: 24, marginBottom: 4 },
+  avatarBox: { width: 90, height: 90, borderRadius: 24, borderWidth: 4, alignItems: "center", justifyContent: "center", marginBottom: 16, overflow: "hidden" },
+  avatarImg: { width: "80%", height: "80%" },
+  name: { fontFamily: "Poppins_700Bold", fontSize: 24, marginBottom: 12 },
   spec: { fontFamily: "Inter_400Regular", fontSize: 15, marginBottom: 20 },
   metaRow: { flexDirection: "row", gap: 12, marginBottom: 24 },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16 },

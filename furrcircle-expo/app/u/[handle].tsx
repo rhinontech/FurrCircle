@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Dimensions, Alert, Modal, Pressable,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { Share2, MapPin, Grid3x3, Bookmark, Bone, Play, MoreVertical, ShieldOff, Flag, ChevronRight, X, Check } from "lucide-react-native";
+import { Share2, MapPin, Grid3x3, Bookmark, Bone, Play, MoreVertical, ShieldOff, Flag, ChevronRight, X, Check } from "../../src/components/ui/icons";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { ShareSheet } from "../../src/components/ShareSheet";

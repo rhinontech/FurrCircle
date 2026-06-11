@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Heart, X, Star, ArrowLeft, ArrowRight, MapPin } from "lucide-react-native";
+import { Heart, X, Star, ArrowLeft, ArrowRight, MapPin } from "../../src/components/ui/icons";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import * as Location from "expo-location";
 import { colors } from "../../src/lib/theme";

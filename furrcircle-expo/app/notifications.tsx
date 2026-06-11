@@ -8,31 +8,32 @@ import { ScreenHeader } from "../src/components/ScreenHeader";
 import { Avatar } from "../src/components/Avatar";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
+import { glassSurface } from "../src/components/ui/Glass";
+import { PageContainer } from "../src/components/PageContainer";
 import { useState, useCallback } from "react";
 import { userApi } from "../services/user/userApi";
 import { notificationApi } from "../services/notification/notificationApi";
 import type { AppNotification } from "../services/notification/notificationApi";
 import { useNotificationStore } from "../src/lib/notification-store";
-import {
-  Heart, MessageCircle, UserPlus, Bell, Clock, Calendar,
-  CheckCheck, ShieldCheck, Megaphone, Info,
-} from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 // ─── Type → visual config ─────────────────────────────────────────────────────
+// Solid colour icon circles, lovable-style: coloured disc + white glyph.
 
-type NotifMeta = { Icon: any; accent: string; bg: string };
+type IonName = keyof typeof Ionicons.glyphMap;
+type NotifMeta = { icon: IonName; accent: string; fg?: string };
 
 const TYPE_META: Record<string, NotifMeta> = {
-  like:           { Icon: Heart,          accent: colors.coral,    bg: "rgba(255,107,107,0.12)" },
-  comment:        { Icon: MessageCircle,  accent: colors.primary,  bg: "rgba(37,99,235,0.10)"  },
-  follow:         { Icon: UserPlus,       accent: "#a855f7",       bg: "rgba(168,85,247,0.12)" },
-  follow_request: { Icon: UserPlus,       accent: colors.sunshine, bg: "rgba(255,193,7,0.12)"  },
-  reminder:       { Icon: Clock,          accent: "#10b981",       bg: "rgba(16,185,129,0.12)" },
-  vaccine:        { Icon: ShieldCheck,    accent: "#10b981",       bg: "rgba(16,185,129,0.12)" },
-  medication:     { Icon: ShieldCheck,    accent: "#0ea5e9",       bg: "rgba(14,165,233,0.12)" },
-  appointment:    { Icon: Calendar,       accent: "#0ea5e9",       bg: "rgba(14,165,233,0.10)" },
-  campaign:       { Icon: Megaphone,      accent: "#7c3aed",       bg: "rgba(124,58,237,0.10)" },
-  general:        { Icon: Info,           accent: "#6366f1",       bg: "rgba(99,102,241,0.10)" },
+  like:           { icon: "heart",              accent: colors.coral },
+  comment:        { icon: "chatbubble",         accent: colors.primary },
+  follow:         { icon: "person-add",         accent: "#a855f7" },
+  follow_request: { icon: "person-add",         accent: colors.sunshine, fg: colors.foreground },
+  reminder:       { icon: "time",               accent: "#10b981" },
+  vaccine:        { icon: "shield-checkmark",   accent: "#10b981" },
+  medication:     { icon: "medkit",             accent: "#0ea5e9" },
+  appointment:    { icon: "calendar",           accent: "#0ea5e9" },
+  campaign:       { icon: "megaphone",          accent: "#7c3aed" },
+  general:        { icon: "information-circle", accent: "#6366f1" },
 };
 
 const getMeta = (type: string): NotifMeta =>
@@ -43,11 +44,13 @@ const getMeta = (type: string): NotifMeta =>
 const formatRelTime = (iso: string): string => {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60_000);
-  if (m < 1) return "Just now";
-  if (m < 60) return `${m}m ago`;
+  if (m < 1) return "now";
+  if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d === 1) return "yesterday";
+  return `${d}d`;
 };
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
@@ -213,150 +216,125 @@ export default function NotificationsScreen() {
 
   const hasUnread = mergedNotifications.some(n => !n.isRead);
 
-  // ── Section grouping ─────────────────────────────────────────────────────────
-  // Group reminder notifications separately from social activity
-
-  const reminderNotifs = mergedNotifications.filter(n =>
-    ["reminder", "vaccine", "medication"].includes(n.type)
-  );
-  const activityNotifs = mergedNotifications.filter(n =>
-    !["reminder", "vaccine", "medication"].includes(n.type)
-  );
-
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title="Notifications" />
+    <PageContainer>
+      <View style={styles.container}>
+        <ScreenHeader title="Notifications" />
 
-      {hasUnread && (
-        <View style={[styles.markAllRow, { borderBottomColor: tk.border }]}>
-          <TouchableOpacity
-            onPress={handleMarkAllRead}
-            disabled={markingAll}
-            style={[styles.markAllBtn, { backgroundColor: tk.card, borderColor: tk.border }]}
-            activeOpacity={0.8}
+        {hasUnread && (
+          <View style={styles.markAllRow}>
+            <TouchableOpacity
+              onPress={handleMarkAllRead}
+              disabled={markingAll}
+              style={[styles.markAllBtn, glassSurface(tk)]}
+              activeOpacity={0.8}
+            >
+              {markingAll
+                ? <ActivityIndicator size={14} color={colors.primary} />
+                : <Ionicons name="checkmark-done" size={14} color={colors.primary} />
+              }
+              <Text style={[styles.markAllText, { color: colors.primary }]}>Mark all read</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {loading ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : (
+          <ScrollView
+            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 60 }}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           >
-            {markingAll
-              ? <ActivityIndicator size={14} color={colors.primary} />
-              : <CheckCheck size={14} color={colors.primary} />
-            }
-            <Text style={[styles.markAllText, { color: colors.primary }]}>Mark all read</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 60 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        >
-          {/* ── Follow Requests ─────────────────────────────────────────── */}
-          {pendingRequests.length > 0 && (
-            <>
-              <SectionLabel label="Follow Requests" tk={tk} />
-              {pendingRequests.map(r => (
-                <View key={r.id} style={[styles.row, { backgroundColor: tk.card, borderBottomColor: tk.border }]}>
-                  <View style={styles.iconWrap}>
+            {/* ── Follow Requests ─────────────────────────────────────────── */}
+            {pendingRequests.length > 0 && (
+              <>
+                <Text style={[styles.sectionText, { color: tk.textMuted }]}>FOLLOW REQUESTS</Text>
+                {pendingRequests.map(r => (
+                  <View key={r.id} style={[styles.card, glassSurface(tk)]}>
                     <Avatar
                       source={r.followerUser?.avatar_url ? { uri: r.followerUser.avatar_url } : require("../src/assets/doodle-puppy.png")}
                       name={r.followerUser?.name}
-                      size={46}
+                      size={44}
                     />
-                    <View style={[styles.dotBadge, { backgroundColor: colors.sunshine }]} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.body, { color: tk.text }]}>
-                      <Text style={styles.bold}>{r.followerUser?.name || "Someone"} </Text>
-                      requested to follow you
-                    </Text>
-                    <View style={styles.btnRow}>
-                      <TouchableOpacity onPress={() => handleAccept(r.followerId)} style={[styles.btn, { backgroundColor: colors.primary }]}>
-                        <Text style={[styles.btnText, { color: "#fff" }]}>Accept</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleReject(r.followerId)} style={[styles.btn, { backgroundColor: tk.border }]}>
-                        <Text style={[styles.btnText, { color: tk.text }]}>Reject</Text>
-                      </TouchableOpacity>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.cardBody, { color: tk.text }]}>
+                        <Text style={[styles.cardTitle, { color: tk.text }]}>{r.followerUser?.name || "Someone"} </Text>
+                        requested to follow you
+                      </Text>
+                      <View style={styles.btnRow}>
+                        <TouchableOpacity onPress={() => handleAccept(r.followerId)} style={[styles.btn, { backgroundColor: colors.primary }]}>
+                          <Text style={[styles.btnText, { color: "#fff" }]}>Accept</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleReject(r.followerId)} style={[styles.btn, { backgroundColor: tk.glassChip }]}>
+                          <Text style={[styles.btnText, { color: tk.text }]}>Reject</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
+                ))}
+              </>
+            )}
+
+            {/* ── Notifications List ───────────────────────────────────────── */}
+            {mergedNotifications.map(n => (
+              <NotifCard key={n.id} n={n} tk={tk} onPress={() => handleTap(n)} />
+            ))}
+
+            {/* ── Empty state ──────────────────────────────────────────────── */}
+            {pendingRequests.length === 0 && mergedNotifications.length === 0 && (
+              <View style={[styles.emptyBox, glassSurface(tk)]}>
+                <View style={[styles.emptyIcon, { backgroundColor: tk.glassChip }]}>
+                  <Ionicons name="notifications-outline" size={28} color={tk.textMuted} />
                 </View>
-              ))}
-            </>
-          )}
-
-          {/* ── Notifications List ───────────────────────────────────────── */}
-          {mergedNotifications.map(n => (
-            <NotifRow key={n.id} n={n} tk={tk} onPress={() => handleTap(n)} />
-          ))}
-
-          {/* ── Empty state ──────────────────────────────────────────────── */}
-          {pendingRequests.length === 0 && mergedNotifications.length === 0 && (
-            <View style={[styles.emptyBox, { backgroundColor: tk.card, borderColor: tk.border }]}>
-              <View style={[styles.emptyIcon, { backgroundColor: tk.border }]}>
-                <Bell size={28} color={tk.textMuted} />
+                <Text style={[styles.emptyTitle, { color: tk.text }]}>No notifications yet</Text>
+                <Text style={[styles.emptyBody, { color: tk.textMuted }]}>
+                  Likes, comments, follows, reminders, and appointments will appear here.
+                </Text>
               </View>
-              <Text style={[styles.emptyTitle, { color: tk.text }]}>No notifications yet</Text>
-              <Text style={[styles.emptyBody, { color: tk.textMuted }]}>
-                Likes, comments, follows, reminders, and appointments will appear here.
-              </Text>
-            </View>
-          )}
-        </ScrollView>
-      )}
-    </View>
+            )}
+          </ScrollView>
+        )}
+      </View>
+    </PageContainer>
   );
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function SectionLabel({ label, tk }: { label: string; tk: any }) {
-  return (
-    <View style={[styles.sectionLabel, { borderBottomColor: tk.border }]}>
-      <Text style={[styles.sectionText, { color: tk.textMuted }]}>{label}</Text>
-    </View>
-  );
-}
-
-function NotifRow({ n, tk, onPress }: { n: AppNotification; tk: any; onPress: () => void }) {
+function NotifCard({ n, tk, onPress }: { n: AppNotification; tk: any; onPress: () => void }) {
   const meta = getMeta(n.type);
-  const Icon = meta.Icon;
 
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
-      style={[
-        styles.row,
-        {
-          backgroundColor: n.isRead ? tk.card : (tk.card + (tk.card.length === 7 ? "f0" : "")),
-          borderBottomColor: tk.border,
-          borderLeftWidth: n.isRead ? 0 : 3,
-          borderLeftColor: n.isRead ? "transparent" : meta.accent,
-        },
-      ]}
+      style={[styles.card, glassSurface(tk)]}
     >
-      {/* Icon badge */}
-      <View style={[styles.iconWrap]}>
-        <View style={[styles.iconBadge, { backgroundColor: meta.bg }]}>
-          <Icon size={20} color={meta.accent} />
+      {/* Solid colour icon disc */}
+      <View style={styles.iconWrap}>
+        <View style={[styles.iconCircle, { backgroundColor: meta.accent }]}>
+          <Ionicons name={meta.icon} size={20} color={meta.fg ?? "#fff"} />
         </View>
-        {!n.isRead && <View style={[styles.dotBadge, { backgroundColor: meta.accent }]} />}
+        {!n.isRead && <View style={[styles.dotBadge, { backgroundColor: meta.accent, borderColor: tk.bg }]} />}
       </View>
 
       {/* Content */}
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={styles.rowTop}>
-          <Text style={[styles.body, { color: tk.text, flex: 1 }]} numberOfLines={2}>
-            <Text style={n.isRead ? styles.body : styles.bold}>{n.title}</Text>
+          <Text
+            style={[styles.cardTitle, { color: tk.text, flex: 1 }, n.isRead && styles.cardTitleRead]}
+            numberOfLines={2}
+          >
+            {n.title}
           </Text>
-          <Text style={[styles.meta, { color: tk.textMuted }]}>{formatRelTime(n.createdAt)}</Text>
+          <Text style={[styles.time, { color: tk.textMuted }]}>{formatRelTime(n.createdAt)}</Text>
         </View>
         {!!n.message && (
-          <Text style={[styles.subMsg, { color: tk.textMuted }]} numberOfLines={2}>
+          <Text style={[styles.cardBody, { color: tk.textMuted }]} numberOfLines={2}>
             {n.message}
           </Text>
         )}
@@ -372,28 +350,27 @@ const styles = StyleSheet.create({
   center:       { flex: 1, alignItems: "center", justifyContent: "center" },
 
   // Mark all row
-  markAllRow:   { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1 },
-  markAllBtn:   { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-end", borderWidth: 1, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
+  markAllRow:   { paddingHorizontal: 20, paddingBottom: 4 },
+  markAllBtn:   { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-end", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
   markAllText:  { fontFamily: "Poppins_600SemiBold", fontSize: 12 },
 
   // Section label
-  sectionLabel: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1 },
-  sectionText:  { fontFamily: "Poppins_600SemiBold", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8 },
+  sectionText:  { fontFamily: "Poppins_600SemiBold", fontSize: 11, letterSpacing: 0.8, marginBottom: 8, marginTop: 4 },
 
-  // Notification row
-  row: {
-    flexDirection: "row", alignItems: "center", gap: 12,
-    paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1,
+  // Notification card (lovable-style: rounded card, icon disc, title + time)
+  card: {
+    flexDirection: "row", alignItems: "flex-start", gap: 12,
+    borderRadius: 16, padding: 16, marginBottom: 12,
   },
   iconWrap:    { position: "relative" },
-  iconBadge:   { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  dotBadge:    { position: "absolute", bottom: 0, right: 0, width: 11, height: 11, borderRadius: 6, borderWidth: 2, borderColor: "#fff" },
+  iconCircle:  { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  dotBadge:    { position: "absolute", top: -2, right: -2, width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
 
-  rowTop:      { flexDirection: "row", alignItems: "flex-start", gap: 8 },
-  body:        { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
-  bold:        { fontFamily: "Poppins_700Bold" },
-  subMsg:      { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2, lineHeight: 17 },
-  meta:        { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2, flexShrink: 0 },
+  rowTop:      { flexDirection: "row", alignItems: "baseline", gap: 8 },
+  cardTitle:   { fontFamily: "Poppins_700Bold", fontSize: 15, lineHeight: 21 },
+  cardTitleRead: { fontFamily: "Poppins_600SemiBold" },
+  cardBody:    { fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 2, lineHeight: 19 },
+  time:        { fontSize: 11, fontFamily: "Inter_400Regular", flexShrink: 0 },
 
   // Follow request buttons
   btnRow:      { flexDirection: "row", gap: 8, marginTop: 8 },
@@ -401,7 +378,7 @@ const styles = StyleSheet.create({
   btnText:     { fontFamily: "Poppins_700Bold", fontSize: 12 },
 
   // Empty state
-  emptyBox:    { margin: 20, borderRadius: 20, borderWidth: 1, padding: 32, alignItems: "center", gap: 10 },
+  emptyBox:    { marginTop: 8, borderRadius: 20, padding: 32, alignItems: "center", gap: 10 },
   emptyIcon:   { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center" },
   emptyTitle:  { fontFamily: "Poppins_700Bold", fontSize: 16 },
   emptyBody:   { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 20, textAlign: "center" },

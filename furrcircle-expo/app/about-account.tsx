@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Image, ActivityIndicator, Alert, ScrollView } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Calendar, MapPin } from "lucide-react-native";
+import { Calendar, MapPin } from "../src/components/ui/icons";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";

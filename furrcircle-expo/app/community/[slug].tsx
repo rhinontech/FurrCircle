@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
-import { Users, Plus, ThumbsUp, MessageCircle, ChevronRight, Share2 } from "lucide-react-native";
+import { Users, Plus, ThumbsUp, MessageCircle, ChevronRight, Share2 } from "../../src/components/ui/icons";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ShareSheet } from "../../src/components/ShareSheet";

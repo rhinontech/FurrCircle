@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Modal } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2, Pill, X, Trash2, Eye } from "lucide-react-native";
+import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2, Pill, X, Trash2, Eye } from "../src/components/ui/icons";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { ShareSheet } from "../src/components/ShareSheet";
 import { PageContainer } from "../src/components/PageContainer";

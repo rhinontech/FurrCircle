@@ -4,7 +4,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect, useRef } from "react";
-import { MapPin, User, Camera, Check, AlertCircle, LocateFixed } from "lucide-react-native";
+import { MapPin, User, Camera, Check, AlertCircle, LocateFixed } from "../src/components/ui/icons";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";

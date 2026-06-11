@@ -4,7 +4,7 @@ import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
-import { MapPin, Siren, Eye, Plus, Camera, Trash2, Edit2, X, AlertCircle } from "lucide-react-native";
+import { MapPin, Siren, Eye, Plus, Camera, Trash2, Edit2, X, AlertCircle } from "../src/components/ui/icons";
 import * as ImagePicker from "expo-image-picker";
 import { lostPetApi } from "../services/lost/lostPetApi";
 import { userApi } from "../services/user/userApi";

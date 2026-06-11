@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Search, Heart, MapPin, Star, Stethoscope, Phone, HandHeart, Home } from "lucide-react-native";
+import { Search, Heart, MapPin, Star, Stethoscope, Phone, HandHeart, Home } from "../../src/components/ui/icons";
 import { useState, useEffect } from "react";
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";

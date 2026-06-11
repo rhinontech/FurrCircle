@@ -19,7 +19,7 @@ import Constants from "expo-constants";
 import { colors } from "../src/lib/theme";
 import { authApi } from "../services/auth/authApi";
 import { useAuthStore } from "../src/lib/auth-store";
-import { Eye, EyeOff } from "lucide-react-native";
+import { Eye, EyeOff } from "../src/components/ui/icons";
 
 const { height } = Dimensions.get("window");
 

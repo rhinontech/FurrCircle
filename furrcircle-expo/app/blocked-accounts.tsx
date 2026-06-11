@@ -5,7 +5,7 @@ import { ScreenHeader } from "../src/components/ScreenHeader";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 import { blockApi } from "../services/user/blockApi";
-import { ShieldOff } from "lucide-react-native";
+import { ShieldOff } from "../src/components/ui/icons";
 
 const puppy = require("../src/assets/doodle-puppy.png");
 

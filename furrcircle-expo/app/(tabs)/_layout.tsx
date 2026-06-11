@@ -1,7 +1,7 @@
 import { View, StyleSheet, Platform, Keyboard } from "react-native";
 import { useState, useEffect } from "react";
 import { Tabs } from "expo-router";
-import { Home, Users, Bone, Compass, LayoutGrid } from "lucide-react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { useBreakpoint } from "../../src/lib/breakpoints";
@@ -9,6 +9,22 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassBlur } from "../../src/components/ui/Glass";
 import { AmbientBackground } from "../../src/components/ui/AmbientBackground";
 import { TAB_BAR_HEIGHT, tabBarBottom } from "../../src/lib/tabbar";
+
+type IonName = keyof typeof Ionicons.glyphMap;
+
+/** SF-Symbols-style tab icon: filled when active, outline when idle. */
+const tabIcon = (active: IonName, inactive: IonName) =>
+  ({ color, size, focused }: { color: string; size: number; focused: boolean }) => (
+    <Ionicons name={focused ? active : inactive} size={size} color={color} />
+  );
+
+const TAB_SCREENS = [
+  { name: "index", title: "Feed", icon: tabIcon("home", "home-outline") },
+  { name: "community", title: "Circles", icon: tabIcon("people", "people-outline") },
+  { name: "match", title: "Match", icon: tabIcon("paw", "paw-outline") },
+  { name: "discover", title: "Discover", icon: tabIcon("compass", "compass-outline") },
+  { name: "profile", title: "Profile", icon: tabIcon("person-circle", "person-circle-outline") },
+];
 
 export default function TabsLayout() {
   const tk = useTokens();
@@ -44,11 +60,9 @@ export default function TabsLayout() {
             tabBarInactiveTintColor: tk.textMuted,
           }}
         >
-          <Tabs.Screen name="index" options={{ title: "Feed", tabBarIcon: ({ color, size }) => <Home size={size} color={color} strokeWidth={2} /> }} />
-          <Tabs.Screen name="community" options={{ title: "Circles", tabBarIcon: ({ color, size }) => <Users size={size} color={color} strokeWidth={2} /> }} />
-          <Tabs.Screen name="match" options={{ title: "Match", tabBarIcon: ({ color, size }) => <Bone size={size} color={color} strokeWidth={2} /> }} />
-          <Tabs.Screen name="discover" options={{ title: "Discover", tabBarIcon: ({ color, size }) => <Compass size={size} color={color} strokeWidth={2} /> }} />
-          <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} strokeWidth={2} /> }} />
+          {TAB_SCREENS.map((s) => (
+            <Tabs.Screen key={s.name} name={s.name} options={{ title: s.title, tabBarIcon: s.icon }} />
+          ))}
         </Tabs>
       ) : (
         /* ── Mobile: glass bottom tabs floating over content ── */
@@ -88,11 +102,9 @@ export default function TabsLayout() {
             tabBarLabelStyle: { fontFamily: "Poppins_600SemiBold", fontSize: 11 },
           }}
         >
-          <Tabs.Screen name="index" options={{ title: "Feed", tabBarIcon: ({ color, size }) => <Home size={size} color={color} strokeWidth={2} /> }} />
-          <Tabs.Screen name="community" options={{ title: "Circles", tabBarIcon: ({ color, size }) => <Users size={size} color={color} strokeWidth={2} /> }} />
-          <Tabs.Screen name="match" options={{ title: "Match", tabBarIcon: ({ color, size }) => <Bone size={size} color={color} strokeWidth={2} /> }} />
-          <Tabs.Screen name="discover" options={{ title: "Discover", tabBarIcon: ({ color, size }) => <Compass size={size} color={color} strokeWidth={2} /> }} />
-          <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} strokeWidth={2} /> }} />
+          {TAB_SCREENS.map((s) => (
+            <Tabs.Screen key={s.name} name={s.name} options={{ title: s.title, tabBarIcon: s.icon }} />
+          ))}
         </Tabs>
       )}
     </View>

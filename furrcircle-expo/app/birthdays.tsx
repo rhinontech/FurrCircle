@@ -10,7 +10,7 @@ import {
   Dimensions,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
-import { Gift, Calendar, Cake, ChevronLeft } from "lucide-react-native";
+import { Gift, Calendar, Cake, ChevronLeft } from "../src/components/ui/icons";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { Avatar } from "../src/components/Avatar";

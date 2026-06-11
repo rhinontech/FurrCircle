@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Modal } from "react-native";
-import { Sparkles, Plus, X } from "lucide-react-native";
+import { Sparkles, Plus, X } from "../src/components/ui/icons";
 import { useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";

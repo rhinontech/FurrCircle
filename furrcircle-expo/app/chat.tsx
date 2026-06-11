@@ -7,7 +7,7 @@ import { tints } from "../src/lib/theme";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { Avatar } from "../src/components/Avatar";
 import { colors } from "../src/lib/theme";
-import { Send, Plus, Search, MessageCircle, Check, CheckCheck, ChevronRight, Users, Heart } from "lucide-react-native";
+import { Send, Plus, Search, MessageCircle, Check, CheckCheck, ChevronRight, Users, Heart } from "../src/components/ui/icons";
 import { useAuthStore } from "../src/lib/auth-store";
 import { chatApi } from "../services/chat/chatApi";
 import { petApi } from "../services/pet/petApi";

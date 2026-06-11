@@ -5,7 +5,7 @@ import {
   KeyboardAvoidingView, Platform, Keyboard,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Search, Check } from "lucide-react-native";
+import { Search, Check } from "./ui/icons";
 import { Avatar } from "./Avatar";
 import { colors } from "../lib/theme";
 import { useTokens } from "../lib/theme-store";
