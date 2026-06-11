@@ -25,6 +25,7 @@ import { petApi } from "../../services/pet/petApi";
 import { PrivateAxios } from "../../helpers/PrivateAxios";
 import { chatApi } from "../../services/chat/chatApi";
 import { useLocationStore } from "../../src/lib/location-store";
+import { glassSurface } from "../../src/components/ui/Glass";
 
 const { width, height } = Dimensions.get("window");
 const CARD_WIDTH = width - 40;
@@ -383,7 +384,7 @@ export default function MatchScreen() {
       <View style={styles.emptyState}>
         <Text style={[styles.emptyTitle, { color: tk.text }]}>All caught up!</Text>
         <Text style={[styles.emptySubtitle, { color: tk.textMuted }]}>No more cards right now. Check back later.</Text>
-        <TouchableOpacity style={[styles.emptyBtn, { backgroundColor: tk.card }]} onPress={() => loadCards(mode)}>
+        <TouchableOpacity style={[styles.emptyBtn, glassSurface(tk)]} onPress={() => loadCards(mode)}>
           <Text style={[styles.emptyBtnText, { color: tk.text }]}>Refresh</Text>
         </TouchableOpacity>
       </View>
@@ -392,8 +393,8 @@ export default function MatchScreen() {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: tk.bg }}
-      contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top }}
+      style={{ flex: 1 }}
+      contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top, paddingBottom: 64 + (insets.bottom > 0 ? insets.bottom : 8) }}
       scrollEnabled={!topCard || loading}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
@@ -416,7 +417,7 @@ export default function MatchScreen() {
         {modes.map((m) => {
           const isActive = mode === m;
           return (
-            <TouchableOpacity key={m} onPress={() => changeMode(m)} style={[styles.modePill, { backgroundColor: isActive ? tk.text : tk.card }]}>
+            <TouchableOpacity key={m} onPress={() => changeMode(m)} style={[styles.modePill, isActive ? { backgroundColor: tk.text } : glassSurface(tk)]}>
               <Text style={[styles.modePillText, { color: isActive ? tk.bg : tk.textMuted }]}>{m}</Text>
             </TouchableOpacity>
           );
@@ -442,7 +443,7 @@ export default function MatchScreen() {
                 ) : (
                   <View style={styles.cardImagePlaceholder} />
                 )}
-                <View style={[styles.cardInfo, { backgroundColor: dark ? "rgba(28,28,46,0.85)" : "rgba(255,255,255,0.85)", borderColor: dark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)", borderWidth: 1 }]}>
+                <View style={[styles.cardInfo, { backgroundColor: tk.glassStrong, borderColor: tk.glassBorder, borderWidth: 1 }]}>
                   <Text style={[styles.cardName, { color: dark ? "#FFFFFF" : colors.foreground }]}>{bgCard.name}</Text>
                   <Text style={[styles.cardMeta, { color: dark ? "rgba(255,255,255,0.7)" : "rgba(26,26,46,0.65)" }]}>{bgCard.meta}</Text>
                 </View>
@@ -491,7 +492,7 @@ export default function MatchScreen() {
                 </View>
               )}
 
-              <View style={[styles.cardInfo, { backgroundColor: dark ? "rgba(28,28,46,0.85)" : "rgba(255,255,255,0.85)", borderColor: dark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)", borderWidth: 1 }]}>
+              <View style={[styles.cardInfo, { backgroundColor: tk.glassStrong, borderColor: tk.glassBorder, borderWidth: 1 }]}>
                 <Text style={[styles.cardName, { color: dark ? "#FFFFFF" : colors.foreground }]}>{topCard.name}</Text>
                 <Text style={[styles.cardMeta, { color: dark ? "rgba(255,255,255,0.7)" : "rgba(26,26,46,0.65)" }]}>{topCard.meta}</Text>
                 <Text style={[styles.cardTag, { color: dark ? "rgba(255,255,255,0.9)" : "rgba(26,26,46,0.85)" }]}>{topCard.tag}</Text>
@@ -506,13 +507,13 @@ export default function MatchScreen() {
         <>
           {mode === "Playdate" && (
             <View style={styles.actionRow}>
-              <TouchableOpacity onPress={() => swipeTo("left")} style={[styles.actionBtn, styles.actionBtnSm, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+              <TouchableOpacity onPress={() => swipeTo("left")} style={[styles.actionBtn, styles.actionBtnSm, glassSurface(tk)]} activeOpacity={0.8}>
                 <X size={26} color={tk.text} strokeWidth={2.6} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => swipeTo("right")} style={[styles.actionBtn, styles.actionBtnLg, { backgroundColor: colors.primary }]} activeOpacity={0.8}>
                 <Heart size={30} color="#fff" fill="#fff" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => swipeTo("right")} style={[styles.actionBtn, styles.actionBtnSm, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+              <TouchableOpacity onPress={() => swipeTo("right")} style={[styles.actionBtn, styles.actionBtnSm, glassSurface(tk)]} activeOpacity={0.8}>
                 <Star size={26} color={colors.sunshine} fill={colors.sunshine} />
               </TouchableOpacity>
             </View>
@@ -520,7 +521,7 @@ export default function MatchScreen() {
 
           {mode === "Owner" && (
             <View style={styles.actionRow}>
-              <TouchableOpacity onPress={() => ownerSwipeTo("left")} style={[styles.actionBtn, styles.actionBtnSm, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+              <TouchableOpacity onPress={() => ownerSwipeTo("left")} style={[styles.actionBtn, styles.actionBtnSm, glassSurface(tk)]} activeOpacity={0.8}>
                 <X size={26} color={tk.text} strokeWidth={2.6} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => ownerSwipeTo("right")} style={[styles.actionBtn, styles.actionBtnLg, { backgroundColor: colors.primary }]} activeOpacity={0.8}>
@@ -531,7 +532,7 @@ export default function MatchScreen() {
 
           {mode === "Adoption" && (
             <View style={styles.actionRow}>
-              <TouchableOpacity onPress={() => animatePagination("prev")} style={[styles.actionBtn, styles.actionBtnSm, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+              <TouchableOpacity onPress={() => animatePagination("prev")} style={[styles.actionBtn, styles.actionBtnSm, glassSurface(tk)]} activeOpacity={0.8}>
                 <ArrowLeft size={26} color={tk.text} strokeWidth={2.4} />
               </TouchableOpacity>
               <TouchableOpacity
@@ -546,7 +547,7 @@ export default function MatchScreen() {
                   <Text style={styles.adoptBtnText}>I'm Interested 🐾</Text>
                 )}
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => animatePagination("next")} style={[styles.actionBtn, styles.actionBtnSm, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+              <TouchableOpacity onPress={() => animatePagination("next")} style={[styles.actionBtn, styles.actionBtnSm, glassSurface(tk)]} activeOpacity={0.8}>
                 <ArrowRight size={26} color={tk.text} strokeWidth={2.4} />
               </TouchableOpacity>
             </View>
@@ -554,7 +555,7 @@ export default function MatchScreen() {
 
           {mode === "Breed" && (
             <View style={styles.actionRow}>
-              <TouchableOpacity onPress={() => swipeTo("left")} style={[styles.actionBtn, styles.actionBtnSm, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+              <TouchableOpacity onPress={() => swipeTo("left")} style={[styles.actionBtn, styles.actionBtnSm, glassSurface(tk)]} activeOpacity={0.8}>
                 <X size={26} color={tk.text} strokeWidth={2.6} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => swipeTo("right")} style={[styles.actionBtn, styles.actionBtnLg, { backgroundColor: colors.primary }]} activeOpacity={0.8}>

@@ -12,6 +12,7 @@ import { petApi } from "../../services/pet/petApi";
 import { userApi } from "../../services/user/userApi";
 import { reminderApi } from "../../services/reminder/reminderApi";
 import { AdaptiveSheet } from "../../src/components/AdaptiveSheet";
+import { glassSurface } from "../../src/components/ui/Glass";
 
 const TINT_COLORS = ["rgba(255,107,107,0.15)", "rgba(37,99,235,0.1)", "rgba(255,217,61,0.3)", "rgba(255,111,207,0.15)", "rgba(76,175,80,0.15)"];
 
@@ -83,8 +84,8 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: tk.bg }}>
-      <ScrollView style={[styles.container, { backgroundColor: tk.bg }]}
+    <View style={{ flex: 1, paddingTop: insets.top }}>
+      <ScrollView style={styles.container}
         showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
 
         <View style={styles.header}>
@@ -93,14 +94,14 @@ export default function ProfileScreen() {
             {/* <TouchableOpacity onPress={() => user?.username && router.push(`/u/${user.username}`)} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
               <Share2 size={20} color={tk.text} strokeWidth={2} />
             </TouchableOpacity> */}
-            <TouchableOpacity onPress={() => router.push("/settings")} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
+            <TouchableOpacity onPress={() => router.push("/settings")} style={[styles.iconBtn, glassSurface(tk)]}>
               <Settings size={20} color={tk.text} strokeWidth={2} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* User card */}
-        <TouchableOpacity onPress={() => user?.username && router.push(`/u/${user.username}`)} style={[styles.userCard, { backgroundColor: tk.card }]}>
+        <TouchableOpacity onPress={() => user?.username && router.push(`/u/${user.username}`)} style={[styles.userCard, glassSurface(tk)]}>
           <Avatar source={userProfile?.avatar_url ? { uri: userProfile.avatar_url } : (user?.avatar_url ? { uri: user.avatar_url } : require("../../src/assets/doodle-boy-dog.png"))} name={userProfile?.name || user?.name || "User"} size={80} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.userName, { color: tk.text }]}>{userProfile?.name || user?.name || "User"}</Text>
@@ -121,7 +122,7 @@ export default function ProfileScreen() {
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 8 }}>
           {pets.map((p, i) => (
-            <TouchableOpacity key={p.id} onPress={() => router.push({ pathname: "/pet", params: { id: p.id } })} style={[styles.petCard, { backgroundColor: TINT_COLORS[(i + 2) % TINT_COLORS.length] }]} activeOpacity={0.85}>
+            <TouchableOpacity key={p.id} onPress={() => router.push({ pathname: "/pet", params: { id: p.id } })} style={[styles.petCard, { backgroundColor: TINT_COLORS[(i + 2) % TINT_COLORS.length], borderWidth: 1, borderColor: tk.glassBorder }]} activeOpacity={0.85}>
               <View style={[styles.petCardImgWrap, { overflow: "hidden" }]}>
                 {p.avatar_url?.startsWith('http') ? <Image source={{ uri: p.avatar_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" /> : null}
                 {(p.isAdoptionOpen || p.isFosterOpen) && (
@@ -136,7 +137,7 @@ export default function ProfileScreen() {
               <Text style={[styles.petCardBreed, { color: tk.textMuted }]}>{p.breed || p.species} · {p.gender === "female" ? "♀" : "♂"} · {p.age || "?"}y</Text>
             </TouchableOpacity>
           ))}
-          <TouchableOpacity onPress={() => router.push("/add-pet")} style={[styles.petCardAdd, { backgroundColor: tk.card, borderColor: tk.border }]} activeOpacity={0.85}>
+          <TouchableOpacity onPress={() => router.push("/add-pet")} style={[styles.petCardAdd, { backgroundColor: tk.glass, borderColor: tk.glassBorder }]} activeOpacity={0.85}>
             <Plus size={24} color={tk.textMuted} />
             <Text style={[styles.addPetCardText, { color: tk.textMuted }]}>Add pet</Text>
           </TouchableOpacity>
@@ -178,7 +179,7 @@ export default function ProfileScreen() {
                     <TouchableOpacity
                       key={r.id}
                       onPress={() => router.push(`/vets/reminder?id=${r.id}`)}
-                      style={[styles.reminderCardHorizontal, { backgroundColor: tintBg }]}
+                      style={[styles.reminderCardHorizontal, { backgroundColor: tintBg, borderWidth: 1, borderColor: tk.glassBorder }]}
                       activeOpacity={0.85}
                     >
                       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", width: "100%" }}>
@@ -238,7 +239,7 @@ export default function ProfileScreen() {
 
         {/* Log Out */}
         <TouchableOpacity onPress={handleLogout}
-          style={[styles.dangerRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+          style={[styles.dangerRow, glassSurface(tk)]} activeOpacity={0.8}>
           <View style={[styles.dangerIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
             <LogOut size={20} color={colors.primary} strokeWidth={2} />
           </View>
@@ -308,7 +309,7 @@ function PetPickerModal({ open, onClose, pets, onSelect, tk }: any) {
 
 function Row({ onPress, icon: Icon, label, meta, tintColor, tk }: any) {
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.row, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+    <TouchableOpacity onPress={onPress} style={[styles.row, glassSurface(tk)]} activeOpacity={0.8}>
       <View style={[styles.rowIcon, { backgroundColor: tintColor }]}><Icon size={20} color={tk.text} strokeWidth={2} /></View>
       <Text style={[styles.rowLabel, { flex: 1, color: tk.text }]}>{label}</Text>
       <Text style={[styles.rowMeta, { color: tk.textMuted }]}>{meta}</Text>
@@ -319,7 +320,7 @@ function Row({ onPress, icon: Icon, label, meta, tintColor, tk }: any) {
 
 function Tile({ onPress, icon: Icon, label, tintColor, tk }: any) {
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.tile, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+    <TouchableOpacity onPress={onPress} style={[styles.tile, glassSurface(tk)]} activeOpacity={0.8}>
       <View style={[styles.tileIconBg, { backgroundColor: tintColor }]}>
         <Icon size={20} color={tk.text} strokeWidth={2} />
       </View>
@@ -330,7 +331,7 @@ function Tile({ onPress, icon: Icon, label, tintColor, tk }: any) {
 
 function TileThree({ onPress, icon: Icon, label, tintColor, tk }: any) {
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.tileThree, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+    <TouchableOpacity onPress={onPress} style={[styles.tileThree, glassSurface(tk)]} activeOpacity={0.8}>
       <View style={[styles.tileIconBgCenter, { backgroundColor: tintColor }]}>
         <Icon size={18} color={tk.text} strokeWidth={2} />
       </View>

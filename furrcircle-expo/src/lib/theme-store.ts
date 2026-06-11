@@ -27,6 +27,13 @@ export const lightTokens = {
   textMuted: "#1A1A2E99",
   border: "#E5E7EB",
   inputBg: "#FFFFFF",
+  // Glassmorphism surfaces
+  glass: "rgba(255,255,255,0.62)",
+  glassStrong: "rgba(255,255,255,0.90)",
+  glassChip: "rgba(255,255,255,0.55)",
+  glassBorder: "rgba(255,255,255,0.75)",
+  glassHighlight: "rgba(255,255,255,0.95)",
+  blurOverlay: "rgba(255,255,255,0.42)",
 };
 
 export const darkTokens = {
@@ -36,7 +43,16 @@ export const darkTokens = {
   textMuted: "#F0F0FF99",
   border: "#2A2A40",
   inputBg: "#1C1C2E",
+  // Glassmorphism surfaces
+  glass: "rgba(32,32,56,0.55)",
+  glassStrong: "rgba(24,24,42,0.93)",
+  glassChip: "rgba(255,255,255,0.07)",
+  glassBorder: "rgba(255,255,255,0.10)",
+  glassHighlight: "rgba(255,255,255,0.09)",
+  blurOverlay: "rgba(15,15,26,0.45)",
 };
+
+export type Tokens = typeof lightTokens;
 
 export function useTokens() {
   const dark = useThemeStore((s) => s.dark);

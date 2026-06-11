@@ -17,6 +17,8 @@ import { questionApi } from "../../services/community/questionApi";
 import { feedApi } from "../../services/community/feedApi";
 import { userApi } from "../../services/user/userApi";
 import { AdaptiveSheet } from "../../src/components/AdaptiveSheet";
+import { LinearGradient } from "expo-linear-gradient";
+import { glassSurface } from "../../src/components/ui/Glass";
 
 type FilterType = "all" | "people" | "pets" | "posts" | "circles" | "questions" | "tags";
 const FILTERS: { key: FilterType; label: string }[] = [
@@ -183,9 +185,9 @@ export default function CommunityScreen() {
 
   return (
     <PageContainer>
-      <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: tk.bg }}>
+      <View style={{ flex: 1, paddingTop: insets.top }}>
         <ScrollView
-          style={[styles.container, { backgroundColor: tk.bg }]}
+          style={styles.container}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
           keyboardShouldPersistTaps="handled"
@@ -202,7 +204,7 @@ export default function CommunityScreen() {
             </View>
             {!isSearchActive && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <TouchableOpacity onPress={() => router.push("/events")} style={[styles.eventBtn, { backgroundColor: tk.card, borderColor: tk.border, borderWidth: 1 }]} activeOpacity={0.85}>
+                <TouchableOpacity onPress={() => router.push("/events")} style={[styles.eventBtn, glassSurface(tk)]} activeOpacity={0.85}>
                   <Calendar size={20} color={tk.text} />
                 </TouchableOpacity>
 
@@ -215,7 +217,7 @@ export default function CommunityScreen() {
           </View>
 
           {/* Search bar */}
-          <View style={[styles.searchBar, { backgroundColor: tk.card }]}>
+          <View style={[styles.searchBar, glassSurface(tk)]}>
             <Search size={16} color={tk.textMuted} />
             <TextInput
               ref={searchInputRef}
@@ -244,7 +246,7 @@ export default function CommunityScreen() {
                   const isActive = activeFilter === f.key;
                   const count = getFilterCount(f.key);
                   return (
-                    <TouchableOpacity key={f.key} onPress={() => setActiveFilter(f.key)} style={[styles.chip, { backgroundColor: isActive ? tk.text : tk.card }]} activeOpacity={0.8}>
+                    <TouchableOpacity key={f.key} onPress={() => setActiveFilter(f.key)} style={[styles.chip, isActive ? { backgroundColor: tk.text } : glassSurface(tk)]} activeOpacity={0.8}>
                       <Text style={[styles.chipLabel, { color: isActive ? tk.bg : tk.textMuted }]}>{f.label}</Text>
                       {searchQuery.trim() && count > 0 && (
                         <View style={[styles.chipBadge, { backgroundColor: isActive ? tk.bg + "33" : tk.text + "22" }]}>
@@ -271,7 +273,7 @@ export default function CommunityScreen() {
                   {(activeFilter === "all" || activeFilter === "people") && (searchResults?.people || []).length > 0 && (
                     <ResultSection label="PEOPLE" count={searchResults.people.length} showSeeAll={activeFilter === "all" && searchResults.people.length > 3} onSeeAll={() => setActiveFilter("people")} tk={tk}>
                       {(activeFilter === "all" ? searchResults.people.slice(0, 3) : searchResults.people).map((p: any) => (
-                        <TouchableOpacity key={p.id} onPress={() => router.push(`/u/${p.username}`)} style={[styles.resultRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+                        <TouchableOpacity key={p.id} onPress={() => router.push(`/u/${p.username}`)} style={[styles.resultRow, glassSurface(tk)]} activeOpacity={0.8}>
                           <View style={[styles.resultIcon, { backgroundColor: "rgba(255,107,107,0.12)", overflow: "hidden" }]}>
                             {p.avatar_url
                               ? <Image source={{ uri: p.avatar_url }} style={{ width: 44, height: 44, borderRadius: 12 }} resizeMode="cover" />
@@ -297,7 +299,7 @@ export default function CommunityScreen() {
                                   }
                                 } catch { }
                               }}
-                              style={[styles.joinBtn, { backgroundColor: p.followStatus === "none" ? colors.primary : tk.card, borderColor: p.followStatus === "none" ? colors.primary : tk.border }]}
+                              style={[styles.joinBtn, { backgroundColor: p.followStatus === "none" ? colors.primary : tk.glassChip, borderColor: p.followStatus === "none" ? colors.primary : tk.glassBorder }]}
                             >
                               <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 11, color: p.followStatus === "none" ? colors.white : tk.textMuted }}>
                                 {p.followStatus === "none" ? "Follow" : p.followStatus === "pending" ? "Requested" : "Following"}
@@ -313,7 +315,7 @@ export default function CommunityScreen() {
                   {(activeFilter === "all" || activeFilter === "circles") && (searchResults?.circles || []).length > 0 && (
                     <ResultSection label="CIRCLES" count={searchResults.circles.length} showSeeAll={activeFilter === "all" && searchResults.circles.length > 3} onSeeAll={() => setActiveFilter("circles")} tk={tk}>
                       {(activeFilter === "all" ? searchResults.circles.slice(0, 3) : searchResults.circles).map((c: any) => (
-                        <TouchableOpacity key={c.id} onPress={() => router.push(`/community/${c.id}`)} style={[styles.resultRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+                        <TouchableOpacity key={c.id} onPress={() => router.push(`/community/${c.id}`)} style={[styles.resultRow, glassSurface(tk)]} activeOpacity={0.8}>
                           <View style={[styles.resultIcon, { backgroundColor: colors.primary + "22", overflow: "hidden" }]}>
                             {c.coverImage
                               ? <Image source={{ uri: c.coverImage }} style={{ width: 44, height: 44, borderRadius: 12 }} resizeMode="cover" />
@@ -323,7 +325,7 @@ export default function CommunityScreen() {
                             <Text style={[styles.resultTitle, { color: tk.text }]}>{c.name}</Text>
                             <Text style={[styles.resultMeta, { color: tk.textMuted }]}>{c.memberCount} members · {c.category}</Text>
                           </View>
-                          <TouchableOpacity onPress={() => handleJoinToggle(c.id, c.isJoined)} style={[styles.joinBtn, { backgroundColor: c.isJoined ? tk.card : colors.primary, borderColor: c.isJoined ? tk.border : colors.primary }]}>
+                          <TouchableOpacity onPress={() => handleJoinToggle(c.id, c.isJoined)} style={[styles.joinBtn, { backgroundColor: c.isJoined ? tk.glassChip : colors.primary, borderColor: c.isJoined ? tk.glassBorder : colors.primary }]}>
                             <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 11, color: c.isJoined ? tk.textMuted : colors.white }}>{c.isJoined ? "Joined" : "Join"}</Text>
                           </TouchableOpacity>
                         </TouchableOpacity>
@@ -337,7 +339,7 @@ export default function CommunityScreen() {
                       {(activeFilter === "all" ? searchResults.questions.slice(0, 3) : searchResults.questions).map((q: any) => (
                         <TouchableOpacity
                           key={q.id}
-                          style={[styles.resultRow, { backgroundColor: tk.card }]}
+                          style={[styles.resultRow, glassSurface(tk)]}
                           activeOpacity={0.8}
                           onPress={() => router.push({
                             pathname: "/thread/[id]",
@@ -368,7 +370,7 @@ export default function CommunityScreen() {
                   {(activeFilter === "all" || activeFilter === "posts") && (searchResults?.posts || []).length > 0 && (
                     <ResultSection label="POSTS" count={searchResults.posts.length} showSeeAll={activeFilter === "all" && searchResults.posts.length > 3} onSeeAll={() => setActiveFilter("posts")} tk={tk}>
                       {(activeFilter === "all" ? searchResults.posts.slice(0, 3) : searchResults.posts).map((p: any) => (
-                        <TouchableOpacity key={p.id} onPress={() => router.push(`/post/${p.id}`)} style={[styles.resultRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+                        <TouchableOpacity key={p.id} onPress={() => router.push(`/post/${p.id}`)} style={[styles.resultRow, glassSurface(tk)]} activeOpacity={0.8}>
                           <View style={[styles.resultIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
                             {p.imageUrl ? <Image source={{ uri: p.imageUrl }} style={{ width: 44, height: 44, borderRadius: 12 }} /> : <Users size={18} color={colors.primary} />}
                           </View>
@@ -386,7 +388,7 @@ export default function CommunityScreen() {
                     <ResultSection label="#TAGS" count={searchResults.tags.length} showSeeAll={false} onSeeAll={() => { }} tk={tk}>
                       <View style={styles.tagsWrap}>
                         {searchResults.tags.map((tag: string) => (
-                          <TouchableOpacity key={tag} onPress={() => setSearchQuery(tag)} style={[styles.tagChip, { backgroundColor: tk.card, borderColor: tk.border }]} activeOpacity={0.8}>
+                          <TouchableOpacity key={tag} onPress={() => setSearchQuery(tag)} style={[styles.tagChip, { backgroundColor: tk.glass, borderColor: tk.glassBorder }]} activeOpacity={0.8}>
                             <Hash size={12} color={colors.primary} />
                             <Text style={[styles.tagLabel, { color: tk.text }]}>{tag}</Text>
                           </TouchableOpacity>
@@ -417,7 +419,7 @@ export default function CommunityScreen() {
                   {trending.map((q: any) => (
                     <TouchableOpacity
                       key={q.id}
-                      style={[styles.trendCard, { backgroundColor: tk.card }]}
+                      style={[styles.trendCard, glassSurface(tk)]}
                       activeOpacity={0.8}
                       onPress={() => router.push({
                         pathname: "/thread/[id]",
@@ -455,7 +457,7 @@ export default function CommunityScreen() {
               ) : (
                 <View style={styles.circleList}>
                   {myCircles.map((c: any) => (
-                    <TouchableOpacity key={c.id} onPress={() => router.push(`/community/${c.id}`)} style={[styles.circleRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+                    <TouchableOpacity key={c.id} onPress={() => router.push(`/community/${c.id}`)} style={[styles.circleRow, glassSurface(tk)]} activeOpacity={0.8}>
                       <View style={[styles.circleIcon, { backgroundColor: CATEGORY_PRESETS.find(p => p.id === c.category)?.color || "rgba(120,120,180,0.15)", overflow: "hidden" }]}>
                         {c.coverImage
                           ? <Image source={{ uri: c.coverImage }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
@@ -477,7 +479,7 @@ export default function CommunityScreen() {
                   <Text style={[styles.sectionTitle, { marginTop: 24, paddingHorizontal: 24, marginBottom: 8, color: tk.text }]}>Discover circles</Text>
                   <View style={styles.circleList}>
                     {discoverCircles.slice(0, 5).map((c: any) => (
-                      <TouchableOpacity key={c.id} onPress={() => router.push(`/community/${c.id}`)} style={[styles.circleRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+                      <TouchableOpacity key={c.id} onPress={() => router.push(`/community/${c.id}`)} style={[styles.circleRow, glassSurface(tk)]} activeOpacity={0.8}>
                         <View style={[styles.circleIcon, { backgroundColor: CATEGORY_PRESETS.find(p => p.id === c.category)?.color || "rgba(120,120,180,0.15)", overflow: "hidden" }]}>
                           {c.coverImage
                             ? <Image source={{ uri: c.coverImage }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
@@ -500,7 +502,17 @@ export default function CommunityScreen() {
         </ScrollView>
 
         {!isSearchActive && (
-          <TouchableOpacity onPress={() => setCreateOpen(true)} style={styles.fab} activeOpacity={0.85}>
+          <TouchableOpacity
+            onPress={() => setCreateOpen(true)}
+            style={[styles.fab, { bottom: 76 + (insets.bottom > 0 ? insets.bottom : 8) }]}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={["#5B8DF5", colors.primary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
             <Plus size={28} color="#fff" strokeWidth={2.4} />
           </TouchableOpacity>
         )}
@@ -582,7 +594,7 @@ function CreateCircleSheet({ open, onClose, onCreate, tk }: any) {
               <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Category</Text>
               <View style={styles.categoryRow}>
                 {CATEGORY_PRESETS.map((cat) => (
-                  <TouchableOpacity key={cat.id} onPress={() => setCategory(cat.id)} style={[styles.categoryBtn, { backgroundColor: category === cat.id ? tk.text : tk.bg }]} activeOpacity={0.8}>
+                  <TouchableOpacity key={cat.id} onPress={() => setCategory(cat.id)} style={[styles.categoryBtn, { backgroundColor: category === cat.id ? tk.text : tk.glassChip }]} activeOpacity={0.8}>
                     <Text style={[styles.categoryBtnText, { color: category === cat.id ? tk.bg : tk.textMuted }]}>{cat.label}</Text>
                   </TouchableOpacity>
                 ))}
@@ -639,7 +651,7 @@ const styles = StyleSheet.create({
   circleIcon: { width: 56, height: 56, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   circleName: { fontFamily: "Poppins_700Bold", fontSize: 15, lineHeight: 20 },
   circleMeta: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  fab: { position: "absolute", bottom: 16, right: 16, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  fab: { position: "absolute", bottom: 16, right: 16, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.35)" },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
   sheet: { borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, paddingBottom: 40 },
   sheetHandle: { width: 48, height: 6, borderRadius: 3, alignSelf: "center", marginBottom: 16, opacity: 0.2 },

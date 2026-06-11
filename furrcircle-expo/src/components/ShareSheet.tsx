@@ -111,12 +111,12 @@ export function ShareSheet({ open, onClose, postId, petId, username, threadId, c
         style={{ flex: 1 }}
       >
         <Pressable style={styles.overlay} onPress={() => { Keyboard.dismiss(); onClose(); }}>
-          <Pressable style={[styles.sheet, { backgroundColor: tk.card }]} onPress={Keyboard.dismiss}>
+          <Pressable style={[styles.sheet, { backgroundColor: tk.glassStrong, borderWidth: 1, borderBottomWidth: 0, borderColor: tk.glassBorder }]} onPress={Keyboard.dismiss}>
             <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
             <Text style={[styles.sheetTitle, { color: tk.text }]}>Share to</Text>
 
           {/* Search bar */}
-          <View style={[styles.searchBar, { backgroundColor: tk.bg, borderColor: tk.border }]}>
+          <View style={[styles.searchBar, { backgroundColor: tk.glassChip, borderColor: tk.glassBorder }]}>
             <Search size={16} color={tk.textMuted} />
             <TextInput
               placeholder="Search people..."

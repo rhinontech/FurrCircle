@@ -6,6 +6,8 @@ import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { useBreakpoint } from "../../src/lib/breakpoints";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { GlassBlur } from "../../src/components/ui/Glass";
+import { AmbientBackground } from "../../src/components/ui/AmbientBackground";
 
 export default function TabsLayout() {
   const tk = useTokens();
@@ -29,11 +31,13 @@ export default function TabsLayout() {
 
   return (
     <View style={[styles.root, { backgroundColor: tk.bg }]}>
+      <AmbientBackground />
       {isTablet ? (
         /* ── Desktop: SideNav + RightRail handled at root _layout level ── */
         <Tabs
           screenOptions={{
             headerShown: false,
+            sceneStyle: { backgroundColor: "transparent" },
             tabBarStyle: { display: "none" },
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: tk.textMuted,
@@ -46,23 +50,32 @@ export default function TabsLayout() {
           <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} strokeWidth={2} /> }} />
         </Tabs>
       ) : (
-        /* ── Mobile: normal bottom tabs ── */
+        /* ── Mobile: glass bottom tabs floating over content ── */
         <Tabs
           screenOptions={{
             headerShown: false,
+            sceneStyle: { backgroundColor: "transparent" },
             tabBarStyle: {
-              backgroundColor: tk.card,
-              borderTopColor: tk.border,
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: keyboardHeight > 0 ? -keyboardHeight : 0,
+              backgroundColor: "transparent",
+              borderTopWidth: 0,
+              elevation: 0,
               paddingTop: 6,
               paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
               height: 60 + (insets.bottom > 0 ? insets.bottom : 8),
-              ...(keyboardHeight > 0 ? {
-                position: "absolute",
-                bottom: -keyboardHeight,
-                left: 0,
-                right: 0,
-              } : {}),
             },
+            tabBarBackground: () => (
+              <GlassBlur
+                style={[
+                  StyleSheet.absoluteFillObject,
+                  styles.tabBarGlass,
+                  { borderColor: tk.glassBorder },
+                ]}
+              />
+            ),
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: tk.textMuted,
             tabBarLabelStyle: { fontFamily: "Poppins_600SemiBold", fontSize: 11 },
@@ -81,6 +94,14 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+
+  // Rounded glass slab behind the floating tab bar
+  tabBarGlass: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+  },
 
   // Desktop 3-column row — fills the whole screen width
   desktopRow: { flex: 1, flexDirection: "row" },

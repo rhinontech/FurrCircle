@@ -1,12 +1,13 @@
 /**
  * Wraps any pushed screen (non-tab) so it:
- *  - Uses the correct dark/light background
+ *  - Uses the correct dark/light background with the ambient glass backdrop
  *  - On tablet centres content with max-width 680px
  */
 import { View, StyleSheet, ViewStyle } from "react-native";
 import type { ReactNode } from "react";
 import { useTokens } from "../lib/theme-store";
 import { useBreakpoint } from "../lib/breakpoints";
+import { AmbientBackground } from "./ui/AmbientBackground";
 
 interface Props {
   children: ReactNode;
@@ -19,6 +20,7 @@ export function PageContainer({ children, style }: Props) {
 
   return (
     <View style={[styles.root, { backgroundColor: tk.bg }, style]}>
+      <AmbientBackground />
       <View style={[styles.inner, isTablet && styles.innerTablet]}>
         {children}
       </View>
