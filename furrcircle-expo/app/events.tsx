@@ -153,7 +153,6 @@ export default function EventsScreen() {
                     styles.shadowContainer,
                     {
                       backgroundColor: tk.card,
-                      shadowColor: tk.text,
                       borderColor: tk.border,
                       borderWidth: 1,
                       borderLeftWidth: 6,
@@ -263,10 +262,6 @@ const styles = StyleSheet.create({
   // Card — matches lovable tinted card style
   shadowContainer: {
     borderRadius: 24,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
     marginBottom: 12,
   },
   card: {
@@ -282,11 +277,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
   },
   dateDay: { fontFamily: "Poppins_700Bold", fontSize: 24, lineHeight: 28 },
   dateMonth: { fontFamily: "Poppins_700Bold", fontSize: 11, marginTop: 2 },

@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   shareBtn: { marginLeft: "auto" },
   answersTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, paddingHorizontal: 24, marginTop: 20, marginBottom: 12 },
   answersWrap: { paddingHorizontal: 20, gap: 14 },
-  answerCard: { borderRadius: 16, padding: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+  answerCard: { borderRadius: 16, padding: 16 },
   answerHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   answerAuthor: { fontFamily: "Poppins_700Bold", fontSize: 13, lineHeight: 18 },
   answerRole: { fontSize: 11, fontFamily: "Inter_400Regular" },

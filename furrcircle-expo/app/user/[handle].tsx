@@ -90,7 +90,7 @@ export default function PublicUserProfileScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity 
                   onPress={() => router.push("/chat")} 
-                  style={[styles.messageBtn, { backgroundColor: tk.text + "10", shadowColor: "transparent", elevation: 0 }]}
+                  style={[styles.messageBtn, { backgroundColor: tk.text + "10" }]}
                 >
                   <MessageCircle size={16} color={tk.text} />
                   <Text style={[styles.messageBtnText, { color: tk.text }]}>Message</Text>
@@ -176,7 +176,7 @@ function StatItem({ n, l, tk }: { n: string; l: string; tk: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   px5: { paddingHorizontal: 20 },
-  profileCard: { borderRadius: 24, padding: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 3 },
+  profileCard: { borderRadius: 24, padding: 20 },
   profileTop: { flexDirection: "row", alignItems: "center", gap: 16 },
   avatarWrap: { width: 80, height: 80, borderRadius: 40, overflow: "hidden", backgroundColor: "rgba(255,107,107,0.2)", borderWidth: 4, borderColor: colors.white },
   avatarImg: { width: "100%", height: "100%" },
@@ -191,11 +191,11 @@ const styles = StyleSheet.create({
   actionRow: { flexDirection: "row", gap: 10, marginTop: 16 },
   followBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 20, paddingVertical: 10 },
   followBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14 },
-  messageBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 20, paddingVertical: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
+  messageBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 20, paddingVertical: 10 },
   messageBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14 },
   petsScroll: { flexGrow: 0, marginTop: 16 },
   petsContent: { paddingHorizontal: 20, gap: 10 },
-  petChip: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 20, paddingLeft: 6, paddingRight: 16, paddingVertical: 6, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 2 },
+  petChip: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 20, paddingLeft: 6, paddingRight: 16, paddingVertical: 6 },
   petAvatar: { width: 32, height: 32, borderRadius: 16, overflow: "hidden", backgroundColor: "rgba(255,107,107,0.2)" },
   petAvatarImg: { width: "100%", height: "100%" },
   petName: { fontFamily: "Poppins_700Bold", fontSize: 14 },

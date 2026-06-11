@@ -186,11 +186,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     minHeight: 160,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 5,
   },
   heroContent: { flex: 1, zIndex: 1 },
   heroEyebrow: {
@@ -252,11 +247,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 16,
     justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
   },
   tileIconWrap: {
     width: 40,
@@ -282,7 +272,6 @@ const styles = StyleSheet.create({
   petRow: {
     flexDirection: "row", alignItems: "center", gap: 14,
     borderRadius: 18, padding: 14,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
   },
   petEmoji: { width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(37,99,235,0.08)", alignItems: "center", justifyContent: "center" },
   petName: { fontFamily: "Poppins_700Bold", fontSize: 15 },

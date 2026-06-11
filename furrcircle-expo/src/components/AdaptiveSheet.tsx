@@ -85,10 +85,5 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     display: "flex",
     flexDirection: "column",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 10,
   },
 });

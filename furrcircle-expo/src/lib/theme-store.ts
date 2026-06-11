@@ -21,7 +21,7 @@ export const useThemeStore = create<ThemeStore>((set) => ({
 
 // Light and dark token sets
 export const lightTokens = {
-  bg: "#F7F8FA",
+  bg: "#EFF6FF",
   card: "#FFFFFF",
   text: "#1A1A2E",
   textMuted: "#1A1A2E99",

@@ -523,7 +523,7 @@ export default function LostScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   px5: { paddingHorizontal: 20 },
-  alertBanner: { backgroundColor: colors.coral, borderRadius: 24, padding: 20, marginBottom: 4, overflow: "hidden", position: "relative", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 3 },
+  alertBanner: { backgroundColor: colors.coral, borderRadius: 24, padding: 20, marginBottom: 4, overflow: "hidden", position: "relative" },
   alertDoodle: { position: "absolute", right: -14, bottom: -10, width: 110, height: 110 },
   alertTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, color: colors.white, lineHeight: 22, marginTop: 8, marginBottom: 12 },
   alertBtn: { alignSelf: "flex-start", backgroundColor: colors.white, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 },
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
   petDesc: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 4 },
   areaRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
   areaText: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  fab: { position: "absolute", bottom: 24, alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.primary, borderRadius: 30, paddingHorizontal: 20, paddingVertical: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 5 },
+  fab: { position: "absolute", bottom: 24, alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.primary, borderRadius: 30, paddingHorizontal: 20, paddingVertical: 12 },
   fabText: { fontFamily: "Poppins_700Bold", fontSize: 14, color: colors.white },
   emptyState: { borderRadius: 24, borderStyle: 'dashed', borderWidth: 1, padding: 40, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
   emptyText: { fontFamily: "Poppins_700Bold", fontSize: 16, marginTop: 12 },

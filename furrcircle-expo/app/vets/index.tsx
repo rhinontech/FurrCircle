@@ -141,7 +141,7 @@ export default function AllVetsScreen() {
             <TouchableOpacity
               key={vet.id}
               onPress={() => router.push(`/vets/${vet.id}`)}
-              style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: tk.card, borderRadius: 24, padding: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2 }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: tk.card, borderRadius: 24, padding: 12 }}
             >
               <View style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: "rgba(37,99,235,0.1)", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                 <Image source={require("../../src/assets/doodle-vet.png")} style={{ width: "80%", height: "80%" }} resizeMode="contain" />
