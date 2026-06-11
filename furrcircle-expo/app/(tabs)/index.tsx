@@ -10,7 +10,7 @@ import {
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check, Edit2, Trash2, Info, Flag } from "../../src/components/ui/icons";
+import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check, Edit2, Trash2, Info, Flag, Camera, HelpCircle, Sparkles } from "../../src/components/ui/icons";
 import { useState, useEffect, useCallback, useRef } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { posts as dummyPosts, sampleComments, type Post } from "../../src/lib/demo-data";
@@ -1335,10 +1335,10 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
 
 
 const composeOptions = [
-  { label: "New Post", desc: "Share a photo of your pet", tintColor: "rgba(255,107,107,0.15)", to: "/compose" as const },
+  { label: "New Post", desc: "Share a photo of your pet", tintColor: "rgba(255,107,107,0.15)", Icon: Camera, iconColor: colors.coral, to: "/compose" as const },
   // { label: "New Reel", desc: "Quick video moment", tintColor: "rgba(37,99,235,0.1)", to: "/reels" as const },
-  { label: "Ask the Community", desc: "Get help from pet parents", tintColor: "rgba(255,217,61,0.3)", to: "/ask" as const },
-  { label: "Add Memory", desc: "Save to vault", tintColor: "rgba(255,111,207,0.15)", to: "/memory" as const },
+  { label: "Ask the Community", desc: "Get help from pet parents", tintColor: "rgba(255,217,61,0.3)", Icon: HelpCircle, iconColor: "#B8860B", to: "/ask" as const },
+  { label: "Add Memory", desc: "Save to vault", tintColor: "rgba(255,111,207,0.15)", Icon: Sparkles, iconColor: colors.pinky, to: "/memory" as const },
 ];
 
 function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: () => void; onPublished: () => void }) {
@@ -1409,7 +1409,9 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
       {composeOptions.map((o) => (
         <TouchableOpacity key={o.label} onPress={() => handleOptionPress(o)} disabled={loadingPets}
           style={[styles.sheetRow, { backgroundColor: tk.glassChip }]} activeOpacity={0.8}>
-          <View style={[styles.sheetIcon, { backgroundColor: o.tintColor }]} />
+          <View style={[styles.sheetIcon, { backgroundColor: o.tintColor }]}>
+            <o.Icon size={22} color={o.iconColor} />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{o.label}</Text>
             <Text style={[styles.sheetRowDesc, { color: tk.textMuted }]}>{o.desc}</Text>
@@ -1525,7 +1527,7 @@ const styles = StyleSheet.create({
   sheetHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 12, opacity: 0.2 },
   sheetTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, paddingHorizontal: 4, marginBottom: 8 },
   sheetRow: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 12, padding: 12, marginBottom: 6 },
-  sheetIcon: { width: 48, height: 48, borderRadius: 16 },
+  sheetIcon: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   sheetRowTitle: { fontFamily: "Poppins_700Bold", fontSize: 13 },
   sheetRowDesc: { fontSize: 12, fontFamily: "Inter_400Regular" },
   emptyState: { alignItems: "center", justifyContent: "center", paddingVertical: 60, paddingHorizontal: 40 },

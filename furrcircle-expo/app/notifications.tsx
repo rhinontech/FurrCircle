@@ -24,16 +24,23 @@ type IonName = keyof typeof Ionicons.glyphMap;
 type NotifMeta = { icon: IonName; accent: string; fg?: string };
 
 const TYPE_META: Record<string, NotifMeta> = {
-  like:           { icon: "heart",              accent: colors.coral },
-  comment:        { icon: "chatbubble",         accent: colors.primary },
-  follow:         { icon: "person-add",         accent: "#a855f7" },
-  follow_request: { icon: "person-add",         accent: colors.sunshine, fg: colors.foreground },
-  reminder:       { icon: "time",               accent: "#10b981" },
-  vaccine:        { icon: "shield-checkmark",   accent: "#10b981" },
-  medication:     { icon: "medkit",             accent: "#0ea5e9" },
-  appointment:    { icon: "calendar",           accent: "#0ea5e9" },
-  campaign:       { icon: "megaphone",          accent: "#7c3aed" },
-  general:        { icon: "information-circle", accent: "#6366f1" },
+  like:            { icon: "heart",              accent: colors.coral },
+  comment:         { icon: "chatbubble",         accent: colors.primary },
+  follow:          { icon: "person-add",         accent: "#a855f7" },
+  follow_request:  { icon: "person-add",         accent: colors.sunshine, fg: colors.foreground },
+  playdate:        { icon: "paw",                accent: colors.pinky },
+  breed:           { icon: "heart-circle",       accent: "#f472b6" },
+  adoption:        { icon: "home",               accent: colors.success },
+  event:           { icon: "calendar",           accent: "#7c3aed" },
+  review:          { icon: "star",               accent: colors.sunshine, fg: colors.foreground },
+  question_upvote: { icon: "thumbs-up",          accent: "#8b5cf6" },
+  question_answer: { icon: "chatbubbles",        accent: "#0ea5e9" },
+  reminder:        { icon: "time",               accent: "#10b981" },
+  vaccine:         { icon: "shield-checkmark",   accent: "#10b981" },
+  medication:      { icon: "medkit",             accent: "#0ea5e9" },
+  appointment:     { icon: "calendar",           accent: "#0ea5e9" },
+  campaign:        { icon: "megaphone",          accent: "#7c3aed" },
+  general:         { icon: "information-circle", accent: "#6366f1" },
 };
 
 const getMeta = (type: string): NotifMeta =>
