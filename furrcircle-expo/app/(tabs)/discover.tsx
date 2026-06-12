@@ -10,11 +10,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Search, Heart, MapPin, Star, Stethoscope, Phone, HandHeart, Home } from "lucide-react-native";
+import { Search, Heart, MapPin, Star, Stethoscope, Phone, HandHeart, Home } from "../../src/components/ui/icons";
 import { useState, useEffect } from "react";
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { glassSurface } from "../../src/components/ui/Glass";
 import { placesApi } from "../../services/places/placesApi";
 import { petApi } from "../../services/pet/petApi";
 import { useAuthStore } from "../../src/lib/auth-store";
@@ -72,11 +73,11 @@ export default function DiscoverScreen() {
 
   return (
     <PageContainer>
-      <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: tk.bg }}>
+      <View style={{ flex: 1, paddingTop: insets.top }}>
         <ScrollView
-          style={[styles.container, { backgroundColor: tk.bg }]}
+          style={styles.container}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 140 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
           }
@@ -86,7 +87,7 @@ export default function DiscoverScreen() {
             <Text style={[styles.subtitle, { color: tk.textMuted }]}>Vets, pets & places near you</Text>
           </View>
 
-          <View style={[styles.searchBar, { backgroundColor: tk.card }]}>
+          <View style={[styles.searchBar, glassSurface(tk)]}>
             <Search size={20} color={tk.textMuted} />
             <TextInput placeholder="Search vets, breeds, places…" placeholderTextColor={tk.textMuted} style={[styles.searchInput, { color: tk.text }]} />
           </View>
@@ -100,7 +101,7 @@ export default function DiscoverScreen() {
 
           <View style={styles.vetList}>
             {!locationCity ? (
-              <TouchableOpacity onPress={() => router.push("/settings")} style={[styles.vetRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+              <TouchableOpacity onPress={() => router.push("/settings")} style={[styles.vetRow, glassSurface(tk)]} activeOpacity={0.8}>
                 <View style={[styles.vetIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
                   <MapPin size={28} color={colors.primary} />
                 </View>
@@ -115,7 +116,7 @@ export default function DiscoverScreen() {
               </TouchableOpacity>
             ) : (
               nearbyVets.slice(0, 4).map((v) => (
-                <TouchableOpacity key={v.id} onPress={() => router.push(`/vets/${v.id}`)} style={[styles.vetRow, { backgroundColor: tk.card }]} activeOpacity={0.8}>
+                <TouchableOpacity key={v.id} onPress={() => router.push(`/vets/${v.id}`)} style={[styles.vetRow, glassSurface(tk)]} activeOpacity={0.8}>
                   <View style={[styles.vetIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
                     <Image source={require("../../src/assets/doodle-vet.png")} style={styles.vetImg} resizeMode="contain" />
                   </View>
@@ -159,7 +160,7 @@ export default function DiscoverScreen() {
             ]).map(({ k, label }) => {
               const isActive = mode === k;
               return (
-                <TouchableOpacity key={k} onPress={() => setMode(k)} style={[styles.filterBtn, { backgroundColor: isActive ? tk.text : tk.card }]}>
+                <TouchableOpacity key={k} onPress={() => setMode(k)} style={[styles.filterBtn, isActive ? { backgroundColor: tk.text } : glassSurface(tk)]}>
                   <Text style={[styles.filterBtnText, { color: isActive ? tk.bg : tk.textMuted }]}>{label}</Text>
                 </TouchableOpacity>
               );
@@ -168,7 +169,7 @@ export default function DiscoverScreen() {
 
           <View style={styles.petsGrid}>
             {pets.map((p) => (
-              <TouchableOpacity key={p.id} onPress={() => router.push(`/p/${p.id}`)} style={[styles.petCard, { backgroundColor: tk.card }]} activeOpacity={0.85}>
+              <TouchableOpacity key={p.id} onPress={() => router.push(`/p/${p.id}`)} style={[styles.petCard, glassSurface(tk)]} activeOpacity={0.85}>
                 <View style={[styles.petImageBg, { backgroundColor: "rgba(255,217,61,0.3)" }]}>
                   {p.avatar_url ? (
                     <Image source={{ uri: p.avatar_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />

@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
-import { Home, Users, Bone, Compass, LayoutGrid, PawPrint, Plus, Bell } from "lucide-react-native";
+import { Home, Users, Bone, Compass, LayoutGrid, PawPrint, Plus, Bell } from "./ui/icons";
 import { colors } from "../lib/theme";
 import { useTokens } from "../lib/theme-store";
 import { useBreakpoint } from "../lib/breakpoints";

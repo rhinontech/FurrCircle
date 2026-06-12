@@ -6,8 +6,9 @@ import {
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
-import { useTokens } from "../src/lib/theme-store";
-import { MapPin, Users, Calendar, Clock, CalendarDays } from "lucide-react-native";
+import { useTokens, useThemeStore } from "../src/lib/theme-store";
+import { glassSurface } from "../src/components/ui/Glass";
+import { MapPin, Users, Calendar, Clock, CalendarDays } from "../src/components/ui/icons";
 import { eventApi } from "../services/community/eventApi";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
@@ -16,14 +17,15 @@ import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
 const filters = ["All", "Adoption", "Playdate", "Training", "Meetup"] as const;
 
 // Tint palette per category — mirrors the lovable demo
+// (success/15, sunshine/30, primary/10, pinky/15 on the brand palette)
 const TINTS: Record<string, { bg: string; badge: string; text: string }> = {
-  adoption: { bg: "#22c55e18", badge: "#22c55e", text: "#15803d" },
-  playdate:  { bg: "#fde04730", badge: "#F59E0B", text: "#92400e" },
-  training:  { bg: "#2563eb14", badge: "#2563EB", text: "#1d4ed8" },
-  meetup:    { bg: "#ec489918", badge: "#ec4899", text: "#9d174d" },
-  social:    { bg: "#2563eb14", badge: "#2563EB", text: "#1d4ed8" },
+  adoption:  { bg: "rgba(76,175,80,0.15)",  badge: "#22c55e", text: "#15803d" },
+  playdate:  { bg: "rgba(255,217,61,0.30)", badge: "#F59E0B", text: "#92400e" },
+  training:  { bg: "rgba(37,99,235,0.10)",  badge: "#2563EB", text: "#1d4ed8" },
+  meetup:    { bg: "rgba(255,111,207,0.15)", badge: "#ec4899", text: "#9d174d" },
+  social:    { bg: "rgba(37,99,235,0.10)",  badge: "#2563EB", text: "#1d4ed8" },
 };
-const DEFAULT_TINT = { bg: "#6366f114", badge: "#6366f1", text: "#4338ca" };
+const DEFAULT_TINT = { bg: "rgba(99,102,241,0.12)", badge: "#6366f1", text: "#4338ca" };
 
 const getTint = (category?: string) =>
   TINTS[(category || "").toLowerCase()] ?? DEFAULT_TINT;
@@ -51,6 +53,7 @@ const parseEventDate = (dateStr?: string) => {
 
 export default function EventsScreen() {
   const tk = useTokens();
+  const dark = useThemeStore((s) => s.dark);
   const router = useRouter();
   const { eventId } = useLocalSearchParams<{ eventId?: string }>();
 
@@ -116,9 +119,7 @@ export default function EventsScreen() {
               onPress={() => setActive(f)}
               style={[
                 styles.chip,
-                active === f
-                  ? { backgroundColor: tk.text }
-                  : { backgroundColor: tk.card, borderColor: tk.border, borderWidth: 1 },
+                active === f ? { backgroundColor: tk.text } : glassSurface(tk),
               ]}
             >
               <Text style={[styles.chipText, { color: active === f ? tk.bg : tk.textMuted }]}>{f}</Text>
@@ -145,6 +146,8 @@ export default function EventsScreen() {
             filtered.map((e) => {
               const { day, month } = parseEventDate(e.date);
               const tint = getTint(e.category);
+              // Lovable: tinted card, white date box, white/70 type pill
+              const pillBg = dark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.7)";
 
               return (
                 <View
@@ -152,11 +155,9 @@ export default function EventsScreen() {
                   style={[
                     styles.shadowContainer,
                     {
-                      backgroundColor: tk.card,
-                      borderColor: tk.border,
+                      backgroundColor: tint.bg,
+                      borderColor: tk.glassBorder,
                       borderWidth: 1,
-                      borderLeftWidth: 6,
-                      borderLeftColor: tint.badge,
                     },
                   ]}
                 >
@@ -164,30 +165,27 @@ export default function EventsScreen() {
                     onPress={() => router.push(`/event/${e.id}` as any)}
                     style={({ pressed }) => [
                       styles.card,
-                      {
-                        backgroundColor: tk.card,
-                        opacity: pressed ? 0.88 : 1,
-                      },
+                      { opacity: pressed ? 0.88 : 1 },
                     ]}
                   >
                     {/* Content row */}
                     <View style={styles.cardRow}>
-                      {/* Date box */}
-                      <View style={[styles.dateBox, { backgroundColor: tint.bg }]}>
+                      {/* Date box — solid card colour, lovable-style */}
+                      <View style={[styles.dateBox, { backgroundColor: tk.card }]}>
                         <Text style={[styles.dateDay, { color: tk.text }]}>{day}</Text>
-                        <Text style={[styles.dateMonth, { color: tint.badge }]}>{month}</Text>
+                        <Text style={[styles.dateMonth, { color: tk.textMuted }]}>{month}</Text>
                       </View>
 
                       {/* Info */}
                       <View style={styles.cardInfo}>
                         <View style={styles.badgeRow}>
-                          <View style={[styles.typeBadge, { backgroundColor: tint.bg }]}>
-                            <Text style={[styles.typeBadgeText, { color: tint.badge }]}>
+                          <View style={[styles.typeBadge, { backgroundColor: pillBg }]}>
+                            <Text style={[styles.typeBadgeText, { color: tk.text }]}>
                               {(e.category || "General").toUpperCase()}
                             </Text>
                           </View>
                           {e.isBooked && (
-                            <View style={[styles.typeBadge, { backgroundColor: colors.success + "22" }]}>
+                            <View style={[styles.typeBadge, { backgroundColor: pillBg }]}>
                               <Text style={[styles.typeBadgeText, { color: colors.success }]}>✓ GOING</Text>
                             </View>
                           )}
@@ -279,7 +277,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dateDay: { fontFamily: "Poppins_700Bold", fontSize: 24, lineHeight: 28 },
-  dateMonth: { fontFamily: "Poppins_700Bold", fontSize: 11, marginTop: 2 },
+  dateMonth: { fontFamily: "Poppins_700Bold", fontSize: 11, marginTop: 2, textTransform: "uppercase", letterSpacing: 1 },
 
   // Content
   cardInfo: { flex: 1, minWidth: 0 },

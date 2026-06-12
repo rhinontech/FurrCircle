@@ -6,7 +6,7 @@ import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { useTokens } from "../../src/lib/theme-store";
 import { colors } from "../../src/lib/theme";
 import { userApi } from "../../services/user/userApi";
-import { MapPin } from "lucide-react-native";
+import { MapPin } from "../../src/components/ui/icons";
 
 const puppy = require("../../src/assets/doodle-puppy.png");
 

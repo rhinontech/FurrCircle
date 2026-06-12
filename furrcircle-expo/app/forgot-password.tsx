@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -12,12 +12,17 @@ import {
   StyleSheet,
   Dimensions,
   Image,
+  Animated,
+  Easing,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import { colors } from "../src/lib/theme";
 import { authApi } from "../services/auth/authApi";
+import { PageContainer } from "../src/components/PageContainer";
+import { GlassBlur } from "../src/components/ui/Glass";
+import { useTokens } from "../src/lib/theme-store";
 
 const { height } = Dimensions.get("window");
 
@@ -33,8 +38,32 @@ const getFirebaseAuth = () => {
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const tk = useTokens();
+  
   const [identifier, setIdentifier] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const startsWithNumber = /^\d/.test(identifier);
+  const prefixAnim = useRef(new Animated.Value(startsWithNumber ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(prefixAnim, {
+      toValue: startsWithNumber ? 1 : 0,
+      duration: 220,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: false,
+    }).start();
+  }, [startsWithNumber]);
+
+  const animWidth = prefixAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 46],
+  });
+  const animOpacity = prefixAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
 
   async function handleSendResetCode() {
     let trimmedInput = identifier.trim();
@@ -57,7 +86,6 @@ export default function ForgotPasswordScreen() {
     const isDirectPhone = /^[+0-9]+$/.test(trimmedInput);
 
     if (isDirectPhone) {
-      // Direct Phone Flow using Firebase
       try {
         const firebaseAuth = getFirebaseAuth();
         if (firebaseAuth) {
@@ -73,7 +101,6 @@ export default function ForgotPasswordScreen() {
             }
           });
         } else {
-          // Expo Go Fallback
           setLoading(false);
           Alert.alert("Warning", "Phone verification is not available in Expo Go. Navigating for mock reset.");
           router.push({
@@ -87,7 +114,7 @@ export default function ForgotPasswordScreen() {
       } catch (err: any) {
         console.warn("Firebase direct phone reset OTP failed. Falling back to backend SMS reset...", err);
         try {
-          const res = await authApi.forgotPassword(trimmedInput, true); // useBackendOtp: true
+          const res = await authApi.forgotPassword(trimmedInput, true);
           setLoading(false);
           if (res.success && res.method === "phone") {
             router.push({
@@ -108,7 +135,6 @@ export default function ForgotPasswordScreen() {
         }
       }
     } else {
-      // Email or Username Flow -> Ask backend to verify and send Email OTP (or return Phone number if phone-only)
       try {
         const res = await authApi.forgotPassword(trimmedInput);
         
@@ -123,7 +149,6 @@ export default function ForgotPasswordScreen() {
             }
           });
         } else if (res.success && res.method === "phone") {
-          // If the account only has a phone number registered, backend returns the phone number to verify
           const phone = res.emailOrPhone;
           try {
             const firebaseAuth = getFirebaseAuth();
@@ -140,7 +165,6 @@ export default function ForgotPasswordScreen() {
                 }
               });
             } else {
-              // Expo Go Fallback
               setLoading(false);
               Alert.alert("Warning", "Phone verification is not available in Expo Go. Navigating for mock reset.");
               router.push({
@@ -154,7 +178,7 @@ export default function ForgotPasswordScreen() {
           } catch (err: any) {
             console.warn("Firebase phone reset OTP failed (username/email lookup). Falling back to backend SMS reset...", err);
             try {
-              const fallbackRes = await authApi.forgotPassword(trimmedInput, true); // useBackendOtp: true
+              const fallbackRes = await authApi.forgotPassword(trimmedInput, true);
               setLoading(false);
               if (fallbackRes.success) {
                 router.push({
@@ -186,39 +210,63 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.root}>
+    <PageContainer>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
 
-          <View style={styles.content}>
-            <View style={styles.heroContainer}>
-              <Image 
-                source={require("../src/assets/doodle-puppy.png")} 
-                style={styles.heroImg} 
-                resizeMode="contain" 
-              />
-            </View>
+          <View style={styles.heroContainer}>
+            <Image 
+              source={require("../src/assets/doodle-puppy.png")} 
+              style={styles.heroImg} 
+              resizeMode="contain" 
+            />
+          </View>
 
-            <Text style={styles.title}>Forgot Password? 🔑</Text>
-            <Text style={styles.subtitle}>
+          <GlassBlur style={[styles.card, { borderColor: tk.glassBorder }]}>
+            <Text style={[styles.title, { color: tk.text }]}>Forgot Password? 🔑</Text>
+            <Text style={[styles.subtitle, { color: tk.textMuted }]}>
               Enter your username, email, or phone number to reset your password.
             </Text>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Username, email, or phone</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Alex or you@example.com or +91..."
-                placeholderTextColor={colors.foreground + "44"}
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={identifier}
-                onChangeText={setIdentifier}
-              />
+              <Text style={[styles.label, { color: tk.textMuted }]}>Username, email, or phone</Text>
+              <View style={{ backgroundColor: tk.glassChip, borderColor: tk.glassBorder, paddingLeft: 16, flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 14 }}>
+                <Animated.View style={{
+                  width: animWidth,
+                  opacity: animOpacity,
+                  overflow: "hidden",
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}>
+                  <View style={{ width: 46, flexDirection: "row", alignItems: "center" }}>
+                    <Text style={{
+                      fontFamily: "Inter_600SemiBold",
+                      fontSize: 15,
+                      color: tk.text,
+                    }}>+91</Text>
+                    <View style={{
+                      width: 1.5,
+                      height: 16,
+                      backgroundColor: tk.glassBorder,
+                      marginLeft: 8,
+                      marginRight: 8,
+                    }} />
+                  </View>
+                </Animated.View>
+                <TextInput
+                  style={{ flex: 1, paddingVertical: 13, paddingHorizontal: 0, fontFamily: "Inter_400Regular", fontSize: 15, color: tk.text }}
+                  placeholder="Alex or you@example.com or +91..."
+                  placeholderTextColor={tk.textMuted}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  value={identifier}
+                  onChangeText={setIdentifier}
+                />
+              </View>
             </View>
 
             <TouchableOpacity 
@@ -232,26 +280,33 @@ export default function ForgotPasswordScreen() {
                 <Text style={styles.primaryBtnText}>Send Reset Code</Text>
               )}
             </TouchableOpacity>
-          </View>
+          </GlassBlur>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.surface },
-  scroll: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 20 },
+  scroll: { flexGrow: 1, paddingHorizontal: 20 },
   backBtn: { alignSelf: 'flex-start', paddingVertical: 8, paddingRight: 12, marginBottom: 20 },
   backText: { fontFamily: "Inter_600SemiBold", fontSize: 15, color: colors.primary },
-  content: { flex: 1, alignItems: 'center', paddingTop: 10 },
-  heroContainer: { height: height * 0.22, width: '100%', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
+  heroContainer: { height: height * 0.22, width: '100%', alignItems: 'center', justifyContent: 'center', marginBottom: 24, backgroundColor: "transparent" },
   heroImg: { width: "50%", height: "100%" },
-  title: { fontFamily: "Poppins_700Bold", fontSize: 24, color: colors.foreground, textAlign: 'center', marginBottom: 12 },
-  subtitle: { fontFamily: "Inter_400Regular", fontSize: 15, color: colors.foreground + "77", textAlign: 'center', lineHeight: 22, marginBottom: 32 },
+  card: {
+    borderRadius: 32,
+    borderWidth: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    width: '100%',
+    marginBottom: 40,
+    alignItems: 'center',
+  },
+  title: { fontFamily: "Poppins_700Bold", fontSize: 24, textAlign: 'center', marginBottom: 12 },
+  subtitle: { fontFamily: "Inter_400Regular", fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 32 },
   field: { width: '100%', marginBottom: 24 },
-  label: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.foreground + "99", marginBottom: 6 },
-  input: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontFamily: "Inter_400Regular", fontSize: 15, color: colors.foreground, backgroundColor: colors.surface },
+  label: { fontFamily: "Inter_600SemiBold", fontSize: 13, marginBottom: 6 },
+  input: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontFamily: "Inter_400Regular", fontSize: 15 },
   primaryBtn: { width: '100%', backgroundColor: colors.primary, borderRadius: 24, paddingVertical: 15, alignItems: "center", justifyContent: 'center' },
   disabledBtn: { opacity: 0.6 },
   primaryBtnText: { fontFamily: "Poppins_700Bold", fontSize: 16, color: colors.white },

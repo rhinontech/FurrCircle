@@ -119,6 +119,7 @@ export default function RootLayout() {
   const hydrate = useAuthStore((s) => s.hydrate);
   const user = useAuthStore((s) => s.user);
   const authLoading = useAuthStore((s) => s.loading);
+  const justSignedUp = useAuthStore((s) => s.justSignedUp);
   const router = useRouter();
   const segments = useSegments();
   const { isTablet } = useBreakpoint();
@@ -309,9 +310,9 @@ export default function RootLayout() {
     if (!user && !inAuthGroup) {
       router.replace("/login");
     } else if (user && inAuthGroup) {
-      router.replace("/(tabs)");
+      router.replace(justSignedUp ? "/onboarding" : "/(tabs)");
     }
-  }, [user, authLoading, fontsLoaded, segments]);
+  }, [user, authLoading, fontsLoaded, segments, justSignedUp]);
 
   if (!fontsLoaded || authLoading) return <View style={{ flex: 1, backgroundColor: "#F7F8FA" }} />;
 
@@ -345,7 +346,7 @@ export default function RootLayout() {
       <Stack.Screen name="edit-pet" options={{ presentation: "card" }} />
       <Stack.Screen name="ask" options={{ presentation: "card" }} />
       <Stack.Screen name="user/followers" options={{ presentation: "card" }} />
-      <Stack.Screen name="onboarding" options={{ presentation: "fullScreenModal" }} />
+      <Stack.Screen name="onboarding" options={{ presentation: "fullScreenModal", gestureEnabled: false }} />
       <Stack.Screen name="login" options={{ presentation: "card" }} />
       <Stack.Screen name="signup" options={{ presentation: "card" }} />
       <Stack.Screen name="otp-verify" options={{ presentation: "card" }} />

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Share2, UserPlus, MapPin, Grid3x3, Bookmark, Bone, MessageCircle, Play } from "lucide-react-native";
+import { Share2, UserPlus, MapPin, Grid3x3, Bookmark, Bone, MessageCircle, Play } from "../../src/components/ui/icons";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { colors } from "../../src/lib/theme";

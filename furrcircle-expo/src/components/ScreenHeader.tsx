@@ -1,10 +1,11 @@
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft } from "./ui/icons";
 import { colors } from "../lib/theme";
 import { useTokens } from "../lib/theme-store";
 import { useBreakpoint } from "../lib/breakpoints";
+import { glassSurface } from "./ui/Glass";
 
 type Props = {
   title: string;
@@ -35,11 +36,11 @@ export function ScreenHeader({ title, right, showBack, onBack }: Props) {
   return (
     <View style={[
       styles.container,
-      { paddingTop: insets.top + 8, backgroundColor: tk.bg },
+      { paddingTop: insets.top + 8 },
       isTablet && styles.containerTablet,
     ]}>
       {shouldShowBack ? (
-        <TouchableOpacity onPress={handleBack} style={[styles.backBtn, { backgroundColor: tk.card }]}>
+        <TouchableOpacity onPress={handleBack} style={[styles.backBtn, glassSurface(tk)]}>
           <ChevronLeft size={24} color={tk.text} strokeWidth={2} />
         </TouchableOpacity>
       ) : (

@@ -1,6 +1,6 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { X, Hash } from "lucide-react-native";
+import { X, Hash } from "../src/components/ui/icons";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";

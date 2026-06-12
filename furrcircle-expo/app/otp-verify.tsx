@@ -14,12 +14,15 @@ import {
   Dimensions,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import { colors } from "../src/lib/theme";
 import { authApi } from "../services/auth/authApi";
 import { useAuthStore } from "../src/lib/auth-store";
-import { Eye, EyeOff } from "lucide-react-native";
+import { Eye, EyeOff } from "../src/components/ui/icons";
+import { PageContainer } from "../src/components/PageContainer";
+import { GlassBlur } from "../src/components/ui/Glass";
+import { useTokens } from "../src/lib/theme-store";
 
 const { height } = Dimensions.get("window");
 
@@ -38,6 +41,8 @@ export default function OtpVerifyScreen() {
   const setSession = useAuthStore((s) => s.setSession);
   const params = useLocalSearchParams();
   const inputRef = useRef<TextInput>(null);
+  const insets = useSafeAreaInsets();
+  const tk = useTokens();
 
   // Extract search params
   const {
@@ -134,11 +139,9 @@ export default function OtpVerifyScreen() {
 
     setLoading(true);
 
-    // ─── PHONE VERIFICATION (FIREBASE) ───────────────────────────────────────────
     if (type.startsWith("phone")) {
       const auth = getFirebaseAuth();
       if (!auth) {
-        // Expo Go Mock Bypass
         Alert.alert("Mock Verified", "Expo Go mock verified. Completing request.");
         try {
           if (type === "phone-verify-signup") {
@@ -151,8 +154,9 @@ export default function OtpVerifyScreen() {
               password,
               role: "owner"
             });
+            useAuthStore.getState().setJustSignedUp(true);
             await setSession(res);
-            router.replace("/(tabs)");
+            router.replace("/onboarding");
           } else {
             const res = await authApi.loginOtp(emailOrPhone);
             await setSession(res);
@@ -175,7 +179,6 @@ export default function OtpVerifyScreen() {
 
       try {
         const currentUser = auth().currentUser;
-        // If Android auto-verified the SMS, the user might already be signed in to Firebase
         if (currentUser && currentUser.phoneNumber?.includes(emailOrPhone.replace(/[^0-9+]/g, ''))) {
           console.log("User already signed into Firebase via auto-verification.");
         } else {
@@ -189,12 +192,10 @@ export default function OtpVerifyScreen() {
       } catch (err: any) {
         console.error("Firebase Verification Error:", err);
         setLoading(false);
-        // Include the actual firebase error message to debug if it's not auto-verification
         Alert.alert("Verification Failed", err.message || "The code you entered is invalid or has expired.");
         return;
       }
 
-      // Firebase verified! Call backend to log in or register
       try {
         if (type === "phone-verify-signup") {
           const res = await authApi.register({
@@ -206,8 +207,9 @@ export default function OtpVerifyScreen() {
             password,
             role: "owner"
           });
+          useAuthStore.getState().setJustSignedUp(true);
           await setSession(res);
-          router.replace("/(tabs)");
+          router.replace("/onboarding");
         } else if (type === "phone-verify-login") {
           const res = await authApi.loginOtp(emailOrPhone);
           await setSession(res);
@@ -222,19 +224,20 @@ export default function OtpVerifyScreen() {
         setLoading(false);
       }
     }
-    // ─── EMAIL VERIFICATION (BACKEND) ────────────────────────────────────────────
     else {
       try {
         if (type === "email-verify-reset") {
-          // Verify code for password reset (do not login yet, show password screen)
           setIsCodeVerified(true);
           setLoading(false);
         } else {
-          // Signup or login email OTP verification
           const res = await authApi.verifyEmailOtp(userId, code);
+          const isSignup = type === "email-verify-signup";
+          if (isSignup) {
+            useAuthStore.getState().setJustSignedUp(true);
+          }
           await setSession(res);
           setLoading(false);
-          router.replace("/(tabs)");
+          router.replace(isSignup ? "/onboarding" : "/(tabs)");
         }
       } catch (err: any) {
         setLoading(false);
@@ -287,11 +290,12 @@ export default function OtpVerifyScreen() {
               key={index}
               style={[
                 styles.otpBox,
-                isFocused && styles.otpBoxFocused,
-                isFilled && styles.otpBoxFilled,
+                { backgroundColor: tk.glassChip, borderColor: tk.glassBorder },
+                isFocused && { borderColor: colors.primary, backgroundColor: "rgba(37,99,235,0.08)" },
+                isFilled && { borderColor: colors.primary + "66" },
               ]}
             >
-              <Text style={styles.otpText}>{char}</Text>
+              <Text style={[styles.otpText, { color: tk.text }]}>{char}</Text>
             </View>
           );
         })}
@@ -300,18 +304,15 @@ export default function OtpVerifyScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.root}>
+    <PageContainer>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
           <TouchableOpacity
             onPress={async () => {
-              // If the user backs out during signup, delete the unverified account
-              // so it doesn't become a permanent limbo record in the DB.
               if ((type === 'email-verify-signup' || type === 'email-verify-login') && userId) {
-                // Only cancel for signup (login flows keep the account)
                 if (type === 'email-verify-signup') {
-                  authApi.cancelRegistration(userId); // fire-and-forget
+                  authApi.cancelRegistration(userId);
                 }
               }
               router.back();
@@ -322,11 +323,11 @@ export default function OtpVerifyScreen() {
           </TouchableOpacity>
 
           {!isCodeVerified ? (
-            <View style={styles.content}>
-              <Text style={styles.title}>Verify Account 🐾</Text>
-              <Text style={styles.subtitle}>
+            <GlassBlur style={[styles.card, { borderColor: tk.glassBorder }]}>
+              <Text style={[styles.title, { color: tk.text }]}>Verify Account 🐾</Text>
+              <Text style={[styles.subtitle, { color: tk.textMuted }]}>
                 We've sent a 6-digit verification code to:{"\n"}
-                <Text style={styles.highlightText}>{emailOrPhone}</Text>
+                <Text style={[styles.highlightText, { color: tk.text }]}>{emailOrPhone}</Text>
               </Text>
 
               {renderOtpBoxes()}
@@ -361,26 +362,26 @@ export default function OtpVerifyScreen() {
 
               <View style={styles.timerRow}>
                 {timer > 0 ? (
-                  <Text style={styles.timerText}>Resend code in <Text style={styles.timerCount}>{timer}s</Text></Text>
+                  <Text style={[styles.timerText, { color: tk.textMuted }]}>Resend code in <Text style={[styles.timerCount, { color: tk.text }]}>{timer}s</Text></Text>
                 ) : (
                   <TouchableOpacity onPress={handleResend} disabled={isResending}>
                     <Text style={styles.resendLink}>Resend Verification Code</Text>
                   </TouchableOpacity>
                 )}
               </View>
-            </View>
+            </GlassBlur>
           ) : (
-            <View style={styles.content}>
-              <Text style={styles.title}>New Password 🔑</Text>
-              <Text style={styles.subtitle}>Please enter your new secure password</Text>
+            <GlassBlur style={[styles.card, { borderColor: tk.glassBorder }]}>
+              <Text style={[styles.title, { color: tk.text }]}>New Password 🔑</Text>
+              <Text style={[styles.subtitle, { color: tk.textMuted }]}>Please enter your new secure password</Text>
 
               <View style={styles.field}>
-                <Text style={styles.label}>New Password</Text>
-                <View style={styles.inputRow}>
+                <Text style={[styles.label, { color: tk.textMuted }]}>New Password</Text>
+                <View style={[styles.inputRow, { backgroundColor: tk.glassChip, borderColor: tk.glassBorder }]}>
                   <TextInput
-                    style={[styles.input, { flex: 1, borderWidth: 0, paddingRight: 0 }]}
+                    style={[styles.input, { flex: 1, borderWidth: 0, paddingRight: 0, color: tk.text, backgroundColor: "transparent" }]}
                     placeholder="Min. 6 characters"
-                    placeholderTextColor={colors.foreground + "44"}
+                    placeholderTextColor={tk.textMuted}
                     secureTextEntry={!showNewPassword}
                     value={newPassword}
                     onChangeText={setNewPassword}
@@ -407,42 +408,45 @@ export default function OtpVerifyScreen() {
                   <Text style={styles.primaryBtnText}>Reset Password</Text>
                 )}
               </TouchableOpacity>
-            </View>
+            </GlassBlur>
           )}
 
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.surface },
-  scroll: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 20 },
+  scroll: { flexGrow: 1, paddingHorizontal: 20 },
   backBtn: { alignSelf: 'flex-start', paddingVertical: 8, paddingRight: 12, marginBottom: 28 },
   backText: { fontFamily: "Inter_600SemiBold", fontSize: 15, color: colors.primary },
-  content: { flex: 1, alignItems: 'center', paddingTop: 20 },
-  title: { fontFamily: "Poppins_700Bold", fontSize: 26, color: colors.foreground, textAlign: 'center', marginBottom: 12 },
-  subtitle: { fontFamily: "Inter_400Regular", fontSize: 15, color: colors.foreground + "77", textAlign: 'center', lineHeight: 22, marginBottom: 36 },
-  highlightText: { fontFamily: "Inter_700Bold", color: colors.foreground },
+  card: {
+    borderRadius: 32,
+    borderWidth: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    width: '100%',
+    marginBottom: 40,
+    alignItems: 'center',
+  },
+  title: { fontFamily: "Poppins_700Bold", fontSize: 26, textAlign: 'center', marginBottom: 12 },
+  subtitle: { fontFamily: "Inter_400Regular", fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 36 },
+  highlightText: { fontFamily: "Inter_700Bold" },
   otpContainer: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 36 },
-  otpBox: { width: 44, height: 54, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.white, justifyContent: 'center', alignItems: 'center' },
-  otpBoxFocused: { borderColor: colors.primary, backgroundColor: "rgba(37,99,235,0.05)" },
-  otpBoxFilled: { borderColor: colors.primary + "66" },
-  otpText: { fontFamily: "Poppins_700Bold", fontSize: 20, color: colors.foreground },
+  otpBox: { width: 44, height: 54, borderRadius: 12, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+  otpText: { fontFamily: "Poppins_700Bold", fontSize: 20 },
   hiddenInput: { position: 'absolute', opacity: 0, width: 1, height: 1, left: -9999 },
   primaryBtn: { width: '100%', backgroundColor: colors.primary, borderRadius: 24, paddingVertical: 15, alignItems: "center", justifyContent: 'center', marginTop: 12 },
   disabledBtn: { opacity: 0.6 },
   primaryBtnText: { fontFamily: "Poppins_700Bold", fontSize: 16, color: colors.white },
   timerRow: { marginTop: 24 },
-  timerText: { fontFamily: "Inter_400Regular", fontSize: 14, color: colors.foreground + "66" },
-  timerCount: { fontFamily: "Inter_600SemiBold", color: colors.foreground },
+  timerText: { fontFamily: "Inter_400Regular", fontSize: 14 },
+  timerCount: { fontFamily: "Inter_600SemiBold" },
   resendLink: { fontFamily: "Inter_600SemiBold", fontSize: 14, color: colors.primary },
-  // Password fields
   field: { width: '100%', marginBottom: 24 },
-  label: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.foreground + "99", marginBottom: 6 },
-  input: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontFamily: "Inter_400Regular", fontSize: 15, color: colors.foreground, backgroundColor: colors.surface },
-  inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, paddingRight: 16 },
+  label: { fontFamily: "Inter_600SemiBold", fontSize: 13, marginBottom: 6 },
+  input: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontFamily: "Inter_400Regular", fontSize: 15 },
+  inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 14, paddingRight: 16 },
   eyeBtn: { paddingVertical: 13, paddingLeft: 8 },
-  eyeText: { fontFamily: "Inter_600SemiBold", fontSize: 13, color: colors.primary },
 });

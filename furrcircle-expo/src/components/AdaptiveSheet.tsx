@@ -26,7 +26,7 @@ export function AdaptiveSheet({
       <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
         <Pressable style={styles.overlayCenter} onPress={onClose}>
           <Pressable
-            style={[styles.dialog, { maxWidth, maxHeight, backgroundColor: tk.card }]}
+            style={[styles.dialog, { maxWidth, maxHeight, backgroundColor: tk.glassStrong, borderWidth: 1, borderColor: tk.glassBorder }]}
             onPress={(e) => e.stopPropagation()}
           >
             {children}
@@ -41,7 +41,7 @@ export function AdaptiveSheet({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.overlayMobile} onPress={onClose}>
         <View
-          style={[styles.sheet, { backgroundColor: tk.card, maxHeight }]}
+          style={[styles.sheet, { backgroundColor: tk.glassStrong, borderWidth: 1, borderBottomWidth: 0, borderColor: tk.glassBorder, maxHeight }]}
           onStartShouldSetResponder={() => true}
         >
           <View style={[styles.handle, { backgroundColor: tk.textMuted }]} />

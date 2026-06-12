@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, Image, KeyboardAvoidingView, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Camera, LocateFixed } from "lucide-react-native";
+import { Camera, LocateFixed } from "../src/components/ui/icons";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";

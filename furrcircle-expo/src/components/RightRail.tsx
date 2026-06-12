@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { CalendarDays, Stethoscope, TrendingUp, MapPin } from "lucide-react-native";
+import { CalendarDays, Stethoscope, TrendingUp, MapPin } from "./ui/icons";
 import { colors } from "../lib/theme";
 import { useTokens } from "../lib/theme-store";
 import { useAuthStore } from "../lib/auth-store";

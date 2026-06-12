@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useState, useCallback } from "react";
-import { Check, Heart, ArrowRight, ChevronRight } from "lucide-react-native";
+import { Check, Heart, ArrowRight, ChevronRight } from "../src/components/ui/icons";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";

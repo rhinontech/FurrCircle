@@ -11,7 +11,7 @@ import { useAuthStore } from "../src/lib/auth-store";
 import {
   Moon, Sun, Eye, Lock, ShieldAlert, MapPin,
   Bell, Trash2, ChevronRight, LogOut,
-} from "lucide-react-native";
+} from "../src/components/ui/icons";
 import { userApi } from "../services/user/userApi";
 import { authApi } from "../services/auth/authApi";
 import { blockApi } from "../services/user/blockApi";

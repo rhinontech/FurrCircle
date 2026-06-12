@@ -4,7 +4,7 @@ import {
   TouchableOpacity, Animated, Pressable, PanResponder, Alert,
   ActivityIndicator, Platform, FlatList,
 } from "react-native";
-import { X, Trash2, ChevronUp } from "lucide-react-native";
+import { X, Trash2, ChevronUp } from "./ui/icons";
 import { useTokens } from "../lib/theme-store";
 import { useBreakpoint } from "../lib/breakpoints";
 import { storyApi } from "../../services/community/storyApi";

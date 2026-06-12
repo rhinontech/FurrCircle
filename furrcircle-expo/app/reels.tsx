@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
-import { Heart, MessageCircle, Share2, X } from "lucide-react-native";
+import { Heart, MessageCircle, Share2, X } from "../src/components/ui/icons";
 import { colors } from "../src/lib/theme";
 
 const { height, width } = Dimensions.get("window");

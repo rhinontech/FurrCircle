@@ -22,7 +22,7 @@ import {
   Bell,
   Clock,
   Calendar,
-} from "lucide-react-native";
+} from "../src/components/ui/icons";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { petApi } from "../services/pet/petApi";

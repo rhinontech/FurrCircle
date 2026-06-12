@@ -10,7 +10,7 @@ import { SEED_USERS } from "../src/lib/seed-data";
 import {
   Stethoscope, FileText, Sparkles, ShieldCheck,
   Pill, Syringe, Activity, FolderHeart, ChevronRight, X,
-} from "lucide-react-native";
+} from "../src/components/ui/icons";
 import { useEffect } from "react";
 import { petApi } from "../services/pet/petApi";
 import { AdaptiveSheet } from "../src/components/AdaptiveSheet";

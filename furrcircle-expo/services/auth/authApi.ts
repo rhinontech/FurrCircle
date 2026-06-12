@@ -226,6 +226,16 @@ export const deleteAccount = async () => {
     }
 };
 
+export const completeOnboarding = async (): Promise<AuthPayload> => {
+    try {
+        const response = await PrivateAxios.post('/auth/onboarding-complete');
+        return response.data;
+    } catch (error: any) {
+        console.error("completeOnboarding Error:", error?.response?.data || error.message);
+        throw error;
+    }
+};
+
 export const authApi = {
     checkUsername,
     register,
@@ -243,4 +253,6 @@ export const authApi = {
     resetPasswordDirect,
     cancelRegistration,
     deleteAccount,
+    completeOnboarding,
 };
+

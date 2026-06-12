@@ -9,7 +9,7 @@ import { useTokens } from "../src/lib/theme-store";
 import { useEffect } from "react";
 import { healthApi } from "../services/health/healthApi";
 import { moonaPassport } from "../src/lib/demo-data";
-import { FileText, Plus, X, Syringe, AlertCircle, ShieldCheck, Activity, Pill } from "lucide-react-native";
+import { FileText, Plus, X, Syringe, AlertCircle, ShieldCheck, Activity, Pill } from "../src/components/ui/icons";
 import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
 
 type RecordType = "vaccine" | "allergy" | "insurance";

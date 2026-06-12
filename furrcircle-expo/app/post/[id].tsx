@@ -7,7 +7,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Heart, MessageCircle, Send, Bookmark, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check, Edit2, Trash2, Info, Flag } from "lucide-react-native";
+import { Heart, MessageCircle, Send, Bookmark, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check, Edit2, Trash2, Info, Flag } from "../../src/components/ui/icons";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Avatar } from "../../src/components/Avatar";
 import { colors } from "../../src/lib/theme";
