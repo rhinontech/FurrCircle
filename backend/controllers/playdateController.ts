@@ -46,6 +46,13 @@ export const getPlaydateCards = async (req: any, res: Response): Promise<void> =
     let order: any[] = [['createdAt', 'DESC']];
 
     if (lat && lng) {
+      where[Op.and] = [
+        sequelize.literal(`(
+          SELECT ${haversineSQL(lat, lng)}
+          FROM users
+          WHERE users.id = pets.owner_id
+        ) <= ${radius}`)
+      ];
       attributes = {
         include: [
           [

@@ -34,25 +34,81 @@ export const getBreedCards = async (req: any, res: Response): Promise<void> => {
     const excludedPetIds = alreadySwiped.map((s: any) => s.targetPetId);
     excludedPetIds.push(petId); // exclude self
 
+    const lat = req.query.lat ? parseFloat(req.query.lat as string) : null;
+    const lng = req.query.lng ? parseFloat(req.query.lng as string) : null;
+    const { sequelize } = db as any;
+
+    const where: any = {
+      id: { [Op.notIn]: excludedPetIds.length ? excludedPetIds : ['00000000-0000-0000-0000-000000000000'] },
+      ownerId: { [Op.ne]: req.user.id },
+      isBreedingOpen: true,
+      species: myPet.species, // same species only
+    };
+
+    let attributes: any = { exclude: [] };
+    let order: any[] = [['createdAt', 'DESC']];
+
+    if (lat && lng) {
+      where[Op.and] = [
+        sequelize.literal(`(
+          SELECT 6371 * acos(
+            cos(radians(${lat})) *
+            cos(radians(latitude)) *
+            cos(radians(longitude) - radians(${lng})) +
+            sin(radians(${lat})) *
+            sin(radians(latitude))
+          )
+          FROM users
+          WHERE users.id = pets.owner_id
+        ) <= 100`)
+      ];
+      attributes = {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT 6371 * acos(
+                cos(radians(${lat})) *
+                cos(radians(latitude)) *
+                cos(radians(longitude) - radians(${lng})) +
+                sin(radians(${lat})) *
+                sin(radians(latitude))
+              )
+              FROM users
+              WHERE users.id = pets.owner_id
+              AND users.latitude IS NOT NULL AND users.longitude IS NOT NULL
+            )`),
+            'distance',
+          ],
+        ],
+      };
+      order = [[sequelize.literal('distance'), 'ASC']];
+    }
+
     const pets = await Pet.findAll({
-      where: {
-        id: { [Op.notIn]: excludedPetIds.length ? excludedPetIds : ['00000000-0000-0000-0000-000000000000'] },
-        ownerId: { [Op.ne]: req.user.id },
-        isBreedingOpen: true,
-        species: myPet.species, // same species only
-      },
+      where,
+      attributes,
       include: [
         {
           model: User,
           as: 'owner',
-          attributes: ['id', 'name', 'avatar_url', 'city'],
+          attributes: ['id', 'name', 'avatar_url', 'city', 'latitude', 'longitude'],
         },
       ],
-      order: [['createdAt', 'DESC']],
+      order,
       limit: 30,
     });
 
-    res.json(pets);
+    const result = pets.map((p: any) => {
+      const data = p.toJSON();
+      if (data.distance !== undefined && data.distance !== null) {
+        data.distanceLabel = `${parseFloat(data.distance).toFixed(1)} km away`;
+      } else if (data.owner?.city) {
+        data.distanceLabel = data.owner.city;
+      }
+      return data;
+    });
+
+    res.json(result);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

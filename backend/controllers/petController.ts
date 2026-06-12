@@ -422,21 +422,68 @@ export const deletePet = async (req: any, res: Response): Promise<void> => {
 
 // @desc    Get pets for adoption/foster (discover screen)
 // @route   GET /api/pets/discover
-export const discoverPets = async (_req: Request, res: Response): Promise<void> => {
+export const discoverPets = async (req: any, res: Response): Promise<void> => {
   try {
     const { pets: Pet, users: User, vaccines: Vaccine, appointments: Appointment } = db as any;
+    const { sequelize } = db as any;
+
+    const lat = req.query.lat ? parseFloat(req.query.lat as string) : null;
+    const lng = req.query.lng ? parseFloat(req.query.lng as string) : null;
+
+    const where: any = {
+      [Op.or]: [{ isAdoptionOpen: true }, { isFosterOpen: true }],
+    };
+
+    let attributes: any = { exclude: [] };
+    let order: any[] = [["updatedAt", "DESC"]];
+
+    if (lat && lng) {
+      where[Op.and] = [
+        sequelize.literal(`(
+          SELECT 6371 * acos(
+            cos(radians(${lat})) *
+            cos(radians(latitude)) *
+            cos(radians(longitude) - radians(${lng})) +
+            sin(radians(${lat})) *
+            sin(radians(latitude))
+          )
+          FROM users
+          WHERE users.id = pets.owner_id
+        ) <= 150`)
+      ];
+      attributes = {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT 6371 * acos(
+                cos(radians(${lat})) *
+                cos(radians(latitude)) *
+                cos(radians(longitude) - radians(${lng})) +
+                sin(radians(${lat})) *
+                sin(radians(latitude))
+              )
+              FROM users
+              WHERE users.id = pets.owner_id
+              AND users.latitude IS NOT NULL AND users.longitude IS NOT NULL
+            )`),
+            'distance',
+          ],
+        ],
+      };
+      order = [[sequelize.literal('distance'), 'ASC']];
+    }
+
     const pets = await Pet.findAll({
-      where: {
-        [Op.or]: [{ isAdoptionOpen: true }, { isFosterOpen: true }],
-      },
+      where,
+      attributes,
       include: [
         {
           model: User,
           as: "owner",
-          attributes: ["id", "name", "avatar_url", "role", "isVerified", "city", "phone"],
+          attributes: ["id", "name", "avatar_url", "role", "isVerified", "city", "phone", "latitude", "longitude"],
         },
       ],
-      order: [["updatedAt", "DESC"]],
+      order,
     });
 
     const enrichedPets = await Promise.all(
@@ -447,12 +494,21 @@ export const discoverPets = async (_req: Request, res: Response): Promise<void> 
           Appointment.findAll({ where: { petId: payload.id }, attributes: ["id", "date", "time", "status", "reason"] }),
         ]);
 
-        return {
+        const data: any = {
           ...payload,
           Vaccines: vaccines.map((item: any) => toPlain(item)),
           Appointments: appointments.map((item: any) => serializeAppointment(item)),
           healthScore: calculateHealthScore(payload),
         };
+
+        if (pet.getDataValue('distance') !== undefined && pet.getDataValue('distance') !== null) {
+          data.distance = parseFloat(pet.getDataValue('distance'));
+          data.distanceLabel = `${data.distance.toFixed(1)} km away`;
+        } else if (payload.owner?.city) {
+          data.distanceLabel = payload.owner.city;
+        }
+
+        return data;
       })
     );
 

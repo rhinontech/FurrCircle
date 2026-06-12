@@ -33,6 +33,9 @@ export default function SettingsScreen() {
   const router = useRouter();
   const locationCity = useLocationStore(s => s.city);
   const updateLocation = useLocationStore(s => s.updateLocation);
+  const useGPS = useLocationStore(s => s.useGPS);
+  const setUseGPS = useLocationStore(s => s.setUseGPS);
+  const fetchLiveLocation = useLocationStore(s => s.fetchLiveLocation);
 
   function handleLogout() {
     Alert.alert("Sign out", "Are you sure you want to sign out?", [
@@ -135,9 +138,40 @@ export default function SettingsScreen() {
     setLocationModalVisible(false);
     try {
       updateLocation(loc.city || null, loc.latitude, loc.longitude);
+      setUseGPS(false);
+      await userApi.updateProfile({
+        city: loc.city || undefined,
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+      });
     } catch (err) {
       console.error('Failed to update location manually', err);
       Alert.alert('Error', 'Failed to save location.');
+    }
+  };
+
+  const toggleGPS = async (val: boolean) => {
+    if (val) {
+      try {
+        await fetchLiveLocation(true);
+        const freshGPS = useLocationStore.getState().useGPS;
+        if (!freshGPS) {
+          Alert.alert("Permission Denied", "Could not enable automatic location. Please grant permission in your device settings.");
+        } else {
+          const freshStore = useLocationStore.getState();
+          if (freshStore.latitude && freshStore.longitude && freshStore.city) {
+            await userApi.updateProfile({
+              city: freshStore.city,
+              latitude: freshStore.latitude,
+              longitude: freshStore.longitude,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to enable GPS:", err);
+      }
+    } else {
+      setUseGPS(false);
     }
   };
 
@@ -168,10 +202,13 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title="Location" tk={tk}>
-          <TouchableOpacity onPress={() => setLocationModalVisible(true)} activeOpacity={0.8}>
-            <View pointerEvents="none">
+          <Row tk={tk} icon={MapPin} iconBg="rgba(37,99,235,0.12)" iconColor={colors.primary}
+            label="Automatic location (GPS)" sub="Use current location"
+            toggle={useGPS} onToggle={toggleGPS} />
+          <TouchableOpacity onPress={() => setLocationModalVisible(true)} activeOpacity={0.8} disabled={useGPS}>
+            <View pointerEvents="none" style={useGPS && { opacity: 0.5 }}>
               <Row tk={tk} icon={MapPin} iconBg="rgba(37,99,235,0.1)" iconColor={colors.primary}
-                label="Home city" sub={locationCity || "Tap to set location"} isLink />
+                label="Home city" sub={locationCity || "Tap to set location"} isLink={!useGPS} />
             </View>
           </TouchableOpacity>
         </Section>

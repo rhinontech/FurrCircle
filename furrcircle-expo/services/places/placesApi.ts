@@ -1,11 +1,15 @@
 import { PrivateAxios } from '../../helpers/PrivateAxios';
 
-export const getVetsByCity = async (city: string) => {
+export const getVetsByCity = async (city: string, lat?: number | null, lng?: number | null) => {
     try {
         let response = await PrivateAxios.get(`/places-vets?city=${encodeURIComponent(city)}`);
         
         if (!response.data?.items || response.data.items.length === 0) {
-            response = await PrivateAxios.post('/places-vets/refresh', { city });
+            response = await PrivateAxios.post('/places-vets/refresh', {
+                city,
+                latitude: lat ?? undefined,
+                longitude: lng ?? undefined,
+            });
         }
         
         return response.data;

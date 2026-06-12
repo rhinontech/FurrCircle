@@ -68,7 +68,7 @@ function mapOwnerToCard(owner: any, index: number) {
     id: owner.id,
     img: owner.avatar_url ? { uri: owner.avatar_url } : null,
     name: owner.name,
-    meta: [owner.city, speciesSummary, owner.distanceLabel].filter(Boolean).join(" · "),
+    meta: [owner.distanceLabel || owner.city, speciesSummary].filter(Boolean).join(" · "),
     tag: owner.bio || `Has: ${petSummary}`,
     tintColor: tintForIndex(index),
     badge: undefined,
@@ -136,13 +136,13 @@ export default function MatchScreen() {
         const data = await matchApi.getPlaydateCards(myPet.id, coords || undefined);
         setCards(data.map(mapPetToCard));
       } else if (m === "Adoption") {
-        const data = await petApi.discoverPets();
+        const data = await petApi.discoverPets(coords || undefined);
         const filtered = data.filter((pet: any) => (pet.ownerId || pet.owner?.id) !== user?.id);
         setCards(filtered.map(mapPetToCard));
       } else if (m === "Breed") {
         const breedPet = myPets.find((p: any) => p.isBreedingOpen) || myPets[0];
         if (!breedPet || !breedPet.isBreedingOpen) { setLoading(false); return; }
-        const data = await matchApi.getBreedCards(breedPet.id);
+        const data = await matchApi.getBreedCards(breedPet.id, coords || undefined);
         setCards(data.map(mapPetToCard));
       } else if (m === "Owner") {
         const data = await matchApi.getOwnerCards(coords || undefined);

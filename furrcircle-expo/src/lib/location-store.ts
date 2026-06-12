@@ -7,8 +7,10 @@ type LocationState = {
   city: string | null;
   latitude: number | null;
   longitude: number | null;
+  useGPS: boolean;
   updateLocation: (city: string | null, lat: number | null, lng: number | null) => void;
-  fetchLiveLocation: () => Promise<void>;
+  setUseGPS: (val: boolean) => void;
+  fetchLiveLocation: (forcePrompt?: boolean) => Promise<void>;
 };
 
 export const useLocationStore = create<LocationState>()(
@@ -17,12 +19,18 @@ export const useLocationStore = create<LocationState>()(
       city: null,
       latitude: null,
       longitude: null,
+      useGPS: true,
 
       updateLocation: (city, lat, lng) => set({ city, latitude: lat, longitude: lng }),
+      setUseGPS: (useGPS) => set({ useGPS }),
 
-      fetchLiveLocation: async () => {
+      fetchLiveLocation: async (forcePrompt = false) => {
         try {
-          const { status } = await Location.requestForegroundPermissionsAsync();
+          let { status } = await Location.getForegroundPermissionsAsync();
+          if (status !== 'granted' && forcePrompt) {
+            const requestRes = await Location.requestForegroundPermissionsAsync();
+            status = requestRes.status;
+          }
           if (status !== 'granted') {
             return;
           }
@@ -40,7 +48,7 @@ export const useLocationStore = create<LocationState>()(
             city = geocode[0].city || geocode[0].subregion || geocode[0].region || null;
           }
 
-          set({ city, latitude, longitude });
+          set({ city, latitude, longitude, useGPS: true });
         } catch (error) {
           console.error("Failed to fetch live location:", error);
         }

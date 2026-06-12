@@ -31,9 +31,14 @@ export const getPetById = async (id: string) => {
     }
 };
 
-export const discoverPets = async () => {
+export const discoverPets = async (coords?: { lat: number; lng: number }) => {
     try {
-        const response = await PrivateAxios.get('/pets/discover');
+        const params: any = {};
+        if (coords) {
+            params.lat = coords.lat;
+            params.lng = coords.lng;
+        }
+        const response = await PrivateAxios.get('/pets/discover', { params });
         return response.data;
     } catch (error: any) {
         console.error("discoverPets Error:", error?.response?.data || error.message);

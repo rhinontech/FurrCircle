@@ -127,7 +127,7 @@ export default function OnboardingScreen() {
   const handleAutoLocate = async () => {
     setLoading(true);
     try {
-      await locationStore.fetchLiveLocation();
+      await locationStore.fetchLiveLocation(true);
       // If store got updated, save location to backend profile too (optional but nice)
       const freshCity = useLocationStore.getState().city;
       const freshLat = useLocationStore.getState().latitude;
@@ -150,6 +150,7 @@ export default function OnboardingScreen() {
   const handleManualLocationSelect = async (loc: LocationResult) => {
     setLocationModalVisible(false);
     locationStore.updateLocation(loc.city, loc.latitude, loc.longitude);
+    locationStore.setUseGPS(false);
     
     setLoading(true);
     try {

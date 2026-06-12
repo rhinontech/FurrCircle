@@ -20,6 +20,7 @@ import { useNotificationStore } from "../src/lib/notification-store";
 import type { AppNotification, UnreadCounts } from "../services/notification/notificationApi";
 import { Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LocationSync } from "../src/components/LocationSync";
 
 // Safe dynamic import for Firebase messaging
 const getMessaging = () => {
@@ -358,6 +359,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: tokens.bg }}>
       <QueryClientProvider client={queryClient}>
         <StatusBar style={dark ? "light" : "dark"} />
+        <LocationSync />
         {showSideNav ? (
           <View style={{ flex: 1, flexDirection: "row" }}>
             <SideNav />

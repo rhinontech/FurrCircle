@@ -29,6 +29,8 @@ export default function DiscoverScreen() {
   const tk = useTokens();
   const { user } = useAuthStore();
   const locationCity = useLocationStore(s => s.city);
+  const locationLat = useLocationStore(s => s.latitude);
+  const locationLng = useLocationStore(s => s.longitude);
   const [mode, setMode] = useState<Mode>("all");
   const [nearbyVets, setNearbyVets] = useState<any[]>([]);
   const [allPets, setAllPets] = useState<any[]>([]);
@@ -36,36 +38,49 @@ export default function DiscoverScreen() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    const coords = locationLat && locationLng ? { lat: locationLat, lng: locationLng } : undefined;
+
     try {
       if (locationCity) {
-        const vetsData = await placesApi.getVetsByCity(locationCity);
+        const vetsData = await placesApi.getVetsByCity(locationCity, locationLat, locationLng);
         setNearbyVets(vetsData.items || []);
       }
-      const petsData = await petApi.discoverPets();
+    } catch (err) {
+      console.warn("Failed to refresh vets data:", err);
+    }
+
+    try {
+      const petsData = await petApi.discoverPets(coords);
       setAllPets(petsData || []);
     } catch (err) {
-      console.error("Failed to refresh discover data:", err);
-    } finally {
-      setRefreshing(false);
+      console.warn("Failed to refresh discover pets data:", err);
     }
+
+    setRefreshing(false);
   };
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        if (locationCity) {
-          const vetsData = await placesApi.getVetsByCity(locationCity);
-          setNearbyVets(vetsData.items || []);
-        }
+      const coords = locationLat && locationLng ? { lat: locationLat, lng: locationLng } : undefined;
 
-        const petsData = await petApi.discoverPets();
+      if (locationCity) {
+        try {
+          const vetsData = await placesApi.getVetsByCity(locationCity, locationLat, locationLng);
+          setNearbyVets(vetsData.items || []);
+        } catch (err) {
+          console.warn("Failed to fetch vets data:", err);
+        }
+      }
+
+      try {
+        const petsData = await petApi.discoverPets(coords);
         setAllPets(petsData || []);
       } catch (err) {
-        console.error("Failed to fetch discover data:", err);
+        console.warn("Failed to fetch discover pets data:", err);
       }
     };
     fetchData();
-  }, [locationCity]);
+  }, [locationCity, locationLat, locationLng]);
 
   const pets = allPets.filter((p) =>
     mode === "all" ? p.isAdoptionOpen || p.isFosterOpen : mode === "adoption" ? p.isAdoptionOpen : p.isFosterOpen
@@ -189,7 +204,7 @@ export default function DiscoverScreen() {
                   <Text style={[styles.petBreed, { color: tk.textMuted }]}>{p.breed || p.species}</Text>
                   <View style={styles.petDistRow}>
                     <MapPin size={12} color={tk.textMuted} />
-                    <Text style={[styles.petDist, { color: tk.textMuted }]}>{p.city || "Nearby"}</Text>
+                    <Text style={[styles.petDist, { color: tk.textMuted }]}>{p.distanceLabel || p.city || p.owner?.city || "Nearby"}</Text>
                   </View>
                 </View>
               </TouchableOpacity>

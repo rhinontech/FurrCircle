@@ -75,9 +75,14 @@ export const swipeOwner = async (
 
 // ── Breed ─────────────────────────────────────────────────────────────────────
 
-export const getBreedCards = async (petId: string) => {
+export const getBreedCards = async (petId: string, coords?: Coords) => {
   try {
-    const response = await PrivateAxios.get('/breed/cards', { params: { petId } });
+    const params: any = { petId };
+    if (coords) {
+      params.lat = coords.lat;
+      params.lng = coords.lng;
+    }
+    const response = await PrivateAxios.get('/breed/cards', { params });
     return response.data;
   } catch (error: any) {
     console.error('getBreedCards Error:', error?.response?.data || error.message);

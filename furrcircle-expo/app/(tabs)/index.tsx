@@ -63,10 +63,7 @@ export default function FeedScreen() {
     }).catch(() => { });
   }, []);
 
-  const fetchLiveLocation = useLocationStore(s => s.fetchLiveLocation);
-  useEffect(() => {
-    fetchLiveLocation();
-  }, [fetchLiveLocation]);
+
 
   // Story states
   const [storyGroups, setStoryGroups] = useState<any[]>([]);
@@ -510,6 +507,8 @@ function FeedHeader() {
   const setSession = useAuthStore(s => s.setSession);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const updateLocation = useLocationStore(s => s.updateLocation);
+  const locationCity = useLocationStore(s => s.city);
+  const setUseGPS = useLocationStore(s => s.setUseGPS);
 
   // Live unread count from WebSocket-backed store
   const unreadCount = useNotificationStore((s) => s.unreadCount);
@@ -535,6 +534,12 @@ function FeedHeader() {
     setLocationModalVisible(false);
     try {
       updateLocation(loc.city || null, loc.latitude, loc.longitude);
+      setUseGPS(false);
+      await userApi.updateProfile({
+        city: loc.city || undefined,
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+      });
     } catch (err) {
       console.error('Failed to update location', err);
       Alert.alert('Error', 'Failed to save location.');
@@ -549,11 +554,11 @@ function FeedHeader() {
           style={styles.logoImg}
           resizeMode="contain"
         />
-        {/* <TouchableOpacity onPress={() => setLocationModalVisible(true)} style={{ flexDirection: 'row', alignItems: 'center', marginTop: -4, marginLeft: 2 }}>
+        <TouchableOpacity onPress={() => setLocationModalVisible(true)} style={{ flexDirection: 'row', alignItems: 'center', marginTop: -4, marginLeft: 2 }}>
           <MapPin size={12} color={tk.textMuted} style={{ marginRight: 2 }} />
-          <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted }}>{user?.city || "Select Location"}</Text>
+          <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted }}>{locationCity || user?.city || "Select Location"}</Text>
           <ChevronDown size={12} color={tk.textMuted} style={{ marginLeft: 2 }} />
-        </TouchableOpacity> */}
+        </TouchableOpacity>
       </View>
       <View style={styles.headerActions}>
         <TouchableOpacity onPress={() => router.push("/chat")} style={[styles.iconBtn, glassSurface(tk)]}>

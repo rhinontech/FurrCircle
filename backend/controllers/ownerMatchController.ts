@@ -30,26 +30,37 @@ export const getOwnerCards = async (req: any, res: Response): Promise<void> => {
     let order: any[] = [['createdAt', 'DESC']];
 
     if (lat && lng) {
+      where[Op.and] = [
+        sequelize.literal(`
+          latitude IS NOT NULL AND longitude IS NOT NULL AND (
+            6371 * acos(
+              cos(radians(${lat})) *
+              cos(radians(latitude)) *
+              cos(radians(longitude) - radians(${lng})) +
+              sin(radians(${lat})) *
+              sin(radians(latitude))
+            )
+          ) <= 50
+        `)
+      ];
       attributes = {
         exclude: ['password', 'otpCode', 'otpExpiry', 'resetToken', 'resetTokenExpiry'],
         include: [
           [
             sequelize.literal(`
-              CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN
-                6371 * acos(
-                  cos(radians(${lat})) *
-                  cos(radians(latitude)) *
-                  cos(radians(longitude) - radians(${lng})) +
-                  sin(radians(${lat})) *
-                  sin(radians(latitude))
-                )
-              ELSE NULL END
+              6371 * acos(
+                cos(radians(${lat})) *
+                cos(radians(latitude)) *
+                cos(radians(longitude) - radians(${lng})) +
+                sin(radians(${lat})) *
+                sin(radians(latitude))
+              )
             `),
             'distance',
           ],
         ],
       };
-      order = [[sequelize.literal('distance ASC NULLS LAST')]];
+      order = [[sequelize.literal('distance ASC')]];
     }
 
     const owners = await User.findAll({

@@ -31,6 +31,8 @@ export default function AllVetsScreen() {
   const [sortKey, setSortKey] = useState<SortKey>("default");
   const [sortOpen, setSortOpen] = useState(false);
   const locationCity = useLocationStore(s => s.city);
+  const locationLat = useLocationStore(s => s.latitude);
+  const locationLng = useLocationStore(s => s.longitude);
   const cityLabel = String(locationCity || "").trim();
   
   useEffect(() => {
@@ -40,14 +42,36 @@ export default function AllVetsScreen() {
     }
 
     setLoading(true);
-    placesApi.getVetsByCity(cityLabel)
+    placesApi.getVetsByCity(cityLabel, locationLat, locationLng)
       .then((data) => setVets(data.items || []))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [cityLabel]);
+  }, [cityLabel, locationLat, locationLng]);
 
   const sorted = useMemo(() => {
-    const filtered = vets.filter(v =>
+    function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+      const R = 6371; // km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    const withDistance = vets.map(v => {
+      let distance = null;
+      let distanceLabel = null;
+      if (locationLat != null && locationLng != null && v.latitude != null && v.longitude != null) {
+        distance = getDistance(locationLat, locationLng, Number(v.latitude), Number(v.longitude));
+        distanceLabel = `${distance.toFixed(1)} km away`;
+      }
+      return { ...v, distance, distanceLabel };
+    });
+
+    const filtered = withDistance.filter(v =>
       (v.clinic_name || v.name || "").toLowerCase().includes(search.toLowerCase()) ||
       (v.city || "").toLowerCase().includes(search.toLowerCase()) ||
       (v.address || "").toLowerCase().includes(search.toLowerCase())
@@ -60,11 +84,16 @@ export default function AllVetsScreen() {
       case "rating":
         return [...filtered].sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
       case "distance":
-        return [...filtered].sort((a, b) => (a.city || "").localeCompare(b.city || ""));
+        return [...filtered].sort((a, b) => {
+          if (a.distance == null && b.distance == null) return 0;
+          if (a.distance == null) return 1;
+          if (b.distance == null) return -1;
+          return a.distance - b.distance;
+        });
       default:
         return filtered;
     }
-  }, [vets, search, sortKey]);
+  }, [vets, search, sortKey, locationLat, locationLng]);
 
   const activeSortLabel = SORT_OPTIONS.find(o => o.key === sortKey)?.label ?? "Sort";
 
@@ -160,7 +189,7 @@ export default function AllVetsScreen() {
                   <Star size={12} color={colors.sunshine} fill={colors.sunshine} />
                   <Text style={{ fontSize: 12, color: tk.textMuted, fontFamily: "Inter_400Regular", marginRight: 6 }}>{vet.rating || "N/A"}</Text>
                   <MapPin size={12} color={tk.textMuted} />
-                  <Text style={{ fontSize: 12, color: tk.textMuted, fontFamily: "Inter_400Regular" }}>{vet.city || cityLabel}</Text>
+                  <Text style={{ fontSize: 12, color: tk.textMuted, fontFamily: "Inter_400Regular" }}>{vet.distanceLabel || vet.city || cityLabel}</Text>
                 </View>
               </View>
               <TouchableOpacity
