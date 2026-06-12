@@ -141,37 +141,61 @@ export const getUserByHandle = async (req: any, res: Response): Promise<void> =>
 
 export const updateProfile = async (req: any, res: Response): Promise<void> => {
   try {
-    const { users: User } = db as any;
+    const { users: User, vets: Vet } = db as any;
     const userId = req.user.id;
-    const { isPrivate, name, username, city, address, bio, avatar_url, latitude, longitude, twoFactorEnabled } = req.body;
+    const isVet = req.userType === 'vet';
+    const Model = isVet ? Vet : User;
 
-    const user = await User.findByPk(userId);
-    if (!user) {
-      res.status(404).json({ message: "User not found" });
+    const { 
+      isPrivate, name, username, city, address, bio, avatar_url, 
+      latitude, longitude, twoFactorEnabled, email, phone 
+    } = req.body;
+
+    const record = await Model.findByPk(userId);
+    if (!record) {
+      res.status(404).json({ message: `${isVet ? 'Vet' : 'User'} not found` });
       return;
     }
 
-    if (username && username.toLowerCase() !== user.username?.toLowerCase()) {
-      const existing = await User.findOne({ where: { username: { [Op.iLike]: username } } });
+    if (username && username.toLowerCase() !== record.username?.toLowerCase()) {
+      const existing = await Model.findOne({ where: { username: { [Op.iLike]: username } } });
       if (existing) {
         res.status(400).json({ message: "Username is already taken" });
         return;
       }
-      user.username = username;
+      record.username = username;
     }
 
-    if (isPrivate !== undefined) user.isPrivate = isPrivate;
-    if (name !== undefined) user.name = name;
-    if (city !== undefined) user.city = city;
-    if (address !== undefined) user.address = address;
-    if (bio !== undefined) user.bio = bio;
-    if (avatar_url !== undefined) user.avatar_url = avatar_url;
-    if (latitude !== undefined) user.latitude = latitude;
-    if (longitude !== undefined) user.longitude = longitude;
-    if (twoFactorEnabled !== undefined) user.twoFactorEnabled = twoFactorEnabled;
+    if (email && email.toLowerCase() !== record.email?.toLowerCase()) {
+      const existing = await Model.findOne({ where: { email: { [Op.iLike]: email } } });
+      if (existing) {
+        res.status(400).json({ message: "Email is already in use" });
+        return;
+      }
+      record.email = email;
+    }
 
-    await user.save();
-    res.json({ success: true, user: user.toJSON() });
+    if (phone && phone !== record.phone) {
+      const existing = await Model.findOne({ where: { phone } });
+      if (existing) {
+        res.status(400).json({ message: "Phone number is already in use" });
+        return;
+      }
+      record.phone = phone;
+    }
+
+    if (isPrivate !== undefined && !isVet) record.isPrivate = isPrivate;
+    if (name !== undefined) record.name = name;
+    if (city !== undefined) record.city = city;
+    if (address !== undefined) record.address = address;
+    if (bio !== undefined) record.bio = bio;
+    if (avatar_url !== undefined) record.avatar_url = avatar_url;
+    if (latitude !== undefined) record.latitude = latitude;
+    if (longitude !== undefined) record.longitude = longitude;
+    if (twoFactorEnabled !== undefined) record.twoFactorEnabled = twoFactorEnabled;
+
+    await record.save();
+    res.json({ success: true, user: record.toJSON() });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

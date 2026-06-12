@@ -317,7 +317,7 @@ export default function RootLayout() {
   if (!fontsLoaded || authLoading) return <View style={{ flex: 1, backgroundColor: "#F7F8FA" }} />;
 
   const stackScreens = (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tokens.bg, paddingBottom: insets.bottom } }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tokens.bg, paddingBottom:  Platform.OS === 'ios' ? 0 : insets.bottom } }}>
       <Stack.Screen name="(tabs)" options={{ contentStyle: { paddingBottom: 0 } }} />
       <Stack.Screen name="post/[id]" options={{ presentation: "card" }} />
       <Stack.Screen name="thread/[id]" options={{ presentation: "card" }} />
