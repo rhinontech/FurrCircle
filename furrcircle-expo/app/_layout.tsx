@@ -19,6 +19,7 @@ import { socketService } from "../services/socket/socketService";
 import { useNotificationStore } from "../src/lib/notification-store";
 import type { AppNotification, UnreadCounts } from "../services/notification/notificationApi";
 import { Alert } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Safe dynamic import for Firebase messaging
 const getMessaging = () => {
@@ -101,6 +102,7 @@ const handleNotificationRedirect = (remoteMessage: any, router: any) => {
 };
 
 export default function RootLayout() {
+  const insets = useSafeAreaInsets();
   const [fontsLoaded] = useFonts({
     Poppins_700Bold,
     Poppins_600SemiBold,
@@ -315,8 +317,8 @@ export default function RootLayout() {
   if (!fontsLoaded || authLoading) return <View style={{ flex: 1, backgroundColor: "#F7F8FA" }} />;
 
   const stackScreens = (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tokens.bg } }}>
-      <Stack.Screen name="(tabs)" />
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tokens.bg, paddingBottom:  Platform.OS === 'ios' ? 0 : insets.bottom } }}>
+      <Stack.Screen name="(tabs)" options={{ contentStyle: { paddingBottom: 0 } }} />
       <Stack.Screen name="post/[id]" options={{ presentation: "card" }} />
       <Stack.Screen name="thread/[id]" options={{ presentation: "card" }} />
       <Stack.Screen name="community/[slug]" options={{ presentation: "card" }} />

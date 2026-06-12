@@ -1,5 +1,6 @@
-import { useState, useCallback } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, Modal, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView } from "react-native";
+import { useState, useCallback, useEffect } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, Modal, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
@@ -18,7 +19,24 @@ export default function LostScreen() {
   const tk = useTokens();
   const router = useRouter();
   const { user } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const currentUserId = user?.id;
+
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const [tab, setTab] = useState<(typeof tabs)[number]>("Lost");
   const [posts, setPosts] = useState<any[]>([]);
@@ -324,7 +342,7 @@ export default function LostScreen() {
           onRequestClose={() => setSelectedPost(null)}
         >
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { backgroundColor: tk.card, maxHeight: '85%' }]}>
+            <View style={[styles.modalContent, { backgroundColor: tk.card, maxHeight: '85%', paddingBottom: 0 + insets.bottom }]}>
               {/* Header */}
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: tk.text }]}>Report Details</Text>
@@ -420,11 +438,11 @@ export default function LostScreen() {
           onRequestClose={() => setModalVisible(false)}
         >
           <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
             style={{ flex: 1 }}
           >
             <View style={styles.modalOverlay}>
-              <View style={[styles.modalContent, { backgroundColor: tk.card }]}>
+              <View style={[styles.modalContent, { backgroundColor: tk.card, paddingBottom: keyboardVisible ? 0 : 0 + insets.bottom }]}>
               {/* Header */}
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: tk.text }]}>

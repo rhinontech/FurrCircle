@@ -272,9 +272,10 @@ export default function ProfileScreen() {
 }
 
 function PetPickerModal({ open, onClose, pets, onSelect, tk }: any) {
+  const insets = useSafeAreaInsets();
   return (
     <AdaptiveSheet visible={open} onClose={onClose} maxWidth={420}>
-      <View style={{ padding: 20 }}>
+      <View style={{ padding: 20, paddingBottom: 20 + insets.bottom }}>
         <Text style={[styles.modalTitle, { color: tk.text }]}>Choose a Pet</Text>
 
         <ScrollView style={styles.petListScroll} showsVerticalScrollIndicator={false}>

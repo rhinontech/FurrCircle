@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image,
+  Keyboard,
 } from "react-native";
 import { useLocalSearchParams, useFocusEffect } from "expo-router";
 import { ArrowUp, MessageCircle, Share2, ShieldAlert, Trash2 } from "../../src/components/ui/icons";
@@ -42,6 +43,22 @@ export default function ThreadDetail() {
   const [deleting, setDeleting] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [questionData, setQuestionData] = useState<any>(null);
+
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  
+    useEffect(() => {
+      const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+        setKeyboardVisible(true);
+      });
+      const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+        setKeyboardVisible(false);
+      });
+  
+      return () => {
+        showSubscription.remove();
+        hideSubscription.remove();
+      };
+    }, []);
 
   const dummy = dummyThreads.find(t => t.id === id);
 
@@ -175,7 +192,7 @@ export default function ThreadDetail() {
 
   return (
     <PageContainer>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}>
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
           <ScreenHeader title="Discussion" />
           <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>

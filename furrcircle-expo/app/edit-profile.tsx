@@ -1,6 +1,6 @@
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform
+  StyleSheet, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Keyboard
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect, useRef } from "react";
@@ -24,6 +24,8 @@ export default function EditProfileScreen() {
 
   const [username, setUsername] = useState(user?.username || "");
   const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phone, setPhone] = useState(user?.phone ? user.phone.replace(/^\+91/, "") : "");
   const [address, setAddress] = useState(user?.address || "");
   const [city, setCity] = useState(user?.city || "");
   const [latitude, setLatitude] = useState(user?.latitude || undefined);
@@ -38,10 +40,28 @@ export default function EditProfileScreen() {
   const [usernameError, setUsernameError] = useState("");
   const checkTimeoutRef = useRef<any>(null);
 
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
   // Check if anything has actually changed
   const hasChanges = 
     username.trim() !== (user?.username || "") ||
     name.trim() !== (user?.name || "") ||
+    email.trim() !== (user?.email || "") ||
+    phone.trim() !== (user?.phone ? user.phone.replace(/^\+91/, "") : "") ||
     address.trim() !== (user?.address || "") ||
     city.trim() !== (user?.city || "") ||
     latitude !== (user?.latitude || undefined) ||
@@ -147,6 +167,14 @@ export default function EditProfileScreen() {
       Alert.alert("Invalid username", usernameError || "Please choose an available username.");
       return;
     }
+    if (email.trim() && !/\S+@\S+\.\S+/.test(email.trim())) {
+      Alert.alert("Invalid email", "Please enter a valid email address");
+      return;
+    }
+    if (phone.trim() && phone.trim().length !== 10) {
+      Alert.alert("Invalid phone number", "Phone number must be exactly 10 digits.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -159,9 +187,13 @@ export default function EditProfileScreen() {
         newAvatarUrl = uploadRes.url;
       }
 
+      const fullPhone = phone.trim() ? `+91${phone.trim()}` : null;
+
       const res = await userApi.updateProfile({
         name,
         username,
+        email: email.trim() || null,
+        phone: fullPhone,
         address,
         city,
         latitude,
@@ -261,7 +293,7 @@ export default function EditProfileScreen() {
     <PageContainer>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
           <ScreenHeader title="Edit Profile" />
@@ -325,6 +357,44 @@ export default function EditProfileScreen() {
                 />
               </View>
             </View>
+
+            {/* Email Field */}
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: tk.text }]}>Email Address</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: tk.inputBg, borderColor: tk.border }]}>
+                <TextInput
+                  style={[styles.input, { color: tk.text }]}
+                  placeholder="Email Address"
+                  placeholderTextColor={tk.textMuted}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+              </View>
+            </View>
+
+             {/* Phone Field */}
+             <View style={styles.field}>
+               <Text style={[styles.label, { color: tk.text }]}>Phone Number</Text>
+               <View style={[styles.inputWrapper, { flexDirection: "row", alignItems: "center", backgroundColor: tk.inputBg, borderColor: tk.border, paddingLeft: 16 }]}>
+                 <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 15, color: tk.text, marginRight: 8, borderRightWidth: 1.5, borderRightColor: tk.border, paddingRight: 10 }}>+91</Text>
+                 <TextInput
+                   style={[styles.input, { flex: 1, color: tk.text, height: "100%", paddingHorizontal: 0 }]}
+                   placeholder="9876543210"
+                   placeholderTextColor={tk.textMuted}
+                   keyboardType="phone-pad"
+                   autoCapitalize="none"
+                   autoCorrect={false}
+                   maxLength={10}
+                   value={phone}
+                   onChangeText={(text) => {
+                     const filtered = text.replace(/[^0-9]/g, "");
+                     setPhone(filtered);
+                   }}
+                 />
+               </View>
+             </View>
 
             {/* City Field */}
             <View style={styles.field}>
