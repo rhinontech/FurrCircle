@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
   StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
   Modal, Pressable,
+  Keyboard,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -34,6 +35,21 @@ export default function PostDetail() {
   const [deleting, setDeleting] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportStep, setReportStep] = useState(1);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     Audio.setAudioModeAsync({
@@ -249,12 +265,13 @@ export default function PostDetail() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
       enabled={true}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
     >
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader 
-          title={displayName} 
+        <ScreenHeader
+          title={displayName}
           right={
             <TouchableOpacity onPress={() => setMenuOpen(true)} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}>
               <MoreVertical size={20} color={tk.text} />
@@ -387,7 +404,7 @@ export default function PostDetail() {
         </ScrollView>
 
         {/* Reply bar */}
-        <View style={[styles.replyBar, { backgroundColor: tk.card, borderTopColor: tk.border, paddingBottom: Platform.OS === "ios" ? 20 : insets.bottom + 12 }]}>
+        <View style={[styles.replyBar, { backgroundColor: tk.card, borderTopColor: tk.border }]}>
           <TextInput
             placeholder="Add a comment…"
             placeholderTextColor={tk.textMuted}
@@ -409,7 +426,7 @@ export default function PostDetail() {
         {/* Options Menu Modal */}
         <Modal visible={menuOpen} transparent={true} animationType={isTablet ? "fade" : "slide"} onRequestClose={() => setMenuOpen(false)}>
           <Pressable style={[styles.overlay, isTablet && styles.overlayCenter]} onPress={() => setMenuOpen(false)}>
-            <View style={[isTablet ? styles.dialog : styles.sheet, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true} onTouchEnd={(e) => e.stopPropagation()}>
+            <View style={[isTablet ? styles.dialog : [styles.sheet, { paddingBottom: 10 + insets.bottom }], { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true} onTouchEnd={(e) => e.stopPropagation()}>
               {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
               <Text style={[styles.sheetTitle, { color: tk.text }]}>Options</Text>
 
@@ -557,7 +574,7 @@ export default function PostDetail() {
                     We use these reports to show you less of this kind of content in the future.
                   </Text>
                 </View>
-                
+
                 <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                   <TouchableOpacity
                     style={[styles.doneBtn, { backgroundColor: colors.primary }]}

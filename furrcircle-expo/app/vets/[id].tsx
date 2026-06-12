@@ -136,7 +136,7 @@ export default function VetProfileScreen() {
           )}
         </ScrollView>
 
-        <View style={[styles.footer, { backgroundColor: tk.card, paddingBottom: insets.bottom || 24, borderTopColor: tk.border }]}>
+        <View style={[styles.footer, { backgroundColor: tk.card, paddingBottom: 10, borderTopColor: tk.border }]}>
           <TouchableOpacity 
             style={styles.bookBtn} 
             activeOpacity={0.8}

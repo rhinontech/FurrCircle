@@ -524,11 +524,27 @@ function ResultSection({ label, count, showSeeAll, onSeeAll, tk, children }: { l
 }
 
 function CreateCircleSheet({ open, onClose, onCreate, tk }: any) {
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("general");
   const [coverUri, setCoverUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const pickCover = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -553,9 +569,12 @@ function CreateCircleSheet({ open, onClose, onCreate, tk }: any) {
   };
 
   return (
-    <AdaptiveSheet visible={open} onClose={onClose} maxWidth={520} maxHeight="85%">
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <Pressable onPress={Keyboard.dismiss} style={{ padding: 24, paddingBottom: 40 }}>
+    <AdaptiveSheet visible={open} onClose={onClose} maxWidth={520} maxHeight="88%">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "padding" : undefined)}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 170}
+      >
+        <View style={{paddingTop:24, paddingHorizontal:24,  paddingBottom: keyboardVisible ? 0 : 40 + insets.bottom }}>
           <Text style={[styles.sheetTitle, { color: tk.text }]}>Create new Circle</Text>
 
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -593,7 +612,7 @@ function CreateCircleSheet({ open, onClose, onCreate, tk }: any) {
               </TouchableOpacity>
             </Pressable>
           </ScrollView>
-        </Pressable>
+        </View>
       </KeyboardAvoidingView>
     </AdaptiveSheet>
   );

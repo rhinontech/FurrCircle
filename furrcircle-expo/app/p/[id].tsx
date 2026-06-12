@@ -120,7 +120,7 @@ export default function PetPublicProfile() {
 
   return (
     <PageContainer>
-      <View style={[styles.container, { backgroundColor: tk.bg, paddingBottom: insets.bottom }]}>
+      <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
           title="Pet profile"
           right={

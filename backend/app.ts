@@ -136,8 +136,8 @@ const startServer = async (attempt = 1) => {
         console.log('Database connected successfully.');
 
         // Auto-create/sync tables based on models - Safe mode (Persistence enabled)
-        // await sequelize.sync({ alter: true });
-        // console.log('Database schema synchronized.');
+        await sequelize.sync({ alter: true });
+        console.log('Database schema synchronized.');
 
         await seedSuperAdmin();
 

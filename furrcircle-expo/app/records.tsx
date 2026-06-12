@@ -1,5 +1,6 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Pressable, TextInput, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, Keyboard } from "react-native";
 import { useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
@@ -21,10 +22,26 @@ const ADD_OPTIONS: { key: RecordType; label: string; icon: any; color: string }[
 
 export default function RecordsScreen() {
   const tk = useTokens();
+  const insets = useSafeAreaInsets();
   const { petId } = useLocalSearchParams<{ petId?: string }>();
 
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<RecordType | null>(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const [data, setData] = useState({ vaccines: [] as any[], allergies: [] as any[], records: [] as any[], meds: [] as any[], vitals: [] as any[] });
   const [loading, setLoading] = useState(true);
@@ -92,140 +109,145 @@ export default function RecordsScreen() {
 
   return (
     <PageContainer>
-    <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader
-        title="Health Records"
-        right={
-          <TouchableOpacity onPress={() => setAddSheetOpen(true)} style={styles.addBtn}>
-            <Plus size={18} color={colors.primary} />
-          </TouchableOpacity>
-        }
-      />
-      <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 16 }}>
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Vaccination history</Text>
-        {data.vaccines.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No vaccines recorded.</Text>}
-        {data.vaccines.map((v) => (
-          <View key={v.id || v.name} style={[styles.card, { backgroundColor: tk.card }]}>
-            <FileText size={20} color={v.status === "done" || v.status === "ok" ? colors.success : colors.coral} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardTitle, { color: tk.text }]}>{v.name}</Text>
-              <Text style={[styles.cardMeta, { color: tk.textMuted }]}>Given: {v.dateAdministered} {v.nextDueDate ? `· Next: ${v.nextDueDate}` : ''}</Text>
-            </View>
-            <View style={[styles.badge, { backgroundColor: v.status === "done" || v.status === "ok" ? "rgba(76,175,80,0.15)" : "rgba(255,107,107,0.15)" }]}>
-              <Text style={[styles.badgeText, { color: v.status === "done" || v.status === "ok" ? colors.success : colors.coral }]}>{v.status === "done" || v.status === "ok" ? "OK" : "DUE"}</Text>
-            </View>
-          </View>
-        ))}
-        {/* Allergies */}
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Allergies</Text>
-        {data.allergies.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No allergies recorded.</Text>}
-        <View style={styles.tagRow}>
-          {data.allergies.map((a) => (
-            <View key={a.id || a.allergen} style={styles.allergyTag}><Text style={styles.allergyText}>{a.allergen}</Text></View>
-          ))}
-        </View>
-
-        {/* Medications */}
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Medications</Text>
-        {data.meds.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No medications recorded.</Text>}
-        {data.meds.map((m: any, i: number) => (
-          <View key={m.id ? String(m.id) : String(i)} style={[styles.card, { backgroundColor: tk.card }]}>
-            <Pill size={20} color={colors.pinky} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardTitle, { color: tk.text }]}>{m.name}</Text>
-              <Text style={[styles.cardMeta, { color: tk.textMuted }]}>
-                {m.dosage ? `Dose: ${m.dosage} ` : ""}
-                {m.startDate ? `· Started: ${m.startDate}` : ""}
-              </Text>
-            </View>
-          </View>
-        ))}
-
-        {/* Vitals */}
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Vitals</Text>
-        {data.vitals.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No vitals recorded.</Text>}
-        {data.vitals.map((v: any, i: number) => (
-          <View key={v.id ? String(v.id) : String(i)} style={[styles.card, { backgroundColor: tk.card }]}>
-            <Activity size={20} color={colors.coral} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardTitle, { color: tk.text }]}>
-                {v.weight ? `Weight: ${v.weight}kg ` : ""}
-                {v.temperature ? `Temp: ${v.temperature}°C` : ""}
-                {!v.weight && !v.temperature ? "Vitals Logged" : ""}
-              </Text>
-              <Text style={[styles.cardMeta, { color: tk.textMuted }]}>{v.timestamp ? new Date(v.timestamp).toLocaleDateString() : ""} {v.notes ? `· ${v.notes}` : ""}</Text>
-            </View>
-          </View>
-        ))}
-
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Insurance</Text>
-        <View style={[styles.infoCard, { backgroundColor: tk.card }]}>
-          <Text style={[styles.infoTitle, { color: tk.text }]}>{moonaPassport.insurance.provider}</Text>
-          <Text style={[styles.infoMeta, { color: tk.textMuted }]}>Policy: {moonaPassport.insurance.policy}</Text>
-          <Text style={[styles.infoMeta, { color: tk.textMuted }]}>{moonaPassport.insurance.valid}</Text>
-        </View>
-      </ScrollView>
-    </View>
-
-    {/* Add Record Modal */}
-    <AdaptiveSheet visible={addSheetOpen} onClose={handleClose} maxWidth={500} maxHeight="90%">
-        <View style={{ padding: 24 }}>
-          <View style={styles.sheetTitleRow}>
-            <Text style={[styles.sheetTitle, { color: tk.text }]}>
-              {selectedType ? `Add ${selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}` : "Add Record"}
-            </Text>
-            <TouchableOpacity onPress={handleClose}>
-              <X size={20} color={tk.textMuted} />
+      <View style={[styles.container, { backgroundColor: tk.bg }]}>
+        <ScreenHeader
+          title="Health Records"
+          right={
+            <TouchableOpacity onPress={() => setAddSheetOpen(true)} style={styles.addBtn}>
+              <Plus size={18} color={colors.primary} />
             </TouchableOpacity>
+          }
+        />
+        <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 16 }}>
+          <Text style={[styles.sectionTitle, { color: tk.text }]}>Vaccination history</Text>
+          {data.vaccines.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No vaccines recorded.</Text>}
+          {data.vaccines.map((v) => (
+            <View key={v.id || v.name} style={[styles.card, { backgroundColor: tk.card }]}>
+              <FileText size={20} color={v.status === "done" || v.status === "ok" ? colors.success : colors.coral} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.cardTitle, { color: tk.text }]}>{v.name}</Text>
+                <Text style={[styles.cardMeta, { color: tk.textMuted }]}>Given: {v.dateAdministered} {v.nextDueDate ? `· Next: ${v.nextDueDate}` : ''}</Text>
+              </View>
+              <View style={[styles.badge, { backgroundColor: v.status === "done" || v.status === "ok" ? "rgba(76,175,80,0.15)" : "rgba(255,107,107,0.15)" }]}>
+                <Text style={[styles.badgeText, { color: v.status === "done" || v.status === "ok" ? colors.success : colors.coral }]}>{v.status === "done" || v.status === "ok" ? "OK" : "DUE"}</Text>
+              </View>
+            </View>
+          ))}
+          {/* Allergies */}
+          <Text style={[styles.sectionTitle, { color: tk.text }]}>Allergies</Text>
+          {data.allergies.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No allergies recorded.</Text>}
+          <View style={styles.tagRow}>
+            {data.allergies.map((a) => (
+              <View key={a.id || a.allergen} style={styles.allergyTag}><Text style={styles.allergyText}>{a.allergen}</Text></View>
+            ))}
           </View>
 
-          {/* Type picker */}
-          {!selectedType && (
-            <View style={{ gap: 10, marginTop: 8 }}>
-              {ADD_OPTIONS.map(({ key, label, icon: Icon, color }) => (
-                <TouchableOpacity
-                  key={key}
-                  onPress={() => setSelectedType(key)}
-                  style={[styles.optionRow, { backgroundColor: tk.bg }]}
-                  activeOpacity={0.8}
-                >
-                  <View style={[styles.optionIcon, { backgroundColor: color + "22" }]}>
-                    <Icon size={18} color={color} />
-                  </View>
-                  <Text style={[styles.optionLabel, { color: tk.text }]}>{label}</Text>
-                </TouchableOpacity>
-              ))}
+          {/* Medications */}
+          <Text style={[styles.sectionTitle, { color: tk.text }]}>Medications</Text>
+          {data.meds.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No medications recorded.</Text>}
+          {data.meds.map((m: any, i: number) => (
+            <View key={m.id ? String(m.id) : String(i)} style={[styles.card, { backgroundColor: tk.card }]}>
+              <Pill size={20} color={colors.pinky} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.cardTitle, { color: tk.text }]}>{m.name}</Text>
+                <Text style={[styles.cardMeta, { color: tk.textMuted }]}>
+                  {m.dosage ? `Dose: ${m.dosage} ` : ""}
+                  {m.startDate ? `· Started: ${m.startDate}` : ""}
+                </Text>
+              </View>
             </View>
-          )}
+          ))}
 
-          {/* Vaccine form */}
-          {selectedType === "vaccine" && (
-            <View style={{ gap: 12, marginTop: 8 }}>
-              <FormInput label="Vaccine name" value={vaccineName} onChangeText={setVaccineName} placeholder="e.g. DHPP" tk={tk} />
-              <FormInput label="Date given" value={vaccineDate} onChangeText={setVaccineDate} placeholder="e.g. Nov 8, 2026" tk={tk} />
-              <FormInput label="Next due" value={vaccineNext} onChangeText={setVaccineNext} placeholder="e.g. Nov 2027" tk={tk} />
-              <SaveButton onPress={handleSave} />
+          {/* Vitals */}
+          <Text style={[styles.sectionTitle, { color: tk.text }]}>Vitals</Text>
+          {data.vitals.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No vitals recorded.</Text>}
+          {data.vitals.map((v: any, i: number) => (
+            <View key={v.id ? String(v.id) : String(i)} style={[styles.card, { backgroundColor: tk.card }]}>
+              <Activity size={20} color={colors.coral} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.cardTitle, { color: tk.text }]}>
+                  {v.weight ? `Weight: ${v.weight}kg ` : ""}
+                  {v.temperature ? `Temp: ${v.temperature}°C` : ""}
+                  {!v.weight && !v.temperature ? "Vitals Logged" : ""}
+                </Text>
+                <Text style={[styles.cardMeta, { color: tk.textMuted }]}>{v.timestamp ? new Date(v.timestamp).toLocaleDateString() : ""} {v.notes ? `· ${v.notes}` : ""}</Text>
+              </View>
             </View>
-          )}
+          ))}
 
-          {/* Allergy form */}
-          {selectedType === "allergy" && (
-            <View style={{ gap: 12, marginTop: 8 }}>
-              <FormInput label="Allergy" value={allergyName} onChangeText={setAllergyName} placeholder="e.g. Chicken" tk={tk} />
-              <SaveButton onPress={handleSave} />
-            </View>
-          )}
+          <Text style={[styles.sectionTitle, { color: tk.text }]}>Insurance</Text>
+          <View style={[styles.infoCard, { backgroundColor: tk.card }]}>
+            <Text style={[styles.infoTitle, { color: tk.text }]}>{moonaPassport.insurance.provider}</Text>
+            <Text style={[styles.infoMeta, { color: tk.textMuted }]}>Policy: {moonaPassport.insurance.policy}</Text>
+            <Text style={[styles.infoMeta, { color: tk.textMuted }]}>{moonaPassport.insurance.valid}</Text>
+          </View>
+        </ScrollView>
+      </View>
 
-          {/* Insurance form */}
-          {selectedType === "insurance" && (
-            <View style={{ gap: 12, marginTop: 8 }}>
-              <FormInput label="Provider" value={insuranceName} onChangeText={setInsuranceName} placeholder="e.g. Pawtect Gold" tk={tk} />
-              <FormInput label="Policy number" value={insurancePolicy} onChangeText={setInsurancePolicy} placeholder="e.g. PG-22-994 821" tk={tk} />
-              <SaveButton onPress={handleSave} />
+      {/* Add Record Modal */}
+      <AdaptiveSheet visible={addSheetOpen} onClose={handleClose} maxWidth={500} maxHeight="90%">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "padding" : undefined)}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 170}
+        >
+          <View style={{ padding: 24, paddingBottom: keyboardVisible ? 10 : 24 + insets.bottom }}>
+            <View style={styles.sheetTitleRow}>
+              <Text style={[styles.sheetTitle, { color: tk.text }]}>
+                {selectedType ? `Add ${selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}` : "Add Record"}
+              </Text>
+              <TouchableOpacity onPress={handleClose}>
+                <X size={20} color={tk.textMuted} />
+              </TouchableOpacity>
             </View>
-          )}
-        </View>
-    </AdaptiveSheet>
+
+            {/* Type picker */}
+            {!selectedType && (
+              <View style={{ gap: 10, marginTop: 8 }}>
+                {ADD_OPTIONS.map(({ key, label, icon: Icon, color }) => (
+                  <TouchableOpacity
+                    key={key}
+                    onPress={() => setSelectedType(key)}
+                    style={[styles.optionRow, { backgroundColor: tk.bg }]}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.optionIcon, { backgroundColor: color + "22" }]}>
+                      <Icon size={18} color={color} />
+                    </View>
+                    <Text style={[styles.optionLabel, { color: tk.text }]}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* Vaccine form */}
+            {selectedType === "vaccine" && (
+              <View style={{ gap: 12, marginTop: 8 }}>
+                <FormInput label="Vaccine name" value={vaccineName} onChangeText={setVaccineName} placeholder="e.g. DHPP" tk={tk} />
+                <FormInput label="Date given" value={vaccineDate} onChangeText={setVaccineDate} placeholder="e.g. Nov 8, 2026" tk={tk} />
+                <FormInput label="Next due" value={vaccineNext} onChangeText={setVaccineNext} placeholder="e.g. Nov 2027" tk={tk} />
+                <SaveButton onPress={handleSave} />
+              </View>
+            )}
+
+            {/* Allergy form */}
+            {selectedType === "allergy" && (
+              <View style={{ gap: 12, marginTop: 8 }}>
+                <FormInput label="Allergy" value={allergyName} onChangeText={setAllergyName} placeholder="e.g. Chicken" tk={tk} />
+                <SaveButton onPress={handleSave} />
+              </View>
+            )}
+
+            {/* Insurance form */}
+            {selectedType === "insurance" && (
+              <View style={{ gap: 12, marginTop: 8 }}>
+                <FormInput label="Provider" value={insuranceName} onChangeText={setInsuranceName} placeholder="e.g. Pawtect Gold" tk={tk} />
+                <FormInput label="Policy number" value={insurancePolicy} onChangeText={setInsurancePolicy} placeholder="e.g. PG-22-994 821" tk={tk} />
+                <SaveButton onPress={handleSave} />
+              </View>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </AdaptiveSheet>
     </PageContainer>
   );
 }

@@ -637,6 +637,22 @@ export default function ChatScreen() {
   const { user } = useAuthStore();
   const clearChatUnread = useNotificationStore((s) => s.clearChatUnread);
 
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
   // --- List View Methods ---
   const loadConversations = async (showLoader = true) => {
     try {
@@ -967,6 +983,12 @@ export default function ChatScreen() {
     const otherUser = getOtherParticipant(chatDetail) || { name: "Loading...", avatar_url: null };
 
     return (
+      <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
+      enabled={true}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+    >
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
           title={otherUser.name}
@@ -1075,6 +1097,7 @@ export default function ChatScreen() {
           </View>
         </KeyboardAvoidingView>
       </View>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -1085,14 +1108,14 @@ export default function ChatScreen() {
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
       <ScreenHeader
         title="Messages"
-        right={
-          <TouchableOpacity
-            style={[styles.headerIconBtn, { backgroundColor: tk.card }]}
-            onPress={() => setIsNewChatOpen(true)}
-          >
-            <Plus size={22} color={tk.text} />
-          </TouchableOpacity>
-        }
+        // right={
+        //   <TouchableOpacity
+        //     style={[styles.headerIconBtn, { backgroundColor: tk.card }]}
+        //     onPress={() => setIsNewChatOpen(true)}
+        //   >
+        //     <Plus size={22} color={tk.text} />
+        //   </TouchableOpacity>
+        // }
       />
 
       {/* Search pill */}
@@ -1188,7 +1211,7 @@ export default function ChatScreen() {
       {/* New Chat Modal */}
       <Modal visible={isNewChatOpen} animationType="slide" transparent onRequestClose={() => setIsNewChatOpen(false)}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
           style={{ flex: 1 }}
         >
           <Pressable style={styles.modalOverlay} onPress={() => { Keyboard.dismiss(); setIsNewChatOpen(false); }}>

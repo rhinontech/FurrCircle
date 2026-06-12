@@ -12,6 +12,7 @@ import { useTokens } from "../lib/theme-store";
 import { chatApi } from "../../services/chat/chatApi";
 import { userApi } from "../../services/user/userApi";
 import { useAuthStore } from "../lib/auth-store";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface ShareSheetProps {
   open: boolean;
@@ -25,6 +26,7 @@ interface ShareSheetProps {
 
 export function ShareSheet({ open, onClose, postId, petId, username, threadId, circleId }: ShareSheetProps) {
   const tk = useTokens();
+  const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -32,6 +34,22 @@ export function ShareSheet({ open, onClose, postId, petId, username, threadId, c
   // Real users state
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
+  
+    useEffect(() => {
+      const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+        setKeyboardVisible(true);
+      });
+      const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+        setKeyboardVisible(false);
+      });
+  
+      return () => {
+        showSubscription.remove();
+        hideSubscription.remove();
+      };
+    }, []);
 
   useEffect(() => {
     if (open) {
@@ -107,11 +125,11 @@ export function ShareSheet({ open, onClose, postId, petId, username, threadId, c
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
         style={{ flex: 1 }}
       >
         <Pressable style={styles.overlay} onPress={() => { Keyboard.dismiss(); onClose(); }}>
-          <Pressable style={[styles.sheet, { backgroundColor: tk.card }]} onPress={Keyboard.dismiss}>
+          <Pressable style={[styles.sheet, { backgroundColor: tk.card, paddingBottom: keyboardVisible ? 10 : 10 + insets.bottom }]} onPress={Keyboard.dismiss}>
             <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
             <Text style={[styles.sheetTitle, { color: tk.text }]}>Share to</Text>
 

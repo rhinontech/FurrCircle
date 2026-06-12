@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Modal, Pressable } from "react-native";
 import { useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
@@ -26,6 +27,7 @@ const DIRECT_TILES: { icon: any; label: string; bg: string; text: string; target
 export default function CareScreen() {
   const router = useRouter();
   const tk = useTokens();
+  const insets = useSafeAreaInsets();
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
 
   const [myPets, setMyPets] = useState<any[]>([]);
@@ -129,7 +131,7 @@ export default function CareScreen() {
 
     {/* Pet Picker Modal */}
     <AdaptiveSheet visible={pickerTarget !== null} onClose={() => setPickerTarget(null)} maxWidth={420}>
-        <View style={{ padding: 24 }}>
+        <View style={{ padding: 24, paddingBottom: 24 + insets.bottom }}>
           <View style={styles.sheetTitleRow}>
             <Text style={[styles.sheetTitle, { color: tk.text }]}>
               {pickerTarget === "passport" ? "Whose passport?" : "Which pet?"}

@@ -1,7 +1,7 @@
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
   StyleSheet, Modal, Pressable, Alert, ActivityIndicator, TextInput, FlatList,
-  KeyboardAvoidingView,
+  KeyboardAvoidingView, Keyboard,
   Platform,
   Dimensions,
   RefreshControl,
@@ -10,7 +10,7 @@ import {
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check, Edit2, Trash2, Info, Flag } from "lucide-react-native";
+import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check, Edit2, Trash2, Info, Flag, ArrowLeft } from "lucide-react-native";
 import { useState, useEffect, useCallback, useRef } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { posts as dummyPosts, sampleComments, type Post } from "../../src/lib/demo-data";
@@ -789,6 +789,21 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportStep, setReportStep] = useState(1);
   const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (post.image) {
@@ -1052,22 +1067,21 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
         transparent
         animationType="slide"
         onRequestClose={() => setCommentOpen(false)}
+        statusBarTranslucent
       >
-        <View style={{ flex: 1, justifyContent: "flex-end" }}>
-          {/* Backdrop Pressable (fills the screen absolutely and captures tap outside the sheet to dismiss) */}
-          <Pressable
-            style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.5)" }]}
-            onPress={() => setCommentOpen(false)}
-          />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
+          style={{ flex: 1 }}
+        >
+          <View style={{ flex: 1, justifyContent: "flex-end" }}>
+            {/* Backdrop Pressable (fills the screen absolutely and captures tap outside the sheet to dismiss) */}
+            <Pressable
+              style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.5)" }]}
+              onPress={() => setCommentOpen(false)}
+            />
 
-          {/* Keyboard avoiding content container */}
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{ width: "100%", justifyContent: "flex-end" }}
-            pointerEvents="box-none"
-          >
             <View
-              style={[styles.commentSheet, { backgroundColor: tk.card }]}
+              style={[styles.commentSheet, { backgroundColor: tk.card, paddingBottom: keyboardVisible ? 0 : insets.bottom }]}
             >
               {/* Handle */}
               <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted, marginTop: 20 }]} />
@@ -1110,7 +1124,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
               </ScrollView>
 
               {/* Input Area */}
-              <View style={[styles.commentInputContainer, { borderTopColor: tk.border, paddingBottom: Math.max(insets.bottom, 12) }]}>
+              <View style={[styles.commentInputContainer, { borderTopColor: tk.border, paddingBottom: 12 }]}>
                 {user?.avatar_url ? (
                   <Image source={{ uri: user.avatar_url }} style={styles.inputAvatar} />
                 ) : (
@@ -1147,14 +1161,14 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                 </View>
               </View>
             </View>
-          </KeyboardAvoidingView>
-        </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Options Menu Modal */}
       <Modal visible={menuOpen} transparent={true} animationType={isTablet ? "fade" : "slide"} onRequestClose={() => setMenuOpen(false)}>
         <Pressable style={[styles.overlay, isTablet && styles.overlayCenter]} onPress={() => setMenuOpen(false)}>
-          <View style={[isTablet ? styles.dialog : styles.sheet, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true} onTouchEnd={(e) => e.stopPropagation()}>
+          <View style={[isTablet ? styles.dialog : [styles.sheet, { paddingBottom: 10 + insets.bottom }], { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true} onTouchEnd={(e) => e.stopPropagation()}>
             {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
             <Text style={[styles.sheetTitle, { color: tk.text }]}>Options</Text>
 
@@ -1332,6 +1346,7 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
   const router = useRouter();
   const tk = useTokens();
   const { isTablet } = useBreakpoint();
+  const insets = useSafeAreaInsets();
 
   const [step, setStep] = useState<'options' | 'select_pet'>('options');
   const [pets, setPets] = useState<any[]>([]);
@@ -1387,7 +1402,7 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
   };
 
   const content = step === 'options' ? (
-    <View style={[isTablet ? styles.dialog : styles.sheet, { backgroundColor: tk.card }]}>
+    <View style={[isTablet ? styles.dialog : [styles.sheet, { paddingBottom: 28 + insets.bottom }], { backgroundColor: tk.card }]}>
       {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <Text style={[styles.sheetTitle, { color: tk.text, marginBottom: 0 }]}>Create</Text>
@@ -1405,11 +1420,23 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
       ))}
     </View>
   ) : (
-    <View style={[isTablet ? styles.dialog : styles.sheet, { backgroundColor: tk.card }]}>
+    <View style={[isTablet ? styles.dialog : [styles.sheet, { paddingBottom: 28 + insets.bottom }], { backgroundColor: tk.card }]}>
       {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
-      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
-        <TouchableOpacity onPress={() => setStep('options')} style={{ marginRight: 12, paddingVertical: 4 }}>
-          <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.primary }}>← Back</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}>
+        <TouchableOpacity
+          onPress={() => setStep('options')}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: tk.bg,
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 1,
+            borderColor: tk.border,
+          }}
+        >
+          <ArrowLeft size={18} color={tk.text} />
         </TouchableOpacity>
         <Text style={[styles.sheetTitle, { color: tk.text, marginBottom: 0 }]}>Select Pet</Text>
       </View>
