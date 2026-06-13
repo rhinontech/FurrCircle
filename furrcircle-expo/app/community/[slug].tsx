@@ -256,7 +256,7 @@ export default function CommunityDetail() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  cover: { height: 180, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  cover: { width: "100%", aspectRatio: 16 / 9, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   info: { borderRadius: 24, margin: 16, padding: 20 },
   circleName: { fontFamily: "Poppins_700Bold", fontSize: 22 },
   categoryBadge: { alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3, marginTop: 6 },

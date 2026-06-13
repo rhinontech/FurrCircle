@@ -25,8 +25,19 @@ const getMessaging = () => {
 };
 
 export const requestNotificationPermissionEarly = async (): Promise<NotificationPermissionResult> => {
+  if (Platform.OS === 'web') return 'skipped';
+
   const messaging = getMessaging();
-  if (!messaging) return 'skipped';
+  if (!messaging) {
+    try {
+      const Notifications = require('expo-notifications');
+      const { status } = await Notifications.requestPermissionsAsync();
+      return status === 'granted' ? 'granted' : 'denied';
+    } catch (err) {
+      console.warn('[Push] Expo notification permission request failed:', err);
+      return 'skipped';
+    }
+  }
 
   try {
     const authStatus = await messaging().requestPermission();
@@ -40,3 +51,4 @@ export const requestNotificationPermissionEarly = async (): Promise<Notification
     return 'skipped';
   }
 };
+

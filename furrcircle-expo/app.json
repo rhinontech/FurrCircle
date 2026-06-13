@@ -69,6 +69,13 @@
       "expo-router",
       "expo-web-browser",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow FurrCircle to access your camera to capture pictures and video of your pets.",
+          "microphonePermission": "Allow FurrCircle to access your microphone to record audio for pet videos."
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "ios": {

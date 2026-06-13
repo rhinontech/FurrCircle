@@ -11,6 +11,7 @@ import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 import { feedApi } from "../services/community/feedApi";
 import { userApi } from "../services/user/userApi";
+import { useCameraStore } from "../src/lib/camera-store";
 
 const CATEGORIES = ["General", "Health", "Adoption", "Training", "Nutrition", "Lost & Found"] as const;
 
@@ -37,6 +38,16 @@ export default function ComposeScreen() {
   const [loading, setLoading] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<number | null>(null);
 
+  const { capturedUri, capturedType, setCapturedMedia } = useCameraStore();
+
+  useEffect(() => {
+    if (capturedUri) {
+      setImageUri(capturedUri);
+      setMediaType(capturedType || "image");
+      setCapturedMedia(null, null);
+    }
+  }, [capturedUri]);
+
   useEffect(() => {
     if (imageUri && mediaType === "image") {
       Image.getSize(imageUri, (w, h) => {
@@ -56,7 +67,12 @@ export default function ComposeScreen() {
       [
         {
           text: "Open Camera",
-          onPress: () => handlePickPhotoSource("camera"),
+          onPress: () => {
+            router.push({
+              pathname: "/camera",
+              params: { origin: "post" },
+            });
+          },
         },
         {
           text: "Choose from Gallery",
