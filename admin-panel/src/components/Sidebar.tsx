@@ -16,6 +16,7 @@ import {
   CircleDot,
   AlertTriangle,
   HelpCircle,
+  Flag,
 } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -27,12 +28,14 @@ const Sidebar = () => {
     { label: "Dashboard", icon: LayoutDashboard, href: "/" },
     { label: "Manage Users", icon: Users, href: "/users" },
     { label: "Pet Listings", icon: PawPrint, href: "/pets" },
-    { label: "Vet Management", icon: Stethoscope, href: "/vets" },
-    { label: "Vet Reviews", icon: Star, href: "/vet-reviews" },
-    { label: "Appointments", icon: Calendar, href: "/appointments" },
+    // ── Phase 2: re-enable when we expand beyond community ──
+    // { label: "Vet Management", icon: Stethoscope, href: "/vets" },
+    // { label: "Vet Reviews", icon: Star, href: "/vet-reviews" },
+    // { label: "Appointments", icon: Calendar, href: "/appointments" },
     { label: "Campaigns", icon: Megaphone, href: "/campaigns" },
     { label: "Contact Leads", icon: Mail, href: "/contact-leads" },
-    { label: "Community", icon: MessageSquare, href: "/community" },
+    // { label: "Community", icon: MessageSquare, href: "/community" },
+    { label: "Reports", icon: Flag, href: "/reports" },
     { label: "Lost & Found", icon: AlertTriangle, href: "/lost-pets" },
   ];
   const eventItem = { label: "Manage Events", icon: Bell, href: "/events" };

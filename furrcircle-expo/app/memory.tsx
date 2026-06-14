@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Modal } from "react-native";
-import { Sparkles, Plus, X } from "../src/components/ui/icons";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Modal, FlatList, useWindowDimensions } from "react-native";
+import { Sparkles, Plus, X, ChevronLeft, ChevronRight } from "../src/components/ui/icons";
 import { useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
@@ -31,7 +31,18 @@ export default function MemoryScreen() {
   const [yearsData, setYearsData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  // Index into the flat list of all photos for the full-screen viewer (null = closed)
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+
+  // Flat, display-ordered list of every photo URL across all year sections —
+  // this is what the swipeable viewer pages through.
+  const allImages = useMemo(
+    () =>
+      yearsData.flatMap((y) =>
+        (y.grid as any[]).filter((m) => m.media_url).map((m) => m.media_url as string)
+      ),
+    [yearsData]
+  );
 
   const loadMemories = async () => {
     if (!petId) return;
@@ -148,10 +159,14 @@ export default function MemoryScreen() {
                 <Text style={[styles.yearLabel, { color: tk.text }]}>{y.year}</Text>
                 <View style={styles.photoGrid}>
                   {y.grid.map((m: any, i: number) => (
-                    <TouchableOpacity 
-                      key={m.id || i} 
+                    <TouchableOpacity
+                      key={m.id || i}
                       style={[styles.photoItem, { backgroundColor: gridTints[i % 6] }]}
-                      onPress={() => { if (m.media_url) setSelectedImage(m.media_url); }}
+                      onPress={() => {
+                        if (!m.media_url) return;
+                        const idx = allImages.indexOf(m.media_url);
+                        if (idx >= 0) setViewerIndex(idx);
+                      }}
                       activeOpacity={0.8}
                     >
                       {m.media_url ? (
@@ -175,18 +190,91 @@ export default function MemoryScreen() {
         )}
       </View>
 
-      {/* Full Screen Image Modal */}
-      <Modal visible={!!selectedImage} transparent={true} animationType="fade" onRequestClose={() => setSelectedImage(null)}>
-        <View style={styles.fullScreenModal}>
-          <TouchableOpacity style={styles.closeModalBtn} onPress={() => setSelectedImage(null)}>
-            <X size={28} color={colors.white} />
-          </TouchableOpacity>
-          {selectedImage && (
-            <Image source={{ uri: selectedImage }} style={styles.fullScreenImg} resizeMode="contain" />
-          )}
-        </View>
-      </Modal>
+      {/* Full Screen Swipeable Image Viewer */}
+      <ImageViewer
+        images={allImages}
+        index={viewerIndex}
+        onClose={() => setViewerIndex(null)}
+      />
     </PageContainer>
+  );
+}
+
+/**
+ * Full-screen, swipeable photo viewer. Pages horizontally through `images`
+ * (native swipe / drag), with prev/next arrows for web/desktop and a counter.
+ */
+function ImageViewer({
+  images,
+  index,
+  onClose,
+}: {
+  images: string[];
+  index: number | null;
+  onClose: () => void;
+}) {
+  const { width, height } = useWindowDimensions();
+  const listRef = useRef<FlatList<string>>(null);
+  const [current, setCurrent] = useState(0);
+
+  // Sync the active page when the viewer is (re)opened on a specific photo.
+  useEffect(() => {
+    if (index !== null) setCurrent(index);
+  }, [index]);
+
+  const goTo = (next: number) => {
+    if (next < 0 || next > images.length - 1) return;
+    listRef.current?.scrollToIndex({ index: next, animated: true });
+    setCurrent(next);
+  };
+
+  return (
+    <Modal visible={index !== null} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.fullScreenModal}>
+        <FlatList
+          ref={listRef}
+          data={images}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          initialScrollIndex={index ?? 0}
+          keyExtractor={(item, i) => `${i}-${item}`}
+          getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+          onMomentumScrollEnd={(e) => {
+            setCurrent(Math.round(e.nativeEvent.contentOffset.x / width));
+          }}
+          renderItem={({ item }) => (
+            <View style={{ width, height, alignItems: "center", justifyContent: "center" }}>
+              <Image source={{ uri: item }} style={{ width, height: height * 0.8 }} resizeMode="contain" />
+            </View>
+          )}
+        />
+
+        {/* Close */}
+        <TouchableOpacity style={styles.closeModalBtn} onPress={onClose}>
+          <X size={28} color={colors.white} />
+        </TouchableOpacity>
+
+        {/* Counter */}
+        {images.length > 0 && (
+          <View style={styles.counterPill}>
+            <Text style={styles.counterText}>{current + 1} / {images.length}</Text>
+          </View>
+        )}
+
+        {/* Prev / Next arrows */}
+        {current > 0 && (
+          <TouchableOpacity style={[styles.navArrow, styles.navArrowLeft]} onPress={() => goTo(current - 1)}>
+            <ChevronLeft size={28} color={colors.white} />
+          </TouchableOpacity>
+        )}
+        {current < images.length - 1 && (
+          <TouchableOpacity style={[styles.navArrow, styles.navArrowRight]} onPress={() => goTo(current + 1)}>
+            <ChevronRight size={28} color={colors.white} />
+          </TouchableOpacity>
+        )}
+      </View>
+    </Modal>
   );
 }
 
@@ -211,7 +299,11 @@ const styles = StyleSheet.create({
   photoImg: { width: "80%", height: "80%" },
   photoImgFull: { width: "100%", height: "100%" },
   addPhotoBtn: { width: "31%", aspectRatio: 1, borderRadius: 16, borderWidth: 2, borderColor: "rgba(26,26,46,0.15)", borderStyle: "dashed", alignItems: "center", justifyContent: "center" },
-  fullScreenModal: { flex: 1, backgroundColor: "rgba(0,0,0,0.9)", justifyContent: "center", alignItems: "center" },
+  fullScreenModal: { flex: 1, backgroundColor: "rgba(0,0,0,0.95)", justifyContent: "center", alignItems: "center" },
   closeModalBtn: { position: "absolute", top: 56, right: 20, zIndex: 10, width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  fullScreenImg: { width: "100%", height: "80%" },
+  counterPill: { position: "absolute", top: 60, alignSelf: "center", backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 16, paddingHorizontal: 14, paddingVertical: 6 },
+  counterText: { color: colors.white, fontFamily: "Poppins_600SemiBold", fontSize: 13 },
+  navArrow: { position: "absolute", top: "50%", marginTop: -24, width: 48, height: 48, borderRadius: 24, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center", zIndex: 10 },
+  navArrowLeft: { left: 16 },
+  navArrowRight: { right: 16 },
 });

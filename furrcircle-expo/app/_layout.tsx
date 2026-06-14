@@ -13,6 +13,7 @@ import { useAuthStore } from "../src/lib/auth-store";
 import { useBreakpoint } from "../src/lib/breakpoints";
 import { SideNav } from "../src/components/SideNav";
 import { RightRail } from "../src/components/RightRail";
+import { AmbientBackground } from "../src/components/ui/AmbientBackground";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { notificationApi } from "../services/notification/notificationApi";
@@ -365,18 +366,30 @@ export default function RootLayout() {
         <StatusBar style={dark ? "light" : "dark"} />
         <LocationSync />
         {showSideNav ? (
-          <View style={{ flex: 1, flexDirection: "row" }}>
-            <SideNav />
+          // Desktop / tablet: ambient backdrop + a centred 3-column cluster so the
+          // sidebar sits flush against the feed (no left gap) with balanced margins.
+          <View style={{ flex: 1, backgroundColor: tokens.bg }}>
+            <AmbientBackground />
             <View style={{ flex: 1, alignItems: "center" }}>
-              <View style={{ flex: 1, width: "100%", maxWidth: 680 }}>
-                {stackScreens}
+              <View
+                style={{
+                  flex: 1,
+                  width: "100%",
+                  maxWidth: showRightRail ? 1260 : 960,
+                  flexDirection: "row",
+                }}
+              >
+                <SideNav />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  {stackScreens}
+                </View>
+                {showRightRail && (
+                  <View style={{ width: 300, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: tokens.border }}>
+                    <RightRail />
+                  </View>
+                )}
               </View>
             </View>
-            {showRightRail && (
-              <View style={{ width: 300, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: tokens.border }}>
-                <RightRail />
-              </View>
-            )}
           </View>
         ) : (
           stackScreens
