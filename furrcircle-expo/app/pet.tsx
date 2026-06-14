@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Modal } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Modal, Switch } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2, Pill, X, Trash2, Eye } from "../src/components/ui/icons";
+import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2, Pill, X, Trash2, Eye, PawPrint } from "../src/components/ui/icons";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { ShareSheet } from "../src/components/ShareSheet";
 import { PageContainer } from "../src/components/PageContainer";
@@ -171,6 +171,7 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
   const tk = useTokens();
   const [adoption, setAdoption] = useState(pet?.isAdoptionOpen || false);
   const [foster, setFoster] = useState(pet?.isFosterOpen || false);
+  const [breed, setBreed] = useState(pet?.isBreedingOpen || false);
   const [memories, setMemories] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const petName = pet?.name || "this pet";
@@ -207,6 +208,18 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
     }
   };
 
+  const toggleBreed = async () => {
+    const newVal = !breed;
+    setBreed(newVal);
+    if (!pet?.id || !pet.canManage) return;
+    try {
+      await petApi.updateListing(pet.id, { isBreedingOpen: newVal });
+    } catch (err: any) {
+      setBreed(!newVal);
+      Alert.alert("Error", "Could not update breeding status");
+    }
+  };
+
   // Use DB personality
   const traits = Array.isArray(pet?.personality) ? pet.personality : [];
 
@@ -223,23 +236,33 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
       <View>
         <Text style={[styles.sectionTitle, { color: tk.text }]}>Availability</Text>
         <Text style={[styles.sectionSub, { color: tk.textMuted }]}>Show {petName} on Discover for matching families.</Text>
-        <View style={styles.availGrid}>
-          <TouchableOpacity onPress={toggleAdoption} disabled={!pet?.canManage}
-            style={[styles.availCard, adoption ? { backgroundColor: colors.success } : { backgroundColor: tk.card }, !pet?.canManage && { opacity: 0.8 }]}>
-            <Home size={20} color={adoption ? colors.white : tk.text + "99"} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.availLabel, { color: adoption ? colors.white : tk.text }]}>Open for adoption</Text>
-              <Text style={[styles.availSub, { color: adoption ? colors.white + "CC" : tk.textMuted }]}>{adoption ? "Listed" : "Off"}</Text>
+        <View style={[styles.availList, { backgroundColor: tk.card }]}>
+          {[
+            { icon: <Home size={18} color={colors.success} />, label: "Open for Adoption", sub: "Listed in Discover & Match", active: adoption, color: colors.success, onToggle: toggleAdoption },
+            { icon: <HandHeart size={18} color={colors.coral} />, label: "Open for Foster", sub: "Listed in Discover & Match", active: foster, color: colors.coral, onToggle: toggleFoster },
+            { icon: <PawPrint size={18} color={colors.sunshine} />, label: "Open for Breeding", sub: "Listed in Breed Match", active: breed, color: colors.sunshine, onToggle: toggleBreed },
+          ].map((item, i, arr) => (
+            <View key={item.label}>
+              <View style={styles.availRow}>
+                <View style={[styles.availIconWrap, { backgroundColor: item.color + "18" }]}>
+                  {item.icon}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.availRowLabel, { color: tk.text }]}>{item.label}</Text>
+                  <Text style={[styles.availRowSub, { color: tk.textMuted }]}>{item.sub}</Text>
+                </View>
+                <Switch
+                  value={item.active}
+                  onValueChange={pet?.canManage ? item.onToggle : undefined}
+                  disabled={!pet?.canManage}
+                  trackColor={{ false: tk.glassBorder, true: item.color }}
+                  thumbColor="#fff"
+                  ios_backgroundColor={tk.glassBorder}
+                />
+              </View>
+              {i < arr.length - 1 && <View style={[styles.availDivider, { backgroundColor: tk.glassBorder }]} />}
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={toggleFoster} disabled={!pet?.canManage}
-            style={[styles.availCard, foster ? { backgroundColor: colors.coral } : { backgroundColor: tk.card }, !pet?.canManage && { opacity: 0.8 }]}>
-            <HandHeart size={20} color={foster ? colors.white : tk.text + '99'} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.availLabel, { color: foster ? colors.white : tk.text }]}>Open for foster</Text>
-              <Text style={[styles.availSub, { color: foster ? colors.white + "CC" : tk.textMuted }]}>{foster ? "Listed" : "Off"}</Text>
-            </View>
-          </TouchableOpacity>
+          ))}
         </View>
       </View>
 
@@ -448,10 +471,12 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 11,  fontFamily: "Inter_400Regular" },
   sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, marginBottom: 6 },
   sectionSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 10 },
-  availGrid: { flexDirection: "row", gap: 10 },
-  availCard: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 16, padding: 12 },
-  availLabel: { fontFamily: "Poppins_700Bold", fontSize: 13 },
-  availSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
+  availList: { borderRadius: 18, overflow: "hidden" },
+  availRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 13, gap: 14 },
+  availIconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  availRowLabel: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
+  availRowSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
+  availDivider: { height: 1, marginLeft: 66 },
   traitRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   traitChip: { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   traitText: { fontSize: 13, fontFamily: "Poppins_500Medium" },
