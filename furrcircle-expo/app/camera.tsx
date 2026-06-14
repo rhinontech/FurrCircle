@@ -1,12 +1,13 @@
 import {
   View, Text, StyleSheet, TouchableOpacity, Image,
   Dimensions, ActivityIndicator, Alert, TextInput,
-  PanResponder, Animated, Pressable,
+  PanResponder, Animated, Pressable, ScrollView,
 } from "react-native";
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
 import { Video, ResizeMode } from "expo-av";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import { useCameraStore } from "../src/lib/camera-store";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
@@ -18,6 +19,23 @@ import { PageContainer } from "../src/components/PageContainer";
 import { LinearGradient } from "expo-linear-gradient";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+
+type AspectMode = "16:9" | "4:3" | "1:1";
+
+// Single source of truth for the framed capture area.
+// `wh` = width / height of the target frame used for both the on-screen mask
+// and the post-capture crop. `null` means full-screen (no crop).
+function getFrame(mode: AspectMode) {
+  if (mode === "1:1") {
+    const height = SCREEN_WIDTH;
+    return { top: (SCREEN_HEIGHT - height) / 2, height, wh: 1 };
+  }
+  if (mode === "4:3") {
+    const height = Math.min(SCREEN_WIDTH * (4 / 3), SCREEN_HEIGHT);
+    return { top: (SCREEN_HEIGHT - height) / 2, height, wh: 3 / 4 };
+  }
+  return { top: 0, height: SCREEN_HEIGHT, wh: null as number | null };
+}
 
 // Visual Filter Presets
 const FILTERS = [
@@ -49,7 +67,7 @@ export default function CustomCameraScreen() {
   const [showGrid, setShowGrid] = useState(false);
   const [timerDelay, setTimerDelay] = useState<0 | 3 | 10>(0); // in seconds
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [aspectRatioMode, setAspectRatioMode] = useState<"16:9" | "4:3" | "1:1">("16:9");
+  const [aspectRatioMode, setAspectRatioMode] = useState<AspectMode>("16:9");
 
   // States for capturing / recording
   const [isRecording, setIsRecording] = useState(false);
@@ -59,6 +77,7 @@ export default function CustomCameraScreen() {
   // Captured media preview state
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<"image" | "video" | null>(null);
+  const [previewWH, setPreviewWH] = useState<number | null>(null); // width/height of cropped media, null = full
   const [activeFilterIndex, setActiveFilterIndex] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -194,11 +213,39 @@ export default function CustomCameraScreen() {
       try {
         setIsProcessing(true);
         const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.85,
+          quality: 0.9,
           skipProcessing: false,
         });
-        setPreviewUri(photo.uri);
+
+        const frame = getFrame(aspectRatioMode);
+        let finalUri = photo.uri;
+
+        // Center-crop to the selected aspect ratio so the saved image
+        // actually matches the framed area the user composed.
+        if (frame.wh && photo.width && photo.height) {
+          let cropW = photo.width;
+          let cropH = cropW / frame.wh;
+          if (cropH > photo.height) {
+            cropH = photo.height;
+            cropW = cropH * frame.wh;
+          }
+          const originX = (photo.width - cropW) / 2;
+          const originY = (photo.height - cropH) / 2;
+          try {
+            const cropped = await manipulateAsync(
+              photo.uri,
+              [{ crop: { originX, originY, width: cropW, height: cropH } }],
+              { compress: 0.9, format: SaveFormat.JPEG }
+            );
+            finalUri = cropped.uri;
+          } catch (cropErr) {
+            console.warn("Crop failed, using full frame:", cropErr);
+          }
+        }
+
+        setPreviewUri(finalUri);
         setPreviewType("image");
+        setPreviewWH(frame.wh);
       } catch (err) {
         console.error("Failed to take photo:", err);
         Alert.alert("Error", "Failed to capture photo.");
@@ -220,6 +267,7 @@ export default function CustomCameraScreen() {
       });
       setPreviewUri(video.uri);
       setPreviewType("video");
+      setPreviewWH(null);
     } catch (err) {
       console.error("Failed to record video:", err);
       setIsRecording(false);
@@ -267,56 +315,44 @@ export default function CustomCameraScreen() {
         {previewUri ? (
           /* PREVIEW & EDIT VIEW MODE */
           <View style={styles.previewContainer}>
-            {previewType === "image" ? (
-              <Image
-                source={{ uri: previewUri }}
-                style={[
-                  styles.previewMedia,
-                  activeFilterIndex === 2 && styles.grayscaleFilter, // Simulating Noir
-                ]}
-                resizeMode="cover"
-              />
-            ) : (
-              <Video
-                ref={videoRef}
-                source={{ uri: previewUri }}
-                style={[
-                  styles.previewMedia,
-                  activeFilterIndex === 2 && styles.grayscaleFilter,
-                ]}
-                resizeMode={ResizeMode.COVER}
-                shouldPlay={isVideoPlaying}
-                isLooping
-                onPlaybackStatusUpdate={(status: any) => {
-                  setIsVideoPlaying(status.isPlaying);
-                }}
-              />
-            )}
+            {/* Centered media stage that respects the captured aspect ratio */}
+            <View style={styles.previewStage}>
+              <View style={[styles.previewFrame, previewWH ? { aspectRatio: previewWH } : StyleSheet.absoluteFillObject]}>
+                {previewType === "image" ? (
+                  <Image
+                    source={{ uri: previewUri }}
+                    style={[StyleSheet.absoluteFillObject, activeFilterIndex === 2 && styles.grayscaleFilter]}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Video
+                    ref={videoRef}
+                    source={{ uri: previewUri }}
+                    style={[StyleSheet.absoluteFillObject, activeFilterIndex === 2 && styles.grayscaleFilter]}
+                    resizeMode={ResizeMode.COVER}
+                    shouldPlay={isVideoPlaying}
+                    isLooping
+                    onPlaybackStatusUpdate={(status: any) => setIsVideoPlaying(status.isPlaying)}
+                  />
+                )}
 
-            {/* Filter Overlay Layer */}
-            {FILTERS[activeFilterIndex].overlay && (
-              <View
-                style={[
-                  StyleSheet.absoluteFillObject,
-                  { backgroundColor: FILTERS[activeFilterIndex].overlay || undefined },
-                ]}
-                pointerEvents="none"
-              />
-            )}
+                {/* Filter tint, clipped to the media frame */}
+                {FILTERS[activeFilterIndex].overlay && (
+                  <View
+                    style={[StyleSheet.absoluteFillObject, { backgroundColor: FILTERS[activeFilterIndex].overlay || undefined }]}
+                    pointerEvents="none"
+                  />
+                )}
+              </View>
+            </View>
 
             {/* Draggable Caption Text Overlay */}
             {overlayText.length > 0 && !isEditingText && (
               <Animated.View
                 {...panResponder.panHandlers}
-                style={[
-                  pan.getLayout(),
-                  styles.draggableTextContainer,
-                ]}
+                style={[pan.getLayout(), styles.draggableTextContainer]}
               >
-                <TouchableOpacity
-                  onPress={() => setIsEditingText(true)}
-                  activeOpacity={0.9}
-                >
+                <TouchableOpacity onPress={() => setIsEditingText(true)} activeOpacity={0.9}>
                   <Text style={[styles.draggableText, { color: textColor }]}>{overlayText}</Text>
                 </TouchableOpacity>
               </Animated.View>
@@ -324,10 +360,7 @@ export default function CustomCameraScreen() {
 
             {/* Text input modal overlay */}
             {isEditingText && (
-              <Pressable
-                style={styles.textEditOverlay}
-                onPress={() => setIsEditingText(false)}
-              >
+              <Pressable style={styles.textEditOverlay} onPress={() => setIsEditingText(false)}>
                 <TextInput
                   value={overlayText}
                   onChangeText={setOverlayText}
@@ -338,62 +371,40 @@ export default function CustomCameraScreen() {
                   maxLength={100}
                   onSubmitEditing={() => setIsEditingText(false)}
                 />
-
-                {/* Color Selector Row */}
                 <View style={styles.colorSelectorRow}>
                   {["#FFFFFF", "#0D3B8E", "#FF6B6B", "#FFD93D", "#4CAF50", "#000000"].map((c) => (
                     <TouchableOpacity
                       key={c}
                       onPress={() => setTextColor(c)}
-                      style={[
-                        styles.colorOption,
-                        { backgroundColor: c },
-                        textColor === c && styles.colorOptionActive,
-                      ]}
+                      style={[styles.colorOption, { backgroundColor: c }, textColor === c && styles.colorOptionActive]}
                     />
                   ))}
                 </View>
               </Pressable>
             )}
 
-            {/* Filter Name Badge Indicator */}
-            <View style={styles.filterBadge}>
-              <Sparkles size={14} color="#FFF" style={{ marginRight: 4 }} />
-              <Text style={styles.filterBadgeText}>{FILTERS[activeFilterIndex].name}</Text>
-            </View>
-
             {/* Top Preview Controls */}
             <View style={styles.previewTopBar}>
               <TouchableOpacity
-                style={styles.iconButton}
+                style={styles.glassIconButton}
                 onPress={() => {
                   setPreviewUri(null);
                   setPreviewType(null);
+                  setPreviewWH(null);
                   setOverlayText("");
+                  setActiveFilterIndex(0);
                 }}
               >
-                <X size={24} color="#FFF" />
+                <ChevronLeft size={24} color="#FFF" />
               </TouchableOpacity>
 
-              <View style={styles.previewActionsRight}>
-                <TouchableOpacity
-                  style={styles.iconButton}
-                  onPress={() => setIsEditingText(true)}
-                >
-                  <Type size={22} color="#FFF" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.iconButton}
-                  onPress={nextFilter}
-                >
-                  <Sparkles size={22} color="#FFF" />
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity style={styles.glassIconButton} onPress={() => setIsEditingText(true)}>
+                <Type size={22} color="#FFF" />
+              </TouchableOpacity>
             </View>
 
             {/* Play/Pause control for Video preview */}
-            {previewType === "video" && (
+            {previewType === "video" && !isEditingText && (
               <TouchableOpacity
                 style={styles.playPauseBtn}
                 onPress={() => {
@@ -403,29 +414,61 @@ export default function CustomCameraScreen() {
                   }
                 }}
               >
-                {isVideoPlaying ? (
-                  <Pause size={24} color="#FFF" />
-                ) : (
-                  <Play size={24} color="#FFF" />
-                )}
+                {isVideoPlaying ? <Pause size={24} color="#FFF" /> : <Play size={24} color="#FFF" />}
               </TouchableOpacity>
             )}
 
-            {/* Bottom Preview Accept Button */}
-            <TouchableOpacity
-              style={styles.confirmBtn}
-              onPress={handleConfirmMedia}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={["#5B8DF5", colors.primary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFillObject}
-              />
-              <Text style={styles.confirmBtnText}>Use Photo / Video</Text>
-              <Check size={20} color="#FFF" style={{ marginLeft: 6 }} />
-            </TouchableOpacity>
+            {/* Bottom edit dock: filter strip + actions */}
+            {!isEditingText && (
+              <View style={styles.editDock}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.filterStrip}
+                >
+                  {FILTERS.map((f, i) => (
+                    <TouchableOpacity
+                      key={f.id}
+                      onPress={() => setActiveFilterIndex(i)}
+                      style={[styles.filterChip, activeFilterIndex === i && styles.filterChipActive]}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.filterChipText, activeFilterIndex === i && styles.filterChipTextActive]}>
+                        {f.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <View style={styles.editActionRow}>
+                  <TouchableOpacity
+                    style={styles.retakeBtn}
+                    onPress={() => {
+                      setPreviewUri(null);
+                      setPreviewType(null);
+                      setPreviewWH(null);
+                      setOverlayText("");
+                      setActiveFilterIndex(0);
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <RefreshCw size={18} color="#FFF" />
+                    <Text style={styles.retakeBtnText}>Retake</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.useBtn} onPress={handleConfirmMedia} activeOpacity={0.85}>
+                    <LinearGradient
+                      colors={["#5B8DF5", colors.primary]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={StyleSheet.absoluteFillObject}
+                    />
+                    <Text style={styles.useBtnText}>{origin === "story" ? "Add to Story" : "Use"}</Text>
+                    <Check size={19} color="#FFF" style={{ marginLeft: 6 }} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
         ) : (
           /* LIVE VIEW CAMERA MODE */
@@ -441,46 +484,37 @@ export default function CustomCameraScreen() {
                 mode={captureMode}
               />
 
-              {/* Aspect Ratio Masks */}
-              {aspectRatioMode === "4:3" && (
-                <>
-                  <View style={[styles.maskBar, { top: 0, height: 80 }]} />
-                  <View style={[styles.maskBar, { bottom: 0, height: SCREEN_HEIGHT - (SCREEN_WIDTH * 4 / 3) - 80 }]} />
-                </>
-              )}
-              {aspectRatioMode === "1:1" && (
-                <>
-                  <View style={[styles.maskBar, { top: 0, height: 120 }]} />
-                  <View style={[styles.maskBar, { bottom: 0, height: SCREEN_HEIGHT - SCREEN_WIDTH - 120 }]} />
-                </>
-              )}
+              {/* Aspect Ratio Masks — derived from the same frame as the crop */}
+              {(() => {
+                const frame = getFrame(aspectRatioMode);
+                if (frame.wh === null) return null;
+                const bottomH = SCREEN_HEIGHT - frame.top - frame.height;
+                return (
+                  <>
+                    <View style={[styles.maskBar, { top: 0, height: frame.top }]} />
+                    <View style={[styles.maskBar, { bottom: 0, height: bottomH }]} />
+                  </>
+                );
+              })()}
 
-              {/* Grid Overlay lines (contained inside viewfinder bounds) */}
-              {showGrid && (
-                <View
-                  style={[
-                    styles.gridContainer,
-                    { aspectRatio: aspectRatioMode === "16:9" ? 9 / 16 : aspectRatioMode === "4:3" ? 3 / 4 : 1 },
-                  ]}
-                  pointerEvents="none"
-                >
-                  <View style={styles.gridRow}>
-                    <View style={styles.gridCol} />
-                    <View style={styles.gridCol} />
-                    <View style={styles.gridCol} />
+              {/* Grid Overlay — positioned exactly over the framed area */}
+              {showGrid && (() => {
+                const frame = getFrame(aspectRatioMode);
+                return (
+                  <View
+                    style={[styles.gridContainer, { top: frame.top, height: frame.height }]}
+                    pointerEvents="none"
+                  >
+                    {[0, 1, 2].map((r) => (
+                      <View key={r} style={styles.gridRow}>
+                        <View style={styles.gridCol} />
+                        <View style={styles.gridCol} />
+                        <View style={styles.gridCol} />
+                      </View>
+                    ))}
                   </View>
-                  <View style={styles.gridRow}>
-                    <View style={styles.gridCol} />
-                    <View style={styles.gridCol} />
-                    <View style={styles.gridCol} />
-                  </View>
-                  <View style={styles.gridRow}>
-                    <View style={styles.gridCol} />
-                    <View style={styles.gridCol} />
-                    <View style={styles.gridCol} />
-                  </View>
-                </View>
-              )}
+                );
+              })()}
             </View>
 
             {/* Countdown overlay */}
@@ -861,7 +895,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   gridContainer: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    left: 0,
+    right: 0,
   },
   gridRow: {
     flex: 1,
@@ -956,10 +992,90 @@ const styles = StyleSheet.create({
   },
   previewContainer: {
     flex: 1,
+    backgroundColor: "#000",
   },
-  previewMedia: {
+  previewStage: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  previewFrame: {
     width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
+    overflow: "hidden",
+  },
+  editDock: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 28,
+    gap: 14,
+    zIndex: 10,
+  },
+  filterStrip: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+  },
+  filterChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterChipText: {
+    color: "rgba(255,255,255,0.8)",
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 12,
+  },
+  filterChipTextActive: {
+    color: "#FFF",
+  },
+  editActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+  },
+  retakeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    height: 54,
+    paddingHorizontal: 22,
+    borderRadius: 27,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  retakeBtnText: {
+    color: "#FFF",
+    fontSize: 15,
+    fontFamily: "Poppins_600SemiBold",
+  },
+  useBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 54,
+    borderRadius: 27,
+    overflow: "hidden",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  useBtnText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontFamily: "Poppins_700Bold",
   },
   grayscaleFilter: {
     opacity: 0.9,

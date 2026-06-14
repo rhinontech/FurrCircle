@@ -69,6 +69,39 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
   const progress = useRef(new Animated.Value(0)).current;
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
 
+  // Hold-to-pause handling. A quick tap navigates; a press held past the
+  // threshold pauses the story until release.
+  const holdTimerRef = useRef<any>(null);
+  const didHoldRef = useRef(false);
+
+  const handlePressIn = () => {
+    didHoldRef.current = false;
+    holdTimerRef.current = setTimeout(() => {
+      didHoldRef.current = true;
+      setIsPaused(true);
+    }, 180);
+  };
+
+  const handlePressOut = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    if (didHoldRef.current) {
+      setIsPaused(false);
+    }
+  };
+
+  const handleZoneTap = (dir: "prev" | "next") => {
+    // Suppress navigation if this was a hold (pause) gesture.
+    if (didHoldRef.current) {
+      didHoldRef.current = false;
+      return;
+    }
+    if (dir === "prev") handlePrev();
+    else handleNext();
+  };
+
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) => {
@@ -401,10 +434,22 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
             );
           })()}
 
-          {/* Touch zones for navigation */}
+          {/* Touch zones for navigation + hold-to-pause */}
           <View style={styles.touchZones}>
-            <Pressable style={styles.leftTouch} onPress={handlePrev} />
-            <Pressable style={styles.rightTouch} onPress={handleNext} />
+            <Pressable
+              style={styles.leftTouch}
+              onPressIn={handlePressIn}
+              onPressOut={handlePressOut}
+              onPress={() => handleZoneTap("prev")}
+              delayLongPress={180}
+            />
+            <Pressable
+              style={styles.rightTouch}
+              onPressIn={handlePressIn}
+              onPressOut={handlePressOut}
+              onPress={() => handleZoneTap("next")}
+              delayLongPress={180}
+            />
           </View>
         </View>
       </View>
