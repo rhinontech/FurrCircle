@@ -17,6 +17,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
+import Constants from "expo-constants";
 
 // UI Components
 import { PageContainer } from "../src/components/PageContainer";
@@ -113,6 +114,43 @@ export default function OnboardingScreen() {
       subscription.remove();
     };
   }, [stepIndex]);
+
+  // Check notification permission status on mount
+  useEffect(() => {
+    const checkNotifPermission = async () => {
+      if (Platform.OS === 'web') {
+        setNotifPermissionStatus("skipped");
+        return;
+      }
+      try {
+        if (Constants.appOwnership === 'expo') {
+          const Notifications = require('expo-notifications');
+          const { status } = await Notifications.getPermissionsAsync();
+          setNotifPermissionStatus(status === 'granted' ? 'granted' : status === 'denied' ? 'denied' : 'undetermined');
+          return;
+        }
+
+        const messaging = require('@react-native-firebase/messaging').default;
+        if (messaging) {
+          const authStatus = await messaging().hasPermission();
+          const enabled =
+            authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+            authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+          setNotifPermissionStatus(enabled ? "granted" : "undetermined");
+        }
+      } catch (err) {
+        console.warn("Error checking initial notifications permission:", err);
+        try {
+          const Notifications = require('expo-notifications');
+          const { status } = await Notifications.getPermissionsAsync();
+          setNotifPermissionStatus(status === 'granted' ? 'granted' : status === 'denied' ? 'denied' : 'undetermined');
+        } catch {
+          setNotifPermissionStatus("undetermined");
+        }
+      }
+    };
+    checkNotifPermission();
+  }, []);
 
   // Load circles when we navigate to Step 4 (index 3)
   useEffect(() => {
@@ -406,13 +444,27 @@ export default function OnboardingScreen() {
                   style={[styles.glassBtn, glassSurface(tk)]}
                   onPress={() => setLocationModalVisible(true)}
                 >
-                  <Text style={[styles.glassBtnText, { color: tk.text }]}>Search City Manually</Text>
+                  <Text 
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                    style={[styles.glassBtnText, { color: tk.text }]}
+                  >
+                    Search City Manually
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.primaryActionBtn, { backgroundColor: colors.primary }]}
                   onPress={handleAutoLocate}
                 >
-                  <Text style={styles.primaryActionBtnText}>Detect Automatically</Text>
+                  <Text 
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                    style={styles.primaryActionBtnText}
+                  >
+                    Detect Automatically
+                  </Text>
                 </TouchableOpacity>
               </View>
               {locationStore.city && (
@@ -444,7 +496,12 @@ export default function OnboardingScreen() {
                   onPress={handleRequestNotifications}
                   disabled={notifPermissionStatus === "granted"}
                 >
-                  <Text style={styles.primaryActionBtnText}>
+                  <Text 
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                    style={styles.primaryActionBtnText}
+                  >
                     {notifPermissionStatus === "granted" ? "Notifications Enabled ✓" : "Enable Notifications"}
                   </Text>
                 </TouchableOpacity>
@@ -857,26 +914,30 @@ const styles = StyleSheet.create({
   },
   glassBtn: {
     flex: 1,
-    height: 44,
+    height: 48,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 8,
   },
   glassBtnText: {
     fontFamily: "Poppins_600SemiBold",
-    fontSize: 13,
+    fontSize: 12,
+    textAlign: "center",
   },
   primaryActionBtn: {
     flex: 1,
-    height: 44,
+    height: 48,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 8,
   },
   primaryActionBtnText: {
     fontFamily: "Poppins_700Bold",
-    fontSize: 13,
+    fontSize: 12,
     color: "#FFFFFF",
+    textAlign: "center",
   },
   statusRow: {
     flexDirection: "row",

@@ -122,8 +122,11 @@ export const getTrending = async (req: any, res: Response): Promise<void> => {
         const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
         const questions = await Question.findAll({
             where: { createdAt: { [Op.gte]: since } },
-            order: [["upvotes", "DESC"], ["answerCount", "DESC"], ["createdAt", "DESC"]],
-            limit: 10,
+            order: [
+                [db.sequelize.literal('"upvotes" + ("answerCount" * 2)'), "DESC"],
+                ["createdAt", "DESC"]
+            ],
+            limit: 5,
         });
 
         const result = await Promise.all(

@@ -27,6 +27,12 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
+            // Moderation workflow state: pending | resolved | dismissed
+            status: {
+                type: DataTypes.STRING,
+                allowNull: false,
+                defaultValue: 'pending',
+            },
         },
         {
             tableName: "reports",

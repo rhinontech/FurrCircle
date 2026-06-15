@@ -11,6 +11,7 @@ import {
   getAllCircles, adminCreateCircle, adminDeleteCircle,
   getAllLostPets, adminUpdateLostPetStatus, adminDeleteLostPet,
   getAllQuestions, adminCreateQuestion, adminDeleteQuestion, adminGetAnswers, adminDeleteAnswer,
+  getAllReports, updateReportStatus, deleteReport,
 } from "../controllers/adminController.ts";
 import {
   getAdminCampaigns,
@@ -97,5 +98,10 @@ router.delete("/circles/:id", protect, adminOnly, adminDeleteCircle);
 router.get("/lost-pets", protect, adminOnly, getAllLostPets);
 router.patch("/lost-pets/:id/status", protect, adminOnly, adminUpdateLostPetStatus);
 router.delete("/lost-pets/:id", protect, adminOnly, adminDeleteLostPet);
+
+// Reports / Moderation
+router.get("/reports", protect, adminOnly, getAllReports);
+router.patch("/reports/:id/status", protect, adminOnly, updateReportStatus);
+router.delete("/reports/:id", protect, adminOnly, deleteReport);
 
 export default router;

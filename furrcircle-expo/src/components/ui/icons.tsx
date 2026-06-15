@@ -76,6 +76,7 @@ export const Heart = make("heart-outline", "heart");
 export const HelpCircle = make("help-circle-outline", "help-circle");
 export const Home = make("home-outline", "home");
 export const Image = make("image-outline", "image");
+export const Inbox = make("mail-open-outline", "mail-open");
 export const Info = make("information-circle-outline", "information-circle");
 export const LayoutGrid = make("grid-outline", "grid");
 export const LocateFixed = make("locate");

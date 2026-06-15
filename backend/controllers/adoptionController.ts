@@ -93,7 +93,7 @@ export const submitApplication = async (req: any, res: Response): Promise<void> 
 // @route   GET /api/adoptions/my-applications
 export const listMyApplications = async (req: any, res: Response): Promise<void> => {
   try {
-    const { adoption_applications: Application, pets: Pet } = db as any;
+    const { adoption_applications: Application, pets: Pet, users: User } = db as any;
     const applications = await Application.findAll({
       where: { applicantId: req.user.id },
       include: [
@@ -101,6 +101,7 @@ export const listMyApplications = async (req: any, res: Response): Promise<void>
           model: Pet,
           as: "pet",
           attributes: ["id", "name", "species", "breed", "avatar_url", "city"],
+          include: [{ model: User, as: "owner", attributes: ["id", "name", "avatar_url"] }],
         },
       ],
       order: [["createdAt", "DESC"]],
@@ -115,7 +116,7 @@ export const listMyApplications = async (req: any, res: Response): Promise<void>
 // @route   GET /api/adoptions/received
 export const listReceivedApplications = async (req: any, res: Response): Promise<void> => {
   try {
-    const { adoption_applications: Application, pets: Pet } = db as any;
+    const { adoption_applications: Application, pets: Pet, users: User } = db as any;
     const applications = await Application.findAll({
       where: { ownerId: req.user.id },
       include: [
@@ -123,6 +124,11 @@ export const listReceivedApplications = async (req: any, res: Response): Promise
           model: Pet,
           as: "pet",
           attributes: ["id", "name", "species", "breed", "avatar_url"],
+        },
+        {
+          model: User,
+          as: "applicant",
+          attributes: ["id", "name", "avatar_url", "city"],
         },
       ],
       order: [["createdAt", "DESC"]],
@@ -137,7 +143,7 @@ export const listReceivedApplications = async (req: any, res: Response): Promise
 // @route   PATCH /api/adoptions/:id/review
 export const reviewApplication = async (req: any, res: Response): Promise<void> => {
   try {
-    const { adoption_applications: Application } = db as any;
+    const { adoption_applications: Application, conversations: Conversation, messages: Message, pets: Pet } = db as any;
     const { status, ownerNotes } = req.body;
 
     if (!["approved", "rejected"].includes(status)) {
@@ -147,6 +153,7 @@ export const reviewApplication = async (req: any, res: Response): Promise<void> 
 
     const application = await Application.findOne({
       where: { id: req.params.id, ownerId: req.user.id },
+      include: [{ model: Pet, as: "pet", attributes: ["id", "name", "avatar_url"] }],
     });
 
     if (!application) {
@@ -156,6 +163,39 @@ export const reviewApplication = async (req: any, res: Response): Promise<void> 
 
     application.status = status;
     if (ownerNotes) application.ownerNotes = ownerNotes;
+
+    // On approval: create (or reuse) a conversation between owner and applicant
+    let conversationId = application.conversationId || null;
+    if (status === "approved" && Conversation && Message) {
+      const { Op } = await import("sequelize");
+      let conversation = await Conversation.findOne({
+        where: {
+          [Op.or]: [
+            { initiatorId: req.user.id, initiatorType: "user", recipientId: application.applicantId, recipientType: "user" },
+            { initiatorId: application.applicantId, initiatorType: "user", recipientId: req.user.id, recipientType: "user" },
+          ],
+        },
+      });
+      if (!conversation) {
+        conversation = await Conversation.create({
+          initiatorId: req.user.id,
+          initiatorType: "user",
+          recipientId: application.applicantId,
+          recipientType: application.applicantType || "user",
+          petId: application.petId,
+        });
+      }
+      const petName = application.pet?.name || "your pet";
+      await Message.create({
+        conversationId: conversation.id,
+        senderId: req.user.id,
+        senderType: "user",
+        text: `Great news! Your ${application.type} application for ${petName} has been approved. Let's connect! furrcircle://pet/${application.petId}`,
+      });
+      conversationId = conversation.id;
+      application.conversationId = conversationId;
+    }
+
     await application.save();
 
     // Notify the applicant
@@ -179,14 +219,14 @@ export const reviewApplication = async (req: any, res: Response): Promise<void> 
       const notesBlock = ownerNotes ? `<div class="notes-box">${ownerNotes}</div>` : "";
       sendEmail(application.applicantEmail, `Your ${application.type} application update`, "adoption-application-status", {
         applicantName: application.applicantName || "there",
-        petName: application.petId,
+        petName: application.pet?.name || application.petId,
         type: application.type,
         statusBlock,
         notesBlock,
       });
     }
 
-    res.json(application);
+    res.json({ ...application.toJSON(), conversationId });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

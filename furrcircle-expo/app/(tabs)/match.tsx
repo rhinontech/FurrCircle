@@ -11,10 +11,12 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  Modal,
+  FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Heart, X, Star, ArrowLeft, ArrowRight, MapPin } from "../../src/components/ui/icons";
+import { Heart, X, Star, ArrowLeft, ArrowRight, MapPin, Inbox, Check, MessageCircle } from "../../src/components/ui/icons";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import * as Location from "expo-location";
 import { colors } from "../../src/lib/theme";
@@ -22,8 +24,8 @@ import { useTokens, useThemeStore } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { matchApi, type Coords } from "../../services/match/matchApi";
 import { petApi } from "../../services/pet/petApi";
+import { adoptionApi, type AdoptionRequest } from "../../services/adoption/adoptionApi";
 import { PrivateAxios } from "../../helpers/PrivateAxios";
-import { chatApi } from "../../services/chat/chatApi";
 import { useLocationStore } from "../../src/lib/location-store";
 import { glassSurface } from "../../src/components/ui/Glass";
 import { tabBarClearance } from "../../src/lib/tabbar";
@@ -94,6 +96,50 @@ export default function MatchScreen() {
   const [myPets, setMyPets] = useState<any[]>([]);
   const [matchModal, setMatchModal] = useState<{ visible: boolean; conversationId?: string; matchName?: string; matchAvatar?: any }>({ visible: false });
   const [applyingAdoption, setApplyingAdoption] = useState(false);
+  const appliedPetIds = useRef(new Set<string>());
+
+  // Requests inbox
+  const [requestsVisible, setRequestsVisible] = useState(false);
+  const [requestsTab, setRequestsTab] = useState<"received" | "sent">("received");
+  const [receivedRequests, setReceivedRequests] = useState<AdoptionRequest[]>([]);
+  const [sentRequests, setSentRequests] = useState<AdoptionRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+
+  const loadRequests = useCallback(async () => {
+    setRequestsLoading(true);
+    try {
+      const [received, sent] = await Promise.all([
+        adoptionApi.getReceivedApplications(),
+        adoptionApi.getMyApplications(),
+      ]);
+      setReceivedRequests(received);
+      setSentRequests(sent);
+    } catch { }
+    setRequestsLoading(false);
+  }, []);
+
+  const openRequests = () => {
+    setRequestsVisible(true);
+    loadRequests();
+  };
+
+  const handleReview = async (id: string, status: "approved" | "rejected") => {
+    setReviewingId(id);
+    try {
+      const updated = await adoptionApi.reviewApplication(id, status);
+      setReceivedRequests((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status: updated.status, conversationId: updated.conversationId } : r))
+      );
+      if (status === "approved" && updated.conversationId) {
+        setRequestsVisible(false);
+        router.push({ pathname: "/chat", params: { id: updated.conversationId } });
+      }
+    } catch {
+      Alert.alert("Error", "Failed to update request. Please try again.");
+    }
+    setReviewingId(null);
+  };
 
   const swipeAnim = useRef(new Animated.ValueXY()).current;
   const matchModalAnim = useRef(new Animated.Value(0)).current;
@@ -116,6 +162,7 @@ export default function MatchScreen() {
     loadCards(mode);
   }, [mode, coords]);
 
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = useCallback(async () => {
@@ -126,6 +173,7 @@ export default function MatchScreen() {
 
   const loadCards = async (m: Mode) => {
     setLoading(true);
+    setLoadError(false);
     setCards([]);
     setIndex(0);
     swipeAnim.setValue({ x: 0, y: 0 });
@@ -148,7 +196,9 @@ export default function MatchScreen() {
         const data = await matchApi.getOwnerCards(coords || undefined);
         setCards(data.map(mapOwnerToCard));
       }
-    } catch { }
+    } catch {
+      setLoadError(true);
+    }
     setLoading(false);
   };
 
@@ -167,8 +217,8 @@ export default function MatchScreen() {
   };
 
   const advance = useCallback(() => {
-    setIndex((i) => i + 1);
     swipeAnim.setValue({ x: 0, y: 0 });
+    setIndex((i) => i + 1);
   }, [swipeAnim]);
 
   const swipeTo = useCallback((direction: "left" | "right") => {
@@ -178,7 +228,7 @@ export default function MatchScreen() {
       useNativeDriver: true,
     }).start(() => {
       // Record swipe on backend (fire-and-forget)
-      const card = cards[index % cards.length];
+      const card = cards[index];
       if (card) {
         const swipeDir = direction === "right" ? "like" : "pass";
         const myPet = myPets[0];
@@ -217,7 +267,7 @@ export default function MatchScreen() {
 
   // Owner swipe handler
   const ownerSwipeTo = useCallback((direction: "left" | "right") => {
-    const card = cards[index % cards.length];
+    const card = cards[index];
     Animated.timing(swipeAnim, {
       toValue: { x: direction === "right" ? width * 1.5 : -width * 1.5, y: 0 },
       duration: 280,
@@ -269,7 +319,7 @@ export default function MatchScreen() {
         const isTap = Math.abs(gs.dx) < 8 && Math.abs(gs.dy) < 8;
 
         if (isTap) {
-          if (currentMode !== "Playdate" && currentMode !== "Owner" && topCardRef.current) {
+          if ((currentMode === "Adoption" || currentMode === "Breed") && topCardRef.current) {
             router.push(`/p/${topCardRef.current.id}`);
           } else if (currentMode === "Owner" && topCardRef.current?.handle) {
             router.push(`/u/${topCardRef.current.handle}`);
@@ -278,11 +328,11 @@ export default function MatchScreen() {
         }
 
         if (gs.dx > SWIPE_THRESHOLD) {
-          if (currentMode === "Playdate") st("right");
+          if (currentMode === "Playdate" || currentMode === "Breed") st("right");
           else if (currentMode === "Owner") ost("right");
           else ap("prev");
         } else if (gs.dx < -SWIPE_THRESHOLD) {
-          if (currentMode === "Playdate") st("left");
+          if (currentMode === "Playdate" || currentMode === "Breed") st("left");
           else if (currentMode === "Owner") ost("left");
           else ap("next");
         } else {
@@ -300,68 +350,50 @@ export default function MatchScreen() {
   const handleAdoptionInterest = async () => {
     const card = cards[index % cards.length];
     if (!card) return;
-    if (!card.ownerId) {
-      Alert.alert("Error", "This pet does not have an owner associated with it.");
-      return;
-    }
-    if (card.ownerId === user?.id) {
-      Alert.alert("Adoption", "You cannot adopt your own pet.");
-      return;
-    }
+    if (card.ownerId === user?.id) return;
 
     setApplyingAdoption(true);
     try {
-      const isFoster = card.isFosterOpen;
-      const appType = isFoster ? "foster" : "adoption";
-      const appMsg = isFoster ? "I'm interested in fostering this pet!" : "I'm interested in adopting this pet!";
-      const action = isFoster ? "foster" : "adopt";
-
-      // 1. Submit application
-      try {
-        await PrivateAxios.post("/adoptions/apply", { petId: card.id, type: appType, message: appMsg });
-      } catch (applyErr: any) {
-        // If the user already applied (409 Conflict), we log a warning and proceed so they can still chat
-        console.warn("Application failed or already exists:", applyErr?.response?.data || applyErr.message);
-      }
-
-      // 2. Start the chat with the owner and send the deep link message
-      const introMessage = `I am interested to ${action} this pet! furrcircle://pet/${card.id}`;
-      const conv = await chatApi.startChat(card.ownerId, introMessage);
-
-      // 3. Send the image URL if available so the owner gets a photo message
-      // if (card.img?.uri && conv?.id) {
-      //   await chatApi.sendMessage(conv.id, card.img.uri);
-      // }
-
-      // 4. Redirect to that chat screen (with the selected id to open detail view)
-      if (conv?.id) {
-        router.push({ pathname: "/chat", params: { id: conv.id } });
-      } else {
-        router.push("/chat");
-      }
-    } catch (err: any) {
-      console.error("Failed to start chat:", err);
-      const errMsg = err?.response?.data?.message || err?.message || "Please try again.";
-      Alert.alert("Error", `Failed to contact the owner: ${errMsg}`);
+      const appType = card.isFosterOpen ? "foster" : "adoption";
+      const appMsg = card.isFosterOpen ? "I'm interested in fostering this pet!" : "I'm interested in adopting this pet!";
+      await adoptionApi.submitApplication(card.id, appType, appMsg).catch(() => {});
+      appliedPetIds.current.add(String(card.id));
     } finally {
       setApplyingAdoption(false);
     }
+    // Advance to next card without leaving the Match screen
+    animatePagination("next");
   };
 
+  const isSwipeMode = mode === "Playdate" || mode === "Breed" || mode === "Owner";
   const safeCards = cards.length > 0;
-  const topCard = safeCards ? cards[index % cards.length] : null;
-  const nextCard = safeCards ? cards[(index + 1) % cards.length] : null;
+  // Swipe modes consume the deck (no wrap). Adoption is circular browse (wrap).
+  const topCard = safeCards
+    ? (isSwipeMode ? (index < cards.length ? cards[index] : null) : cards[index % cards.length])
+    : null;
+  const nextCard = topCard && safeCards
+    ? (isSwipeMode ? (cards[index + 1] ?? null) : cards[(index + 1) % cards.length])
+    : null;
   const prevCard = safeCards ? cards[(index - 1 + cards.length) % cards.length] : null;
-  const bgCard = (mode === "Playdate" || mode === "Owner") ? nextCard : (dragDir === "next" ? nextCard : prevCard);
+  const bgCard = isSwipeMode ? nextCard : (dragDir === "next" ? nextCard : prevCard);
 
   topCardRef.current = topCard;
-
-  const isSwipeMode = mode === "Playdate" || mode === "Owner";
   const myPet = myPets[0];
   const breedPet = myPets.find((p: any) => p.isBreedingOpen);
 
   // Empty / loading states
   const renderEmpty = () => {
+    if (loadError) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyTitle, { color: tk.text }]}>Something went wrong</Text>
+          <Text style={[styles.emptySubtitle, { color: tk.textMuted }]}>Couldn't load cards. Check your connection and try again.</Text>
+          <TouchableOpacity style={[styles.emptyBtn, { backgroundColor: colors.primary }]} onPress={() => loadCards(mode)}>
+            <Text style={styles.emptyBtnText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
     if (mode === "Breed" && !breedPet) {
       return (
         <View style={styles.emptyState}>
@@ -405,12 +437,10 @@ export default function MatchScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: tk.text }]}>Match</Text>
-        {/* <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          {coords && <MapPin size={14} color={colors.primary} />}
-          <TouchableOpacity onPress={() => router.push("/discover")}>
-            <Text style={styles.filtersLink}>Filters</Text>
-          </TouchableOpacity>
-        </View> */}
+        <TouchableOpacity onPress={openRequests} style={[styles.inboxBtn, glassSurface(tk)]} activeOpacity={0.75}>
+          <Inbox size={20} color={tk.text} strokeWidth={2} />
+          <Text style={[styles.inboxBtnText, { color: tk.text }]}>Requests</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Mode pills */}
@@ -531,28 +561,32 @@ export default function MatchScreen() {
             </View>
           )}
 
-          {mode === "Adoption" && (
-            <View style={styles.actionRow}>
-              <TouchableOpacity onPress={() => animatePagination("prev")} style={[styles.actionBtn, styles.actionBtnSm, glassSurface(tk)]} activeOpacity={0.8}>
-                <ArrowLeft size={26} color={tk.text} strokeWidth={2.4} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleAdoptionInterest}
-                disabled={applyingAdoption}
-                style={[styles.actionBtn, styles.adoptBtn, { backgroundColor: colors.primary }]}
-                activeOpacity={0.8}
-              >
-                {applyingAdoption ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.adoptBtnText}>I'm Interested 🐾</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => animatePagination("next")} style={[styles.actionBtn, styles.actionBtnSm, glassSurface(tk)]} activeOpacity={0.8}>
-                <ArrowRight size={26} color={tk.text} strokeWidth={2.4} />
-              </TouchableOpacity>
-            </View>
-          )}
+          {mode === "Adoption" && (() => {
+            const adoptCard = cards[index % cards.length];
+            const alreadyApplied = adoptCard ? appliedPetIds.current.has(String(adoptCard.id)) : false;
+            return (
+              <View style={styles.actionRow}>
+                <TouchableOpacity onPress={() => animatePagination("prev")} style={[styles.actionBtn, styles.actionBtnSm, glassSurface(tk)]} activeOpacity={0.8}>
+                  <ArrowLeft size={26} color={tk.text} strokeWidth={2.4} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={alreadyApplied ? () => router.push("/chat") : handleAdoptionInterest}
+                  disabled={applyingAdoption}
+                  style={[styles.actionBtn, styles.adoptBtn, { backgroundColor: alreadyApplied ? colors.success : colors.primary }]}
+                  activeOpacity={0.8}
+                >
+                  {applyingAdoption ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.adoptBtnText}>{alreadyApplied ? "Message Owner 💬" : "I'm Interested 🐾"}</Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => animatePagination("next")} style={[styles.actionBtn, styles.actionBtnSm, glassSurface(tk)]} activeOpacity={0.8}>
+                  <ArrowRight size={26} color={tk.text} strokeWidth={2.4} />
+                </TouchableOpacity>
+              </View>
+            );
+          })()}
 
           {mode === "Breed" && (
             <View style={styles.actionRow}>
@@ -566,6 +600,150 @@ export default function MatchScreen() {
           )}
         </>
       )}
+
+      {/* Adoption Requests Modal */}
+      <Modal visible={requestsVisible} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setRequestsVisible(false)}>
+        <View style={[styles.reqModal, { backgroundColor: tk.bg, paddingTop: insets.top }]}>
+          {/* Modal header */}
+          <View style={styles.reqHeader}>
+            <Text style={[styles.reqTitle, { color: tk.text }]}>Requests</Text>
+            <TouchableOpacity onPress={() => setRequestsVisible(false)} style={[styles.reqCloseBtn, glassSurface(tk)]}>
+              <X size={18} color={tk.text} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Received / Sent tabs */}
+          <View style={[styles.reqTabs, glassSurface(tk)]}>
+            {(["received", "sent"] as const).map((t) => (
+              <TouchableOpacity
+                key={t}
+                onPress={() => setRequestsTab(t)}
+                style={[styles.reqTab, requestsTab === t && { backgroundColor: tk.text }]}
+              >
+                <Text style={[styles.reqTabText, { color: requestsTab === t ? tk.bg : tk.textMuted }]}>
+                  {t === "received" ? "Received" : "Sent"}
+                  {t === "received" && receivedRequests.filter((r) => r.status === "pending").length > 0
+                    ? ` (${receivedRequests.filter((r) => r.status === "pending").length})`
+                    : ""}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {requestsLoading ? (
+            <View style={styles.reqLoading}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : (
+            <FlatList
+              data={requestsTab === "received" ? receivedRequests : sentRequests}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.reqList}
+              ListEmptyComponent={
+                <View style={styles.reqEmpty}>
+                  <Text style={[styles.reqEmptyText, { color: tk.textMuted }]}>
+                    {requestsTab === "received" ? "No requests received yet." : "You haven't sent any requests yet."}
+                  </Text>
+                </View>
+              }
+              renderItem={({ item }) => {
+                const isReceived = requestsTab === "received";
+                const petImg = item.pet?.avatar_url ? { uri: item.pet.avatar_url } : null;
+                const applicantImg = item.applicant?.avatar_url ? { uri: item.applicant.avatar_url } : null;
+                const statusColor = item.status === "approved" ? colors.success : item.status === "rejected" ? colors.coral : colors.sunshine;
+                return (
+                  <View style={[styles.reqCard, glassSurface(tk)]}>
+                    {/* Pet image */}
+                    <View style={styles.reqCardImgWrap}>
+                      {petImg ? (
+                        <Image source={petImg} style={styles.reqCardImg} />
+                      ) : (
+                        <View style={[styles.reqCardImg, { backgroundColor: tk.glassBorder, alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={{ fontSize: 28 }}>🐾</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.reqCardBody}>
+                      <View style={styles.reqCardTop}>
+                        <Text style={[styles.reqCardPetName, { color: tk.text }]}>{item.pet?.name || "Pet"}</Text>
+                        <View style={[styles.reqStatusBadge, { backgroundColor: statusColor + "22", borderColor: statusColor }]}>
+                          <Text style={[styles.reqStatusText, { color: statusColor }]}>
+                            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <Text style={[styles.reqCardMeta, { color: tk.textMuted }]}>
+                        {item.type.charAt(0).toUpperCase() + item.type.slice(1)} · {isReceived
+                          ? `from ${item.applicant?.name || item.applicantName || "Someone"}`
+                          : `to ${item.pet?.owner?.name || "Owner"}`}
+                      </Text>
+
+                      {/* Applicant avatar row (received view) */}
+                      {isReceived && applicantImg && (
+                        <View style={styles.reqApplicantRow}>
+                          <Image source={applicantImg} style={styles.reqApplicantAvatar} />
+                          <Text style={[styles.reqApplicantCity, { color: tk.textMuted }]}>
+                            {item.applicant?.city || ""}
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Action buttons for received + pending */}
+                      {isReceived && item.status === "pending" && (
+                        <View style={styles.reqActions}>
+                          <TouchableOpacity
+                            onPress={() => handleReview(item.id, "rejected")}
+                            disabled={reviewingId === item.id}
+                            style={[styles.reqActionBtn, { borderColor: colors.coral }]}
+                          >
+                            {reviewingId === item.id ? (
+                              <ActivityIndicator size="small" color={colors.coral} />
+                            ) : (
+                              <Text style={[styles.reqActionBtnText, { color: colors.coral }]}>Decline</Text>
+                            )}
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleReview(item.id, "approved")}
+                            disabled={reviewingId === item.id}
+                            style={[styles.reqActionBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                          >
+                            {reviewingId === item.id ? (
+                              <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                              <Text style={[styles.reqActionBtnText, { color: "#fff" }]}>Accept & Chat</Text>
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      )}
+
+                      {/* Open Chat button — all approved requests (both tabs) */}
+                      {item.status === "approved" && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setRequestsVisible(false);
+                            if (item.conversationId) {
+                              router.push({ pathname: "/chat", params: { id: item.conversationId } });
+                            } else {
+                              router.push("/chat");
+                            }
+                          }}
+                          style={[styles.reqOpenChatBtn, { backgroundColor: colors.primary }]}
+                          activeOpacity={0.85}
+                        >
+                          <MessageCircle size={15} color="#fff" strokeWidth={2.5} />
+                          <Text style={styles.reqOpenChatBtnText}>Open Chat</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                );
+              }}
+            />
+          )}
+        </View>
+      </Modal>
 
       {/* Match Modal */}
       {matchModal.visible && (
@@ -704,6 +882,85 @@ const styles = StyleSheet.create({
   emptySubtitle: { fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center", lineHeight: 22 },
   emptyBtn: { marginTop: 8, borderRadius: 24, paddingHorizontal: 28, paddingVertical: 12 },
   emptyBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 14, color: "#fff" },
+
+  // Header inbox button
+  inboxBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  inboxBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
+
+  // Requests Modal
+  reqModal: { flex: 1, paddingTop: 20 },
+  reqHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  reqTitle: { fontFamily: "Poppins_700Bold", fontSize: 24 },
+  reqCloseBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  reqTabs: {
+    flexDirection: "row",
+    marginHorizontal: 20,
+    borderRadius: 24,
+    padding: 4,
+    marginBottom: 16,
+  },
+  reqTab: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 20 },
+  reqTabText: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
+  reqLoading: { flex: 1, alignItems: "center", justifyContent: "center" },
+  reqList: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
+  reqEmpty: { alignItems: "center", paddingTop: 60 },
+  reqEmptyText: { fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center" },
+  reqCard: {
+    flexDirection: "row",
+    borderRadius: 20,
+    padding: 14,
+    gap: 12,
+  },
+  reqCardImgWrap: { width: 72, height: 72, borderRadius: 16, overflow: "hidden" },
+  reqCardImg: { width: 72, height: 72 },
+  reqCardBody: { flex: 1, gap: 4 },
+  reqCardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  reqCardPetName: { fontFamily: "Poppins_700Bold", fontSize: 15 },
+  reqStatusBadge: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  reqStatusText: { fontFamily: "Poppins_600SemiBold", fontSize: 11 },
+  reqCardMeta: { fontFamily: "Inter_400Regular", fontSize: 12 },
+  reqApplicantRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
+  reqApplicantAvatar: { width: 20, height: 20, borderRadius: 10 },
+  reqApplicantCity: { fontFamily: "Inter_400Regular", fontSize: 11 },
+  reqActions: { flexDirection: "row", gap: 8, marginTop: 8 },
+  reqActionBtn: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 8,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  reqActionBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
+  reqChatBtn: { marginTop: 6 },
+  reqChatBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
+  reqOpenChatBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 8,
+    borderRadius: 14,
+    paddingVertical: 9,
+  },
+  reqOpenChatBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 13, color: "#fff" },
 
   // Match Modal
   matchOverlay: {

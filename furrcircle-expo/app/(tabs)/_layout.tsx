@@ -54,7 +54,10 @@ export default function TabsLayout() {
         <Tabs
           screenOptions={{
             headerShown: false,
-            sceneStyle: { backgroundColor: "transparent" },
+            // Opaque scene on desktop/web: react-native-screens does not reliably
+            // hide inactive tab scenes on web, so a transparent scene lets every
+            // visited tab bleed through. An opaque bg keeps only the active tab visible.
+            sceneStyle: { backgroundColor: tk.bg },
             tabBarStyle: { display: "none" },
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: tk.textMuted,

@@ -104,7 +104,7 @@ export const getAllUsers = async (_req: Request, res: Response): Promise<void> =
   try {
     const { users: User } = db as any;
     const users = await User.findAll({
-      attributes: { exclude: ['password'] },
+      attributes: { exclude: ['password', 'otpCode', 'otpExpiry', 'resetToken', 'resetTokenExpiry'] },
       order: [['createdAt', 'DESC']]
     });
     res.json(users);
@@ -653,6 +653,63 @@ export const getAdminStats = async (_req: Request, res: Response): Promise<void>
       totalContactLeads,
       newContactLeads,
     });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+// Reports / Moderation
+// ─────────────────────────────────────────────
+
+// @desc    Get all user reports (with reporter + reported user)
+// @route   GET /api/admin/reports
+export const getAllReports = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const { reports: Report, users: User } = db as any;
+    const reports = await Report.findAll({
+      include: [
+        { model: User, as: "reporter", attributes: ["id", "name", "email", "username", "avatar_url"] },
+        { model: User, as: "reported", attributes: ["id", "name", "email", "username", "avatar_url", "role"] },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+    res.json(reports);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update a report's moderation status
+// @route   PATCH /api/admin/reports/:id/status
+export const updateReportStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { reports: Report } = db as any;
+    const { status } = req.body as { status?: string };
+    const allowed = ["pending", "resolved", "dismissed"];
+    if (!status || !allowed.includes(status)) {
+      res.status(400).json({ message: "Invalid status. Use pending, resolved or dismissed." });
+      return;
+    }
+    const report = await Report.findByPk(req.params.id);
+    if (!report) { res.status(404).json({ message: "Report not found" }); return; }
+    report.status = status;
+    await report.save();
+    res.json(report);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a report
+// @route   DELETE /api/admin/reports/:id
+export const deleteReport = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { reports: Report } = db as any;
+    const report = await Report.findByPk(req.params.id);
+    if (!report) { res.status(404).json({ message: "Report not found" }); return; }
+    await report.destroy();
+    res.json({ message: "Report removed successfully" });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

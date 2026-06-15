@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts, Poppins_700Bold, Poppins_600SemiBold, Poppins_500Medium } from "@expo-google-fonts/poppins";
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from "@expo-google-fonts/inter";
+import { Fredoka_400Regular, Fredoka_600SemiBold, Fredoka_700Bold } from "@expo-google-fonts/fredoka";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { View, Platform } from "react-native";
@@ -12,6 +13,7 @@ import { useAuthStore } from "../src/lib/auth-store";
 import { useBreakpoint } from "../src/lib/breakpoints";
 import { SideNav } from "../src/components/SideNav";
 import { RightRail } from "../src/components/RightRail";
+import { AmbientBackground } from "../src/components/ui/AmbientBackground";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import { notificationApi } from "../services/notification/notificationApi";
@@ -111,6 +113,9 @@ export default function RootLayout() {
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
+    Fredoka_400Regular,
+    Fredoka_600SemiBold,
+    Fredoka_700Bold,
   });
 
   const load = useThemeStore((s) => s.load);
@@ -361,18 +366,30 @@ export default function RootLayout() {
         <StatusBar style={dark ? "light" : "dark"} />
         <LocationSync />
         {showSideNav ? (
-          <View style={{ flex: 1, flexDirection: "row" }}>
-            <SideNav />
+          // Desktop / tablet: ambient backdrop + a centred 3-column cluster so the
+          // sidebar sits flush against the feed (no left gap) with balanced margins.
+          <View style={{ flex: 1, backgroundColor: tokens.bg }}>
+            <AmbientBackground />
             <View style={{ flex: 1, alignItems: "center" }}>
-              <View style={{ flex: 1, width: "100%", maxWidth: 680 }}>
-                {stackScreens}
+              <View
+                style={{
+                  flex: 1,
+                  width: "100%",
+                  maxWidth: showRightRail ? 1260 : 960,
+                  flexDirection: "row",
+                }}
+              >
+                <SideNav />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  {stackScreens}
+                </View>
+                {showRightRail && (
+                  <View style={{ width: 300, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: tokens.border }}>
+                    <RightRail />
+                  </View>
+                )}
               </View>
             </View>
-            {showRightRail && (
-              <View style={{ width: 300, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: tokens.border }}>
-                <RightRail />
-              </View>
-            )}
           </View>
         ) : (
           stackScreens

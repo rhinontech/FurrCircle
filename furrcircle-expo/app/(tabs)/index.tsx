@@ -28,6 +28,7 @@ import { ShareSheet } from "../../src/components/ShareSheet";
 import { StoryViewer, type Story, type StoryGroup } from "../../src/components/StoryViewer";
 import { StoryEditor } from "../../src/components/StoryEditor";
 import { Video, ResizeMode, Audio } from "expo-av";
+import { useCameraStore } from "../../src/lib/camera-store";
 import { useIsFocused } from "@react-navigation/native";
 import Svg, { Path, Circle } from "react-native-svg";
 import { useNotificationStore } from "../../src/lib/notification-store";
@@ -38,6 +39,7 @@ import { GlassCard, glassSurface } from "../../src/components/ui/Glass";
 import { tabBarClearance } from "../../src/lib/tabbar";
 
 export default function FeedScreen() {
+  const router = useRouter();
   const { refresh } = useLocalSearchParams<{ refresh?: string }>();
   const insets = useSafeAreaInsets();
   const [composeOpen, setComposeOpen] = useState(false);
@@ -46,6 +48,17 @@ export default function FeedScreen() {
   const tk = useTokens();
   const [feedVideoMuted, setFeedVideoMuted] = useState(true);
   const [activePostId, setActivePostId] = useState<string | null>(null);
+
+  const { capturedUri, capturedType, setCapturedMedia } = useCameraStore();
+
+  useEffect(() => {
+    if (capturedUri) {
+      setPickedImageUri(capturedUri);
+      setPickedMediaType(capturedType || "image");
+      setEditorVisible(true);
+      setCapturedMedia(null, null);
+    }
+  }, [capturedUri]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems && viewableItems.length > 0) {
@@ -264,7 +277,12 @@ export default function FeedScreen() {
       [
         {
           text: "Open Camera",
-          onPress: () => handleAddStorySource("camera"),
+          onPress: () => {
+            router.push({
+              pathname: "/camera",
+              params: { origin: "story" },
+            });
+          },
         },
         {
           text: "Choose from Gallery",
@@ -499,9 +517,7 @@ function FeedHeader() {
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
 
-  const logoSource = dark
-    ? require("../../src/assets/furrcircle_dark_logo.png")
-    : require("../../src/assets/furrcircle_light_logo.png");
+  const logoSource = require("../../src/assets/furrcircle_icon.png");
 
   const user = useAuthStore(s => s.user);
   const setSession = useAuthStore(s => s.setSession);
@@ -548,17 +564,28 @@ function FeedHeader() {
 
   return (
     <View style={styles.header}>
-      <View>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <Image
           source={logoSource}
           style={styles.logoImg}
           resizeMode="contain"
         />
-        <TouchableOpacity onPress={() => setLocationModalVisible(true)} style={{ flexDirection: 'row', alignItems: 'center', marginTop: -4, marginLeft: 2 }}>
-          <MapPin size={12} color={tk.textMuted} style={{ marginRight: 2 }} />
-          <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted }}>{locationCity || user?.city || "Select Location"}</Text>
-          <ChevronDown size={12} color={tk.textMuted} style={{ marginLeft: 2 }} />
-        </TouchableOpacity>
+        <View style={{ justifyContent: "center" }}>
+          <Text style={{ fontFamily: "Fredoka_700Bold", fontSize: 20, lineHeight: 22 }}>
+            <Text style={{ color: dark ? "#FFFFFF" : "#0D3B8E" }}>Furr</Text>
+            <Text style={{ color: "#398EE4" }}>Circle</Text>
+          </Text>
+          <TouchableOpacity
+            onPress={() => setLocationModalVisible(true)}
+            style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}
+          >
+            {/* <MapPin size={12} color={tk.textMuted} style={{ marginRight: 2 }} /> */}
+            <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted }}>
+              {locationCity || user?.city || "Select Location"}
+            </Text>
+            <ChevronDown size={12} color={tk.textMuted} style={{ marginLeft: 2 }} />
+          </TouchableOpacity>
+        </View>
       </View>
       <View style={styles.headerActions}>
         <TouchableOpacity onPress={() => router.push("/chat")} style={[styles.iconBtn, glassSurface(tk)]}>
@@ -1099,7 +1126,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
             />
 
             <View
-              style={[styles.commentSheet, {paddingBottom: keyboardVisible ? 0 : insets.bottom, backgroundColor: tk.glassStrong, borderWidth: 1, borderBottomWidth: 0, borderColor: tk.glassBorder }]}
+              style={[styles.commentSheet, { paddingBottom: keyboardVisible ? 0 : insets.bottom, backgroundColor: tk.glassStrong, borderWidth: 1, borderBottomWidth: 0, borderColor: tk.glassBorder }]}
             >
               {/* Handle */}
               <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted, marginTop: 20 }]} />
@@ -1420,7 +1447,7 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
   };
 
   const content = step === 'options' ? (
-    <View style={[isTablet ? styles.dialog : styles.sheet, {paddingBottom: 28 + insets.bottom, backgroundColor: tk.glassStrong, borderWidth: 1, borderColor: tk.glassBorder }, !isTablet && { borderBottomWidth: 0 }]}>
+    <View style={[isTablet ? styles.dialog : styles.sheet, { paddingBottom: 28 + insets.bottom, backgroundColor: tk.glassStrong, borderWidth: 1, borderColor: tk.glassBorder }, !isTablet && { borderBottomWidth: 0 }]}>
       {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <Text style={[styles.sheetTitle, { color: tk.text, marginBottom: 0 }]}>Create</Text>
@@ -1440,7 +1467,7 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
       ))}
     </View>
   ) : (
-    <View style={[isTablet ? styles.dialog : styles.sheet, {paddingBottom: 28 + insets.bottom, backgroundColor: tk.glassStrong, borderWidth: 1, borderColor: tk.glassBorder }, !isTablet && { borderBottomWidth: 0 }]}>
+    <View style={[isTablet ? styles.dialog : styles.sheet, { paddingBottom: 28 + insets.bottom, backgroundColor: tk.glassStrong, borderWidth: 1, borderColor: tk.glassBorder }, !isTablet && { borderBottomWidth: 0 }]}>
       {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}>
         <TouchableOpacity
@@ -1498,7 +1525,7 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 0, paddingTop: 10 },
-  logoImg: { width: 120, height: 50, alignSelf: "flex-start" },
+  logoImg: { width: 42, height: 42 },
   headerActions: { flexDirection: "row", gap: 8 },
   iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   notifDot: { position: "absolute", top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.coral },
