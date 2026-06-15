@@ -41,18 +41,38 @@ export const updateProfile = async (data: any) => {
 };
 
 export const uploadImage = async (uri: string, folder: string = 'profiles') => {
-    const formData = new FormData();
-    const filename = uri.split('/').pop() || 'upload.jpg';
+    const originalFilename = uri.split('/').pop() || 'upload.jpg';
+    const originalMatch = /\.(\w+)$/.exec(originalFilename);
+    const originalExt = originalMatch ? originalMatch[1].toLowerCase() : 'jpg';
+    
+    const isVideo = ['mp4', 'm4v', 'mov', '3gp', 'avi'].includes(originalExt);
+    const isGif = originalExt === 'gif';
+
+    let uploadUri = uri;
+    if (!isVideo && !isGif) {
+        try {
+            const ImageManipulator = require('expo-image-manipulator');
+            const result = await ImageManipulator.manipulateAsync(
+                uri,
+                [{ resize: { width: 1080 } }],
+                { compress: 0.75, format: ImageManipulator.SaveFormat.JPEG }
+            );
+            uploadUri = result.uri;
+        } catch (error) {
+            console.warn("Failed to compress image in uploadImage:", error);
+        }
+    }
+
+    const filename = uploadUri.split('/').pop() || 'upload.jpg';
     const match = /\.(\w+)$/.exec(filename);
     const ext = match ? match[1].toLowerCase() : 'jpg';
-    
-    const isVideo = ['mp4', 'm4v', 'mov', '3gp', 'avi'].includes(ext);
     const type = isVideo 
-        ? `video/${ext === 'mov' ? 'quicktime' : ext}`
+        ? `video/${originalExt === 'mov' ? 'quicktime' : originalExt}`
         : `image/${ext === 'png' ? 'png' : ext === 'gif' ? 'gif' : 'jpeg'}`;
-    
+
+    const formData = new FormData();
     formData.append('image', {
-        uri,
+        uri: uploadUri,
         name: filename,
         type,
     } as any);
