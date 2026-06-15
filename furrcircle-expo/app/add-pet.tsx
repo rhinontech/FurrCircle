@@ -1,6 +1,6 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, Image, KeyboardAvoidingView, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, Image, KeyboardAvoidingView, ActivityIndicator, Keyboard } from "react-native";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Camera, LocateFixed } from "../src/components/ui/icons";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
@@ -35,6 +35,21 @@ export default function AddPetScreen() {
   const [saving, setSaving] = useState(false);
   const [locating, setLocating] = useState(false);
   const [isLocationModalVisible, setLocationModalVisible] = useState(false);
+   const [keyboardVisible, setKeyboardVisible] = useState(false);
+    
+      useEffect(() => {
+        const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+          setKeyboardVisible(true);
+        });
+        const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+          setKeyboardVisible(false);
+        });
+    
+        return () => {
+          showSubscription.remove();
+          hideSubscription.remove();
+        };
+      }, []);
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images", quality: 0.8 });
@@ -132,7 +147,7 @@ export default function AddPetScreen() {
   return (
     <PageContainer>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" :  (keyboardVisible ? "height" : undefined)}
         style={{ flex: 1 }}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>

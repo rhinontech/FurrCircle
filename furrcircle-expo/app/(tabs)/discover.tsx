@@ -102,10 +102,10 @@ export default function DiscoverScreen() {
             <Text style={[styles.subtitle, { color: tk.textMuted }]}>Vets, pets & places near you</Text>
           </View>
 
-          <View style={[styles.searchBar, glassSurface(tk)]}>
+          {/* <View style={[styles.searchBar, glassSurface(tk)]}>
             <Search size={20} color={tk.textMuted} />
             <TextInput placeholder="Search vets, breeds, places…" placeholderTextColor={tk.textMuted} style={[styles.searchInput, { color: tk.text }]} />
-          </View>
+          </View> */}
 
           <View style={styles.sectionRow}>
             <Text style={[styles.sectionTitle, { color: tk.text }]}>Nearby vets</Text>
@@ -258,9 +258,9 @@ const styles = StyleSheet.create({
   filterBtnActive: { backgroundColor: colors.foreground },
   filterBtnText: { fontFamily: "Poppins_700Bold", fontSize: 12, color: colors.foreground + "99" },
   filterBtnTextActive: { color: colors.white },
-  petsGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, gap: 12, marginTop: 12 },
+  petsGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", paddingHorizontal: 20, rowGap: 12, marginTop: 12 },
   petCard: {
-    width: "47%", borderRadius: 24, overflow: "hidden",
+    width: "48%", borderRadius: 24, overflow: "hidden",
   },
   petImageBg: { height: 128, alignItems: "center", justifyContent: "center", position: "relative" },
   petImage: { width: "80%", height: "80%" },
@@ -273,6 +273,6 @@ const styles = StyleSheet.create({
   petBreed: { fontSize: 12, color: colors.foreground + "88", fontFamily: "Inter_400Regular" },
   petDistRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 4 },
   petDist: { fontSize: 11, color: colors.foreground + "88", fontFamily: "Inter_400Regular" },
-  emptyState: { flex: 1, padding: 24, alignItems: "center" },
+  emptyState: { width: "100%", padding: 24, alignItems: "center" },
   emptyText: { fontSize: 14, color: colors.foreground + "88", fontFamily: "Inter_400Regular" },
 });

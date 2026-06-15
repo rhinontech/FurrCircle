@@ -2,6 +2,7 @@ import {
   View, Text, Image, TextInput, TouchableOpacity,
   StyleSheet, Dimensions, KeyboardAvoidingView, Platform,
   ScrollView, ActivityIndicator, Alert,
+  Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -45,6 +46,21 @@ export default function SignupScreen() {
   const [usernameCheck, setUsernameCheck] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
   const [usernameError, setUsernameError] = useState("");
   const checkTimeoutRef = useRef<any>(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  
+    useEffect(() => {
+      const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+        setKeyboardVisible(true);
+      });
+      const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+        setKeyboardVisible(false);
+      });
+  
+      return () => {
+        showSubscription.remove();
+        hideSubscription.remove();
+      };
+    }, []);
 
   // Debounced live username checking
   useEffect(() => {
@@ -169,7 +185,7 @@ export default function SignupScreen() {
 
   return (
     <PageContainer>
-      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
           <View style={[styles.hero, { paddingTop: insets.top, height: height * 0.28 + insets.top }]}>
