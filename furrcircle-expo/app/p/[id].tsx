@@ -115,7 +115,7 @@ export default function PetPublicProfile() {
   const petBio = pet.description || pet.history || "No bio available.";
   const petAge = pet.age ? `${pet.age} y` : "?";
   const petWeight = pet.weight ? `${pet.weight} kg` : "?";
-  const petLocation = pet.city || pet.owner?.city || "Unknown";
+  const petLocation = pet.owner?.city || "Unknown";
   const traits = Array.isArray(pet.personality) ? pet.personality : [];
 
   return (

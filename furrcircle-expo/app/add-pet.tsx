@@ -1,6 +1,6 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, Image, KeyboardAvoidingView, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, Image, KeyboardAvoidingView, ActivityIndicator, Keyboard } from "react-native";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Camera, LocateFixed } from "../src/components/ui/icons";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
@@ -35,6 +35,21 @@ export default function AddPetScreen() {
   const [saving, setSaving] = useState(false);
   const [locating, setLocating] = useState(false);
   const [isLocationModalVisible, setLocationModalVisible] = useState(false);
+   const [keyboardVisible, setKeyboardVisible] = useState(false);
+    
+      useEffect(() => {
+        const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+          setKeyboardVisible(true);
+        });
+        const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+          setKeyboardVisible(false);
+        });
+    
+        return () => {
+          showSubscription.remove();
+          hideSubscription.remove();
+        };
+      }, []);
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images", quality: 0.8 });
@@ -132,7 +147,7 @@ export default function AddPetScreen() {
   return (
     <PageContainer>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" :  (keyboardVisible ? "height" : undefined)}
         style={{ flex: 1 }}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
@@ -176,7 +191,7 @@ export default function AddPetScreen() {
             <Text style={[styles.label, { color: tk.textMuted }]}>Weight</Text>
             <TextInput value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder="e.g. 12" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
 
-            <Text style={[styles.label, { color: tk.textMuted }]}>City</Text>
+            {/* <Text style={[styles.label, { color: tk.textMuted }]}>City</Text>
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TouchableOpacity
                 style={[styles.input, { flex: 1, backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, justifyContent: 'center' }]}
@@ -190,7 +205,7 @@ export default function AddPetScreen() {
               <TouchableOpacity onPress={handleAutoLocate} disabled={locating} style={[styles.input, { width: 52, paddingHorizontal: 0, alignItems: "center", justifyContent: "center", backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border }]}>
                 {locating ? <ActivityIndicator size="small" color={colors.primary} /> : <LocateFixed size={20} color={colors.primary} />}
               </TouchableOpacity>
-            </View>
+            </View> */}
 
             <Text style={[styles.label, { color: tk.textMuted }]}>Gender</Text>
             <View style={styles.toggle}>

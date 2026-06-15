@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Search, Heart, MapPin, Star, Stethoscope, Phone, HandHeart, Home } from "../../src/components/ui/icons";
+import { Search, Heart, MapPin, Star, Stethoscope, Phone, HandHeart, Home, Calendar } from "../../src/components/ui/icons";
 import { useState, useEffect } from "react";
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";
@@ -98,14 +98,19 @@ export default function DiscoverScreen() {
           }
         >
           <View style={styles.headerSection}>
-            <Text style={[styles.title, { color: tk.text }]}>Discover</Text>
-            <Text style={[styles.subtitle, { color: tk.textMuted }]}>Vets, pets & places near you</Text>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={[styles.title, { color: tk.text }]}>Discover</Text>
+              <Text style={[styles.subtitle, { color: tk.textMuted }]}>Vets, pets & places near you</Text>
+            </View>
+            <TouchableOpacity onPress={() => router.push("/events")} style={[styles.eventBtn, glassSurface(tk)]} activeOpacity={0.85}>
+              <Calendar size={20} color={tk.text} />
+            </TouchableOpacity>
           </View>
 
-          <View style={[styles.searchBar, glassSurface(tk)]}>
+          {/* <View style={[styles.searchBar, glassSurface(tk)]}>
             <Search size={20} color={tk.textMuted} />
             <TextInput placeholder="Search vets, breeds, places…" placeholderTextColor={tk.textMuted} style={[styles.searchInput, { color: tk.text }]} />
-          </View>
+          </View> */}
 
           <View style={styles.sectionRow}>
             <Text style={[styles.sectionTitle, { color: tk.text }]}>Nearby vets</Text>
@@ -130,35 +135,42 @@ export default function DiscoverScreen() {
                 </View>
               </TouchableOpacity>
             ) : (
-              nearbyVets.slice(0, 4).map((v) => (
-                <TouchableOpacity key={v.id} onPress={() => router.push(`/vets/${v.id}`)} style={[styles.vetRow, glassSurface(tk)]} activeOpacity={0.8}>
-                  <View style={[styles.vetIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
-                    <Image source={require("../../src/assets/doodle-vet.png")} style={styles.vetImg} resizeMode="contain" />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <View style={styles.vetNameRow}>
-                      <Text style={[styles.vetName, { color: tk.text }]} numberOfLines={1}>{v.name}</Text>
+              nearbyVets.length === 0 ? (
+                <View style={[styles.emptyVetsContainer, glassSurface(tk)]}>
+                  <Stethoscope size={24} color={tk.textMuted} />
+                  <Text style={[styles.emptyVetsText, { color: tk.textMuted }]}>No veterinarians found nearby in {locationCity}</Text>
+                </View>
+              ) : (
+                nearbyVets.slice(0, 4).map((v) => (
+                  <TouchableOpacity key={v.id} onPress={() => router.push(`/vets/${v.id}`)} style={[styles.vetRow, glassSurface(tk)]} activeOpacity={0.8}>
+                    <View style={[styles.vetIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
+                      <Image source={require("../../src/assets/doodle-vet.png")} style={styles.vetImg} resizeMode="contain" />
                     </View>
-                    <View style={styles.vetSpecRow}>
-                      <Stethoscope size={12} color={tk.textMuted} />
-                      <Text style={[styles.vetSpec, { color: tk.textMuted }]}>{v.address ? v.address.split(',')[0] : "General"}</Text>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <View style={styles.vetNameRow}>
+                        <Text style={[styles.vetName, { color: tk.text }]} numberOfLines={1}>{v.name}</Text>
+                      </View>
+                      <View style={styles.vetSpecRow}>
+                        <Stethoscope size={12} color={tk.textMuted} />
+                        <Text style={[styles.vetSpec, { color: tk.textMuted }]}>{v.address ? v.address.split(',')[0] : "General"}</Text>
+                      </View>
+                      <View style={styles.vetMeta}>
+                        <Star size={12} color={colors.sunshine} fill={colors.sunshine} />
+                        <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{v.rating || "N/A"}</Text>
+                        {locationCity && (
+                          <>
+                            <MapPin size={12} color={tk.textMuted} />
+                            <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{locationCity}</Text>
+                          </>
+                        )}
+                      </View>
                     </View>
-                    <View style={styles.vetMeta}>
-                      <Star size={12} color={colors.sunshine} fill={colors.sunshine} />
-                      <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{v.rating || "N/A"}</Text>
-                      {locationCity && (
-                        <>
-                          <MapPin size={12} color={tk.textMuted} />
-                          <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{locationCity}</Text>
-                        </>
-                      )}
+                    <View style={styles.callBtn}>
+                      <Phone size={16} color={colors.white} />
                     </View>
-                  </View>
-                  <View style={styles.callBtn}>
-                    <Phone size={16} color={colors.white} />
-                  </View>
-                </TouchableOpacity>
-              ))
+                  </TouchableOpacity>
+                ))
+              )
             )}
           </View>
 
@@ -210,8 +222,9 @@ export default function DiscoverScreen() {
               </TouchableOpacity>
             ))}
             {pets.length === 0 && (
-              <View style={styles.emptyState}>
-                <Text style={[styles.emptyText, { color: tk.textMuted }]}>No pets match this filter yet.</Text>
+              <View style={[styles.emptyPetsContainer, glassSurface(tk)]}>
+                <Heart size={24} color={tk.textMuted} />
+                <Text style={[styles.emptyPetsText, { color: tk.textMuted }]}>No pets match this filter near you yet.</Text>
               </View>
             )}
           </View>
@@ -223,7 +236,8 @@ export default function DiscoverScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerSection: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 8 },
+  headerSection: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 8, paddingBottom: 8 },
+  eventBtn: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
   title: { fontFamily: "Poppins_700Bold", fontSize: 28 },
   subtitle: { fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 2 },
   searchBar: {
@@ -258,9 +272,9 @@ const styles = StyleSheet.create({
   filterBtnActive: { backgroundColor: colors.foreground },
   filterBtnText: { fontFamily: "Poppins_700Bold", fontSize: 12, color: colors.foreground + "99" },
   filterBtnTextActive: { color: colors.white },
-  petsGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, gap: 12, marginTop: 12 },
+  petsGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", paddingHorizontal: 20, rowGap: 12, marginTop: 12 },
   petCard: {
-    width: "47%", borderRadius: 24, overflow: "hidden",
+    width: "48%", borderRadius: 24, overflow: "hidden",
   },
   petImageBg: { height: 128, alignItems: "center", justifyContent: "center", position: "relative" },
   petImage: { width: "80%", height: "80%" },
@@ -273,6 +287,38 @@ const styles = StyleSheet.create({
   petBreed: { fontSize: 12, color: colors.foreground + "88", fontFamily: "Inter_400Regular" },
   petDistRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 4 },
   petDist: { fontSize: 11, color: colors.foreground + "88", fontFamily: "Inter_400Regular" },
-  emptyState: { flex: 1, padding: 24, alignItems: "center" },
+  emptyState: { width: "100%", padding: 24, alignItems: "center" },
   emptyText: { fontSize: 14, color: colors.foreground + "88", fontFamily: "Inter_400Regular" },
+  emptyVetsContainer: {
+    padding: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 24,
+    gap: 8,
+    borderStyle: "dashed",
+    borderWidth: 1,
+    borderColor: "rgba(128,128,128,0.2)",
+    width: "100%",
+  },
+  emptyVetsText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  emptyPetsContainer: {
+    width: "100%",
+    padding: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 24,
+    gap: 8,
+    borderStyle: "dashed",
+    borderWidth: 1,
+    borderColor: "rgba(128,128,128,0.2)",
+  },
+  emptyPetsText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    textAlign: "center",
+  },
 });
