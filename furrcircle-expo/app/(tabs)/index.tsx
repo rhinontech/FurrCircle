@@ -26,9 +26,7 @@ import { storyApi } from "../../services/community/storyApi";
 import { LocationPickerModal, LocationResult } from "../../src/components/LocationPickerModal";
 import { ShareSheet } from "../../src/components/ShareSheet";
 import { StoryViewer, type Story, type StoryGroup } from "../../src/components/StoryViewer";
-import { StoryEditor } from "../../src/components/StoryEditor";
 import { Video, ResizeMode, Audio } from "expo-av";
-import { useCameraStore } from "../../src/lib/camera-store";
 import { useIsFocused } from "@react-navigation/native";
 import Svg, { Path, Circle } from "react-native-svg";
 import { useNotificationStore } from "../../src/lib/notification-store";
@@ -49,16 +47,7 @@ export default function FeedScreen() {
   const [feedVideoMuted, setFeedVideoMuted] = useState(true);
   const [activePostId, setActivePostId] = useState<string | null>(null);
 
-  const { capturedUri, capturedType, setCapturedMedia } = useCameraStore();
 
-  useEffect(() => {
-    if (capturedUri) {
-      setPickedImageUri(capturedUri);
-      setPickedMediaType(capturedType || "image");
-      setEditorVisible(true);
-      setCapturedMedia(null, null);
-    }
-  }, [capturedUri]);
 
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems && viewableItems.length > 0) {
@@ -83,11 +72,7 @@ export default function FeedScreen() {
   const [myStories, setMyStories] = useState<Story[]>([]);
   const [storyViewerVisible, setStoryViewerVisible] = useState(false);
   const [selectedStoryGroupIndex, setSelectedStoryGroupIndex] = useState(0);
-  const [editorVisible, setEditorVisible] = useState(false);
-  const [pickedImageUri, setPickedImageUri] = useState<string | null>(null);
-  const [pickedMediaType, setPickedMediaType] = useState<"image" | "video">("image");
   const [compressing, setCompressing] = useState(false);
-  const [storyUploading, setStoryUploading] = useState(false);
   const [feedPosts, setFeedPosts] = useState<any[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
@@ -337,49 +322,20 @@ export default function FeedScreen() {
             Alert.alert("Video too long", "Please select a video shorter than 30 seconds.");
             return;
           }
-          setPickedMediaType("video");
-        } else {
-          setPickedMediaType("image");
         }
 
-        setPickedImageUri(asset.uri);
-        setEditorVisible(true);
+        router.push({
+          pathname: "/camera",
+          params: {
+            origin: "story",
+            uri: asset.uri,
+            type: isVideo ? "video" : "image"
+          },
+        });
       }
     } catch (err) {
       setCompressing(false);
       console.error("ImagePicker error:", err);
-    }
-  };
-
-  const handleSaveStory = async (overlayText: string, caption: string) => {
-    if (!pickedImageUri) return;
-    try {
-      setStoryUploading(true);
-      const uploadRes = await userApi.uploadImage(pickedImageUri, "stories");
-      if (!uploadRes?.url) {
-        throw new Error("Failed to upload story media.");
-      }
-
-      const storyCaption = JSON.stringify({
-        overlayText: overlayText || "",
-        caption: caption || "",
-      });
-
-      await storyApi.createStory({
-        mediaUrl: uploadRes.url,
-        mediaType: pickedMediaType,
-        caption: storyCaption,
-      });
-
-      setEditorVisible(false);
-      setPickedImageUri(null);
-      Alert.alert("Success", "Story added to Your Story!");
-      loadStories();
-    } catch (err: any) {
-      console.error("Failed to add story:", err);
-      Alert.alert("Error", err?.message || "Could not publish story. Please try again.");
-    } finally {
-      setStoryUploading(false);
     }
   };
 
@@ -491,17 +447,7 @@ export default function FeedScreen() {
           );
         }}
       />
-      <StoryEditor
-        visible={editorVisible}
-        imageUri={pickedImageUri}
-        mediaType={pickedMediaType}
-        loading={storyUploading}
-        onCancel={() => {
-          setEditorVisible(false);
-          setPickedImageUri(null);
-        }}
-        onSave={handleSaveStory}
-      />
+
       {compressing && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#fff" />
