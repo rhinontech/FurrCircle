@@ -3,7 +3,7 @@ import { Op } from "sequelize";
 import db from "../models/index.ts";
 import { createNotification, createRichNotification } from "../services/notificationService.ts";
 import { sendEmail } from "../services/emailService.ts";
-import { emitToActor, isUserOnline } from "../services/realtimeService.ts";
+import { emitToActor, emitGlobal, isUserOnline } from "../services/realtimeService.ts";
 
 const getCleanNotificationBody = (text: string): string => {
   const safeText = String(text || "");
@@ -491,6 +491,30 @@ const recomputeEngagementScore = async (postId: string) => {
   await Post.update({ engagementScore: score }, { where: { id: postId } });
 };
 
+// Broadcast a post's live engagement counts to every connected client so
+// open feeds / post screens update in real time.
+const broadcastPostCounts = async (postId: string) => {
+  try {
+    const { posts: Post, likes: Like, comments: Comment } = db as any;
+    const post = await Post.findByPk(postId, {
+      include: [
+        { model: Like, as: "likes", attributes: ["id"] },
+        { model: Comment, as: "comments", attributes: ["id"] },
+      ],
+    });
+    if (!post) return;
+    const payload = toPlain(post);
+    emitGlobal("post:update", {
+      postId,
+      likeCount: (payload.likes || []).length,
+      commentCount: (payload.comments || []).length,
+      shareCount: payload.shareCount || 0,
+    });
+  } catch {
+    /* non-fatal */
+  }
+};
+
 // @desc    Get approved posts for feed (with tab + pagination support)
 // @route   GET /api/community/feed?tab=for_you|trending|nearby&page=1&limit=20
 export const getCommunityFeed = async (req: any, res: Response): Promise<void> => {
@@ -498,6 +522,9 @@ export const getCommunityFeed = async (req: any, res: Response): Promise<void> =
     const { posts: Post, comments: Comment, likes: Like, saved_posts: SavedPost, user_blocks: UserBlock } = db as any;
 
     const tab = (req.query.tab as string) || "for_you";
+    // For You is split into two sections: "following" (you + people you follow)
+    // and "suggested" (everyone else, revealed on demand).
+    const section = (req.query.section as string) === "suggested" ? "suggested" : "following";
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, parseInt(req.query.limit as string) || 20);
     const offset = (page - 1) * limit;
@@ -560,10 +587,11 @@ export const getCommunityFeed = async (req: any, res: Response): Promise<void> =
         order: [["createdAt", "DESC"]],
       });
     } else {
-      const userCity = (req.user?.city || "").trim().toLowerCase();
-      const userTopics: string[] = req.user?.topicInterests || [];
+      // ── For You: two explicit sections, both newest-first ───────────────
+      //   "following" → your own posts + people you follow
+      //   "suggested" → everyone else (revealed only when the user opts in)
 
-      // ── Step 1: Resolve the current user's followed user IDs ─────────────
+      // Resolve the current user's followed user IDs
       const followedUserIds: Set<string> = new Set();
       if (currentUserId) {
         const { follows: Follow } = db as any;
@@ -574,74 +602,36 @@ export const getCommunityFeed = async (req: any, res: Response): Promise<void> =
         myFollows.forEach((f: any) => followedUserIds.add(f.followingId));
       }
 
-      // ── Step 2: Tier 1 — Following posts (≤ 72 h, newest-first) ─────────
-      const tier1Cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000);
+      // "Allowed" authors for the primary feed = you + people you follow,
+      // minus anyone you've blocked (or who blocked you).
+      const allowedIds = [currentUserId, ...Array.from(followedUserIds)].filter(
+        (id) => id && !blockedUserIds.has(id)
+      );
 
-      let tier1Posts: any[] = [];
-      if (followedUserIds.size > 0) {
-        tier1Posts = await Post.findAll({
-          where: withBlockFilter({
+      if (section === "suggested") {
+        // Suggested = everyone except you + your followings (and blocked users).
+        const excludeIds = Array.from(
+          new Set([...allowedIds, ...Array.from(blockedUserIds)])
+        );
+        allPosts = await Post.findAll({
+          where: {
             status: "approved",
-            userId: { [Op.in]: Array.from(followedUserIds) },
-            createdAt: { [Op.gte]: tier1Cutoff },
-          }),
+            ...(excludeIds.length > 0 ? { userId: { [Op.notIn]: excludeIds } } : {}),
+          },
           include: postIncludes,
           order: [["createdAt", "DESC"]],
         });
+      } else {
+        // Primary = your own posts + people you follow, newest-first.
+        allPosts =
+          allowedIds.length > 0
+            ? await Post.findAll({
+                where: { status: "approved", userId: { [Op.in]: allowedIds } },
+                include: postIncludes,
+                order: [["createdAt", "DESC"]],
+              })
+            : [];
       }
-
-      // Build a Set of IDs already in Tier 1 to prevent duplicates in Tier 2
-      const tier1Ids = new Set(tier1Posts.map((p: any) => p.id));
-
-      // ── Step 3: Tier 2 — Discovery posts (≤ 7 days, excluding Tier 1) ───
-      const tier2Cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-      const discoveryWhere: any = withBlockFilter({
-        status: "approved",
-        createdAt: { [Op.gte]: tier2Cutoff },
-      });
-      if (tier1Ids.size > 0) {
-        discoveryWhere.id = { [Op.notIn]: Array.from(tier1Ids) };
-      }
-
-      const discoveryPosts = await Post.findAll({
-        where: discoveryWhere,
-        include: postIncludes,
-        order: [["createdAt", "DESC"]],
-      });
-
-      // Score each discovery post
-      const scoredDiscovery = discoveryPosts
-        .map((post: any) => {
-          const payload = toPlain(post);
-          const hoursOld =
-            (Date.now() - new Date(payload.createdAt).getTime()) / 3600000;
-
-          // Steep recency decay: 0 h → +100, 24 h → +64, 48 h → +28, 67 h → 0
-          const recencyDecay = Math.max(0, 100 - hoursOld * 1.5);
-
-          // Followed users' older posts still rank above strangers
-          const followBonus = followedUserIds.has(payload.userId) ? 40 : 0;
-
-          const topicBonus =
-            userTopics.length > 0 && userTopics.includes(payload.category) ? 30 : 0;
-          const cityBonus =
-            userCity && (payload.city || "").trim().toLowerCase() === userCity ? 20 : 0;
-
-          const score =
-            (payload.engagementScore || 0) +
-            topicBonus +
-            cityBonus +
-            recencyDecay +
-            followBonus;
-
-          return { post, score };
-        })
-        .sort((a: any, b: any) => b.score - a.score)
-        .map((item: any) => item.post);
-
-      // ── Step 4: Merge — Tier 1 (following, newest-first) + Tier 2 ───────
-      allPosts = [...tier1Posts, ...scoredDiscovery];
     }
 
     const total = allPosts.length;
@@ -653,6 +643,7 @@ export const getCommunityFeed = async (req: any, res: Response): Promise<void> =
 
     res.json({
       posts: serialized,
+      section,
       pagination: { page, limit, total, hasMore },
     });
   } catch (error: any) {
@@ -741,6 +732,7 @@ export const toggleLike = async (req: any, res: Response): Promise<void> => {
       await existingLike.destroy();
       res.json({ liked: false, message: "Post unliked" });
       recomputeEngagementScore(req.params.id).catch(() => { });
+      broadcastPostCounts(req.params.id);
       return;
     }
 
@@ -748,6 +740,7 @@ export const toggleLike = async (req: any, res: Response): Promise<void> => {
     res.json({ liked: true, message: "Post liked" });
 
     recomputeEngagementScore(req.params.id).catch(() => { });
+    broadcastPostCounts(req.params.id);
 
     // Notify post author (fire and forget, skip self-likes)
     if (post.userId !== req.user.id || post.userType !== (req.userType || "user")) {
@@ -815,12 +808,15 @@ export const sharePost = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
-    post.shareCount = Number(post.shareCount || 0) + 1;
+    // Increment by the number of recipients shared to (defaults to 1).
+    const count = Math.max(1, Math.min(50, parseInt(req.body?.count) || 1));
+    post.shareCount = Number(post.shareCount || 0) + count;
     await post.save();
 
     res.json({ shareCount: post.shareCount });
 
     recomputeEngagementScore(req.params.id).catch(() => { });
+    broadcastPostCounts(req.params.id);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -855,6 +851,7 @@ export const addComment = async (req: any, res: Response): Promise<void> => {
     res.status(201).json({ comment: await serializeComment(comment, resolveProfile) });
 
     recomputeEngagementScore(req.params.id).catch(() => { });
+    broadcastPostCounts(req.params.id);
 
     // Notify post author (fire and forget, skip self-comments)
     if (post.userId !== req.user.id || post.userType !== (req.userType || "user")) {
@@ -890,8 +887,14 @@ export const deleteComment = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
+    const postId = comment.postId;
     await comment.destroy();
     res.json({ message: "Comment deleted" });
+
+    if (postId) {
+      recomputeEngagementScore(postId).catch(() => { });
+      broadcastPostCounts(postId);
+    }
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

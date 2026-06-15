@@ -15,7 +15,7 @@ import {
   FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Heart, X, Star, ArrowLeft, ArrowRight, MapPin, Inbox, Check, MessageCircle } from "../../src/components/ui/icons";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import * as Location from "expo-location";
@@ -82,6 +82,7 @@ function mapOwnerToCard(owner: any, index: number) {
 export default function MatchScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { openRequests: openRequestsParam } = useLocalSearchParams<{ openRequests?: string }>();
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
   const { user } = useAuthStore();
@@ -101,21 +102,24 @@ export default function MatchScreen() {
 
   // Requests inbox
   const [requestsVisible, setRequestsVisible] = useState(false);
-  const [requestsTab, setRequestsTab] = useState<"received" | "sent">("received");
+  const [requestsTab, setRequestsTab] = useState<"received" | "sent" | "matches">("received");
   const [receivedRequests, setReceivedRequests] = useState<AdoptionRequest[]>([]);
   const [sentRequests, setSentRequests] = useState<AdoptionRequest[]>([]);
+  const [playdateMatches, setPlaydateMatches] = useState<any[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
 
   const loadRequests = useCallback(async () => {
     setRequestsLoading(true);
     try {
-      const [received, sent] = await Promise.all([
+      const [received, sent, matches] = await Promise.all([
         adoptionApi.getReceivedApplications(),
         adoptionApi.getMyApplications(),
+        matchApi.getPlaydateMatches().catch(() => []),
       ]);
       setReceivedRequests(received);
       setSentRequests(sent);
+      setPlaydateMatches(matches || []);
     } catch { }
     setRequestsLoading(false);
   }, []);
@@ -158,6 +162,13 @@ export default function MatchScreen() {
     petApi.getMyPets().then(setMyPets).catch(() => { });
     adoptionApi.getMyApplications().then(setSentRequests).catch(() => { });
   }, []);
+
+  // Open requests when redirecting from notification
+  useEffect(() => {
+    if (openRequestsParam === "true") {
+      openRequests();
+    }
+  }, [openRequestsParam]);
 
   // Load cards whenever mode or coords ready
   useEffect(() => {
@@ -651,34 +662,96 @@ export default function MatchScreen() {
         <View style={[styles.reqModal, { backgroundColor: tk.bg, paddingTop: insets.top }]}>
           {/* Modal header */}
           <View style={styles.reqHeader}>
-            <Text style={[styles.reqTitle, { color: tk.text }]}>Requests</Text>
+            <Text style={[styles.reqTitle, { color: tk.text }]}>Inbox</Text>
             <TouchableOpacity onPress={() => setRequestsVisible(false)} style={[styles.reqCloseBtn, glassSurface(tk)]}>
               <X size={18} color={tk.text} strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
 
-          {/* Received / Sent tabs */}
+          {/* Received / Sent / Matches tabs */}
           <View style={[styles.reqTabs, glassSurface(tk)]}>
-            {(["received", "sent"] as const).map((t) => (
-              <TouchableOpacity
-                key={t}
-                onPress={() => setRequestsTab(t)}
-                style={[styles.reqTab, requestsTab === t && { backgroundColor: tk.text }]}
-              >
-                <Text style={[styles.reqTabText, { color: requestsTab === t ? tk.bg : tk.textMuted }]}>
-                  {t === "received" ? "Received" : "Sent"}
-                  {t === "received" && receivedRequests.filter((r) => r.status === "pending").length > 0
-                    ? ` (${receivedRequests.filter((r) => r.status === "pending").length})`
-                    : ""}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {(["received", "sent", "matches"] as const).map((t) => {
+              const pendingCount = receivedRequests.filter((r) => r.status === "pending").length;
+              const label = t === "received" ? "Received" : t === "sent" ? "Sent" : "Matches";
+              const badge = t === "received" && pendingCount > 0
+                ? ` (${pendingCount})`
+                : t === "matches" && playdateMatches.length > 0
+                  ? ` (${playdateMatches.length})`
+                  : "";
+              return (
+                <TouchableOpacity
+                  key={t}
+                  onPress={() => setRequestsTab(t)}
+                  style={[styles.reqTab, requestsTab === t && { backgroundColor: tk.text }]}
+                >
+                  <Text style={[styles.reqTabText, { color: requestsTab === t ? tk.bg : tk.textMuted }]}>
+                    {label}{badge}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           {requestsLoading ? (
             <View style={styles.reqLoading}>
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
+          ) : requestsTab === "matches" ? (
+            <FlatList
+              data={playdateMatches}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.reqList}
+              ListEmptyComponent={
+                <View style={styles.reqEmpty}>
+                  <Text style={[styles.reqEmptyText, { color: tk.textMuted }]}>
+                    No playdate matches yet. Swipe right to find a playmate!
+                  </Text>
+                </View>
+              }
+              renderItem={({ item }) => {
+                const petImg = item.pet?.avatar_url ? { uri: item.pet.avatar_url } : null;
+                return (
+                  <View style={[styles.reqCard, glassSurface(tk)]}>
+                    <View style={styles.reqCardImgWrap}>
+                      {petImg ? (
+                        <Image source={petImg} style={styles.reqCardImg} />
+                      ) : (
+                        <View style={[styles.reqCardImg, { backgroundColor: tk.glassBorder, alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={{ fontSize: 28 }}>🐾</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.reqCardBody}>
+                      <View style={styles.reqCardTop}>
+                        <Text style={[styles.reqCardPetName, { color: tk.text }]}>{item.pet?.name || "Pet"}</Text>
+                        <View style={[styles.reqStatusBadge, { backgroundColor: colors.success + "22", borderColor: colors.success }]}>
+                          <Text style={[styles.reqStatusText, { color: colors.success }]}>Matched</Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.reqCardMeta, { color: tk.textMuted }]}>
+                        {item.myPet?.name ? `${item.myPet.name} & ${item.pet?.name || "Pet"}` : item.pet?.breed || item.pet?.species || "Playdate"}
+                        {item.owner?.name ? ` · with ${item.owner.name}` : ""}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setRequestsVisible(false);
+                          if (item.conversationId) {
+                            router.push({ pathname: "/chat", params: { id: item.conversationId } });
+                          } else {
+                            router.push("/chat");
+                          }
+                        }}
+                        style={[styles.reqOpenChatBtn, { backgroundColor: colors.primary }]}
+                        activeOpacity={0.85}
+                      >
+                        <MessageCircle size={15} color="#fff" strokeWidth={2.5} />
+                        <Text style={styles.reqOpenChatBtnText}>Open Chat</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              }}
+            />
           ) : (
             <FlatList
               data={requestsTab === "received" ? receivedRequests : sentRequests}

@@ -15,6 +15,7 @@ import { userApi } from "../services/user/userApi";
 import { notificationApi } from "../services/notification/notificationApi";
 import type { AppNotification } from "../services/notification/notificationApi";
 import { useNotificationStore } from "../src/lib/notification-store";
+import { navigateForNotification } from "../src/lib/notification-nav";
 import { Ionicons } from "@expo/vector-icons";
 
 // ─── Type → visual config ─────────────────────────────────────────────────────
@@ -151,67 +152,7 @@ export default function NotificationsScreen() {
       notificationApi.markRead(n.id).catch(() => {});
       setNotifications(ns => ns.map(x => x.id === n.id ? { ...x, isRead: true } : x));
     }
-
-    const p = n.actionPayload || {};
-    switch (n.actionType) {
-      case "profile": {
-        const handle = p.username || p.id || p.userId || n.relatedId;
-        if (handle) router.push(`/u/${handle}` as any);
-        break;
-      }
-      case "like":
-      case "comment": {
-        const postId = p.postId || n.relatedId;
-        if (postId) router.push(`/post/${postId}` as any);
-        break;
-      }
-      case "reminder":
-        // Navigate to care/today screen which shows reminders
-        router.push("/today" as any);
-        break;
-      case "appointment_detail": {
-        const appointmentId = p.appointmentId || n.relatedId;
-        if (appointmentId) router.push({ pathname: "/book", params: { id: appointmentId } });
-        break;
-      }
-      case "chat_thread": {
-        const chatId = p.conversationId || p.id || n.relatedId;
-        if (chatId) {
-          router.push({ pathname: "/chat", params: { id: chatId } });
-        } else {
-          router.push("/chat" as any);
-        }
-        break;
-      }
-      case "event_detail": {
-        const eventId = p.eventId || p.id || n.relatedId;
-        if (eventId) {
-          router.push({ pathname: "/events", params: { eventId } });
-        } else {
-          router.push("/events" as any);
-        }
-        break;
-      }
-      case "question_detail":
-      case "thread": {
-        const questionId = p.questionId || p.id || n.relatedId;
-        if (questionId) {
-          router.push(`/thread/${questionId}` as any);
-        }
-        break;
-      }
-      case "events_list":
-        router.push("/events" as any);
-        break;
-      case "discover":
-        router.push("/discover" as any);
-        break;
-      case "community":
-        router.push("/community" as any);
-        break;
-      default:
-        break;
-    }
+    navigateForNotification(n, router);
   };
 
   // ── Derived ──────────────────────────────────────────────────────────────────

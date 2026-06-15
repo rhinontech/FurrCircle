@@ -1,8 +1,13 @@
 import { PrivateAxios } from '../../helpers/PrivateAxios';
 
-export const getFeed = async (tab: 'for_you' | 'trending' | 'nearby' = 'for_you', page = 1, limit = 20) => {
+export const getFeed = async (
+    tab: 'for_you' | 'trending' | 'nearby' = 'for_you',
+    page = 1,
+    limit = 20,
+    section: 'following' | 'suggested' = 'following',
+) => {
     try {
-        const response = await PrivateAxios.get('/community/feed', { params: { tab, page, limit } });
+        const response = await PrivateAxios.get('/community/feed', { params: { tab, page, limit, section } });
         return response.data;
     } catch (error: any) {
         console.error('getFeed Error:', error?.response?.data || error.message);
@@ -36,6 +41,16 @@ export const savePost = async (postId: string) => {
         return response.data;
     } catch (error: any) {
         console.error('savePost Error:', error?.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const sharePost = async (postId: string, count = 1) => {
+    try {
+        const response = await PrivateAxios.post(`/community/posts/${postId}/share`, { count });
+        return response.data; // { shareCount }
+    } catch (error: any) {
+        console.error('sharePost Error:', error?.response?.data || error.message);
         throw error;
     }
 };
@@ -125,6 +140,7 @@ export const feedApi = {
     createPost,
     likePost,
     savePost,
+    sharePost,
     commentOnPost,
     deletePost,
     getMyPosts,

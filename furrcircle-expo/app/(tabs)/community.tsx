@@ -17,6 +17,7 @@ import { questionApi } from "../../services/community/questionApi";
 import { feedApi } from "../../services/community/feedApi";
 import { userApi } from "../../services/user/userApi";
 import { AdaptiveSheet } from "../../src/components/AdaptiveSheet";
+import { ImageCropper } from "../../src/components/ImageCropper";
 import { LinearGradient } from "expo-linear-gradient";
 import { glassSurface } from "../../src/components/ui/Glass";
 import { tabBarClearance } from "../../src/lib/tabbar";
@@ -67,16 +68,16 @@ export default function CommunityScreen() {
 
   const isSearchActive = searchFocused || searchQuery.length > 0;
 
-  const loadCircles = useCallback(async () => {
+  const loadCircles = useCallback(async (silent = false) => {
     try {
-      setLoadingCircles(true);
+      if (!silent) setLoadingCircles(true);
       const [mine, all] = await Promise.all([circleApi.getMyCircles(), circleApi.getAllCircles()]);
       setMyCircles(mine || []);
       setAllCircles(all || []);
     } catch (err) {
       console.error("Failed to load circles:", err);
     } finally {
-      setLoadingCircles(false);
+      if (!silent) setLoadingCircles(false);
     }
   }, []);
 
@@ -105,21 +106,25 @@ export default function CommunityScreen() {
     if (!q.trim()) { setSearchResults(null); return; }
     if (!silent) setSearching(true);
     try {
-      const [circles, questions, posts, people] = await Promise.all([
+      // Search needs to cover every post, so pull both feed sections
+      // ("following" = you + people you follow, "suggested" = everyone else).
+      const [circles, questions, followingPosts, suggestedPosts, people] = await Promise.all([
         circleApi.getAllCircles(),
         questionApi.getQuestions({ q }),
-        feedApi.getFeed("for_you", 1, 50),
+        feedApi.getFeed("for_you", 1, 50, "following"),
+        feedApi.getFeed("for_you", 1, 50, "suggested"),
         userApi.searchAllUsers(q),
       ]);
+      const allPosts = [...(followingPosts?.posts || []), ...(suggestedPosts?.posts || [])];
       const term = q.trim().toLowerCase();
       const filteredCircles = (circles || []).filter((c: any) =>
         c.name?.toLowerCase().includes(term) || c.description?.toLowerCase().includes(term)
       );
-      const filteredPosts = (posts?.posts || []).filter((p: any) =>
+      const filteredPosts = allPosts.filter((p: any) =>
         p.content?.toLowerCase().includes(term)
       );
       const allTags: string[] = [];
-      (posts?.posts || []).forEach((p: any) => { if (p.category) allTags.push(p.category); });
+      allPosts.forEach((p: any) => { if (p.category) allTags.push(p.category); });
       const uniqueTags = [...new Set(allTags)].filter(t => t.toLowerCase().includes(term));
 
       setSearchResults({ circles: filteredCircles, questions: questions || [], posts: filteredPosts, tags: uniqueTags, people: people || [], pets: [] });
@@ -135,9 +140,11 @@ export default function CommunityScreen() {
     return () => clearTimeout(searchTimeout.current);
   }, [searchQuery, runSearch]);
 
-  // When screen regains focus (user returns from thread), silently refresh
-  // only the questions in current search results to pick up updated upvote/hasVoted state
+  // When the screen regains focus (e.g. returning after deleting/editing a
+  // circle), silently refresh the circle list so stale entries disappear, plus
+  // refresh the questions in any current search results.
   useFocusEffect(useCallback(() => {
+    loadCircles(true);
     if (searchQuery.trim()) {
       questionApi.getQuestions({ q: searchQuery })
         .then((questions: any[]) => {
@@ -145,9 +152,9 @@ export default function CommunityScreen() {
             setSearchResults((prev: any) => prev ? { ...prev, questions } : prev);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
-  }, [searchQuery]));
+  }, [loadCircles, searchQuery]));
 
   const handleCreateCircle = async (name: string, description: string, category: string, coverImage?: string) => {
     try {
@@ -542,6 +549,7 @@ function CreateCircleSheet({ open, onClose, onCreate, tk }: any) {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("general");
   const [coverUri, setCoverUri] = useState<string | null>(null);
+  const [cropSource, setCropSource] = useState<{ uri: string; width: number; height: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
@@ -562,8 +570,13 @@ function CreateCircleSheet({ open, onClose, onCreate, tk }: any) {
   const pickCover = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") { Alert.alert("Permission", "Gallery access required."); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images", quality: 0.8, allowsEditing: true, aspect: [16, 9] });
-    if (!result.canceled && result.assets?.[0]?.uri) setCoverUri(result.assets[0].uri);
+    // Pick the full-resolution original (no native crop) and hand it to our
+    // 16:9 cropper so the user can position the exact snapshot.
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images", quality: 1 });
+    const asset = result.assets?.[0];
+    if (!result.canceled && asset?.uri) {
+      setCropSource({ uri: asset.uri, width: asset.width || 0, height: asset.height || 0 });
+    }
   };
 
   const handleSubmit = async () => {
@@ -587,7 +600,7 @@ function CreateCircleSheet({ open, onClose, onCreate, tk }: any) {
         behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "padding" : undefined)}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 170}
       >
-        <View style={{paddingTop:24, paddingHorizontal:24,  paddingBottom: keyboardVisible ? 0 : 40 + insets.bottom }}>
+        <View style={{ paddingTop: 24, paddingHorizontal: 24, paddingBottom: keyboardVisible ? 0 : 40 + insets.bottom }}>
           <Text style={[styles.sheetTitle, { color: tk.text }]}>Create new Circle</Text>
 
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -627,6 +640,16 @@ function CreateCircleSheet({ open, onClose, onCreate, tk }: any) {
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
+
+      <ImageCropper
+        visible={!!cropSource}
+        imageUri={cropSource?.uri || null}
+        imageWidth={cropSource?.width || 0}
+        imageHeight={cropSource?.height || 0}
+        aspect={16 / 9}
+        onCancel={() => setCropSource(null)}
+        onCropped={(uri) => { setCoverUri(uri); setCropSource(null); }}
+      />
     </AdaptiveSheet>
   );
 }

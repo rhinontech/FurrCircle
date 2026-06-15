@@ -240,7 +240,7 @@ export default function ComposeScreen() {
               onChangeText={setCaption}
               multiline
               numberOfLines={5}
-              placeholder="Tell the circle what's happening…"
+              placeholder="Write your caption…"
               placeholderTextColor={tk.textMuted}
               style={[styles.captionInput, { backgroundColor: tk.card, color: tk.text, borderColor: tk.border }]}
             />

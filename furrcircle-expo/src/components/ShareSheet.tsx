@@ -11,6 +11,7 @@ import { colors } from "../lib/theme";
 import { useTokens } from "../lib/theme-store";
 import { chatApi } from "../../services/chat/chatApi";
 import { userApi } from "../../services/user/userApi";
+import { feedApi } from "../../services/community/feedApi";
 import { useAuthStore } from "../lib/auth-store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -22,9 +23,10 @@ interface ShareSheetProps {
   username?: string | null;
   threadId?: string | null;
   circleId?: string | null;
+  onShared?: (postId: string, shareCount: number) => void;
 }
 
-export function ShareSheet({ open, onClose, postId, petId, username, threadId, circleId }: ShareSheetProps) {
+export function ShareSheet({ open, onClose, postId, petId, username, threadId, circleId, onShared }: ShareSheetProps) {
   const tk = useTokens();
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
@@ -114,11 +116,18 @@ export function ShareSheet({ open, onClose, postId, petId, username, threadId, c
       await Promise.all(
         selected.map(recipientId => chatApi.startChat(recipientId, shareLink))
       );
+      // Count the share once per recipient and let the caller update its UI.
+      if (postId) {
+        try {
+          const res = await feedApi.sharePost(postId, selected.length);
+          onShared?.(postId, res?.shareCount);
+        } catch { /* non-fatal — the chat share already succeeded */ }
+      }
       Alert.alert("Success", `${typeName} shared to chat!`);
     } catch (err) {
       Alert.alert("Error", `Failed to share ${typeName.toLowerCase()}.`);
     }
-    
+
     onClose();
   };
 

@@ -43,6 +43,16 @@ export const swipePlaydate = async (
   }
 };
 
+export const getPlaydateMatches = async () => {
+  try {
+    const response = await PrivateAxios.get('/playdate/matches');
+    return response.data;
+  } catch (error: any) {
+    console.error('getPlaydateMatches Error:', error?.response?.data || error.message);
+    throw error;
+  }
+};
+
 // ── Owner Match ───────────────────────────────────────────────────────────────
 
 export const getOwnerCards = async (coords?: Coords) => {
@@ -107,6 +117,7 @@ export const swipeBreed = async (
 export const matchApi = {
   getPlaydateCards,
   swipePlaydate,
+  getPlaydateMatches,
   getOwnerCards,
   swipeOwner,
   getBreedCards,

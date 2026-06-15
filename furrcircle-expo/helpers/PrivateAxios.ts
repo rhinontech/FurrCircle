@@ -14,7 +14,7 @@ const getToken = async (): Promise<string | null> => {
     return SecureStore.getItemAsync('token');
 };
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? 'http://localhost:5002/api' : '');
+const API_URL = process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? 'http://localhost:5001/api' : '');
 
 if (__DEV__) {
     console.log('[Dev] API_URL:', API_URL);

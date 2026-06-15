@@ -53,7 +53,7 @@ const defaultActionFromRelated = (relatedType?: string, relatedId?: string) => {
     case "thread":
       return { actionType: "question_detail", actionPayload: relatedId ? { questionId: relatedId } : null };
     case "adoption_application":
-      return { actionType: "notifications", actionPayload: null };
+      return { actionType: "match_requests", actionPayload: null };
     case "vaccine":
       return { actionType: "notifications", actionPayload: null };
     default:

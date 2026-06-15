@@ -33,7 +33,8 @@ export default function AllVetsScreen() {
   const locationCity = useLocationStore(s => s.city);
   const locationLat = useLocationStore(s => s.latitude);
   const locationLng = useLocationStore(s => s.longitude);
-  const cityLabel = String(locationCity || "").trim();
+  // Fall back to the user's profile city when no live location is set.
+  const cityLabel = String(locationCity || user?.city || "").trim();
   
   useEffect(() => {
     if (!cityLabel) {

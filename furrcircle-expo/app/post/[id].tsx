@@ -15,6 +15,7 @@ import { useTokens } from "../../src/lib/theme-store";
 import { ShareSheet } from "../../src/components/ShareSheet";
 import { feedApi } from "../../services/community/feedApi";
 import { useAuthStore } from "../../src/lib/auth-store";
+import { usePostEngagementStore } from "../../src/lib/post-engagement-store";
 import { posts as dummyPosts, sampleComments } from "../../src/lib/demo-data";
 import { Video, ResizeMode, Audio } from "expo-av";
 import { useIsFocused } from "@react-navigation/native";
@@ -26,6 +27,7 @@ export default function PostDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const tk = useTokens();
   const { isTablet } = useBreakpoint();
+  const live = usePostEngagementStore(s => s.counts[id]);
   const isScreenFocused = useIsFocused();
   const { user } = useAuthStore();
   const [shareOpen, setShareOpen] = useState(false);
@@ -258,9 +260,13 @@ export default function PostDetail() {
   const tintColor = TINT[(post.category || "").toLowerCase()] || "#FF6B6B22";
   const initiallyLiked = (post.likes || []).some((l: any) => l.userId === user?.id);
   const baseLikes = (post.likes || []).length;
-  const likeCount = isDummy
+  const computedLike = isDummy
     ? post.likes + (isLiked ? 1 : 0)
     : baseLikes + (isLiked ? (initiallyLiked ? 0 : 1) : (initiallyLiked ? -1 : 0));
+  // Prefer realtime counts pushed via "post:update" when available.
+  const likeCount = live ? live.likeCount : computedLike;
+  const commentCount = live ? live.commentCount : comments.length;
+  const shareCount = live ? live.shareCount : (post.shareCount || 0);
 
   return (
     <KeyboardAvoidingView
@@ -358,10 +364,11 @@ export default function PostDetail() {
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionBtn}>
               <MessageCircle size={26} color={tk.text} />
-              <Text style={[styles.actionCount, { color: tk.text }]}>{comments.length}</Text>
+              <Text style={[styles.actionCount, { color: tk.text }]}>{commentCount}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShareOpen(true)}>
+            <TouchableOpacity onPress={() => setShareOpen(true)} style={styles.actionBtn}>
               <Send size={26} color={tk.text} />
+              <Text style={[styles.actionCount, { color: tk.text }]}>{shareCount}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleSave} style={{ marginLeft: "auto" }}>
               <Bookmark size={26} color={isSaved ? colors.primary : tk.text} fill={isSaved ? colors.primary : "none"} />
@@ -421,7 +428,12 @@ export default function PostDetail() {
           </TouchableOpacity>
         </View>
 
-        <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} postId={post.id} />
+        <ShareSheet
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          postId={post.id}
+          onShared={(_postId, shareCount) => setPost((prev: any) => prev ? { ...prev, shareCount } : prev)}
+        />
 
         {/* Options Menu Modal */}
         <Modal visible={menuOpen} transparent={true} animationType={isTablet ? "fade" : "slide"} onRequestClose={() => setMenuOpen(false)}>

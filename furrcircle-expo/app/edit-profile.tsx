@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
     textAlignVertical: "top"
   },
   saveBtn: {
-    backgroundColor: colors.coral,
+    backgroundColor: colors.primary,
     borderRadius: 24,
     height: 50,
     alignItems: "center",

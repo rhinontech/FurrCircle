@@ -326,8 +326,8 @@ export default function UserProfileScreen() {
                       const active = tab === t;
                       return (
                         <TouchableOpacity key={t} onPress={() => setTab(t)} style={styles.tabItem}>
-                          <Icon size={16} color={active ? colors.coral : tk.textMuted} />
-                          <Text style={[styles.tabText, { color: active ? colors.coral : tk.textMuted }]}>{t}</Text>
+                          <Icon size={16} color={active ? colors.primary : tk.textMuted} />
+                          <Text style={[styles.tabText, { color: active ? colors.primary : tk.textMuted }]}>{t}</Text>
                           {active && <View style={styles.tabActiveBar} />}
                         </TouchableOpacity>
                       );
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
   tabsRow: { flexDirection: "row", borderBottomWidth: 1, marginTop: 16, paddingHorizontal: 20 },
   tabItem: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12, position: "relative" },
   tabText: { fontFamily: "Poppins_700Bold", fontSize: 12 },
-  tabActiveBar: { position: "absolute", bottom: 0, left: 0, right: 0, height: 2, backgroundColor: colors.coral },
+  tabActiveBar: { position: "absolute", bottom: 0, left: 0, right: 0, height: 2, backgroundColor: colors.primary },
   // Photo grid
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 2, paddingTop: 2 },
   gridItem: { width: GRID_SIZE, height: GRID_SIZE, overflow: "hidden" },

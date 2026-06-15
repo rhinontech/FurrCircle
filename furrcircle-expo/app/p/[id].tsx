@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
-import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, MessageCircle, Sparkles, X, Edit2 } from "../../src/components/ui/icons";
+import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, MessageCircle, X, Edit2 } from "../../src/components/ui/icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
@@ -242,15 +242,6 @@ export default function PetPublicProfile() {
               <MessageCircle size={16} color={colors.white} />
               <Text style={styles.messageBtnText}>Message owner</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => router.push("/match")}
-              disabled={!!pet.canManage}
-              style={[styles.matchBtn, pet.canManage && { opacity: 0.5 }]}
-              activeOpacity={0.8}
-            >
-              <Sparkles size={16} color={colors.white} />
-              <Text style={styles.matchBtnText}>Match</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
@@ -318,8 +309,6 @@ const styles = StyleSheet.create({
   ctaRow: { flexDirection: "row", gap: 10, paddingHorizontal: 20, marginTop: 24 },
   messageBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.primary, borderRadius: 30, paddingVertical: 14 },
   messageBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14, color: colors.white },
-  matchBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.foreground, borderRadius: 30, paddingHorizontal: 20, paddingVertical: 14 },
-  matchBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14, color: colors.white },
   fullScreenModal: { flex: 1, backgroundColor: "rgba(0,0,0,0.9)", justifyContent: "center", alignItems: "center" },
   closeModalBtn: { position: "absolute", top: 56, right: 20, zIndex: 10, width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   fullScreenImg: { width: "100%", height: "80%" },

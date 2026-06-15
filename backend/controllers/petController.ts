@@ -50,6 +50,7 @@ const normalizePetPayload = (pet: any) => {
     Vaccines: Array.isArray(payload?.Vaccines) ? payload.Vaccines.slice().sort(sortByDateDesc("dateAdministered")) : [],
     Medications: Array.isArray(payload?.Medications) ? payload.Medications.slice().sort(sortByDateDesc("startDate")) : [],
     Allergies: Array.isArray(payload?.Allergies) ? payload.Allergies.slice().sort(sortByDateDesc("diagnosedAt")) : [],
+    vitals: Array.isArray(payload?.vitals) ? payload.vitals.slice().sort(sortByDateDesc("timestamp")) : [],
     Appointments: appointments,
     personality: Array.isArray(payload?.personality) ? payload.personality : [],
   };
@@ -100,6 +101,7 @@ const toPublicPetPayload = (pet: any, viewerId?: string) => {
     Medications: [],
     Allergies: [],
     Appointments: [],
+    vitals: [],
   };
 };
 
@@ -257,6 +259,7 @@ export const getPetById = async (req: any, res: Response): Promise<void> => {
       appointments: Appointment,
       vets: Vet,
       reminders: Reminder,
+      vitals: Vital,
     } = db as any;
 
     const pet = await Pet.findByPk(req.params.id, {
@@ -265,6 +268,7 @@ export const getPetById = async (req: any, res: Response): Promise<void> => {
         { model: Vaccine, as: "Vaccines" },
         { model: Medication, as: "Medications" },
         { model: Allergy, as: "Allergies" },
+        { model: Vital, as: "vitals" },
         {
           model: Appointment,
           as: "Appointments",
@@ -307,6 +311,7 @@ export const getPetById = async (req: any, res: Response): Promise<void> => {
           publicPayload.Vaccines = payload.Vaccines;
           publicPayload.Allergies = payload.Allergies;
           publicPayload.personality = payload.personality;
+          publicPayload.vitals = payload.vitals;
         }
         res.json(publicPayload);
       } else {
@@ -434,7 +439,8 @@ export const discoverPets = async (req: any, res: Response): Promise<void> => {
     const lng = req.query.lng ? parseFloat(req.query.lng as string) : null;
 
     const where: any = {
-      [Op.or]: [{ isAdoptionOpen: true }, { isFosterOpen: true }],
+      [Op.or]: [{ isAdoptionOpen: true }, { isFosterOpen: true }, { isBreedingOpen: true }],
+      ownerId: { [Op.ne]: req.user.id }
     };
 
     let attributes: any = { exclude: [] };

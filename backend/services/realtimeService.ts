@@ -89,3 +89,8 @@ export const setupRealtimeServer = (server: Server) => {
 export const emitToActor = (actorId: string, actorType: string, event: string, payload: unknown) => {
   io?.to(getActorRoom(actorType, actorId)).emit(event, payload);
 };
+
+/** Broadcast to every connected client (e.g. live post engagement counts). */
+export const emitGlobal = (event: string, payload: unknown) => {
+  io?.emit(event, payload);
+};

@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Modal, Switch } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2, Pill, X, Trash2, Eye, PawPrint } from "../src/components/ui/icons";
+import { Share2, Heart, ShieldCheck, Cake, Ruler, MapPin, Sparkles, Syringe, BadgeCheck, Phone, HandHeart, Home, Edit2, Pill, X, Trash2, Eye, PawPrint, Activity } from "../src/components/ui/icons";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { ShareSheet } from "../src/components/ShareSheet";
 import { PageContainer } from "../src/components/PageContainer";
@@ -355,6 +355,7 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
   const vaccines = pet?.Vaccines || [];
   const meds = pet?.Medications || [];
   const allergies = pet?.Allergies?.map((a: any) => a.allergen) || [];
+  const vitals = pet?.vitals || [];
   const microchip = pet?.microchip_id;
   return (
     <View style={{ gap: 16 }}>
@@ -419,6 +420,32 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
                 <Text style={[styles.vaccineDate, { color: tk.textMuted }]}>
                   {m.dosage ? `Dose: ${m.dosage} ` : ""}
                   {m.startDate ? `· Started: ${m.startDate}` : ""}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Vitals */}
+      <View>
+        <Text style={[styles.sectionTitle, { color: tk.text }]}>Vitals</Text>
+        <View style={{ gap: 8 }}>
+          {vitals.length === 0 && <Text style={{ color: tk.textMuted }}>No vitals recorded.</Text>}
+          {vitals.map((v: any, i: number) => (
+            <View key={v.id ? String(v.id) : String(i)} style={[styles.vaccineRow, { backgroundColor: tk.card }]}>
+              <View style={[styles.vaccineIcon, { backgroundColor: "rgba(255,107,107,0.15)" }]}>
+                <Activity size={16} color={colors.coral} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.vaccineName, { color: tk.text }]}>
+                  {v.weight ? `Weight: ${v.weight}kg ` : ""}
+                  {v.temperature ? `Temp: ${v.temperature}°C ` : ""}
+                  {v.heartRate ? `HR: ${v.heartRate} bpm ` : ""}
+                  {!v.weight && !v.temperature && !v.heartRate ? "Vitals Logged" : ""}
+                </Text>
+                <Text style={[styles.vaccineDate, { color: tk.textMuted }]}>
+                  {v.timestamp ? new Date(v.timestamp).toLocaleDateString() : ""} {v.notes ? `· ${v.notes}` : ""}
                 </Text>
               </View>
             </View>

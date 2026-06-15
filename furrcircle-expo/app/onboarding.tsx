@@ -190,7 +190,7 @@ export default function OnboardingScreen() {
       await locationStore.fetchLiveLocation(true);
       // If store got updated, save location to backend profile too (optional but nice)
       const freshCity = useLocationStore.getState().city;
-      
+
       if (!freshCity) {
         Alert.alert(
           "Location Access Required",
@@ -202,10 +202,10 @@ export default function OnboardingScreen() {
         );
         return;
       }
-      
+
       const freshLat = useLocationStore.getState().latitude;
       const freshLng = useLocationStore.getState().longitude;
-      
+
       await userApi.updateProfile({
         city: freshCity,
         latitude: freshLat ?? undefined,
@@ -633,7 +633,7 @@ export default function OnboardingScreen() {
               style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border }]}
             />
           </ScrollView>
-        ); 
+        );
 
       // --- STEP 3: COMPLETE PROFILE ---
       case 2:

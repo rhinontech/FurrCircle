@@ -70,6 +70,26 @@ export const leaveCircle = async (circleId: string) => {
     }
 };
 
+export const updateCircle = async (circleId: string, payload: { name?: string; description?: string; category?: string; coverImage?: string | null }) => {
+    try {
+        const response = await PrivateAxios.patch(`/circles/${circleId}`, payload);
+        return response.data;
+    } catch (error: any) {
+        console.error('updateCircle Error:', error?.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const deleteCircle = async (circleId: string) => {
+    try {
+        const response = await PrivateAxios.delete(`/circles/${circleId}`);
+        return response.data;
+    } catch (error: any) {
+        console.error('deleteCircle Error:', error?.response?.data || error.message);
+        throw error;
+    }
+};
+
 export const circleApi = {
     getAllCircles,
     getMyCircles,
@@ -78,4 +98,6 @@ export const circleApi = {
     createCircle,
     joinCircle,
     leaveCircle,
+    updateCircle,
+    deleteCircle,
 };

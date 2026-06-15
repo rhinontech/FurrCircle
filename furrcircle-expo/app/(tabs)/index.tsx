@@ -11,7 +11,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check, Edit2, Trash2, Info, Flag, Camera, HelpCircle, Sparkles, ArrowLeft } from "../../src/components/ui/icons";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { posts as dummyPosts, sampleComments, type Post } from "../../src/lib/demo-data";
 import { colors } from "../../src/lib/theme";
@@ -31,10 +31,65 @@ import { useIsFocused } from "@react-navigation/native";
 import Svg, { Path, Circle } from "react-native-svg";
 import { useNotificationStore } from "../../src/lib/notification-store";
 import { chatApi } from "../../services/chat/chatApi";
+import { usePostEngagementStore } from "../../src/lib/post-engagement-store";
 import { useLocationStore } from "../../src/lib/location-store";
 import { LinearGradient } from "expo-linear-gradient";
-import { GlassCard, glassSurface } from "../../src/components/ui/Glass";
+import { GlassCard, GlassBlur, glassSurface } from "../../src/components/ui/Glass";
 import { tabBarClearance } from "../../src/lib/tabbar";
+
+const FEED_PAGE_SIZE = 15;
+// Height of the header content below the status bar — feed content is padded by
+// this so posts scroll *under* the translucent glass header.
+const HEADER_CONTENT_HEIGHT = 62;
+
+// Shown after the "following" section is exhausted. Tapping the button
+// reveals the "suggested" section (posts from people you don't follow).
+function CaughtUpBoundary({ empty, loading, onReveal, tk }: { empty: boolean; loading: boolean; onReveal: () => void; tk: any }) {
+  return (
+    <View style={styles.boundaryWrap}>
+      <View style={[styles.boundaryIcon, { backgroundColor: tk.card, borderColor: tk.border }]}>
+        <Check size={22} color={colors.primary} strokeWidth={3} />
+      </View>
+      <Text style={[styles.boundaryTitle, { color: tk.text }]}>
+        {empty ? "Nothing in your feed yet" : "You're all caught up"}
+      </Text>
+      <Text style={[styles.boundaryText, { color: tk.textMuted }]}>
+        {empty
+          ? "Follow people or post to fill your feed. Want to see what others are sharing?"
+          : "You've seen all posts from people you follow. Want to discover more?"}
+      </Text>
+      <TouchableOpacity
+        style={[styles.boundaryBtn, { opacity: loading ? 0.6 : 1 }]}
+        onPress={onReveal}
+        disabled={loading}
+        activeOpacity={0.85}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <>
+            <Text style={styles.boundaryBtnText}>Show suggested posts</Text>
+            <ChevronDown size={18} color="#fff" strokeWidth={2.6} />
+          </>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// Divider that introduces the suggested section once it has been revealed.
+function SuggestedDivider({ tk }: { tk: any }) {
+  return (
+    <View style={styles.suggestedDivider}>
+      <View style={[styles.suggestedLine, { backgroundColor: tk.border }]} />
+      <View style={styles.suggestedLabel}>
+        <Sparkles size={14} color={colors.primary} />
+        <Text style={[styles.suggestedLabelText, { color: tk.textMuted }]}>Suggested for you</Text>
+      </View>
+      <View style={[styles.suggestedLine, { backgroundColor: tk.border }]} />
+    </View>
+  );
+}
 
 export default function FeedScreen() {
   const router = useRouter();
@@ -79,6 +134,35 @@ export default function FeedScreen() {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const user = useAuthStore(s => s.user);
 
+  // ── Feed pagination — "following" (you + people you follow) section ──
+  const [feedPage, setFeedPage] = useState(1);
+  const [feedHasMore, setFeedHasMore] = useState(true);
+  const [feedLoadingMore, setFeedLoadingMore] = useState(false);
+
+  // ── "Suggested" section — everyone else, revealed only on tap ──
+  const [suggestedPosts, setSuggestedPosts] = useState<any[]>([]);
+  const [showSuggested, setShowSuggested] = useState(false);
+  const [suggestedLoading, setSuggestedLoading] = useState(false);
+  const [suggestedPage, setSuggestedPage] = useState(1);
+  const [suggestedHasMore, setSuggestedHasMore] = useState(true);
+  const [suggestedLoadingMore, setSuggestedLoadingMore] = useState(false);
+
+  // Record which of the freshly-loaded posts the current user has liked/saved.
+  const indexLikeSave = useCallback((apiPosts: any[]) => {
+    const userId = user?.id;
+    if (!userId) return;
+    setLikedIds(prev => {
+      const next = new Set(prev);
+      apiPosts.forEach((p: any) => { if ((p.likes || []).some((l: any) => l.userId === userId)) next.add(p.id); });
+      return next;
+    });
+    setSavedIds(prev => {
+      const next = new Set(prev);
+      apiPosts.forEach((p: any) => { if ((p.savedBy || []).includes(userId)) next.add(p.id); });
+      return next;
+    });
+  }, [user?.id]);
+
   const loadStories = useCallback(async () => {
     try {
       const [groups, mine] = await Promise.all([
@@ -103,24 +187,92 @@ export default function FeedScreen() {
   const loadFeed = useCallback(async () => {
     try {
       setFeedLoading(true);
-      const data = await feedApi.getFeed('for_you', 1, 50);
+      // Reset the suggested section on every fresh load / refresh
+      setShowSuggested(false);
+      setSuggestedPosts([]);
+      setSuggestedPage(1);
+      setSuggestedHasMore(true);
+      // Reset like/save tracking so a refresh reflects the latest server state
+      setLikedIds(new Set());
+      setSavedIds(new Set());
+
+      const data = await feedApi.getFeed('for_you', 1, FEED_PAGE_SIZE, 'following');
       const apiPosts = data?.posts || [];
       setFeedPosts(apiPosts);
-
-      const userId = user?.id;
-      if (userId) {
-        const liked = new Set<string>(apiPosts.filter((p: any) => (p.likes || []).some((l: any) => l.userId === userId)).map((p: any) => p.id));
-        const saved = new Set<string>(apiPosts.filter((p: any) => (p.savedBy || []).includes(userId)).map((p: any) => p.id));
-        setLikedIds(liked);
-        setSavedIds(saved);
-      }
+      setFeedPage(1);
+      setFeedHasMore(!!data?.pagination?.hasMore);
+      indexLikeSave(apiPosts);
     } catch (err) {
       console.error("Failed to load feed:", err);
       setFeedPosts([]);
+      setFeedHasMore(false);
     } finally {
       setFeedLoading(false);
     }
-  }, [user?.id]);
+  }, [indexLikeSave]);
+
+  // Load the next page of the "following" section as the user scrolls.
+  const loadMoreFeed = useCallback(async () => {
+    if (feedLoadingMore || !feedHasMore) return;
+    setFeedLoadingMore(true);
+    try {
+      const next = feedPage + 1;
+      const data = await feedApi.getFeed('for_you', next, FEED_PAGE_SIZE, 'following');
+      const apiPosts = data?.posts || [];
+      setFeedPosts(prev => [...prev, ...apiPosts]);
+      setFeedPage(next);
+      setFeedHasMore(!!data?.pagination?.hasMore);
+      indexLikeSave(apiPosts);
+    } catch (err) {
+      console.error("Failed to load more feed:", err);
+    } finally {
+      setFeedLoadingMore(false);
+    }
+  }, [feedLoadingMore, feedHasMore, feedPage, indexLikeSave]);
+
+  // Reveal the suggested section (everyone you don't follow) on tap.
+  const revealSuggested = useCallback(async () => {
+    if (suggestedLoading) return;
+    setShowSuggested(true);
+    setSuggestedLoading(true);
+    try {
+      const data = await feedApi.getFeed('for_you', 1, FEED_PAGE_SIZE, 'suggested');
+      const apiPosts = data?.posts || [];
+      setSuggestedPosts(apiPosts);
+      setSuggestedPage(1);
+      setSuggestedHasMore(!!data?.pagination?.hasMore);
+      indexLikeSave(apiPosts);
+    } catch (err) {
+      console.error("Failed to load suggested posts:", err);
+      setSuggestedHasMore(false);
+    } finally {
+      setSuggestedLoading(false);
+    }
+  }, [suggestedLoading, indexLikeSave]);
+
+  const loadMoreSuggested = useCallback(async () => {
+    if (suggestedLoadingMore || !suggestedHasMore) return;
+    setSuggestedLoadingMore(true);
+    try {
+      const next = suggestedPage + 1;
+      const data = await feedApi.getFeed('for_you', next, FEED_PAGE_SIZE, 'suggested');
+      const apiPosts = data?.posts || [];
+      setSuggestedPosts(prev => [...prev, ...apiPosts]);
+      setSuggestedPage(next);
+      setSuggestedHasMore(!!data?.pagination?.hasMore);
+      indexLikeSave(apiPosts);
+    } catch (err) {
+      console.error("Failed to load more suggested posts:", err);
+    } finally {
+      setSuggestedLoadingMore(false);
+    }
+  }, [suggestedLoadingMore, suggestedHasMore, suggestedPage, indexLikeSave]);
+
+  // Scroll-driven pagination: exhaust "following" first, then suggested.
+  const handleEndReached = useCallback(() => {
+    if (feedHasMore) loadMoreFeed();
+    else if (showSuggested && suggestedHasMore) loadMoreSuggested();
+  }, [feedHasMore, showSuggested, suggestedHasMore, loadMoreFeed, loadMoreSuggested]);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -151,23 +303,25 @@ export default function FeedScreen() {
       return next;
     });
 
-    // Update count in state
-    setFeedPosts(prev => prev.map(p => {
-      if (p.id === postId) {
-        if (isDummy) {
-          return { ...p, likes: isLiked ? Math.max(0, p.likes - 1) : p.likes + 1 };
-        } else {
-          const currentLikes = p.likes || [];
-          return {
-            ...p,
-            likes: isLiked
-              ? currentLikes.filter((l: any) => l.userId !== user?.id)
-              : [...currentLikes, { userId: user?.id }]
-          };
-        }
+    // Update count in state (applies to both the following + suggested lists)
+    const applyLike = (p: any) => {
+      if (p.id !== postId) return p;
+      if (isDummy) {
+        return { ...p, likes: isLiked ? Math.max(0, p.likes - 1) : p.likes + 1 };
       }
-      return p;
-    }));
+      const currentLikes = p.likes || [];
+      return {
+        ...p,
+        likes: isLiked
+          ? currentLikes.filter((l: any) => l.userId !== user?.id)
+          : [...currentLikes, { userId: user?.id }],
+      };
+    };
+    setFeedPosts(prev => prev.map(applyLike));
+    setSuggestedPosts(prev => prev.map(applyLike));
+    // If the server has already reported live counts for this post, nudge them
+    // optimistically so the displayed number doesn't flicker before the echo.
+    if (!isDummy) usePostEngagementStore.getState().bumpLike(postId, isLiked ? -1 : 1);
 
     if (!isDummy) {
       try { await feedApi.likePost(postId); } catch { }
@@ -339,38 +493,69 @@ export default function FeedScreen() {
     }
   };
 
+  // Build the rendered rows: following posts → caught-up boundary → suggested posts.
+  const feedRows = useMemo(() => {
+    const rows: any[] = feedPosts.map((p) => ({ kind: "post", post: p, section: "following" }));
+    // Once the following section is fully loaded, show the boundary / reveal CTA.
+    if (!feedLoading && !feedHasMore) {
+      rows.push(showSuggested ? { kind: "suggestedHeader" } : { kind: "boundary" });
+    }
+    if (showSuggested) {
+      suggestedPosts.forEach((p) => rows.push({ kind: "post", post: p, section: "suggested" }));
+    }
+    return rows;
+  }, [feedPosts, feedLoading, feedHasMore, showSuggested, suggestedPosts]);
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <FeedHeader />
+    <View style={styles.container}>
       <FlatList
-        data={feedPosts}
-        keyExtractor={(item) => item.id}
+        data={feedRows}
+        keyExtractor={(item) => (item.kind === "post" ? item.post.id : item.kind)}
         refreshing={refreshing}
         onRefresh={handleRefresh}
-        renderItem={({ item: p }) => (
-          <View style={{ paddingHorizontal: 16 }}>
-            <PostCard
-              post={p}
-              isLiked={likedIds.has(p.id)}
-              isSaved={savedIds.has(p.id)}
-              onLike={() => handleLike(p.id)}
-              onSave={() => handleSave(p.id)}
-              onShare={(id) => {
-                setSharingPostId(id);
-                setShareOpen(true);
-              }}
-              isMuted={feedVideoMuted}
-              onToggleMute={() => setFeedVideoMuted(prev => !prev)}
-              isActive={activePostId === p.id}
-              onDelete={() => {
-                setFeedPosts(prev => prev.filter(x => x.id !== p.id));
-              }}
-              onUpdate={(updatedPost) => {
-                setFeedPosts(prev => prev.map(x => x.id === p.id ? { ...x, ...updatedPost } : x));
-              }}
-            />
-          </View>
-        )}
+        progressViewOffset={insets.top + HEADER_CONTENT_HEIGHT}
+        renderItem={({ item }) => {
+          if (item.kind === "boundary") {
+            return (
+              <CaughtUpBoundary
+                empty={feedPosts.length === 0}
+                loading={suggestedLoading}
+                onReveal={revealSuggested}
+                tk={tk}
+              />
+            );
+          }
+          if (item.kind === "suggestedHeader") {
+            return <SuggestedDivider tk={tk} />;
+          }
+          const p = item.post;
+          return (
+            <View style={{ paddingHorizontal: 16 }}>
+              <PostCard
+                post={p}
+                isLiked={likedIds.has(p.id)}
+                isSaved={savedIds.has(p.id)}
+                onLike={() => handleLike(p.id)}
+                onSave={() => handleSave(p.id)}
+                onShare={(id) => {
+                  setSharingPostId(id);
+                  setShareOpen(true);
+                }}
+                isMuted={feedVideoMuted}
+                onToggleMute={() => setFeedVideoMuted(prev => !prev)}
+                isActive={activePostId === p.id}
+                onDelete={() => {
+                  setFeedPosts(prev => prev.filter(x => x.id !== p.id));
+                  setSuggestedPosts(prev => prev.filter(x => x.id !== p.id));
+                }}
+                onUpdate={(updatedPost) => {
+                  setFeedPosts(prev => prev.map(x => x.id === p.id ? { ...x, ...updatedPost } : x));
+                  setSuggestedPosts(prev => prev.map(x => x.id === p.id ? { ...x, ...updatedPost } : x));
+                }}
+              />
+            </View>
+          );
+        }}
         ListHeaderComponent={
           <StoryRail
             myStories={myStories}
@@ -391,12 +576,22 @@ export default function FeedScreen() {
             <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
           )
         }
+        ListFooterComponent={
+          (feedLoadingMore || suggestedLoadingMore) ? (
+            <ActivityIndicator color={colors.primary} style={{ marginVertical: 24 }} />
+          ) : null
+        }
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 140, paddingTop: 12 }}
+        contentContainerStyle={{ paddingBottom: 140, paddingTop: insets.top + HEADER_CONTENT_HEIGHT }}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
       />
+
+      {/* Glass header overlay — feed content scrolls under it (frosted, no hard cut) */}
+      <FeedHeader />
 
       <TouchableOpacity
         onPress={() => setComposeOpen(true)}
@@ -420,6 +615,11 @@ export default function FeedScreen() {
           setSharingPostId(null);
         }}
         postId={sharingPostId}
+        onShared={(postId, shareCount) => {
+          const apply = (p: any) => (p.id === postId ? { ...p, shareCount } : p);
+          setFeedPosts(prev => prev.map(apply));
+          setSuggestedPosts(prev => prev.map(apply));
+        }}
       />
       <StoryViewer
         visible={storyViewerVisible}
@@ -462,6 +662,7 @@ function FeedHeader() {
   const router = useRouter();
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
+  const insets = useSafeAreaInsets();
 
   const logoSource = require("../../src/assets/furrcircle_icon.png");
 
@@ -509,6 +710,7 @@ function FeedHeader() {
   };
 
   return (
+    <GlassBlur intensity={dark ? 40 : 60} style={[styles.headerOverlay, { paddingTop: insets.top }]}>
     <View style={styles.header}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <Image
@@ -555,12 +757,13 @@ function FeedHeader() {
           )}
         </TouchableOpacity>
       </View>
+    </View>
       <LocationPickerModal
         visible={locationModalVisible}
         onClose={() => setLocationModalVisible(false)}
         onSelectLocation={handleLocationSelect}
       />
-    </View>
+    </GlassBlur>
   );
 }
 
@@ -894,8 +1097,21 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   };
   const tintColor = post.tintColor || TINT[(post.category || "").toLowerCase()] || "#FF6B6B22";
 
-  const likeCount = isDummy ? post.likes : (post.likes || []).length;
-  const commentCount = localComments.length;
+  // Prefer realtime counts pushed via the "post:update" socket event; fall back
+  // to the arrays from the initial fetch.
+  const live = usePostEngagementStore(s => s.counts[post.id]);
+  const likeCount = isDummy ? post.likes : (live ? live.likeCount : (post.likes || []).length);
+  const commentCount = live ? live.commentCount : localComments.length;
+  const shareCount = isDummy ? (post.shares || 0) : (live ? live.shareCount : (post.shareCount || 0));
+
+  // Keep inline comments in sync when the feed refreshes with newer server data.
+  // (useState above only seeds the initial value; the FlatList reuses this
+  // component instance across reloads, so without this the count goes stale.)
+  useEffect(() => {
+    if (!isDummy && Array.isArray(post.comments)) {
+      setLocalComments(post.comments);
+    }
+  }, [post.id, post.comments]);
 
   const handleComment = async () => {
     if (!commentText.trim()) return;
@@ -1044,8 +1260,9 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
           <MessageCircle size={24} color={tk.text} />
           <Text style={[styles.actionCount, { color: tk.text }]}>{commentCount}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => onShare(post.id)}>
+        <TouchableOpacity onPress={() => onShare(post.id)} style={styles.actionBtn}>
           <Send size={24} color={tk.text} />
+          <Text style={[styles.actionCount, { color: tk.text }]}>{shareCount}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={onSave} style={{ marginLeft: "auto" }}>
           <Bookmark size={24} color={isSaved ? colors.primary : tk.text} fill={isSaved ? colors.primary : "none"} />
@@ -1470,7 +1687,8 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 0, paddingTop: 10 },
+  headerOverlay: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 20 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 8, paddingTop: 10, height: HEADER_CONTENT_HEIGHT },
   logoImg: { width: 42, height: 42 },
   headerActions: { flexDirection: "row", gap: 8 },
   iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
@@ -1539,6 +1757,16 @@ const styles = StyleSheet.create({
   emptyImage: { width: 140, height: 140, marginBottom: 16, opacity: 0.8 },
   emptyTitle: { fontFamily: "Poppins_700Bold", fontSize: 18, marginBottom: 8, textAlign: "center" },
   emptyText: { fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center", lineHeight: 22 },
+  boundaryWrap: { alignItems: "center", justifyContent: "center", paddingVertical: 28, paddingHorizontal: 32 },
+  boundaryIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", borderWidth: 1, marginBottom: 14 },
+  boundaryTitle: { fontFamily: "Poppins_700Bold", fontSize: 17, marginBottom: 6, textAlign: "center" },
+  boundaryText: { fontFamily: "Inter_400Regular", fontSize: 13.5, textAlign: "center", lineHeight: 20, marginBottom: 18 },
+  boundaryBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: colors.primary, paddingHorizontal: 22, height: 46, borderRadius: 23, minWidth: 200 },
+  boundaryBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 15, color: "#fff" },
+  suggestedDivider: { flexDirection: "row", alignItems: "center", paddingHorizontal: 24, paddingVertical: 6 },
+  suggestedLine: { flex: 1, height: 1 },
+  suggestedLabel: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12 },
+  suggestedLabelText: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
   muteBtn: {
     position: "absolute",
     bottom: 12,

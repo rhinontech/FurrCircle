@@ -8,6 +8,7 @@ import { useTokens } from "../src/lib/theme-store";
 import { MapPin, Siren, Eye, Plus, Camera, Trash2, Edit2, X, AlertCircle } from "../src/components/ui/icons";
 import * as ImagePicker from "expo-image-picker";
 import { lostPetApi } from "../services/lost/lostPetApi";
+import { chatApi } from "../services/chat/chatApi";
 import { userApi } from "../services/user/userApi";
 import { useAuthStore } from "../src/lib/auth-store";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -156,6 +157,18 @@ export default function LostScreen() {
       Alert.alert("Error", err?.response?.data?.message || err.message || "Failed to submit report.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleMessageAuthor = async () => {
+    const recipientId = selectedPost?.userId;
+    if (!recipientId) return;
+    try {
+      const conv = await chatApi.startChat(recipientId);
+      setSelectedPost(null);
+      router.push({ pathname: "/chat", params: { id: conv.id } });
+    } catch (err: any) {
+      Alert.alert("Can't send message", err?.response?.data?.message || err?.message || "Failed to start chat.");
     }
   };
 
@@ -413,12 +426,9 @@ export default function LostScreen() {
                         <Text style={[styles.detailActionBtnText, { color: colors.primary }]}>View Profile</Text>
                       </TouchableOpacity>
 
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={[styles.detailActionBtn, { backgroundColor: colors.primary }]}
-                        onPress={() => {
-                          setSelectedPost(null);
-                          router.push("/chat");
-                        }}
+                        onPress={handleMessageAuthor}
                       >
                         <Text style={[styles.detailActionBtnText, { color: colors.white }]}>Send Message</Text>
                       </TouchableOpacity>

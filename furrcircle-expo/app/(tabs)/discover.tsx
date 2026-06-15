@@ -7,6 +7,7 @@ import {
   TextInput,
   StyleSheet,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -21,7 +22,7 @@ import { petApi } from "../../services/pet/petApi";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { useLocationStore } from "../../src/lib/location-store";
 
-type Mode = "all" | "adoption" | "foster";
+type Mode = "all" | "adoption" | "foster" | "breed";
 
 export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
@@ -31,8 +32,12 @@ export default function DiscoverScreen() {
   const locationCity = useLocationStore(s => s.city);
   const locationLat = useLocationStore(s => s.latitude);
   const locationLng = useLocationStore(s => s.longitude);
+  // Fall back to the user's profile city when no live location is set, so we
+  // auto-load vets instead of asking the user to "Add Location" they already have.
+  const effectiveCity = locationCity || user?.city || null;
   const [mode, setMode] = useState<Mode>("all");
   const [nearbyVets, setNearbyVets] = useState<any[]>([]);
+  const [vetsLoading, setVetsLoading] = useState(false);
   const [allPets, setAllPets] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -41,8 +46,8 @@ export default function DiscoverScreen() {
     const coords = locationLat && locationLng ? { lat: locationLat, lng: locationLng } : undefined;
 
     try {
-      if (locationCity) {
-        const vetsData = await placesApi.getVetsByCity(locationCity, locationLat, locationLng);
+      if (effectiveCity) {
+        const vetsData = await placesApi.getVetsByCity(effectiveCity, locationLat, locationLng);
         setNearbyVets(vetsData.items || []);
       }
     } catch (err) {
@@ -63,12 +68,15 @@ export default function DiscoverScreen() {
     const fetchData = async () => {
       const coords = locationLat && locationLng ? { lat: locationLat, lng: locationLng } : undefined;
 
-      if (locationCity) {
+      if (effectiveCity) {
+        setVetsLoading(true);
         try {
-          const vetsData = await placesApi.getVetsByCity(locationCity, locationLat, locationLng);
+          const vetsData = await placesApi.getVetsByCity(effectiveCity, locationLat, locationLng);
           setNearbyVets(vetsData.items || []);
         } catch (err) {
           console.warn("Failed to fetch vets data:", err);
+        } finally {
+          setVetsLoading(false);
         }
       }
 
@@ -80,10 +88,16 @@ export default function DiscoverScreen() {
       }
     };
     fetchData();
-  }, [locationCity, locationLat, locationLng]);
+  }, [effectiveCity, locationLat, locationLng]);
 
   const pets = allPets.filter((p) =>
-    mode === "all" ? p.isAdoptionOpen || p.isFosterOpen : mode === "adoption" ? p.isAdoptionOpen : p.isFosterOpen
+    mode === "all"
+      ? p.isAdoptionOpen || p.isFosterOpen || p.isBreedingOpen
+      : mode === "adoption"
+      ? p.isAdoptionOpen
+      : mode === "foster"
+      ? p.isFosterOpen
+      : p.isBreedingOpen
   );
 
   return (
@@ -120,7 +134,7 @@ export default function DiscoverScreen() {
           </View>
 
           <View style={styles.vetList}>
-            {!locationCity ? (
+            {!effectiveCity ? (
               <TouchableOpacity onPress={() => router.push("/settings")} style={[styles.vetRow, glassSurface(tk)]} activeOpacity={0.8}>
                 <View style={[styles.vetIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
                   <MapPin size={28} color={colors.primary} />
@@ -135,10 +149,15 @@ export default function DiscoverScreen() {
                 </View>
               </TouchableOpacity>
             ) : (
-              nearbyVets.length === 0 ? (
+              vetsLoading && nearbyVets.length === 0 ? (
+                <View style={[styles.emptyVetsContainer, glassSurface(tk)]}>
+                  <ActivityIndicator color={colors.primary} />
+                  <Text style={[styles.emptyVetsText, { color: tk.textMuted }]}>Finding vets near {effectiveCity}…</Text>
+                </View>
+              ) : nearbyVets.length === 0 ? (
                 <View style={[styles.emptyVetsContainer, glassSurface(tk)]}>
                   <Stethoscope size={24} color={tk.textMuted} />
-                  <Text style={[styles.emptyVetsText, { color: tk.textMuted }]}>No veterinarians found nearby in {locationCity}</Text>
+                  <Text style={[styles.emptyVetsText, { color: tk.textMuted }]}>No veterinarians found nearby in {effectiveCity}</Text>
                 </View>
               ) : (
                 nearbyVets.slice(0, 4).map((v) => (
@@ -157,10 +176,10 @@ export default function DiscoverScreen() {
                       <View style={styles.vetMeta}>
                         <Star size={12} color={colors.sunshine} fill={colors.sunshine} />
                         <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{v.rating || "N/A"}</Text>
-                        {locationCity && (
+                        {effectiveCity && (
                           <>
                             <MapPin size={12} color={tk.textMuted} />
-                            <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{locationCity}</Text>
+                            <Text style={[styles.vetMetaText, { color: tk.textMuted }]}>{effectiveCity}</Text>
                           </>
                         )}
                       </View>
@@ -184,6 +203,7 @@ export default function DiscoverScreen() {
               { k: "all" as Mode, label: "All" },
               { k: "adoption" as Mode, label: "Adoption" },
               { k: "foster" as Mode, label: "Foster" },
+              { k: "breed" as Mode, label: "Breed" },
             ]).map(({ k, label }) => {
               const isActive = mode === k;
               return (
@@ -206,6 +226,7 @@ export default function DiscoverScreen() {
                   <View style={styles.petBadges}>
                     {p.isAdoptionOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.success }]}><Text style={styles.adoptBadgeText}>Adopt</Text></View>}
                     {p.isFosterOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.coral }]}><Text style={styles.adoptBadgeText}>Foster</Text></View>}
+                    {p.isBreedingOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.sunshine }]}><Text style={[styles.adoptBadgeText, { color: colors.foreground }]}>Breed</Text></View>}
                   </View>
                 </View>
                 <View style={styles.petInfo}>

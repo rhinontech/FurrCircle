@@ -7,6 +7,8 @@ import {
     createCircle,
     joinCircle,
     leaveCircle,
+    updateCircle,
+    deleteCircle,
     getTrending,
 } from "../controllers/circleController.ts";
 
@@ -22,5 +24,7 @@ router.post("/", createCircle);
 router.get("/:id", getCircleById);
 router.post("/:id/join", joinCircle);
 router.post("/:id/leave", leaveCircle);
+router.patch("/:id", updateCircle);
+router.delete("/:id", deleteCircle);
 
 export default router;

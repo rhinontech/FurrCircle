@@ -20,9 +20,12 @@ import { notificationApi } from "../services/notification/notificationApi";
 import { socketService } from "../services/socket/socketService";
 import { useNotificationStore } from "../src/lib/notification-store";
 import type { AppNotification, UnreadCounts } from "../services/notification/notificationApi";
-import { Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LocationSync } from "../src/components/LocationSync";
+import { ToastHost } from "../src/components/ToastHost";
+import { toast } from "../src/lib/toast-store";
+import { navigateForNotification } from "../src/lib/notification-nav";
+import { usePostEngagementStore } from "../src/lib/post-engagement-store";
 
 // Safe dynamic import for Firebase messaging
 const getMessaging = () => {
@@ -98,6 +101,8 @@ const handleNotificationRedirect = (remoteMessage: any, router: any) => {
     router.push('/discover');
   } else if (actionType === 'community') {
     router.push('/community');
+  } else if (actionType === 'match_requests' || actionType === 'adoption_application') {
+    router.push('/match?openRequests=true');
   } else {
     // Default fallback
     router.push('/notifications');
@@ -178,6 +183,21 @@ export default function RootLayout() {
           "notification:new",
           (notif) => {
             prependNotification(notif);
+            // Surface it as a non-blocking banner that stacks/queues.
+            const variant =
+              notif.type === "like" ? "like"
+              : notif.type === "comment" ? "comment"
+              : notif.type === "match" ? "match"
+              : "info";
+            toast.show({
+              id: notif.id,
+              title: notif.title,
+              message: notif.message,
+              variant,
+              onPress: () => {
+                if (!navigateForNotification(notif, router)) router.push("/notifications");
+              },
+            });
           }
         );
 
@@ -196,11 +216,20 @@ export default function RootLayout() {
           }
         );
 
+        // Realtime post engagement counts (likes / comments / shares)
+        const unsubPost = socketService.on<{ postId: string; likeCount: number; commentCount: number; shareCount: number }>(
+          "post:update",
+          ({ postId, likeCount, commentCount, shareCount }) => {
+            usePostEngagementStore.getState().setCounts(postId, { likeCount, commentCount, shareCount });
+          }
+        );
+
         // Store cleanup refs on the cancel closure
         return () => {
           unsubNew();
           unsubCounts();
           unsubChat();
+          unsubPost();
         };
       } catch (err) {
         console.warn("[Socket] Bootstrap failed:", err);
@@ -266,14 +295,12 @@ export default function RootLayout() {
         const unsubscribe = messaging().onMessage(async (remoteMessage: any) => {
           console.log("A new FCM message arrived!", JSON.stringify(remoteMessage));
           if (remoteMessage.notification) {
-            Alert.alert(
-              remoteMessage.notification.title || "New Notification",
-              remoteMessage.notification.body || "",
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'View', onPress: () => handleNotificationRedirect(remoteMessage, router) }
-              ]
-            );
+            // Non-blocking in-app banner instead of a full-screen Alert popup.
+            toast.show({
+              title: remoteMessage.notification.title || "New Notification",
+              message: remoteMessage.notification.body || "",
+              onPress: () => handleNotificationRedirect(remoteMessage, router),
+            });
           }
         });
         
@@ -404,6 +431,7 @@ export default function RootLayout() {
         ) : (
           stackScreens
         )}
+        <ToastHost />
       </QueryClientProvider>
     </GestureHandlerRootView>
   );
