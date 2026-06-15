@@ -313,12 +313,22 @@ export default function RootLayout() {
   useEffect(() => {
     if (!fontsLoaded || authLoading) return;
     const inAuthGroup = ["login", "signup", "otp-verify", "forgot-password"].includes(segments[0] || "");
+    const isOnboarding = segments[0] === "onboarding";
+
     if (!user && !inAuthGroup) {
       router.replace("/login");
-    } else if (user && inAuthGroup) {
-      router.replace(justSignedUp ? "/onboarding" : "/(tabs)");
+    } else if (user) {
+      if (user.hasCompletedOnboarding === false) {
+        if (!isOnboarding) {
+          router.replace("/onboarding");
+        }
+      } else {
+        if (inAuthGroup || isOnboarding) {
+          router.replace("/(tabs)");
+        }
+      }
     }
-  }, [user, authLoading, fontsLoaded, segments, justSignedUp]);
+  }, [user, authLoading, fontsLoaded, segments]);
 
   if (!fontsLoaded || authLoading) return <View style={{ flex: 1, backgroundColor: "#F7F8FA" }} />;
 
