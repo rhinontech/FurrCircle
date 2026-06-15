@@ -530,7 +530,7 @@ export default function FeedScreen() {
           }
           const p = item.post;
           return (
-            <View style={{ paddingHorizontal: 16 }}>
+            <View style={{ paddingHorizontal: 0 }}>
               <PostCard
                 post={p}
                 isLiked={likedIds.has(p.id)}
@@ -711,53 +711,53 @@ function FeedHeader() {
 
   return (
     <GlassBlur intensity={dark ? 40 : 60} style={[styles.headerOverlay, { paddingTop: insets.top }]}>
-    <View style={styles.header}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <Image
-          source={logoSource}
-          style={styles.logoImg}
-          resizeMode="contain"
-        />
-        <View style={{ justifyContent: "center" }}>
-          <Text style={{ fontFamily: "Fredoka_700Bold", fontSize: 20, lineHeight: 22 }}>
-            <Text style={{ color: dark ? "#FFFFFF" : "#0D3B8E" }}>Furr</Text>
-            <Text style={{ color: "#398EE4" }}>Circle</Text>
-          </Text>
-          <TouchableOpacity
-            onPress={() => setLocationModalVisible(true)}
-            style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}
-          >
-            {/* <MapPin size={12} color={tk.textMuted} style={{ marginRight: 2 }} /> */}
-            <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted }}>
-              {locationCity || user?.city || "Select Location"}
+      <View style={styles.header}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Image
+            source={logoSource}
+            style={styles.logoImg}
+            resizeMode="contain"
+          />
+          <View style={{ justifyContent: "center" }}>
+            <Text style={{ fontFamily: "Fredoka_700Bold", fontSize: 20, lineHeight: 22 }}>
+              <Text style={{ color: dark ? "#FFFFFF" : "#0D3B8E" }}>Furr</Text>
+              <Text style={{ color: "#398EE4" }}>Circle</Text>
             </Text>
-            <ChevronDown size={12} color={tk.textMuted} style={{ marginLeft: 2 }} />
+            <TouchableOpacity
+              onPress={() => setLocationModalVisible(true)}
+              style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}
+            >
+              {/* <MapPin size={12} color={tk.textMuted} style={{ marginRight: 2 }} /> */}
+              <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted }}>
+                {locationCity || user?.city || "Select Location"}
+              </Text>
+              <ChevronDown size={12} color={tk.textMuted} style={{ marginLeft: 2 }} />
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => router.push("/chat")} style={[styles.iconBtn, glassSurface(tk)]}>
+            <MessageCircle size={20} color={chatUnreadCount > 0 ? colors.primary : tk.text} strokeWidth={2} />
+            {chatUnreadCount > 0 && (
+              <View style={styles.notifBadge}>
+                <Text style={styles.notifBadgeText}>{chatBadgeLabel}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/notifications")}
+            style={[styles.iconBtn, glassSurface(tk)]}
+            activeOpacity={0.8}
+          >
+            <Bell size={20} color={unreadCount > 0 ? colors.primary : tk.text} strokeWidth={2} />
+            {unreadCount > 0 && (
+              <View style={styles.notifBadge}>
+                <Text style={styles.notifBadgeText}>{badgeLabel}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
-      <View style={styles.headerActions}>
-        <TouchableOpacity onPress={() => router.push("/chat")} style={[styles.iconBtn, glassSurface(tk)]}>
-          <MessageCircle size={20} color={chatUnreadCount > 0 ? colors.primary : tk.text} strokeWidth={2} />
-          {chatUnreadCount > 0 && (
-            <View style={styles.notifBadge}>
-              <Text style={styles.notifBadgeText}>{chatBadgeLabel}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => router.push("/notifications")}
-          style={[styles.iconBtn, glassSurface(tk)]}
-          activeOpacity={0.8}
-        >
-          <Bell size={20} color={unreadCount > 0 ? colors.primary : tk.text} strokeWidth={2} />
-          {unreadCount > 0 && (
-            <View style={styles.notifBadge}>
-              <Text style={styles.notifBadgeText}>{badgeLabel}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-    </View>
       <LocationPickerModal
         visible={locationModalVisible}
         onClose={() => setLocationModalVisible(false)}
@@ -961,6 +961,40 @@ const getCommentTimeLabel = (createdAt?: string) => {
   return `${dy}d`;
 };
 
+const getPostTimeLabel = (createdAt?: string) => {
+  if (!createdAt) return "";
+  const time = new Date(createdAt).getTime();
+  if (isNaN(time)) return "";
+  const diff = Date.now() - time;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return "just now";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return min === 1 ? "1 minute ago" : `${min} minutes ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return hr === 1 ? "1 hour ago" : `${hr} hours ago`;
+  const dy = Math.floor(hr / 24);
+  if (dy < 7) return dy === 1 ? "1 day ago" : `${dy} days ago`;
+  const wk = Math.floor(dy / 7);
+  if (wk < 4) return wk === 1 ? "1 week ago" : `${wk} weeks ago`;
+  const mo = Math.floor(dy / 30);
+  if (mo < 12) return mo === 1 ? "1 month ago" : `${mo} months ago`;
+  const yr = Math.floor(dy / 365);
+  return yr === 1 ? "1 year ago" : `${yr} years ago`;
+};
+
+const formatDummyTime = (timeStr?: string) => {
+  if (!timeStr) return "";
+  const match = timeStr.match(/^(\d+)([mhdw])$/);
+  if (!match) return timeStr;
+  const val = parseInt(match[1], 10);
+  const unit = match[2];
+  if (unit === "m") return val === 1 ? "1 minute ago" : `${val} minutes ago`;
+  if (unit === "h") return val === 1 ? "1 hour ago" : `${val} hours ago`;
+  if (unit === "d") return val === 1 ? "1 day ago" : `${val} days ago`;
+  if (unit === "w") return val === 1 ? "1 week ago" : `${val} weeks ago`;
+  return timeStr;
+};
+
 function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, onToggleMute, isActive, onDelete, onUpdate }: {
   post: any; isLiked: boolean; isSaved: boolean;
   onLike: () => void; onSave: () => void; onShare: (id: string) => void;
@@ -973,6 +1007,9 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
   const { isTablet } = useBreakpoint();
+  const postTimeText = post.createdAt
+    ? getPostTimeLabel(post.createdAt)
+    : (post.time ? formatDummyTime(post.time) : "");
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -1140,19 +1177,19 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   };
 
   return (
-    <GlassCard style={styles.card}>
+    <View style={styles.card}>
       {/* Header */}
       <View style={styles.cardHeader}>
         <TouchableOpacity
-          style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}
+          style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}
           onPress={() => author.username && router.push(isDummy ? `/user/${author.username}` : `/u/${author.username}`)}
         >
           {typeof avatarSource === "number" ? (
-            <Image source={avatarSource} style={{ width: 44, height: 44, borderRadius: 22 }} />
+            <Image source={avatarSource} style={{ width: 30, height: 30, borderRadius: 22 }} />
           ) : avatarSource?.uri ? (
-            <Image source={{ uri: avatarSource.uri }} style={{ width: 44, height: 44, borderRadius: 22 }} />
+            <Image source={{ uri: avatarSource.uri }} style={{ width: 30, height: 30, borderRadius: 22 }} />
           ) : (
-            <Avatar name={displayName} size={44} />
+            <Avatar name={displayName} size={30} />
           )}
           <View style={styles.cardMeta}>
             <Text style={[styles.petName, { color: tk.text }]}>
@@ -1235,23 +1272,8 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
         )}
       </TouchableOpacity>
 
-      {/* Caption */}
-      {(post.image || post.imageUrl) && (post.caption || post.content) ? (
-        <Text style={[styles.caption, { color: tk.text }]} numberOfLines={2}>
-          <Text style={styles.captionBold}>{post.pet || displayName} </Text>
-          {post.caption || post.content}
-        </Text>
-      ) : null}
-
-      {/* Tags */}
-      {post.tags ? (
-        <Text style={styles.tags}>{post.tags.map((t: string) => `#${t}`).join("  ")}</Text>
-      ) : post.category ? (
-        <Text style={styles.tags}>#{post.category}</Text>
-      ) : null}
-
       {/* Actions */}
-      <View style={[styles.actions, { paddingBottom: 12 }]} >
+      <View style={styles.actions} >
         <TouchableOpacity onPress={onLike} style={styles.actionBtn}>
           <Heart size={24} color={isLiked ? colors.coral : tk.text} fill={isLiked ? colors.coral : "none"} />
           <Text style={[styles.actionCount, { color: tk.text }]}>{likeCount}</Text>
@@ -1268,6 +1290,28 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
           <Bookmark size={24} color={isSaved ? colors.primary : tk.text} fill={isSaved ? colors.primary : "none"} />
         </TouchableOpacity>
       </View>
+
+      {/* Caption */}
+      {(post.image || post.imageUrl) && (post.caption || post.content) ? (
+        <Text style={[styles.caption, { color: tk.text }]} numberOfLines={2}>
+          <Text style={styles.captionBold}>{post.pet || displayName} </Text>
+          {post.caption || post.content}
+        </Text>
+      ) : null}
+
+      {/* Tags */}
+      {post.tags ? (
+        <Text style={styles.tags}>{post.tags.map((t: string) => `#${t}`).join("  ")}</Text>
+      ) : post.category ? (
+        <Text style={styles.tags}>#{post.category}</Text>
+      ) : null}
+
+      {/* Time Ago */}
+      {postTimeText ? (
+        <Text style={[styles.timeAgo, { color: tk.textMuted }]}>
+          {postTimeText.toUpperCase()}
+        </Text>
+      ) : null}
 
       {/* Comments Bottom Sheet Modal */}
       <Modal
@@ -1537,7 +1581,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
           )}
         </View>
       </Modal>
-    </GlassCard>
+    </View>
   );
 }
 
@@ -1727,21 +1771,22 @@ const styles = StyleSheet.create({
   reminderTitle: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
   reminderTime: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 2 },
   feedList: { gap: 20, paddingHorizontal: 16, marginTop: 12, width: "100%" },
-  card: { borderRadius: 24, alignSelf: "stretch" },
+  card: { alignSelf: "stretch", backgroundColor: "transparent" },
   cardHeader: { flexDirection: "row", alignItems: "center", padding: 16, paddingBottom: 0, gap: 10 },
   cardMeta: { flex: 1 },
-  petName: { fontFamily: "Poppins_700Bold", fontSize: 15, lineHeight: 20 },
+  petName: { fontFamily: "Poppins_600SemiBold", fontSize: 15, lineHeight: 20 },
   petOwner: { fontSize: 11, fontFamily: "Inter_400Regular" },
   typeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   typeBadgeText: { fontFamily: "Poppins_700Bold", fontSize: 10, color: "#fff" },
-  imageWrapper: { width: "92%", alignSelf: "center", marginTop: 12, marginBottom: 4, borderRadius: 16, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  postImage: { width: "80%", height: "80%" },
+  imageWrapper: { width: "100%", alignSelf: "stretch", marginTop: 12, marginBottom: 4, borderRadius: 0, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  postImage: { width: "100%", height: "100%" },
   actions: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, gap: 16 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   actionCount: { fontSize: 14, fontFamily: "Poppins_600SemiBold" },
   caption: { paddingHorizontal: 16, paddingTop: 8, fontSize: 14, lineHeight: 20, fontFamily: "Inter_400Regular" },
   captionBold: { fontFamily: "Poppins_700Bold" },
-  tags: { paddingHorizontal: 16, paddingBottom: 12, paddingTop: 4, fontSize: 12, fontFamily: "Poppins_600SemiBold", color: colors.primary },
+  tags: { paddingHorizontal: 16, paddingBottom: 4, paddingTop: 4, fontSize: 12, fontFamily: "Poppins_600SemiBold", color: colors.primary },
+  timeAgo: { paddingHorizontal: 16, paddingBottom: 12, paddingTop: 4, fontSize: 10.5, fontFamily: "Inter_500Medium", letterSpacing: 0.2, textTransform: "uppercase" },
   fab: { position: "absolute", bottom: 16, right: 16, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.35)" },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   overlayCenter: { justifyContent: "center", alignItems: "center" },
