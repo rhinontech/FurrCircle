@@ -123,14 +123,16 @@ export default function ComposeScreen() {
             Alert.alert("Video too long", "Please select a video shorter than 60 seconds.");
             return;
           }
-          setMediaType("video");
-        } else {
-          setMediaType("image");
         }
-        if (asset.width && asset.height) {
-          setAspectRatio(asset.width / asset.height);
-        }
-        setImageUri(asset.uri);
+
+        router.push({
+          pathname: "/camera",
+          params: {
+            origin: "post",
+            uri: asset.uri,
+            type: isVideo ? "video" : "image"
+          },
+        });
       }
     } catch (err: any) {
       console.error("pickPhoto error:", err);

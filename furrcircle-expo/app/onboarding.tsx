@@ -73,7 +73,7 @@ export default function OnboardingScreen() {
         try {
           const saved = await AsyncStorage.getItem(`onboarding_step_${user.id}`);
           if (saved) setStepIndex(parseInt(saved, 10));
-        } catch (e) {}
+        } catch (e) { }
       }
       setIsReady(true);
     };
@@ -82,7 +82,7 @@ export default function OnboardingScreen() {
 
   useEffect(() => {
     if (user?.id && isReady) {
-      AsyncStorage.setItem(`onboarding_step_${user.id}`, stepIndex.toString()).catch(() => {});
+      AsyncStorage.setItem(`onboarding_step_${user.id}`, stepIndex.toString()).catch(() => { });
     }
   }, [stepIndex, user?.id, isReady]);
 
@@ -210,7 +210,7 @@ export default function OnboardingScreen() {
     setLocationModalVisible(false);
     locationStore.updateLocation(loc.city, loc.latitude, loc.longitude);
     locationStore.setUseGPS(false);
-    
+
     setLoading(true);
     try {
       await userApi.updateProfile({
@@ -351,14 +351,14 @@ export default function OnboardingScreen() {
         circleApi.getTrending().catch(() => []),
         circleApi.getMyCircles().catch(() => [])
       ]);
-      
+
       let data = trendingData;
       if (!data || data.length === 0) {
         data = await circleApi.getAllCircles().catch(() => []);
       }
-      
+
       setCircles(data.slice(0, 6));
-      
+
       if (myCirclesData && Array.isArray(myCirclesData)) {
         const joinedSet = new Set<string>(myCirclesData.map((c: any) => c.id));
         setJoinedCircleIds(joinedSet);
@@ -405,7 +405,7 @@ export default function OnboardingScreen() {
     try {
       const res = await authApi.completeOnboarding();
       if (user?.id) {
-        AsyncStorage.removeItem(`onboarding_step_${user.id}`).catch(() => {});
+        AsyncStorage.removeItem(`onboarding_step_${user.id}`).catch(() => { });
       }
       // Crucial: token merge so the user stays logged in
       await setSession({
@@ -484,7 +484,7 @@ export default function OnboardingScreen() {
                     style={[styles.primaryActionBtn, { backgroundColor: colors.primary, width: "100%" }]}
                     onPress={handleAutoLocate}
                   >
-                    <Text 
+                    <Text
                       numberOfLines={1}
                       adjustsFontSizeToFit
                       minimumFontScale={0.8}
@@ -524,7 +524,7 @@ export default function OnboardingScreen() {
                   onPress={handleRequestNotifications}
                   disabled={notifPermissionStatus === "granted"}
                 >
-                  <Text 
+                  <Text
                     numberOfLines={1}
                     adjustsFontSizeToFit
                     minimumFontScale={0.8}
@@ -547,7 +547,7 @@ export default function OnboardingScreen() {
       // --- STEP 2: ADD PET ---
       case 1:
         return (
-          <ScrollView contentContainerStyle={styles.stepContent} showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={[styles.stepContent, { flex: undefined, flexGrow: 1 }]} showsVerticalScrollIndicator={false}>
             <Text style={[styles.stepTitle, { color: tk.text }]}>Add Your First Pet 🐾</Text>
             <Text style={[styles.stepSubtitle, { color: tk.textMuted }]}>
               Create your pet's profile card. You can add more pets later.
@@ -620,30 +620,32 @@ export default function OnboardingScreen() {
               style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border }]}
             />
           </ScrollView>
-        );
+        ); 
 
       // --- STEP 3: COMPLETE PROFILE ---
       case 2:
         return (
-          <ScrollView contentContainerStyle={styles.stepContent} showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={[styles.stepContent, { flex: undefined, flexGrow: 1 }]} showsVerticalScrollIndicator={false}>
             <Text style={[styles.stepTitle, { color: tk.text }]}>Complete Your Profile 👤</Text>
             <Text style={[styles.stepSubtitle, { color: tk.textMuted }]}>
               Customize your profile photo and tell the community about yourself.
             </Text>
 
             <View style={styles.avatarContainer}>
-              <TouchableOpacity onPress={pickProfilePhoto} style={[styles.avatarPicker, { borderColor: tk.border, backgroundColor: tk.card }]} activeOpacity={0.8}>
-                {profilePhoto ? (
-                  <Image source={{ uri: profilePhoto }} style={styles.avatarImg} />
-                ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <User size={48} color={tk.textMuted} />
-                    <View style={styles.avatarCameraIcon}>
-                      <Camera size={16} color="#FFFFFF" />
+              <View style={{ width: 100, height: 100, position: "relative" }}>
+                <TouchableOpacity onPress={pickProfilePhoto} style={[styles.avatarPicker, { borderColor: tk.border, backgroundColor: tk.card }]} activeOpacity={0.8}>
+                  {profilePhoto ? (
+                    <Image source={{ uri: profilePhoto }} style={styles.avatarImg} />
+                  ) : (
+                    <View style={styles.avatarPlaceholder}>
+                      <User size={48} color={tk.textMuted} />
                     </View>
-                  </View>
-                )}
-              </TouchableOpacity>
+                  )}
+                </TouchableOpacity>
+                <View style={styles.avatarCameraIcon} pointerEvents="none">
+                  <Camera size={14} color="#FFFFFF" />
+                </View>
+              </View>
               <Text style={[styles.avatarPickerText, { color: tk.textMuted }]}>Upload Profile Photo</Text>
             </View>
 
@@ -837,7 +839,7 @@ export default function OnboardingScreen() {
               onPress={handleNextStep}
               disabled={loading || (stepIndex === 0 && (!locationStore.city || notifPermissionStatus !== "granted"))}
               style={[
-                styles.nextBtn, 
+                styles.nextBtn,
                 { backgroundColor: colors.primary },
                 (stepIndex === 0 && (!locationStore.city || notifPermissionStatus !== "granted")) && { opacity: 0.5 }
               ]}
@@ -1069,8 +1071,8 @@ const styles = StyleSheet.create({
   },
   avatarCameraIcon: {
     position: "absolute",
-    bottom: -6,
-    right: -6,
+    bottom: 4.5,
+    right: 4.5,
     backgroundColor: colors.primary,
     borderRadius: 12,
     padding: 4,
