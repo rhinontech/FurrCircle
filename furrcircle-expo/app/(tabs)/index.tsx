@@ -539,7 +539,7 @@ function FeedHeader() {
     chatApi.getChats().then((chats: any[]) => {
       let unread = 0;
       chats.forEach(c => {
-        const hasUnread = c.unreadCount > 0 || (c.lastMessage && !c.lastMessage.readAt && !c.lastMessage.seen && c.lastMessage.sender?.id !== user.id);
+        const hasUnread = c.unreadCount > 0 || (c.lastMessage && !c.lastMessage.isRead && !c.lastMessage.readAt && !c.lastMessage.seen && c.lastMessage.sender?.id !== user.id);
         if (hasUnread) unread++;
       });
       setChatUnreadCount(unread);

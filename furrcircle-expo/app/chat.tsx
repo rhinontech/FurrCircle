@@ -1164,7 +1164,7 @@ export default function ChatScreen() {
             const otherUser = getOtherParticipant(c);
             if (!otherUser) return null;
 
-            const hasUnread = c.unreadCount > 0 || (c.lastMessage && !c.lastMessage.readAt && !c.lastMessage.seen && c.lastMessage.sender?.id !== user?.id);
+            const hasUnread = c.unreadCount > 0 || (c.lastMessage && !c.lastMessage.isRead && !c.lastMessage.readAt && !c.lastMessage.seen && c.lastMessage.sender?.id !== user?.id);
             const unreadCount = c.unreadCount || 0;
             const tintBg = AVATAR_TINTS[index % AVATAR_TINTS.length];
 

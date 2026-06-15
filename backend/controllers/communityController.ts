@@ -178,6 +178,9 @@ const serializeConversation = async (
   );
 
   const lastMessage = messages[messages.length - 1] || null;
+  const unreadCount = (payload.messages || []).filter(
+    (m: any) => !m.isRead && String(m.senderId) !== String(currentUserId)
+  ).length;
 
   return {
     ...payload,
@@ -187,6 +190,7 @@ const serializeConversation = async (
     pet: payload.pet ? toPlain(payload.pet) : null,
     messages,
     lastMessage,
+    unreadCount,
   };
 };
 
