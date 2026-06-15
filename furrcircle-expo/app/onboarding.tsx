@@ -17,6 +17,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
+import * as Linking from "expo-linking";
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -189,15 +190,27 @@ export default function OnboardingScreen() {
       await locationStore.fetchLiveLocation(true);
       // If store got updated, save location to backend profile too (optional but nice)
       const freshCity = useLocationStore.getState().city;
+      
+      if (!freshCity) {
+        Alert.alert(
+          "Location Access Required",
+          "Please enable location access in your device Settings to continue.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Settings", onPress: () => Linking.openSettings() }
+          ]
+        );
+        return;
+      }
+      
       const freshLat = useLocationStore.getState().latitude;
       const freshLng = useLocationStore.getState().longitude;
-      if (freshCity) {
-        await userApi.updateProfile({
-          city: freshCity,
-          latitude: freshLat ?? undefined,
-          longitude: freshLng ?? undefined,
-        });
-      }
+      
+      await userApi.updateProfile({
+        city: freshCity,
+        latitude: freshLat ?? undefined,
+        longitude: freshLng ?? undefined,
+      });
     } catch (err) {
       console.warn("Failed to auto locate:", err);
       Alert.alert("Location failed", "Could not automatically resolve your location. Please select manually.");

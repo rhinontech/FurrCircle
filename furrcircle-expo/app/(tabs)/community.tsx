@@ -83,7 +83,7 @@ export default function CommunityScreen() {
   const loadTrending = useCallback(async () => {
     try {
       setLoadingTrending(true);
-      const data = await circleApi.getTrending();
+      const data = await questionApi.getTrending();
       setTrending(data || []);
     } catch (err) {
       console.error("Failed to load trending:", err);

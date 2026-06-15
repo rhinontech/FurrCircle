@@ -115,27 +115,26 @@ export const leaveCircle = async (req: any, res: Response): Promise<void> => {
 };
 
 // ─── GET /api/circles/trending ────────────────────────────────────────────────
-// Top questions by (upvotes + answerCount * 2) in the last 14 days
+// Top circles by memberCount
 export const getTrending = async (req: any, res: Response): Promise<void> => {
     try {
-        const { questions: Question } = db as any;
-        const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-        const questions = await Question.findAll({
-            where: { createdAt: { [Op.gte]: since } },
+        const { circles: Circle, circle_members: CircleMember } = db as any;
+        const circles = await Circle.findAll({
             order: [
-                [db.sequelize.literal('"upvotes" + ("answerCount" * 2)'), "DESC"],
+                ["memberCount", "DESC"],
                 ["createdAt", "DESC"]
             ],
             limit: 5,
         });
 
-        const result = await Promise.all(
-            questions.map(async (q: any) => {
-                const payload = toPlain(q);
-                const author = await resolveUser(payload.userId);
-                return { ...payload, author };
-            })
-        );
+        const myMemberships = await CircleMember.findAll({ where: { userId: req.user.id } });
+        const joinedIds = new Set(myMemberships.map((m: any) => m.circleId));
+
+        const result = circles.map((c: any) => ({
+            ...toPlain(c),
+            isJoined: joinedIds.has(c.id),
+        }));
+        
         res.json(result);
     } catch (err: any) {
         res.status(500).json({ message: err.message });
