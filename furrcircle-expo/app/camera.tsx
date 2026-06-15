@@ -17,6 +17,8 @@ import {
 } from "lucide-react-native";
 import { PageContainer } from "../src/components/PageContainer";
 import { LinearGradient } from "expo-linear-gradient";
+import { userApi } from "../services/user/userApi";
+import { storyApi } from "../services/community/storyApi";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -49,7 +51,7 @@ const FILTERS = [
 export default function CustomCameraScreen() {
   const router = useRouter();
   const tk = useTokens();
-  const { origin } = useLocalSearchParams<{ origin?: string }>();
+  const { origin, uri, type } = useLocalSearchParams<{ origin?: string; uri?: string; type?: "image" | "video" }>();
   const setCapturedMedia = useCameraStore((s) => s.setCapturedMedia);
 
   // Permissions
@@ -75,11 +77,22 @@ export default function CustomCameraScreen() {
   const recordingTimerRef = useRef<any>(null);
 
   // Captured media preview state
-  const [previewUri, setPreviewUri] = useState<string | null>(null);
-  const [previewType, setPreviewType] = useState<"image" | "video" | null>(null);
+  const [previewUri, setPreviewUri] = useState<string | null>(uri || null);
+  const [previewType, setPreviewType] = useState<"image" | "video" | null>(type || null);
   const [previewWH, setPreviewWH] = useState<number | null>(null); // width/height of cropped media, null = full
   const [activeFilterIndex, setActiveFilterIndex] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    if (uri && type === "image") {
+      Image.getSize(uri, (w, h) => {
+        setPreviewWH(w / h);
+      }, (err) => {
+        console.warn("Failed to get image size for camera preview:", err);
+      });
+    }
+  }, [uri, type]);
 
   // Text overlay state
   const [overlayText, setOverlayText] = useState("");
@@ -283,17 +296,52 @@ export default function CustomCameraScreen() {
   };
 
   // Save / Confirm Media
-  const handleConfirmMedia = () => {
+  const handleConfirmMedia = async () => {
     if (!previewUri) return;
     
-    // Save to global state store
-    setCapturedMedia(previewUri, previewType);
-    
-    // Navigate back to origin screen or main feed
-    if (origin) {
-      router.back();
+    if (origin === "story") {
+      try {
+        setIsUploading(true);
+        // Upload the media to backend
+        const uploadRes = await userApi.uploadImage(previewUri, "stories");
+        if (!uploadRes?.url) {
+          throw new Error("Failed to upload story media.");
+        }
+
+        const storyCaption = JSON.stringify({
+          overlayText: overlayText || "",
+          caption: "",
+        });
+
+        await storyApi.createStory({
+          mediaUrl: uploadRes.url,
+          mediaType: previewType || "image",
+          caption: storyCaption,
+        });
+
+        Alert.alert("Success", "Story added to Your Story!");
+        
+        // Go back to feed and refresh it
+        router.replace({
+          pathname: "/(tabs)",
+          params: { refresh: String(Date.now()) },
+        });
+      } catch (err: any) {
+        console.error("Failed to add story:", err);
+        Alert.alert("Error", err?.message || "Could not publish story. Please try again.");
+      } finally {
+        setIsUploading(false);
+      }
     } else {
-      router.replace("/(tabs)");
+      // Save to global state store
+      setCapturedMedia(previewUri, previewType);
+      
+      // Navigate back to origin screen or main feed
+      if (origin) {
+        router.back();
+      } else {
+        router.replace("/(tabs)");
+      }
     }
   };
 
@@ -332,7 +380,14 @@ export default function CustomCameraScreen() {
                     resizeMode={ResizeMode.COVER}
                     shouldPlay={isVideoPlaying}
                     isLooping
-                    onPlaybackStatusUpdate={(status: any) => setIsVideoPlaying(status.isPlaying)}
+                    onLoad={() => {
+                      if (videoRef.current) {
+                        videoRef.current.setStatusAsync({
+                          positionMillis: 0,
+                          shouldPlay: isVideoPlaying,
+                        }).catch(() => {});
+                      }
+                    }}
                   />
                 )}
 
@@ -393,6 +448,7 @@ export default function CustomCameraScreen() {
                   setPreviewWH(null);
                   setOverlayText("");
                   setActiveFilterIndex(0);
+                  setIsVideoPlaying(true);
                 }}
               >
                 <ChevronLeft size={24} color="#FFF" />
@@ -408,9 +464,11 @@ export default function CustomCameraScreen() {
               <TouchableOpacity
                 style={styles.playPauseBtn}
                 onPress={() => {
+                  const nextState = !isVideoPlaying;
+                  setIsVideoPlaying(nextState);
                   if (videoRef.current) {
-                    if (isVideoPlaying) videoRef.current.pauseAsync();
-                    else videoRef.current.playAsync();
+                    if (nextState) videoRef.current.playAsync();
+                    else videoRef.current.pauseAsync();
                   }
                 }}
               >
@@ -449,6 +507,7 @@ export default function CustomCameraScreen() {
                       setPreviewWH(null);
                       setOverlayText("");
                       setActiveFilterIndex(0);
+                      setIsVideoPlaying(true);
                     }}
                     activeOpacity={0.85}
                   >
@@ -524,12 +583,7 @@ export default function CustomCameraScreen() {
               </View>
             )}
 
-            {/* Processing Spinner */}
-            {isProcessing && (
-              <View style={styles.processingOverlay}>
-                <ActivityIndicator size="large" color="#FFF" />
-              </View>
-            )}
+
 
             {/* Viewfinder Controls (Placed outside CameraView, relative to screen margins) */}
             <View style={styles.viewfinderTopBar}>
@@ -706,6 +760,18 @@ export default function CustomCameraScreen() {
                 </TouchableOpacity>
               </View>
             </View>
+          </View>
+        )}
+
+        {/* Processing/Uploading Overlay */}
+        {(isProcessing || isUploading) && (
+          <View style={styles.processingOverlay}>
+            <ActivityIndicator size="large" color="#FFF" />
+            {isUploading && (
+              <Text style={{ color: "#FFF", marginTop: 12, fontFamily: "Inter_600SemiBold", fontSize: 16 }}>
+                Uploading story...
+              </Text>
+            )}
           </View>
         )}
       </View>
