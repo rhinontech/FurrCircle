@@ -10,6 +10,16 @@ export const getQuestions = async (params?: { circleId?: string; q?: string }) =
     }
 };
 
+export const getTrending = async () => {
+    try {
+        const response = await PrivateAxios.get('/questions/trending');
+        return response.data;
+    } catch (error: any) {
+        console.error('getTrending questions Error:', error?.response?.data || error.message);
+        throw error;
+    }
+};
+
 export const createQuestion = async (payload: { title: string; body?: string; tags?: string[]; circleId?: string }) => {
     try {
         const response = await PrivateAxios.post('/questions', payload);
@@ -78,4 +88,5 @@ export const questionApi = {
     addAnswer,
     getAnswers,
     deleteQuestion,
+    getTrending,
 };

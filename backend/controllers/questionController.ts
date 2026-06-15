@@ -239,3 +239,31 @@ export const getQuestionById = async (req: any, res: Response): Promise<void> =>
         res.status(500).json({ message: err.message });
     }
 };
+// ─── GET /api/questions/trending ────────────────────────────────────────────────
+// Top questions by (upvotes + answerCount * 2) in the last 14 days
+export const getTrendingQuestions = async (req: any, res: Response): Promise<void> => {
+    try {
+        const { questions: Question } = db as any;
+        const { Op } = await import("sequelize");
+        const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+        const questions = await Question.findAll({
+            where: { createdAt: { [Op.gte]: since } },
+            order: [
+                [db.sequelize.literal('"upvotes" + ("answerCount" * 2)'), "DESC"],
+                ["createdAt", "DESC"]
+            ],
+            limit: 5,
+        });
+
+        const result = await Promise.all(
+            questions.map(async (q: any) => {
+                const payload = toPlain(q);
+                const author = await resolveUser(payload.userId);
+                return { ...payload, author };
+            })
+        );
+        res.json(result);
+    } catch (err: any) {
+        res.status(500).json({ message: err.message });
+    }
+};

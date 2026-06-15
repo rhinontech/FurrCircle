@@ -8,11 +8,13 @@ import {
     addAnswer,
     getAnswers,
     deleteQuestion,
+    getTrendingQuestions,
 } from "../controllers/questionController.ts";
 
 const router = express.Router();
 router.use(protect);
 
+router.get("/trending", getTrendingQuestions); // Must come before /:id
 router.get("/", getQuestions);
 router.get("/:id", getQuestionById);
 router.post("/", createQuestion);
