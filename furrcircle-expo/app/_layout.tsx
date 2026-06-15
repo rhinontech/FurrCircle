@@ -386,6 +386,7 @@ export default function RootLayout() {
       <Stack.Screen name="blocked-accounts" options={{ presentation: "card" }} />
       <Stack.Screen name="compose" options={{ presentation: "card" }} />
       <Stack.Screen name="add-pet" options={{ presentation: "card" }} />
+      <Stack.Screen name="add-circle" options={{ presentation: "card" }} />
       <Stack.Screen name="edit-pet" options={{ presentation: "card" }} />
       <Stack.Screen name="ask" options={{ presentation: "card" }} />
       <Stack.Screen name="user/followers" options={{ presentation: "card" }} />

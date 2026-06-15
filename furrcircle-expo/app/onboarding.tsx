@@ -560,7 +560,7 @@ export default function OnboardingScreen() {
       // --- STEP 2: ADD PET ---
       case 1:
         return (
-          <ScrollView contentContainerStyle={[styles.stepContent, { flex: undefined, flexGrow: 1 }]} showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollStepContent} showsVerticalScrollIndicator={false}>
             <Text style={[styles.stepTitle, { color: tk.text }]}>Add Your First Pet 🐾</Text>
             <Text style={[styles.stepSubtitle, { color: tk.textMuted }]}>
               Create your pet's profile card. You can add more pets later.
@@ -638,7 +638,7 @@ export default function OnboardingScreen() {
       // --- STEP 3: COMPLETE PROFILE ---
       case 2:
         return (
-          <ScrollView contentContainerStyle={[styles.stepContent, { flex: undefined, flexGrow: 1 }]} showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollStepContent} showsVerticalScrollIndicator={false}>
             <Text style={[styles.stepTitle, { color: tk.text }]}>Complete Your Profile 👤</Text>
             <Text style={[styles.stepSubtitle, { color: tk.textMuted }]}>
               Customize your profile photo and tell the community about yourself.
@@ -921,6 +921,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 16,
+  },
+  scrollStepContent: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   stepTitle: {
     fontFamily: "Poppins_700Bold",

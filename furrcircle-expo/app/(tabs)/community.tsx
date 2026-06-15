@@ -53,7 +53,6 @@ export default function CommunityScreen() {
   const [myCircles, setMyCircles] = useState<any[]>([]);
   const [allCircles, setAllCircles] = useState<any[]>([]);
   const [trending, setTrending] = useState<any[]>([]);
-  const [createOpen, setCreateOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
@@ -156,15 +155,6 @@ export default function CommunityScreen() {
     }
   }, [loadCircles, searchQuery]));
 
-  const handleCreateCircle = async (name: string, description: string, category: string, coverImage?: string) => {
-    try {
-      const circle = await circleApi.createCircle({ name, description, category, coverImage });
-      setMyCircles(prev => [circle, ...prev]);
-      setAllCircles(prev => [circle, ...prev]);
-    } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || "Failed to create circle.");
-    }
-  };
 
   const handleJoinToggle = async (circleId: string, isJoined: boolean) => {
     try {
@@ -511,7 +501,7 @@ export default function CommunityScreen() {
 
         {!isSearchActive && (
           <TouchableOpacity
-            onPress={() => setCreateOpen(true)}
+            onPress={() => router.push("/add-circle")}
             style={[styles.fab, { bottom: tabBarClearance(insets.bottom) }]}
             activeOpacity={0.85}
           >
@@ -524,8 +514,6 @@ export default function CommunityScreen() {
             <Plus size={28} color="#fff" strokeWidth={2.4} />
           </TouchableOpacity>
         )}
-
-        <CreateCircleSheet open={createOpen} onClose={() => setCreateOpen(false)} onCreate={handleCreateCircle} tk={tk} />
       </View>
     </PageContainer>
   );
@@ -543,116 +531,6 @@ function ResultSection({ label, count, showSeeAll, onSeeAll, tk, children }: { l
   );
 }
 
-function CreateCircleSheet({ open, onClose, onCreate, tk }: any) {
-  const insets = useSafeAreaInsets();
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("general");
-  const [coverUri, setCoverUri] = useState<string | null>(null);
-  const [cropSource, setCropSource] = useState<{ uri: string; width: number; height: number } | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
-
-  useEffect(() => {
-    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
-      setKeyboardVisible(true);
-    });
-    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
-      setKeyboardVisible(false);
-    });
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, []);
-
-  const pickCover = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") { Alert.alert("Permission", "Gallery access required."); return; }
-    // Pick the full-resolution original (no native crop) and hand it to our
-    // 16:9 cropper so the user can position the exact snapshot.
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images", quality: 1 });
-    const asset = result.assets?.[0];
-    if (!result.canceled && asset?.uri) {
-      setCropSource({ uri: asset.uri, width: asset.width || 0, height: asset.height || 0 });
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!name.trim()) { Alert.alert("Required", "Please enter a circle name."); return; }
-    setLoading(true);
-    try {
-      let coverImage: string | undefined;
-      if (coverUri) {
-        const uploadRes = await userApi.uploadImage(coverUri, "circles");
-        coverImage = uploadRes.url;
-      }
-      await onCreate(name.trim(), description.trim(), category, coverImage);
-      setName(""); setDescription(""); setCategory("general"); setCoverUri(null);
-      onClose();
-    } finally { setLoading(false); }
-  };
-
-  return (
-    <AdaptiveSheet visible={open} onClose={onClose} maxWidth={520} maxHeight="88%">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "padding" : undefined)}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 170}
-      >
-        <View style={{ paddingTop: 24, paddingHorizontal: 24, paddingBottom: keyboardVisible ? 0 : 40 + insets.bottom }}>
-          <Text style={[styles.sheetTitle, { color: tk.text }]}>Create new Circle</Text>
-
-          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <Pressable onPress={Keyboard.dismiss}>
-              {/* Cover image */}
-              <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Cover Image</Text>
-              <TouchableOpacity onPress={pickCover} style={[styles.coverPicker, { backgroundColor: tk.inputBg, borderColor: tk.border }]} activeOpacity={0.8}>
-                {coverUri ? (
-                  <Image source={{ uri: coverUri }} style={{ width: "100%", height: "100%", borderRadius: 12 }} resizeMode="cover" />
-                ) : (
-                  <View style={{ alignItems: "center", gap: 6 }}>
-                    <Camera size={24} color={tk.textMuted} />
-                    <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: tk.textMuted }}>Tap to add cover photo</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-
-              <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Name</Text>
-              <TextInput value={name} onChangeText={setName} placeholder="e.g. Beagle Buddies" placeholderTextColor={tk.textMuted} style={[styles.modalInput, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border }]} />
-
-              <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Description</Text>
-              <TextInput value={description} onChangeText={setDescription} placeholder="What is this circle about?" placeholderTextColor={tk.textMuted} style={[styles.modalInput, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, height: 80, textAlignVertical: "top" }]} multiline />
-
-              <Text style={[styles.inputLabel, { color: tk.textMuted }]}>Category</Text>
-              <View style={styles.categoryRow}>
-                {CATEGORY_PRESETS.map((cat) => (
-                  <TouchableOpacity key={cat.id} onPress={() => setCategory(cat.id)} style={[styles.categoryBtn, { backgroundColor: category === cat.id ? tk.text : tk.glassChip }]} activeOpacity={0.8}>
-                    <Text style={[styles.categoryBtnText, { color: category === cat.id ? tk.bg : tk.textMuted }]}>{cat.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <TouchableOpacity onPress={handleSubmit} disabled={loading} style={[styles.createBtn, loading && { opacity: 0.6 }]} activeOpacity={0.85}>
-                {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.createBtnText}>Create Circle</Text>}
-              </TouchableOpacity>
-            </Pressable>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
-
-      <ImageCropper
-        visible={!!cropSource}
-        imageUri={cropSource?.uri || null}
-        imageWidth={cropSource?.width || 0}
-        imageHeight={cropSource?.height || 0}
-        aspect={16 / 9}
-        onCancel={() => setCropSource(null)}
-        onCropped={(uri) => { setCoverUri(uri); setCropSource(null); }}
-      />
-    </AdaptiveSheet>
-  );
-}
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
