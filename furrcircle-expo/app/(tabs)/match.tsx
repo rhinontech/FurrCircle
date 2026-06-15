@@ -25,6 +25,7 @@ import { useAuthStore } from "../../src/lib/auth-store";
 import { matchApi, type Coords } from "../../services/match/matchApi";
 import { petApi } from "../../services/pet/petApi";
 import { adoptionApi, type AdoptionRequest } from "../../services/adoption/adoptionApi";
+import { chatApi } from "../../services/chat/chatApi";
 import { PrivateAxios } from "../../helpers/PrivateAxios";
 import { useLocationStore } from "../../src/lib/location-store";
 import { glassSurface } from "../../src/components/ui/Glass";
@@ -152,9 +153,10 @@ export default function MatchScreen() {
   const likeOpacity = swipeAnim.x.interpolate({ inputRange: [0, width * 0.2], outputRange: [0, 1], extrapolate: "clamp" });
   const nopeOpacity = swipeAnim.x.interpolate({ inputRange: [-width * 0.2, 0], outputRange: [1, 0], extrapolate: "clamp" });
 
-  // Load user's pets
+  // Load user's pets and sent applications
   useEffect(() => {
     petApi.getMyPets().then(setMyPets).catch(() => { });
+    adoptionApi.getMyApplications().then(setSentRequests).catch(() => { });
   }, []);
 
   // Load cards whenever mode or coords ready
@@ -356,8 +358,10 @@ export default function MatchScreen() {
     try {
       const appType = card.isFosterOpen ? "foster" : "adoption";
       const appMsg = card.isFosterOpen ? "I'm interested in fostering this pet!" : "I'm interested in adopting this pet!";
-      await adoptionApi.submitApplication(card.id, appType, appMsg).catch(() => {});
+      const newApp = await adoptionApi.submitApplication(card.id, appType, appMsg);
+      setSentRequests((prev) => [...prev, newApp]);
       appliedPetIds.current.add(String(card.id));
+    } catch {
     } finally {
       setApplyingAdoption(false);
     }
@@ -563,22 +567,63 @@ export default function MatchScreen() {
 
           {mode === "Adoption" && (() => {
             const adoptCard = cards[index % cards.length];
-            const alreadyApplied = adoptCard ? appliedPetIds.current.has(String(adoptCard.id)) : false;
+            const currentRequest = adoptCard ? sentRequests.find(r => String(r.petId) === String(adoptCard.id)) : null;
+            const requestStatus = currentRequest?.status;
             return (
               <View style={styles.actionRow}>
                 <TouchableOpacity onPress={() => animatePagination("prev")} style={[styles.actionBtn, styles.actionBtnSm, glassSurface(tk)]} activeOpacity={0.8}>
                   <ArrowLeft size={26} color={tk.text} strokeWidth={2.4} />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={alreadyApplied ? () => router.push("/chat") : handleAdoptionInterest}
-                  disabled={applyingAdoption}
-                  style={[styles.actionBtn, styles.adoptBtn, { backgroundColor: alreadyApplied ? colors.success : colors.primary }]}
+                  onPress={
+                    requestStatus === "approved"
+                      ? async () => {
+                          const ownerId = currentRequest?.ownerId || adoptCard?.ownerId;
+                          if (ownerId) {
+                            try {
+                              const conv = await chatApi.startChat(ownerId);
+                              router.push({ pathname: "/chat", params: { id: conv.id } });
+                            } catch (err) {
+                              console.error("Failed to start chat with owner:", err);
+                              router.push("/chat");
+                            }
+                          } else {
+                            router.push("/chat");
+                          }
+                        }
+                      : requestStatus === "pending" || requestStatus === "rejected"
+                        ? undefined
+                        : handleAdoptionInterest
+                  }
+                  disabled={applyingAdoption || requestStatus === "pending" || requestStatus === "rejected"}
+                  style={[
+                    styles.actionBtn,
+                    styles.adoptBtn,
+                    {
+                      backgroundColor:
+                        requestStatus === "approved"
+                          ? colors.success
+                          : requestStatus === "pending"
+                            ? colors.sunshine
+                            : requestStatus === "rejected"
+                              ? colors.coral
+                              : colors.primary,
+                    },
+                  ]}
                   activeOpacity={0.8}
                 >
                   {applyingAdoption ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Text style={styles.adoptBtnText}>{alreadyApplied ? "Message Owner 💬" : "I'm Interested 🐾"}</Text>
+                    <Text style={styles.adoptBtnText}>
+                      {requestStatus === "approved"
+                        ? "Message Owner 💬"
+                        : requestStatus === "pending"
+                          ? "Pending ⏳"
+                          : requestStatus === "rejected"
+                            ? "Declined ❌"
+                            : "I'm Interested 🐾"}
+                    </Text>
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => animatePagination("next")} style={[styles.actionBtn, styles.actionBtnSm, glassSurface(tk)]} activeOpacity={0.8}>
@@ -721,12 +766,26 @@ export default function MatchScreen() {
                       {/* Open Chat button — all approved requests (both tabs) */}
                       {item.status === "approved" && (
                         <TouchableOpacity
-                          onPress={() => {
+                          onPress={async () => {
                             setRequestsVisible(false);
                             if (item.conversationId) {
                               router.push({ pathname: "/chat", params: { id: item.conversationId } });
                             } else {
-                              router.push("/chat");
+                              try {
+                                const recipientId = requestsTab === "received"
+                                  ? item.applicantId
+                                  : item.ownerId;
+                                
+                                if (recipientId) {
+                                  const conv = await chatApi.startChat(recipientId);
+                                  router.push({ pathname: "/chat", params: { id: conv.id } });
+                                } else {
+                                  router.push("/chat");
+                                }
+                              } catch (err) {
+                                console.error("Failed to start/open chat:", err);
+                                router.push("/chat");
+                              }
                             }
                           }}
                           style={[styles.reqOpenChatBtn, { backgroundColor: colors.primary }]}

@@ -247,7 +247,7 @@ export default function EditPetScreen() {
         <Text style={[styles.label, { color: tk.textMuted }]}>Weight</Text>
         <TextInput value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder="e.g. 12" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>City</Text>
+        {/* <Text style={[styles.label, { color: tk.textMuted }]}>City</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TouchableOpacity
             style={[styles.input, { flex: 1, backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, justifyContent: 'center' }]}
@@ -261,7 +261,7 @@ export default function EditPetScreen() {
           <TouchableOpacity onPress={handleAutoLocate} disabled={locating} style={[styles.input, { width: 52, paddingHorizontal: 0, alignItems: "center", justifyContent: "center", backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border }]}>
             {locating ? <ActivityIndicator size="small" color={colors.primary} /> : <LocateFixed size={20} color={colors.primary} />}
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         <Text style={[styles.label, { color: tk.textMuted }]}>Gender</Text>
         <View style={styles.toggle}>

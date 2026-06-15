@@ -80,6 +80,7 @@ const toPublicPetPayload = (pet: any, viewerId?: string) => {
     breed: payload.breed,
     gender: payload.gender,
     age: payload.age,
+    weight: payload.weight,
     city: payload.city,
     description: payload.description,
     history: payload.history,

@@ -229,7 +229,7 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
       <View style={styles.statsGrid}>
         <StatCard icon={Cake} label="Age" value={pet?.age ? `${pet.age} y` : "?"} />
         <StatCard icon={Ruler} label="Weight" value={pet?.weight ? `${pet.weight} kg` : "?"} />
-        <StatCard icon={MapPin} label="City" value={pet?.city || "?"} />
+        <StatCard icon={MapPin} label="City" value={pet?.owner?.city || "?"} />
       </View>
 
       {/* Availability */}
