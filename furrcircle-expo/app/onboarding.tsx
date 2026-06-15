@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import Constants from "expo-constants";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // UI Components
 import { PageContainer } from "../src/components/PageContainer";
@@ -63,7 +64,27 @@ export default function OnboardingScreen() {
   const locationStore = useLocationStore();
 
   const [stepIndex, setStepIndex] = useState(0);
+  const [isReady, setIsReady] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const loadStep = async () => {
+      if (user?.id) {
+        try {
+          const saved = await AsyncStorage.getItem(`onboarding_step_${user.id}`);
+          if (saved) setStepIndex(parseInt(saved, 10));
+        } catch (e) {}
+      }
+      setIsReady(true);
+    };
+    loadStep();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user?.id && isReady) {
+      AsyncStorage.setItem(`onboarding_step_${user.id}`, stepIndex.toString()).catch(() => {});
+    }
+  }, [stepIndex, user?.id, isReady]);
 
   // -------------------------------------------------------------
   // Step 1: Location & Notifications State
@@ -326,11 +347,22 @@ export default function OnboardingScreen() {
   const loadTrendingCircles = async () => {
     setLoadingCircles(true);
     try {
-      let data = await circleApi.getTrending();
+      const [trendingData, myCirclesData] = await Promise.all([
+        circleApi.getTrending().catch(() => []),
+        circleApi.getMyCircles().catch(() => [])
+      ]);
+      
+      let data = trendingData;
       if (!data || data.length === 0) {
-        data = await circleApi.getAllCircles();
+        data = await circleApi.getAllCircles().catch(() => []);
       }
+      
       setCircles(data.slice(0, 6));
+      
+      if (myCirclesData && Array.isArray(myCirclesData)) {
+        const joinedSet = new Set<string>(myCirclesData.map((c: any) => c.id));
+        setJoinedCircleIds(joinedSet);
+      }
     } catch (err) {
       console.warn("Failed to fetch trending circles:", err);
     } finally {
@@ -372,6 +404,9 @@ export default function OnboardingScreen() {
     setLoading(true);
     try {
       const res = await authApi.completeOnboarding();
+      if (user?.id) {
+        AsyncStorage.removeItem(`onboarding_step_${user.id}`).catch(() => {});
+      }
       // Crucial: token merge so the user stays logged in
       await setSession({
         ...user,
@@ -384,7 +419,7 @@ export default function OnboardingScreen() {
     } finally {
       setLoading(false);
       setJustSignedUp(false);
-      router.replace("/(tabs)");
+      // Let _layout.tsx auth guard handle navigation to avoid blank screen issue
     }
   };
 
@@ -394,6 +429,10 @@ export default function OnboardingScreen() {
   const handleNextStep = () => {
     if (loading) return;
     if (stepIndex === 0) {
+      if (!locationStore.city || notifPermissionStatus !== "granted") {
+        Alert.alert("Permissions Required", "Please allow both location and notifications to continue.");
+        return;
+      }
       setStepIndex(1);
     } else if (stepIndex === 1) {
       if (petName.trim()) {
@@ -439,34 +478,23 @@ export default function OnboardingScreen() {
               <Text style={[styles.cardDesc, { color: tk.textMuted }]}>
                 Share location to locate neighborhood dog parks, vets, and dog playdates near you.
               </Text>
-              <View style={styles.cardActions}>
-                <TouchableOpacity
-                  style={[styles.glassBtn, glassSurface(tk)]}
-                  onPress={() => setLocationModalVisible(true)}
-                >
-                  <Text 
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.8}
-                    style={[styles.glassBtnText, { color: tk.text }]}
+              {!locationStore.city && (
+                <View style={styles.cardActions}>
+                  <TouchableOpacity
+                    style={[styles.primaryActionBtn, { backgroundColor: colors.primary, width: "100%" }]}
+                    onPress={handleAutoLocate}
                   >
-                    Search City Manually
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.primaryActionBtn, { backgroundColor: colors.primary }]}
-                  onPress={handleAutoLocate}
-                >
-                  <Text 
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.8}
-                    style={styles.primaryActionBtnText}
-                  >
-                    Detect Automatically
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                    <Text 
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.8}
+                      style={styles.primaryActionBtnText}
+                    >
+                      Allow Location
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
               {locationStore.city && (
                 <View style={styles.statusRow}>
                   <CheckCircle2 size={18} color={colors.success} />
@@ -762,7 +790,7 @@ export default function OnboardingScreen() {
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
+          style={{ flex: 1, opacity: isReady ? 1 : 0 }}
         >
           {/* Header */}
           <View style={styles.header}>
@@ -775,7 +803,7 @@ export default function OnboardingScreen() {
               <View style={{ width: 60 }} />
             )}
 
-            {stepIndex < 4 ? (
+            {stepIndex < 4 && stepIndex > 0 ? (
               <TouchableOpacity onPress={finish} style={styles.skipHeaderBtn} activeOpacity={0.7}>
                 <Text style={[styles.headerBtnText, { color: tk.textMuted }]}>Skip All</Text>
               </TouchableOpacity>
@@ -807,8 +835,12 @@ export default function OnboardingScreen() {
 
             <TouchableOpacity
               onPress={handleNextStep}
-              disabled={loading}
-              style={[styles.nextBtn, { backgroundColor: colors.primary }]}
+              disabled={loading || (stepIndex === 0 && (!locationStore.city || notifPermissionStatus !== "granted"))}
+              style={[
+                styles.nextBtn, 
+                { backgroundColor: colors.primary },
+                (stepIndex === 0 && (!locationStore.city || notifPermissionStatus !== "granted")) && { opacity: 0.5 }
+              ]}
               activeOpacity={0.85}
             >
               {loading ? (
