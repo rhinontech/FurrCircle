@@ -218,7 +218,7 @@ export const swipePlaydate = async (req: any, res: Response): Promise<void> => {
       'chat',
       'chat_thread',
       { conversationId: conversation.id },
-    ).catch(() => {});
+    ).catch(() => { });
 
     res.json({ matched: true, conversationId: conversation.id });
   } catch (error: any) {

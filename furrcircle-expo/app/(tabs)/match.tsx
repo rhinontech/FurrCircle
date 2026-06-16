@@ -15,7 +15,7 @@ import {
   FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Heart, X, Star, ArrowLeft, ArrowRight, MapPin, Inbox, Check, MessageCircle } from "../../src/components/ui/icons";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import * as Location from "expo-location";
@@ -112,14 +112,22 @@ export default function MatchScreen() {
   const loadRequests = useCallback(async () => {
     setRequestsLoading(true);
     try {
-      const [received, sent, matches] = await Promise.all([
+      const [received, sent, pMatches, bMatches] = await Promise.all([
         adoptionApi.getReceivedApplications(),
         adoptionApi.getMyApplications(),
         matchApi.getPlaydateMatches().catch(() => []),
+        matchApi.getBreedMatches().catch(() => []),
       ]);
       setReceivedRequests(received);
       setSentRequests(sent);
-      setPlaydateMatches(matches || []);
+      
+      const mappedPlaydate = (pMatches || []).map((m: any) => ({ ...m, matchType: "playdate" }));
+      const mappedBreed = (bMatches || []).map((m: any) => ({ ...m, matchType: "breed" }));
+      const allMatches = [...mappedPlaydate, ...mappedBreed].sort(
+        (a, b) => new Date(b.matchedAt).getTime() - new Date(a.matchedAt).getTime()
+      );
+      
+      setPlaydateMatches(allMatches);
     } catch { }
     setRequestsLoading(false);
   }, []);
@@ -148,6 +156,7 @@ export default function MatchScreen() {
 
   const swipeAnim = useRef(new Animated.ValueXY()).current;
   const matchModalAnim = useRef(new Animated.Value(0)).current;
+  const matchModalTimeoutRef = useRef<any>(null);
 
   const rotateAnim = swipeAnim.x.interpolate({
     inputRange: [-width / 2, 0, width / 2],
@@ -157,23 +166,12 @@ export default function MatchScreen() {
   const likeOpacity = swipeAnim.x.interpolate({ inputRange: [0, width * 0.2], outputRange: [0, 1], extrapolate: "clamp" });
   const nopeOpacity = swipeAnim.x.interpolate({ inputRange: [-width * 0.2, 0], outputRange: [1, 0], extrapolate: "clamp" });
 
-  // Load user's pets and sent applications
-  useEffect(() => {
-    petApi.getMyPets().then(setMyPets).catch(() => { });
-    adoptionApi.getMyApplications().then(setSentRequests).catch(() => { });
-  }, []);
-
   // Open requests when redirecting from notification
   useEffect(() => {
     if (openRequestsParam === "true") {
       openRequests();
     }
   }, [openRequestsParam]);
-
-  // Load cards whenever mode or coords ready
-  useEffect(() => {
-    loadCards(mode);
-  }, [mode, coords]);
 
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -184,15 +182,16 @@ export default function MatchScreen() {
     setRefreshing(false);
   }, [mode]);
 
-  const loadCards = async (m: Mode) => {
+  const loadCards = async (m: Mode, petsList?: any[]) => {
     setLoading(true);
     setLoadError(false);
     setCards([]);
     setIndex(0);
     swipeAnim.setValue({ x: 0, y: 0 });
+    const currentPets = petsList || myPets;
     try {
       if (m === "Playdate") {
-        const myPet = myPets[0] || (await petApi.getMyPets().then((p: any[]) => { setMyPets(p); return p[0]; }));
+        const myPet = currentPets[0] || (await petApi.getMyPets().then((p: any[]) => { setMyPets(p); return p[0]; }));
         if (!myPet) { setLoading(false); return; }
         const data = await matchApi.getPlaydateCards(myPet.id, coords || undefined);
         setCards(data.map(mapPetToCard));
@@ -201,7 +200,7 @@ export default function MatchScreen() {
         const filtered = data.filter((pet: any) => (pet.ownerId || pet.owner?.id) !== user?.id);
         setCards(filtered.map(mapPetToCard));
       } else if (m === "Breed") {
-        const breedPet = myPets.find((p: any) => p.isBreedingOpen) || myPets[0];
+        const breedPet = currentPets.find((p: any) => p.isBreedingOpen) || currentPets[0];
         if (!breedPet || !breedPet.isBreedingOpen) { setLoading(false); return; }
         const data = await matchApi.getBreedCards(breedPet.id, coords || undefined);
         setCards(data.map(mapPetToCard));
@@ -215,17 +214,54 @@ export default function MatchScreen() {
     setLoading(false);
   };
 
+  // Load user's pets, applications, and cards on focus, mode, or coordinates change
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      const refreshData = async () => {
+        try {
+          const [freshPets, freshApps] = await Promise.all([
+            petApi.getMyPets(),
+            adoptionApi.getMyApplications(),
+          ]);
+          if (!active) return;
+          setMyPets(freshPets);
+          setSentRequests(freshApps);
+          await loadCards(mode, freshPets);
+        } catch {
+          if (active) {
+            await loadCards(mode);
+          }
+        }
+      };
+      refreshData();
+      return () => {
+        active = false;
+      };
+    }, [mode, coords])
+  );
+
   const showMatchModal = (conversationId: string, matchName: string, matchAvatar: any) => {
     setMatchModal({ visible: true, conversationId, matchName, matchAvatar });
     matchModalAnim.setValue(0);
     Animated.timing(matchModalAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
-    setTimeout(() => dismissMatchModal(conversationId), 3000);
+    if (matchModalTimeoutRef.current) {
+      clearTimeout(matchModalTimeoutRef.current);
+    }
+    // Auto-dismiss the modal after 3 seconds without navigating to chat automatically
+    matchModalTimeoutRef.current = setTimeout(() => dismissMatchModal(), 3000);
   };
 
   const dismissMatchModal = (conversationId?: string) => {
+    if (matchModalTimeoutRef.current) {
+      clearTimeout(matchModalTimeoutRef.current);
+      matchModalTimeoutRef.current = null;
+    }
     Animated.timing(matchModalAnim, { toValue: 0, duration: 250, useNativeDriver: true }).start(() => {
       setMatchModal({ visible: false });
-      if (conversationId) router.push(`/chat`);
+      if (conversationId) {
+        router.push({ pathname: "/chat", params: { id: conversationId } });
+      }
     });
   };
 
@@ -704,12 +740,13 @@ export default function MatchScreen() {
               ListEmptyComponent={
                 <View style={styles.reqEmpty}>
                   <Text style={[styles.reqEmptyText, { color: tk.textMuted }]}>
-                    No playdate matches yet. Swipe right to find a playmate!
+                    No matches yet. Swipe right to find a match!
                   </Text>
                 </View>
               }
               renderItem={({ item }) => {
                 const petImg = item.pet?.avatar_url ? { uri: item.pet.avatar_url } : null;
+                const isBreed = item.matchType === "breed";
                 return (
                   <View style={[styles.reqCard, glassSurface(tk)]}>
                     <View style={styles.reqCardImgWrap}>
@@ -724,12 +761,19 @@ export default function MatchScreen() {
                     <View style={styles.reqCardBody}>
                       <View style={styles.reqCardTop}>
                         <Text style={[styles.reqCardPetName, { color: tk.text }]}>{item.pet?.name || "Pet"}</Text>
-                        <View style={[styles.reqStatusBadge, { backgroundColor: colors.success + "22", borderColor: colors.success }]}>
-                          <Text style={[styles.reqStatusText, { color: colors.success }]}>Matched</Text>
+                        <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
+                          <View style={[styles.reqStatusBadge, { backgroundColor: colors.success + "22", borderColor: colors.success }]}>
+                            <Text style={[styles.reqStatusText, { color: colors.success }]}>Matched</Text>
+                          </View>
+                          <View style={[styles.reqStatusBadge, { backgroundColor: isBreed ? colors.primary + "22" : colors.sunshine + "22", borderColor: isBreed ? colors.primary : colors.sunshine }]}>
+                            <Text style={[styles.reqStatusText, { color: isBreed ? colors.primary : colors.sunshine }]}>
+                              {isBreed ? "Breed" : "Playdate"}
+                            </Text>
+                          </View>
                         </View>
                       </View>
                       <Text style={[styles.reqCardMeta, { color: tk.textMuted }]}>
-                        {item.myPet?.name ? `${item.myPet.name} & ${item.pet?.name || "Pet"}` : item.pet?.breed || item.pet?.species || "Playdate"}
+                        {item.myPet?.name ? `${item.myPet.name} & ${item.pet?.name || "Pet"}` : item.pet?.breed || item.pet?.species || (isBreed ? "Breed" : "Playdate")}
                         {item.owner?.name ? ` · with ${item.owner.name}` : ""}
                       </Text>
                       <TouchableOpacity
@@ -892,7 +936,7 @@ export default function MatchScreen() {
             >
               <Text style={styles.matchChatBtnText}>Start Chatting</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setMatchModal({ visible: false })}>
+            <TouchableOpacity onPress={() => dismissMatchModal()}>
               <Text style={styles.matchSkipText}>Keep Swiping</Text>
             </TouchableOpacity>
           </Animated.View>

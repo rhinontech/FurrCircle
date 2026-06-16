@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, Image, ScrollView,
-  StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Keyboard,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -63,6 +63,22 @@ export default function EditCircle() {
 
   useEffect(() => { load(); }, [load]);
 
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
   const pickCover = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") { Alert.alert("Permission", "Gallery access required."); return; }
@@ -113,7 +129,7 @@ export default function EditCircle() {
     <PageContainer>
       <View style={{ flex: 1, backgroundColor: tk.bg }}>
         <ScreenHeader title="Edit Circle" />
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 + insets.bottom }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text style={[styles.label, { color: tk.textMuted }]}>Cover Image</Text>
             <TouchableOpacity onPress={pickCover} style={[styles.coverPicker, { backgroundColor: tk.inputBg, borderColor: tk.border }]} activeOpacity={0.8}>

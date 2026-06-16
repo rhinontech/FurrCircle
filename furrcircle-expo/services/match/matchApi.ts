@@ -114,6 +114,16 @@ export const swipeBreed = async (
   }
 };
 
+export const getBreedMatches = async () => {
+  try {
+    const response = await PrivateAxios.get('/breed/matches');
+    return response.data;
+  } catch (error: any) {
+    console.error('getBreedMatches Error:', error?.response?.data || error.message);
+    throw error;
+  }
+};
+
 export const matchApi = {
   getPlaydateCards,
   swipePlaydate,
@@ -122,4 +132,5 @@ export const matchApi = {
   swipeOwner,
   getBreedCards,
   swipeBreed,
+  getBreedMatches,
 };
