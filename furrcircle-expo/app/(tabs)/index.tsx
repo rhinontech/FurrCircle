@@ -32,6 +32,7 @@ import Svg, { Path, Circle } from "react-native-svg";
 import { useNotificationStore } from "../../src/lib/notification-store";
 import { chatApi } from "../../services/chat/chatApi";
 import { usePostEngagementStore } from "../../src/lib/post-engagement-store";
+import { socketService } from "../../services/socket/socketService";
 import { useLocationStore } from "../../src/lib/location-store";
 import { LinearGradient } from "expo-linear-gradient";
 import { GlassCard, GlassBlur, glassSurface } from "../../src/components/ui/Glass";
@@ -1138,7 +1139,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   // to the arrays from the initial fetch.
   const live = usePostEngagementStore(s => s.counts[post.id]);
   const likeCount = isDummy ? post.likes : (live ? live.likeCount : (post.likes || []).length);
-  const commentCount = live ? live.commentCount : localComments.length;
+  const commentCount = live ? Math.max(live.commentCount, localComments.length) : localComments.length;
   const shareCount = isDummy ? (post.shares || 0) : (live ? live.shareCount : (post.shareCount || 0));
 
   // Keep inline comments in sync when the feed refreshes with newer server data.
@@ -1149,6 +1150,23 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
       setLocalComments(post.comments);
     }
   }, [post.id, post.comments]);
+
+  // Sync new comments in real-time
+  useEffect(() => {
+    if (isDummy) return;
+    const unsub = socketService.on<{ postId: string; comment: any }>(
+      "comment:new",
+      ({ postId, comment }) => {
+        if (postId === post.id) {
+          setLocalComments((prev) => {
+            if (prev.some((c) => c.id === comment.id)) return prev;
+            return [...prev, comment];
+          });
+        }
+      }
+    );
+    return unsub;
+  }, [post.id, isDummy]);
 
   const handleComment = async () => {
     if (!commentText.trim()) return;

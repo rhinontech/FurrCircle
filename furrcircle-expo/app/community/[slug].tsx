@@ -9,6 +9,7 @@ import { useTokens } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { circleApi } from "../../services/community/circleApi";
 import { questionApi } from "../../services/community/questionApi";
+import { socketService } from "../../services/socket/socketService";
 import { useState, useCallback, useEffect } from "react";
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -57,6 +58,49 @@ export default function CommunityDetail() {
       load();
     }
   }, [refresh]);
+
+  useEffect(() => {
+    if (!slug) return;
+    const unsubNew = socketService.on<{ circleId: string | null; question: any }>(
+      "question:new",
+      ({ circleId, question }) => {
+        if (circleId === slug) {
+          setQuestions((prev) => {
+            if (prev.some((q) => q.id === question.id)) return prev;
+            return [question, ...prev];
+          });
+        }
+      }
+    );
+
+    const unsubVote = socketService.on<{ questionId: string; upvotes: number }>(
+      "question:vote",
+      ({ questionId, upvotes }) => {
+        setQuestions((prev) =>
+          prev.map((q) =>
+            q.id === questionId ? { ...q, upvotes } : q
+          )
+        );
+      }
+    );
+
+    const unsubAnswer = socketService.on<{ questionId: string; answerCount: number }>(
+      "question:answer:new",
+      ({ questionId, answerCount }) => {
+        setQuestions((prev) =>
+          prev.map((q) =>
+            q.id === questionId ? { ...q, answerCount } : q
+          )
+        );
+      }
+    );
+
+    return () => {
+      unsubNew();
+      unsubVote();
+      unsubAnswer();
+    };
+  }, [slug]);
 
   const handleJoin = async () => {
     if (!circle) return;

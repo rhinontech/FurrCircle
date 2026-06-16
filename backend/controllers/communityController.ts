@@ -848,10 +848,16 @@ export const addComment = async (req: any, res: Response): Promise<void> => {
     });
 
     const resolveProfile = createProfileResolver();
-    res.status(201).json({ comment: await serializeComment(comment, resolveProfile) });
+    const serializedComment = await serializeComment(comment, resolveProfile);
+    res.status(201).json({ comment: serializedComment });
 
     recomputeEngagementScore(req.params.id).catch(() => { });
     broadcastPostCounts(req.params.id);
+
+    emitGlobal("comment:new", {
+      postId: req.params.id,
+      comment: serializedComment,
+    });
 
     // Notify post author (fire and forget, skip self-comments)
     if (post.userId !== req.user.id || post.userType !== (req.userType || "user")) {

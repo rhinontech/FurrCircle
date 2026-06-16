@@ -294,14 +294,15 @@ export default function RootLayout() {
         // Listen for foreground messages
         const unsubscribe = messaging().onMessage(async (remoteMessage: any) => {
           console.log("A new FCM message arrived!", JSON.stringify(remoteMessage));
-          if (remoteMessage.notification) {
-            // Non-blocking in-app banner instead of a full-screen Alert popup.
-            toast.show({
-              title: remoteMessage.notification.title || "New Notification",
-              message: remoteMessage.notification.body || "",
-              onPress: () => handleNotificationRedirect(remoteMessage, router),
-            });
-          }
+          if (!remoteMessage) return;
+          const title = remoteMessage.notification?.title || remoteMessage.data?.title || "New Notification";
+          const body = remoteMessage.notification?.body || remoteMessage.data?.body || "";
+          // Non-blocking in-app banner instead of a full-screen Alert popup.
+          toast.show({
+            title,
+            message: body,
+            onPress: () => handleNotificationRedirect(remoteMessage, router),
+          });
         });
         
         // Listen for background clicks (app running in background)

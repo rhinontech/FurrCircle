@@ -31,7 +31,7 @@ type ToastState = {
   clear: () => void;
 };
 
-export const TOAST_MAX_VISIBLE = 3;
+export const TOAST_MAX_VISIBLE = 1;
 
 export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
@@ -40,7 +40,8 @@ export const useToastStore = create<ToastState>((set) => ({
     set((state) => {
       // Avoid duplicate consecutive toasts (e.g. same notification delivered twice)
       if (state.toasts.some((t) => t.id === id)) return state;
-      return { toasts: [...state.toasts, { duration: 4000, variant: "info", ...toast, id }] };
+      // Replace the active toast list with only the newest toast to avoid stacking or queuing.
+      return { toasts: [{ duration: 4000, variant: "info", ...toast, id }] };
     });
     return id;
   },

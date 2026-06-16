@@ -16,6 +16,7 @@ import { ShareSheet } from "../../src/components/ShareSheet";
 import { feedApi } from "../../services/community/feedApi";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { usePostEngagementStore } from "../../src/lib/post-engagement-store";
+import { socketService } from "../../services/socket/socketService";
 import { posts as dummyPosts, sampleComments } from "../../src/lib/demo-data";
 import { Video, ResizeMode, Audio } from "expo-av";
 import { useIsFocused } from "@react-navigation/native";
@@ -128,6 +129,22 @@ export default function PostDetail() {
       .catch(err => { console.error(err); Alert.alert("Error", "Failed to load post."); })
       .finally(() => setLoading(false));
   }, [id, user?.id]));
+
+  useEffect(() => {
+    if (!id || isDummy) return;
+    const unsub = socketService.on<{ postId: string; comment: any }>(
+      "comment:new",
+      ({ postId, comment }) => {
+        if (postId === id) {
+          setComments((prev) => {
+            if (prev.some((c) => c.id === comment.id)) return prev;
+            return [...prev, comment];
+          });
+        }
+      }
+    );
+    return unsub;
+  }, [id, isDummy]);
 
   const handleLike = async () => {
     setIsLiked(v => !v);
@@ -265,7 +282,7 @@ export default function PostDetail() {
     : baseLikes + (isLiked ? (initiallyLiked ? 0 : 1) : (initiallyLiked ? -1 : 0));
   // Prefer realtime counts pushed via "post:update" when available.
   const likeCount = live ? live.likeCount : computedLike;
-  const commentCount = live ? live.commentCount : comments.length;
+  const commentCount = live ? Math.max(live.commentCount, comments.length) : comments.length;
   const shareCount = live ? live.shareCount : (post.shareCount || 0);
 
   return (
