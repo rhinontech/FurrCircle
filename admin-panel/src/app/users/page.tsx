@@ -6,6 +6,7 @@ import {
   ShieldCheck, FileText, Lock, Heart, Tag,
 } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 /* ─── Copyable field (id / email / phone) ─── */
 function CopyField({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | null | undefined }) {
@@ -83,6 +84,7 @@ function UserDrawer({ user, onClose, onDelete, deleting }: {
   onDelete: (id: string, name: string) => void;
   deleting: boolean;
 }) {
+  const { dangerMode } = useAdminAuth();
   const flags = [
     { label: "Onboarded", on: user.hasCompletedOnboarding },
     { label: "Private", on: user.isPrivate },
@@ -187,8 +189,13 @@ function UserDrawer({ user, onClose, onDelete, deleting }: {
         <div className="px-6 py-4 border-t border-slate-100">
           <button
             onClick={() => onDelete(user.id, user.name)}
-            disabled={deleting}
-            className="w-full py-2.5 bg-rose-50 text-rose-600 rounded-xl text-sm font-bold hover:bg-rose-100 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            disabled={deleting || !dangerMode}
+            className={`w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+              dangerMode 
+                ? "bg-rose-50 text-rose-600 hover:bg-rose-100 disabled:opacity-60" 
+                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+            }`}
+            title={!dangerMode ? "Enable Danger Mode to delete user" : ""}
           >
             <Trash2 size={15} />
             {deleting ? "Removing..." : "Remove User"}
@@ -200,6 +207,7 @@ function UserDrawer({ user, onClose, onDelete, deleting }: {
 }
 
 export default function UsersPage() {
+  const { dangerMode } = useAdminAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -396,8 +404,13 @@ export default function UsersPage() {
                             </button>
                             <button
                               onClick={() => handleDelete(user.id, user.name)}
-                              disabled={deletingId === user.id}
-                              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-rose-600 hover:bg-rose-50 transition-colors border-t border-slate-100"
+                              disabled={deletingId === user.id || !dangerMode}
+                              className={`w-full flex items-center gap-2 px-4 py-3 text-sm border-t border-slate-100 transition-colors ${
+                                dangerMode 
+                                  ? "text-rose-600 hover:bg-rose-50" 
+                                  : "text-slate-400 cursor-not-allowed bg-slate-50/50"
+                              }`}
+                              title={!dangerMode ? "Enable Danger Mode to delete user" : ""}
                             >
                               <Trash2 size={15} />
                               {deletingId === user.id ? "Removing..." : "Remove User"}

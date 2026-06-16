@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Users, Trash2, Search, Loader2, CircleDot, Globe, Plus, X, ImagePlus } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { useRef } from "react";
 
 const CATEGORIES = ["general", "health", "adoption", "training", "playdate", "nutrition", "other"];
@@ -174,6 +175,7 @@ function CreateDrawer({ onClose, onCreate }: {
 
 /* ─── Main page ─── */
 export default function CirclesPage() {
+  const { dangerMode } = useAdminAuth();
   const [circles, setCircles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -223,7 +225,13 @@ export default function CirclesPage() {
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="px-4 py-2.5 bg-primary-900 text-white rounded-input flex items-center gap-2 font-bold text-sm hover:bg-primary-800 shadow-sm transition-colors"
+          disabled={!dangerMode}
+          className={`px-4 py-2.5 rounded-input flex items-center gap-2 font-bold text-sm shadow-sm transition-colors ${
+            dangerMode 
+              ? "bg-primary-900 text-white hover:bg-primary-800" 
+              : "bg-slate-100 text-slate-400 cursor-not-allowed"
+          }`}
+          title={!dangerMode ? "Enable Danger Mode to create circles" : ""}
         >
           <Plus size={18} /> Create Circle
         </button>
@@ -331,8 +339,13 @@ export default function CirclesPage() {
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => handleDelete(circle.id, circle.name)}
-                        disabled={deletingId === circle.id}
-                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-40"
+                        disabled={deletingId === circle.id || !dangerMode}
+                        className={`p-2 rounded-lg transition-colors ${
+                          dangerMode 
+                            ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40" 
+                            : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                        }`}
+                        title={!dangerMode ? "Enable Danger Mode to delete circle" : ""}
                       >
                         {deletingId === circle.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                       </button>

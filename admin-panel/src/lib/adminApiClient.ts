@@ -14,11 +14,30 @@ const getToken = (): string | null => {
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
+const isDangerModeEnabled = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem('furrcircle_admin_danger_mode') === 'true';
+  } catch {
+    return false;
+  }
+};
+
 const request = async <T = unknown>(
   path: string,
   method: HttpMethod = 'GET',
   body?: unknown
 ): Promise<T> => {
+  if (method !== 'GET') {
+    const isCampaignAction = path.startsWith('/admin/campaigns') && method !== 'DELETE';
+    if (!isCampaignAction && !isDangerModeEnabled()) {
+      if (typeof window !== 'undefined') {
+        alert("Action Blocked: Read-only mode is active. Please turn on 'Danger Mode' in the top header to edit or delete data.");
+      }
+      throw new Error("Read-only mode active. Danger Mode is disabled.");
+    }
+  }
+
   const token = getToken();
 
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
@@ -40,6 +59,13 @@ const request = async <T = unknown>(
 };
 
 const uploadFile = async (folder: string, file: File): Promise<{ url: string }> => {
+  if (!isDangerModeEnabled()) {
+    if (typeof window !== 'undefined') {
+      alert("Action Blocked: Read-only mode is active. Please turn on 'Danger Mode' in the top header to upload files.");
+    }
+    throw new Error("Read-only mode active. Danger Mode is disabled.");
+  }
+
   const token = getToken();
   const formData = new FormData();
   formData.append('image', file);

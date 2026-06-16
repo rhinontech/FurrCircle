@@ -12,6 +12,7 @@ import {
   Filter,
 } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-amber-50 text-amber-700 border border-amber-200",
@@ -26,6 +27,7 @@ const StatusIcon = ({ status }: { status: string }) => {
 };
 
 export default function AdoptionApplicationsPage() {
+  const { dangerMode } = useAdminAuth();
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -307,17 +309,25 @@ export default function AdoptionApplicationsPage() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleReview(app.id, "approved")}
-                            disabled={actionId === app.id}
-                            className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 transition-colors disabled:opacity-40"
-                            title="Approve"
+                            disabled={actionId === app.id || !dangerMode}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              dangerMode
+                                ? "text-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-40"
+                                : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                            }`}
+                            title={!dangerMode ? "Enable Danger Mode to approve application" : "Approve"}
                           >
                             <CheckCircle2 size={16} />
                           </button>
                           <button
                             onClick={() => handleReview(app.id, "rejected")}
-                            disabled={actionId === app.id}
-                            className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors disabled:opacity-40"
-                            title="Reject"
+                            disabled={actionId === app.id || !dangerMode}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              dangerMode
+                                ? "text-rose-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
+                                : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                            }`}
+                            title={!dangerMode ? "Enable Danger Mode to reject application" : "Reject"}
                           >
                             <XCircle size={16} />
                           </button>

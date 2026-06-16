@@ -22,6 +22,8 @@ type AdminAuthContextValue = {
   isReady: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  dangerMode: boolean;
+  setDangerMode: (enabled: boolean) => void;
 };
 
 const AdminAuthContext = createContext<AdminAuthContextValue | undefined>(undefined);
@@ -29,6 +31,7 @@ const AdminAuthContext = createContext<AdminAuthContextValue | undefined>(undefi
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [admin, setAdmin] = useState<AdminSession | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [dangerMode, setDangerModeState] = useState(false);
 
   useEffect(() => {
     try {
@@ -36,6 +39,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         window.localStorage.getItem(SESSION_KEY)
         || window.localStorage.getItem(LEGACY_SESSION_KEY);
       if (raw) setAdmin(JSON.parse(raw) as AdminSession);
+      
+      const isDanger = window.localStorage.getItem("furrcircle_admin_danger_mode") === "true";
+      setDangerModeState(isDanger);
     } catch {
       // ignore
     } finally {
@@ -79,8 +85,15 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.removeItem(LEGACY_TOKEN_KEY);
   };
 
+  const setDangerMode = (enabled: boolean) => {
+    setDangerModeState(enabled);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem("furrcircle_admin_danger_mode", String(enabled));
+    }
+  };
+
   return (
-    <AdminAuthContext.Provider value={{ admin, isReady, login, logout }}>
+    <AdminAuthContext.Provider value={{ admin, isReady, login, logout, dangerMode, setDangerMode }}>
       {children}
     </AdminAuthContext.Provider>
   );

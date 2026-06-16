@@ -7,7 +7,7 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 
 const AdminHeader = () => {
   const pathname = usePathname();
-  const { admin, logout } = useAdminAuth();
+  const { admin, logout, dangerMode, setDangerMode } = useAdminAuth();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +81,40 @@ const AdminHeader = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Danger Mode Toggle */}
+          <div className="flex items-center gap-2 border border-slate-200/80 rounded-2xl p-1 px-2.5 bg-slate-50/50 shadow-sm/5 mr-1 select-none">
+            <div className="flex items-center gap-1.5 mr-1">
+              {dangerMode ? (
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                </span>
+              ) : (
+                <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+              )}
+              <span className={`text-[10px] font-bold tracking-wide uppercase ${dangerMode ? 'text-rose-600' : 'text-slate-500'}`}>
+                {dangerMode ? 'Danger Mode ON' : 'Read-Only'}
+              </span>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => setDangerMode(!dangerMode)}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                dangerMode ? 'bg-rose-500' : 'bg-slate-300'
+              }`}
+              role="switch"
+              aria-checked={dangerMode}
+            >
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  dangerMode ? 'translate-x-4' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
           <button className="p-2.5 bg-slate-100 text-slate-600 rounded-control hover:bg-slate-200 transition-colors relative">
             <Bell size={18} />
             <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-rose-500 rounded-full border-2 border-white"></span>

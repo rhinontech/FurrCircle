@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Search, Trash2, Loader2, MapPin, AlertTriangle, Eye, X } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 const STATUS_CONFIG = {
   lost:    { label: "Lost",    color: "bg-rose-50 text-rose-600" },
@@ -12,6 +13,7 @@ const STATUS_CONFIG = {
 type Status = keyof typeof STATUS_CONFIG;
 
 export default function LostPetsPage() {
+  const { dangerMode } = useAdminAuth();
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -182,9 +184,9 @@ export default function LostPetsPage() {
                       <td className="px-6 py-4">
                         <select
                           value={report.status}
-                          disabled={updatingId === report.id}
+                          disabled={updatingId === report.id || !dangerMode}
                           onChange={(e) => handleStatusChange(report.id, e.target.value as Status)}
-                          className={`px-2.5 py-1.5 rounded-full text-[11px] font-bold border-0 outline-none cursor-pointer ${cfg.color}`}
+                          className={`px-2.5 py-1.5 rounded-full text-[11px] font-bold border-0 outline-none cursor-pointer ${cfg.color} ${!dangerMode ? "opacity-60 cursor-not-allowed" : ""}`}
                         >
                           <option value="lost">Lost</option>
                           <option value="spotted">Spotted</option>
@@ -225,9 +227,13 @@ export default function LostPetsPage() {
                           </button>
                           <button
                             onClick={() => handleDelete(report.id)}
-                            disabled={deletingId === report.id}
-                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-40"
-                            title="Delete report"
+                            disabled={deletingId === report.id || !dangerMode}
+                            className={`p-2 rounded-lg transition-colors ${
+                              dangerMode
+                                ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                                : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                            }`}
+                            title={!dangerMode ? "Enable Danger Mode to delete report" : "Delete report"}
                           >
                             {deletingId === report.id
                               ? <Loader2 size={16} className="animate-spin" />

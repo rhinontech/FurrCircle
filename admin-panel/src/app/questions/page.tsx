@@ -5,6 +5,7 @@ import {
   ChevronUp, Flame, X, Tag, Globe, CircleDot,
 } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 /* ─── helpers ─── */
 const isHotToday = (q: any) => {
@@ -141,6 +142,7 @@ function CreateDrawer({ circles, onClose, onCreate }: {
 
 /* ─── Answers panel ─── */
 function AnswersPanel({ questionId, onClose }: { questionId: string; onClose: () => void }) {
+  const { dangerMode } = useAdminAuth();
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -191,8 +193,13 @@ function AnswersPanel({ questionId, onClose }: { questionId: string; onClose: ()
                 <span className="text-[10px] text-slate-400">{new Date(ans.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
                 <button
                   onClick={() => handleDelete(ans.id)}
-                  disabled={deletingId === ans.id}
-                  className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors disabled:opacity-40"
+                  disabled={deletingId === ans.id || !dangerMode}
+                  className={`p-1 rounded transition-colors ${
+                    dangerMode 
+                      ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40" 
+                      : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                  }`}
+                  title={!dangerMode ? "Enable Danger Mode to delete answer" : "Delete answer"}
                 >
                   {deletingId === ans.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                 </button>
@@ -208,6 +215,7 @@ function AnswersPanel({ questionId, onClose }: { questionId: string; onClose: ()
 
 /* ─── Main page ─── */
 export default function QuestionsPage() {
+  const { dangerMode } = useAdminAuth();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [circles, setCircles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -265,7 +273,13 @@ export default function QuestionsPage() {
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="px-4 py-2.5 bg-primary-900 text-white rounded-input flex items-center gap-2 font-bold text-sm hover:bg-primary-800 shadow-sm"
+          disabled={!dangerMode}
+          className={`px-4 py-2.5 rounded-input flex items-center gap-2 font-bold text-sm shadow-sm transition-colors ${
+            dangerMode 
+              ? "bg-primary-900 text-white hover:bg-primary-800" 
+              : "bg-slate-100 text-slate-400 cursor-not-allowed"
+          }`}
+          title={!dangerMode ? "Enable Danger Mode to post questions" : "Ask Question"}
         >
           <Plus size={18} /> Ask Question
         </button>
@@ -429,8 +443,13 @@ export default function QuestionsPage() {
                       <td className="px-6 py-4 text-right">
                         <button
                           onClick={() => handleDelete(q.id, q.title)}
-                          disabled={deletingId === q.id}
-                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-40"
+                          disabled={deletingId === q.id || !dangerMode}
+                          className={`p-2 rounded-lg transition-colors ${
+                            dangerMode
+                              ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                              : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                          }`}
+                          title={!dangerMode ? "Enable Danger Mode to delete question" : "Delete question"}
                         >
                           {deletingId === q.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                         </button>
