@@ -308,9 +308,17 @@ export default function CustomCameraScreen() {
           throw new Error("Failed to upload story media.");
         }
 
+        const xVal = (pan.x as any)._value ?? 0;
+        const yVal = (pan.y as any)._value ?? (SCREEN_HEIGHT / 2 - 40);
+        const xPercent = xVal / SCREEN_WIDTH;
+        const yPercent = yVal / SCREEN_HEIGHT;
+
         const storyCaption = JSON.stringify({
           overlayText: overlayText || "",
           caption: "",
+          overlayTextX: xPercent,
+          overlayTextY: yPercent,
+          textColor: textColor || "#FFFFFF",
         });
 
         await storyApi.createStory({
