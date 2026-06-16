@@ -233,3 +233,45 @@ export const swipeBreed = async (req: any, res: Response): Promise<void> => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// GET /api/breed/matches — the current user's matched breed requests
+export const getBreedMatches = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { playdate_likes: PlaydateLike, pets: Pet, users: User } = db as any;
+
+    const matches = await PlaydateLike.findAll({
+      where: {
+        swiperId: req.user.id,
+        type: 'breed',
+        matchedAt: { [Op.ne]: null },
+        conversationId: { [Op.ne]: null },
+      },
+      include: [
+        {
+          model: Pet,
+          as: 'targetPet',
+          attributes: ['id', 'name', 'species', 'breed', 'city', 'avatar_url', 'ownerId'],
+          include: [{ model: User, as: 'owner', attributes: ['id', 'name', 'avatar_url', 'city'] }],
+        },
+        { model: Pet, as: 'swiperPet', attributes: ['id', 'name', 'avatar_url'] },
+      ],
+      order: [['matchedAt', 'DESC']],
+    });
+
+    const result = matches
+      .map((m: any) => m.toJSON())
+      .filter((m: any) => m.targetPet) // skip any orphaned records
+      .map((m: any) => ({
+        id: m.id,
+        conversationId: m.conversationId,
+        matchedAt: m.matchedAt,
+        pet: m.targetPet,
+        myPet: m.swiperPet || null,
+        owner: m.targetPet?.owner || null,
+      }));
+
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

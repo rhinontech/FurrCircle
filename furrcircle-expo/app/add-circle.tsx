@@ -36,6 +36,21 @@ export default function AddCircleScreen() {
   const [coverUri, setCoverUri] = useState<string | null>(null);
   const [cropSource, setCropSource] = useState<{ uri: string; width: number; height: number } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const pickCover = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -86,7 +101,7 @@ export default function AddCircleScreen() {
   return (
     <PageContainer>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
         style={{ flex: 1 }}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
