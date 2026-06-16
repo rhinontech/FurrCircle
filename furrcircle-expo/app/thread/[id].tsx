@@ -16,6 +16,7 @@ import { useAuthStore } from "../../src/lib/auth-store";
 import { questionApi } from "../../services/community/questionApi";
 import { useRouter } from "expo-router";
 import { threads as dummyThreads } from "../../src/lib/demo-data";
+import { socketService } from "../../services/socket/socketService";
 
 const formatRelTime = (iso?: string): string => {
   if (!iso) return "";
@@ -86,6 +87,37 @@ export default function ThreadDetail() {
     }).catch(console.error)
       .finally(() => setLoading(false));
   }, [id, dummy]));
+
+  // Listen to socket events in real-time
+  useEffect(() => {
+    if (!id || dummy) return;
+
+    const unsubVote = socketService.on<{ questionId: string; upvotes: number }>(
+      "question:vote",
+      ({ questionId, upvotes }) => {
+        if (questionId === id) {
+          setUpvoteCount(upvotes);
+        }
+      }
+    );
+
+    const unsubAnswer = socketService.on<{ questionId: string; answer: any; answerCount: number }>(
+      "question:answer:new",
+      ({ questionId, answer, answerCount }) => {
+        if (questionId === id) {
+          setAnswers((prev) => {
+            if (prev.some((a) => a.id === answer.id)) return prev;
+            return [answer, ...prev];
+          });
+        }
+      }
+    );
+
+    return () => {
+      unsubVote();
+      unsubAnswer();
+    };
+  }, [id, dummy]);
 
   // The question is passed via route params or we parse it
   const { title, body, tags, askerName, time, upvotes, hasVoted: hasVotedParam, questionUserId } = useLocalSearchParams<any>();

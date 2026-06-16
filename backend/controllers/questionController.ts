@@ -1,5 +1,6 @@
 import type { Response } from "express";
 import db from "../models/index.ts";
+import { emitGlobal } from "../services/realtimeService.ts";
 
 const toPlain = (v: any) => (v && typeof v.toJSON === "function" ? v.toJSON() : v);
 
@@ -71,7 +72,13 @@ export const createQuestion = async (req: any, res: Response): Promise<void> => 
         });
 
         const author = await resolveUser(req.user.id);
-        res.status(201).json({ ...toPlain(question), author });
+        const serialized = { ...toPlain(question), author, answerCount: 0 };
+        res.status(201).json(serialized);
+
+        emitGlobal("question:new", {
+            circleId: circleId || null,
+            question: serialized,
+        });
     } catch (err: any) {
         res.status(500).json({ message: err.message });
     }
@@ -97,6 +104,7 @@ export const upvoteQuestion = async (req: any, res: Response): Promise<void> => 
             question.upvotes = Math.max(0, (question.upvotes || 1) - 1);
             await question.save();
             res.json({ upvotes: question.upvotes, voted: false });
+            emitGlobal("question:vote", { questionId, upvotes: question.upvotes });
         } else {
             // Toggle ON — add vote
             await QuestionVote.create({ questionId, userId: currentUserId });
@@ -122,6 +130,7 @@ export const upvoteQuestion = async (req: any, res: Response): Promise<void> => 
             }
 
             res.json({ upvotes: question.upvotes, voted: true });
+            emitGlobal("question:vote", { questionId, upvotes: question.upvotes });
         }
     } catch (err: any) {
         res.status(500).json({ message: err.message });
@@ -166,7 +175,18 @@ export const addAnswer = async (req: any, res: Response): Promise<void> => {
         }
 
         const author = await resolveUser(req.user.id);
-        res.status(201).json({ ...toPlain(answer), author });
+        const serializedAnswer = { ...toPlain(answer), author };
+        res.status(201).json(serializedAnswer);
+
+        // Fetch updated answer count (since it was incremented)
+        const updatedQuestion = await Question.findByPk(req.params.id);
+        const answerCount = updatedQuestion ? updatedQuestion.answerCount : 0;
+
+        emitGlobal("question:answer:new", {
+            questionId: req.params.id,
+            answer: serializedAnswer,
+            answerCount
+        });
     } catch (err: any) {
         res.status(500).json({ message: err.message });
     }
