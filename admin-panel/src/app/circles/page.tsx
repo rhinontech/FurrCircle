@@ -1,33 +1,39 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { Users, Trash2, Search, Loader2, CircleDot, Globe, Plus, X, ImagePlus } from "lucide-react";
+import { Users, Trash2, Search, Loader2, CircleDot, Globe, Plus, X, ImagePlus, Pencil } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { useRef } from "react";
 
-const CATEGORIES = ["general", "health", "adoption", "training", "playdate", "nutrition", "other"];
+const CATEGORIES = ["dogs", "cats", "rescue", "health", "training", "general"];
 
 const CATEGORY_COLORS: Record<string, string> = {
-  general:   "bg-slate-100 text-slate-600",
-  health:    "bg-emerald-50 text-emerald-700",
-  adoption:  "bg-rose-50 text-rose-600",
-  training:  "bg-amber-50 text-amber-700",
-  playdate:  "bg-blue-50 text-blue-700",
-  nutrition: "bg-orange-50 text-orange-700",
-  other:     "bg-purple-50 text-purple-700",
+  dogs:     "bg-blue-50 text-blue-700",
+  cats:     "bg-purple-50 text-purple-700",
+  rescue:   "bg-rose-50 text-rose-600",
+  health:   "bg-emerald-50 text-emerald-700",
+  training: "bg-amber-50 text-amber-700",
+  general:  "bg-slate-100 text-slate-600",
 };
 const categoryColor = (cat?: string) =>
   CATEGORY_COLORS[(cat || "general").toLowerCase()] ?? "bg-slate-100 text-slate-600";
 
-/* ─── Create drawer ─── */
-function CreateDrawer({ onClose, onCreate }: {
+/* ─── Create / Edit drawer ─── */
+function CircleDrawer({ circle, onClose, onSaved }: {
+  circle?: any;
   onClose: () => void;
-  onCreate: (c: any) => void;
+  onSaved: (c: any) => void;
 }) {
-  const [form, setForm] = useState({ name: "", description: "", category: "general", coverImage: "" });
+  const isEdit = !!circle;
+  const [form, setForm] = useState({
+    name: circle?.name ?? "",
+    description: circle?.description ?? "",
+    category: circle?.category ?? "general",
+    coverImage: circle?.coverImage ?? "",
+  });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [imagePreview, setImagePreview] = useState("");
+  const [imagePreview, setImagePreview] = useState(circle?.coverImage ?? "");
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -54,16 +60,19 @@ function CreateDrawer({ onClose, onCreate }: {
     if (uploading) { setError("Please wait for the image to finish uploading."); return; }
     setSaving(true); setError("");
     try {
-      const created = await adminApi.post<any>("/admin/circles", {
+      const payload = {
         name: form.name.trim(),
-        description: form.description.trim() || undefined,
+        description: form.description.trim(),
         category: form.category,
-        coverImage: form.coverImage || undefined,
-      });
-      onCreate(created);
+        coverImage: form.coverImage || null,
+      };
+      const saved = isEdit
+        ? await adminApi.put<any>(`/admin/circles/${circle.id}`, payload)
+        : await adminApi.post<any>("/admin/circles", payload);
+      onSaved(saved);
       onClose();
     } catch (err: any) {
-      setError(err.message || "Failed to create circle.");
+      setError(err.message || `Failed to ${isEdit ? "update" : "create"} circle.`);
     } finally {
       setSaving(false);
     }
@@ -75,8 +84,10 @@ function CreateDrawer({ onClose, onCreate }: {
       <div className="fixed top-0 right-0 z-50 h-full w-120 bg-white shadow-2xl flex flex-col">
         <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100">
           <div>
-            <h2 className="text-xl font-bold text-slate-950">Create Circle</h2>
-            <p className="text-sm text-slate-500 mt-0.5">New circle will be created by Super Admin.</p>
+            <h2 className="text-xl font-bold text-slate-950">{isEdit ? "Edit Circle" : "Create Circle"}</h2>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {isEdit ? "Update this circle's details." : "New circle will be created by Super Admin."}
+            </p>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg">
             <X size={20} />
@@ -165,7 +176,7 @@ function CreateDrawer({ onClose, onCreate }: {
           </button>
           <button onClick={handleSubmit} disabled={saving} className="flex-1 py-3 rounded-xl bg-primary-900 text-white text-sm font-bold hover:bg-primary-800 disabled:opacity-60 flex items-center justify-center gap-2">
             {saving && <Loader2 size={16} className="animate-spin" />}
-            {saving ? "Creating…" : "Create Circle"}
+            {saving ? (isEdit ? "Saving…" : "Creating…") : (isEdit ? "Save Changes" : "Create Circle")}
           </button>
         </div>
       </div>
@@ -181,6 +192,7 @@ export default function CirclesPage() {
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [editCircle, setEditCircle] = useState<any | null>(null);
 
   const fetchCircles = async () => {
     try {
@@ -337,18 +349,32 @@ export default function CirclesPage() {
                       {circle.createdAt ? new Date(circle.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleDelete(circle.id, circle.name)}
-                        disabled={deletingId === circle.id || !dangerMode}
-                        className={`p-2 rounded-lg transition-colors ${
-                          dangerMode 
-                            ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40" 
-                            : "text-slate-300 cursor-not-allowed bg-slate-50/50"
-                        }`}
-                        title={!dangerMode ? "Enable Danger Mode to delete circle" : ""}
-                      >
-                        {deletingId === circle.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setEditCircle(circle)}
+                          disabled={!dangerMode}
+                          className={`p-2 rounded-lg transition-colors ${
+                            dangerMode
+                              ? "text-slate-400 hover:text-primary-900 hover:bg-primary-50"
+                              : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                          }`}
+                          title={!dangerMode ? "Enable Danger Mode to edit circle" : "Edit circle"}
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(circle.id, circle.name)}
+                          disabled={deletingId === circle.id || !dangerMode}
+                          className={`p-2 rounded-lg transition-colors ${
+                            dangerMode
+                              ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                              : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                          }`}
+                          title={!dangerMode ? "Enable Danger Mode to delete circle" : "Delete circle"}
+                        >
+                          {deletingId === circle.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -364,9 +390,17 @@ export default function CirclesPage() {
       </div>
 
       {showCreate && (
-        <CreateDrawer
+        <CircleDrawer
           onClose={() => setShowCreate(false)}
-          onCreate={c => setCircles(prev => [c, ...prev])}
+          onSaved={c => setCircles(prev => [c, ...prev])}
+        />
+      )}
+
+      {editCircle && (
+        <CircleDrawer
+          circle={editCircle}
+          onClose={() => setEditCircle(null)}
+          onSaved={updated => setCircles(prev => prev.map(c => (c.id === updated.id ? { ...c, ...updated } : c)))}
         />
       )}
     </div>

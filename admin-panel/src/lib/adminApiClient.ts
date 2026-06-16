@@ -84,6 +84,7 @@ const uploadFile = async (folder: string, file: File): Promise<{ url: string }> 
 export const adminApi = {
   get: <T = unknown>(path: string) => request<T>(path, 'GET'),
   post: <T = unknown>(path: string, body?: unknown) => request<T>(path, 'POST', body),
+  put: <T = unknown>(path: string, body?: unknown) => request<T>(path, 'PUT', body),
   patch: <T = unknown>(path: string, body?: unknown) => request<T>(path, 'PATCH', body),
   delete: <T = unknown>(path: string) => request<T>(path, 'DELETE'),
   upload: (folder: string, file: File) => uploadFile(folder, file),

@@ -870,6 +870,33 @@ export const adminCreateCircle = async (req: any, res: Response): Promise<void> 
   }
 };
 
+// @desc    Update a circle as admin
+// @route   PUT /api/admin/circles/:id
+export const adminUpdateCircle = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { circles: Circle, users: User } = db as any;
+    const circle = await Circle.findByPk(req.params.id);
+    if (!circle) { res.status(404).json({ message: 'Circle not found' }); return; }
+
+    const { name, description, category, coverImage } = req.body;
+
+    if (name !== undefined) {
+      if (!String(name).trim()) { res.status(400).json({ message: 'Circle name is required' }); return; }
+      circle.name = String(name).trim();
+    }
+    if (description !== undefined) circle.description = description ? String(description).trim() : null;
+    if (category !== undefined) circle.category = category || 'general';
+    if (coverImage !== undefined) circle.coverImage = coverImage || null;
+
+    await circle.save();
+
+    const creator = await User.findByPk(circle.createdBy, { attributes: ['id', 'name', 'username', 'avatar_url'] });
+    res.json({ ...circle.toJSON(), creator });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Delete a circle
 // @route   DELETE /api/admin/circles/:id
 export const adminDeleteCircle = async (req: Request, res: Response): Promise<void> => {
