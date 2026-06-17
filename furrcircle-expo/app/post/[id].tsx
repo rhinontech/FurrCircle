@@ -36,7 +36,6 @@ export default function PostDetail() {
   const live = usePostEngagementStore(s => s.counts[id]);
   const isScreenFocused = useIsFocused();
   const { user } = useAuthStore();
-  const isDummy = dummyPosts.some(p => p.id === id);
   const [shareOpen, setShareOpen] = useState(false);
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
