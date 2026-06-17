@@ -51,9 +51,9 @@ export const metadata: Metadata = {
       "India's all-in-one app for pet parents — share posts & stories, match for playdates, adoption & breeding, track health records, book vets, and join local pet circles. Free on iOS & Android.",
     images: [
       {
-        url: "/logo/furrcircle_light_logo.png",
-        width: 1200,
-        height: 630,
+        url: "/og-banner.png",
+        width: 2400,
+        height: 1792,
         alt: "FurrCircle — India's Social Network for Pet Lovers",
       },
     ],
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     title: "FurrCircle — India's Social Network for Pet Lovers",
     description:
       "India's all-in-one app for pet parents — share posts & stories, match for playdates, adoption & breeding, track health records, book vets, and join local pet circles. Free on iOS & Android.",
-    images: ["/logo/furrcircle_light_logo.png"],
+    images: ["/og-banner.png"],
   },
 };
 
