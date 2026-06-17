@@ -2,8 +2,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { PawPrint, Search, X, Heart, Activity, Trash2 } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 export default function PetsPage() {
+  const { dangerMode } = useAdminAuth();
   const [pets, setPets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -167,9 +169,13 @@ export default function PetsPage() {
                     <td className="px-6 py-4">
                       <button
                         onClick={() => handleDelete(pet.id, pet.name)}
-                        disabled={deletingId === pet.id}
-                        className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors disabled:opacity-40"
-                        title="Remove pet"
+                        disabled={deletingId === pet.id || !dangerMode}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          dangerMode 
+                            ? "text-rose-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40" 
+                            : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                        }`}
+                        title={!dangerMode ? "Enable Danger Mode to delete pet" : "Remove pet"}
                       >
                         <Trash2 size={15} />
                       </button>

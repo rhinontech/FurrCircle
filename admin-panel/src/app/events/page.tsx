@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Plus, MapPin, Calendar as CalendarIcon, Clock, Trash2, X, Loader2, ImagePlus, Eye, Pencil, Users } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 const CATEGORIES = ["Social", "Health", "Training", "Adoption", "Other"];
 const STATUSES = ["Upcoming", "Draft", "Completed"];
@@ -57,6 +58,7 @@ const compressImage = (file: File, maxWidth = 1080, quality = 0.75): Promise<Fil
 };
 
 export default function EventsPage() {
+  const { dangerMode } = useAdminAuth();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
@@ -207,7 +209,13 @@ export default function EventsPage() {
         </div>
         <button
           onClick={openCreate}
-          className="px-4 py-2.5 bg-primary-900 text-white rounded-input flex items-center gap-2 font-bold text-sm hover:bg-primary-800 transition-colors shadow-sm"
+          disabled={!dangerMode}
+          className={`px-4 py-2.5 rounded-input flex items-center gap-2 font-bold text-sm transition-colors shadow-sm ${
+            dangerMode
+              ? "bg-primary-900 text-white hover:bg-primary-800"
+              : "bg-slate-100 text-slate-400 cursor-not-allowed"
+          }`}
+          title={!dangerMode ? "Enable Danger Mode to create events" : "Create Event"}
         >
           <Plus size={18} />
           Create Event
@@ -303,16 +311,25 @@ export default function EventsPage() {
                         </button>
                         <button
                           onClick={() => openEdit(event)}
-                          className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          title="Edit event"
+                          disabled={!dangerMode}
+                          className={`p-2 rounded-lg transition-colors ${
+                            dangerMode
+                              ? "text-slate-400 hover:text-amber-600 hover:bg-amber-50"
+                              : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                          }`}
+                          title={!dangerMode ? "Enable Danger Mode to edit event" : "Edit event"}
                         >
                           <Pencil size={15} />
                         </button>
                         <button
                           onClick={() => handleDelete(event.id, event.title)}
-                          disabled={deletingId === event.id}
-                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-40"
-                          title="Delete event"
+                          disabled={deletingId === event.id || !dangerMode}
+                          className={`p-2 rounded-lg transition-colors disabled:opacity-40 ${
+                            dangerMode
+                              ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                              : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                          }`}
+                          title={!dangerMode ? "Enable Danger Mode to delete event" : "Delete event"}
                         >
                           {deletingId === event.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                         </button>
@@ -358,7 +375,13 @@ export default function EventsPage() {
             {drawerMode === "view" && (
               <button
                 onClick={() => openEdit(selectedEvent)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
+                disabled={!dangerMode}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-bold rounded-lg transition-colors ${
+                  dangerMode
+                    ? "text-amber-600 bg-amber-50 hover:bg-amber-100"
+                    : "text-slate-400 bg-slate-100 cursor-not-allowed"
+                }`}
+                title={!dangerMode ? "Enable Danger Mode to edit event" : "Edit"}
               >
                 <Pencil size={14} />
                 Edit

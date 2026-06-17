@@ -8,7 +8,7 @@ import {
   getAdoptionPets, adminReviewApplication,
   getAllAppointments,
   getAllVetReviews, adminDeleteVetReview,
-  getAllCircles, adminCreateCircle, adminDeleteCircle,
+  getAllCircles, adminCreateCircle, adminUpdateCircle, adminDeleteCircle,
   getAllLostPets, adminUpdateLostPetStatus, adminDeleteLostPet,
   getAllQuestions, adminCreateQuestion, adminDeleteQuestion, adminGetAnswers, adminDeleteAnswer,
   getAllReports, updateReportStatus, deleteReport,
@@ -92,6 +92,7 @@ router.delete("/questions/:id/answers/:answerId", protect, adminOnly, adminDelet
 // Circles
 router.get("/circles", protect, adminOnly, getAllCircles);
 router.post("/circles", protect, adminOnly, adminCreateCircle);
+router.put("/circles/:id", protect, adminOnly, adminUpdateCircle);
 router.delete("/circles/:id", protect, adminOnly, adminDeleteCircle);
 
 // Lost Pets

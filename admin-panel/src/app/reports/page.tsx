@@ -5,6 +5,7 @@ import {
   Mail, AtSign, Hash, Calendar, FileText, UserX, ShieldAlert, Clock,
 } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 type ReportStatus = "pending" | "resolved" | "dismissed";
 
@@ -54,6 +55,7 @@ function ReportDrawer({ report, onClose, onStatus, onDeleteReport, onRemoveUser,
   onRemoveUser: (userId: string, name: string) => void;
   busy: boolean;
 }) {
+  const { dangerMode } = useAdminAuth();
   const reported = report.reported;
   return (
     <>
@@ -122,15 +124,25 @@ function ReportDrawer({ report, onClose, onStatus, onDeleteReport, onRemoveUser,
           <div className="flex gap-2">
             <button
               onClick={() => onStatus(report.id, "resolved")}
-              disabled={busy || report.status === "resolved"}
-              className="flex-1 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-100 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              disabled={busy || report.status === "resolved" || !dangerMode}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-1.5 ${
+                dangerMode
+                  ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 disabled:opacity-50"
+                  : "bg-slate-100 text-slate-400 cursor-not-allowed"
+              }`}
+              title={!dangerMode ? "Enable Danger Mode to resolve report" : ""}
             >
               <Check size={15} /> Resolve
             </button>
             <button
               onClick={() => onStatus(report.id, "dismissed")}
-              disabled={busy || report.status === "dismissed"}
-              className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              disabled={busy || report.status === "dismissed" || !dangerMode}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-1.5 ${
+                dangerMode
+                  ? "bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50"
+                  : "bg-slate-100 text-slate-400 cursor-not-allowed"
+              }`}
+              title={!dangerMode ? "Enable Danger Mode to dismiss report" : ""}
             >
               <Ban size={15} /> Dismiss
             </button>
@@ -138,16 +150,26 @@ function ReportDrawer({ report, onClose, onStatus, onDeleteReport, onRemoveUser,
           {reported && (
             <button
               onClick={() => onRemoveUser(reported.id, reported.name)}
-              disabled={busy}
-              className="w-full py-2.5 bg-rose-600 text-white rounded-xl text-sm font-bold hover:bg-rose-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              disabled={busy || !dangerMode}
+              className={`w-full py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 ${
+                dangerMode
+                  ? "bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-60"
+                  : "bg-slate-100 text-slate-400 cursor-not-allowed"
+              }`}
+              title={!dangerMode ? "Enable Danger Mode to remove user" : ""}
             >
               <UserX size={15} /> Remove Reported User
             </button>
           )}
           <button
             onClick={() => onDeleteReport(report.id)}
-            disabled={busy}
-            className="w-full py-2.5 text-rose-500 rounded-xl text-sm font-bold hover:bg-rose-50 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+            disabled={busy || !dangerMode}
+            className={`w-full py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 ${
+              dangerMode
+                ? "text-rose-500 hover:bg-rose-50 disabled:opacity-60"
+                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+            }`}
+            title={!dangerMode ? "Enable Danger Mode to delete report" : ""}
           >
             <Trash2 size={15} /> Delete Report
           </button>
@@ -158,6 +180,7 @@ function ReportDrawer({ report, onClose, onStatus, onDeleteReport, onRemoveUser,
 }
 
 export default function ReportsPage() {
+  const { dangerMode } = useAdminAuth();
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -368,24 +391,33 @@ export default function ReportsPage() {
                             >
                               <Eye size={15} /> Review
                             </button>
-                            <button
+                             <button
                               onClick={() => handleStatus(r.id, "resolved")}
-                              disabled={busyId === r.id || r.status === "resolved"}
-                              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors border-t border-slate-100 disabled:opacity-50"
+                              disabled={busyId === r.id || r.status === "resolved" || !dangerMode}
+                              className={`w-full flex items-center gap-2 px-4 py-3 text-sm border-t border-slate-100 disabled:opacity-50 transition-colors ${
+                                dangerMode ? "text-emerald-600 hover:bg-emerald-50" : "text-slate-400 cursor-not-allowed bg-slate-50/50"
+                              }`}
+                              title={!dangerMode ? "Enable Danger Mode to resolve report" : ""}
                             >
                               <Check size={15} /> Resolve
                             </button>
                             <button
                               onClick={() => handleStatus(r.id, "dismissed")}
-                              disabled={busyId === r.id || r.status === "dismissed"}
-                              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                              disabled={busyId === r.id || r.status === "dismissed" || !dangerMode}
+                              className={`w-full flex items-center gap-2 px-4 py-3 text-sm disabled:opacity-50 transition-colors ${
+                                dangerMode ? "text-slate-600 hover:bg-slate-50" : "text-slate-400 cursor-not-allowed bg-slate-50/50"
+                              }`}
+                              title={!dangerMode ? "Enable Danger Mode to dismiss report" : ""}
                             >
                               <Ban size={15} /> Dismiss
                             </button>
                             <button
                               onClick={() => handleDeleteReport(r.id)}
-                              disabled={busyId === r.id}
-                              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-rose-600 hover:bg-rose-50 transition-colors border-t border-slate-100"
+                              disabled={busyId === r.id || !dangerMode}
+                              className={`w-full flex items-center gap-2 px-4 py-3 text-sm border-t border-slate-100 transition-colors ${
+                                dangerMode ? "text-rose-600 hover:bg-rose-50" : "text-slate-400 cursor-not-allowed bg-slate-50/50"
+                              }`}
+                              title={!dangerMode ? "Enable Danger Mode to delete report" : ""}
                             >
                               <Trash2 size={15} /> Delete
                             </button>
