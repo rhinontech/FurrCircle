@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Stethoscope, CalendarCheck, Heart, Users, MapPin, BadgeDollarSign } from "lucide-react";
+import { Stethoscope, CalendarCheck, Heart, Users, MapPin, BadgeDollarSign, MessagesSquare } from "lucide-react";
 import Image from "next/image";
 import { AnimatedHeading } from "@/components/AnimationProvider";
 
@@ -21,32 +21,39 @@ const signs = [
     delay: 0.2,
   },
   {
+    title: "LOCAL CIRCLES",
+    icon: <MessagesSquare className="w-6 h-6" />,
+    color: "bg-[#E84393]",
+    rotate: -2,
+    delay: 0.3,
+  },
+  {
     title: "HEALTH PASSPORT",
     icon: <Stethoscope className="w-6 h-6" />,
     color: "bg-[#0CA2D0]",
-    rotate: -2,
-    delay: 0.3,
+    rotate: 3,
+    delay: 0.4,
   },
   {
     title: "VET BOOKING",
     icon: <CalendarCheck className="w-6 h-6" />,
     color: "bg-[#53AF54]",
-    rotate: 3,
-    delay: 0.4,
+    rotate: -1,
+    delay: 0.5,
   },
   {
     title: "LOCAL EVENTS",
     icon: <MapPin className="w-6 h-6" />,
     color: "bg-[#FABC3F]",
-    rotate: -1,
-    delay: 0.5,
+    rotate: 2,
+    delay: 0.6,
   },
   {
     title: "ALWAYS FREE",
     icon: <BadgeDollarSign className="w-6 h-6" />,
     color: "bg-[#1A1A1A]",
-    rotate: 2,
-    delay: 0.6,
+    rotate: -3,
+    delay: 0.7,
   },
 ];
 

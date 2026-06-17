@@ -27,14 +27,14 @@ const appSchema = {
   "@type": "MobileApplication",
   name: "FurrCircle",
   operatingSystem: "iOS, Android",
-  applicationCategory: "HealthApplication",
+  applicationCategory: "SocialNetworkingApplication",
   offers: {
     "@type": "Offer",
     price: "0",
     priceCurrency: "INR",
   },
   description:
-    "Track your pet's health records, book vet appointments, set reminders, and join India's community of pet parents — all in one app.",
+    "FurrCircle is India's social network for pet lovers. Share posts and stories, match your pet for playdates, adoption or breeding, track health records, book vets, report lost pets, and join local pet circles — all in one free app.",
   url: "https://furrcircle.com",
   author: {
     "@type": "Organization",
@@ -51,7 +51,15 @@ const faqSchema = {
       name: "What is FurrCircle?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "FurrCircle is a free all-in-one pet care app for pet owners and veterinarians in India. It lets you store your pet's health records, book verified vet appointments, set vaccination and medication reminders, and connect with other pet parents in a community.",
+        text: "FurrCircle is India's free all-in-one social network for pet lovers. You can share posts and stories, match your pet for playdates, adoption or breeding, store health records, book verified vets, report lost pets, and join local pet circles to connect with other pet parents near you.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What are Circles on FurrCircle?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Circles are local, interest-based communities on FurrCircle — like Dogs, Cats, Rescue, Health, and Training. You can join circles near you, ask and answer questions, share advice, and meet pet parents in your city.",
       },
     },
     {

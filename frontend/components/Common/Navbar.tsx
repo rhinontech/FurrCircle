@@ -31,7 +31,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="fixed top-0 w-full z-50 bg-[#fffbf5]/70 border-1 border-b backdrop-blur-md  transition-all duration-300">
+      <header className="fixed top-0 w-full z-50 bg-[#fffbf5]/70 border-b border-black/5 backdrop-blur-md  transition-all duration-300">
         <nav className="container mx-auto px-6 md:px-10 h-[70px] md:h-[90px] flex items-center justify-between relative">
           {/* Logo */}
           <Link href="/" className="relative z-[60] block">

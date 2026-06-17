@@ -13,16 +13,21 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   metadataBase: new URL("https://furrcircle.com"),
   title: {
-    default: "FurrCircle — The Pet Care App for Every Pet Parent",
+    default: "FurrCircle — India's Social Network for Pet Lovers",
     template: "%s | FurrCircle",
   },
   description:
-    "Track your pet's health records, book vet appointments, set reminders, and join India's community of pet parents — all in one app.",
+    "India's all-in-one app for pet parents — share posts & stories, match for playdates, adoption & breeding, track health records, book vets, and join local pet circles. Free on iOS & Android.",
   keywords: [
+    "pet social network India",
+    "pet community app",
+    "pet matching app",
+    "pet adoption app India",
+    "lost pet finder",
     "pet care app India",
     "vet appointment booking",
     "pet health records",
-    "dog cat health app",
+    "dog cat social app",
     "pet owner community India",
     "FurrCircle",
   ],
@@ -41,23 +46,23 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: "https://furrcircle.com",
     siteName: "FurrCircle",
-    title: "FurrCircle — The Pet Care App for Every Pet Parent",
+    title: "FurrCircle — India's Social Network for Pet Lovers",
     description:
-      "Track your pet's health records, book vet appointments, set reminders, and join India's community of pet parents — all in one app.",
+      "India's all-in-one app for pet parents — share posts & stories, match for playdates, adoption & breeding, track health records, book vets, and join local pet circles. Free on iOS & Android.",
     images: [
       {
         url: "/logo/furrcircle_light_logo.png",
         width: 1200,
         height: 630,
-        alt: "FurrCircle — The Pet Care App for Every Pet Parent",
+        alt: "FurrCircle — India's Social Network for Pet Lovers",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "FurrCircle — The Pet Care App for Every Pet Parent",
+    title: "FurrCircle — India's Social Network for Pet Lovers",
     description:
-      "Track your pet's health records, book vet appointments, set reminders, and join India's community of pet parents — all in one app.",
+      "India's all-in-one app for pet parents — share posts & stories, match for playdates, adoption & breeding, track health records, book vets, and join local pet circles. Free on iOS & Android.",
     images: ["/logo/furrcircle_light_logo.png"],
   },
 };

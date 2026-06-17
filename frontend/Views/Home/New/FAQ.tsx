@@ -11,7 +11,11 @@ const faqs = [
   },
   {
     question: "How does pet matching work?",
-    answer: "Pet matching works like a swipe card interface. You can match in four modes: Playdate (find pets to hang out with), Adoption (find pets looking for a home), Breed (connect for responsible breeding), and Owner (meet other pet parents nearby).",
+    answer: "Pet matching works like a swipe card interface. You can match in three modes: Playdate (find pets to hang out with), Adoption (find pets looking for a home), and Breed (connect for responsible breeding). When it's a mutual match, you can start chatting instantly.",
+  },
+  {
+    question: "What are Circles on FurrCircle?",
+    answer: "Circles are local, interest-based communities — like Dogs, Cats, Rescue, Health, and Training. Join circles near you to ask and answer questions, share advice, and connect with pet parents in your city.",
   },
   {
     question: "Is FurrCircle free to use?",

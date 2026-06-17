@@ -2,7 +2,7 @@
 
 import { AnimatedHeading } from "@/components/AnimationProvider";
 import { motion } from "framer-motion";
-import { ClipboardList, CalendarCheck, Heart, Users, MessageCircle, MapPin, Search, AlertTriangle } from "lucide-react";
+import { ClipboardList, CalendarCheck, Heart, Users, MessageCircle, MapPin, AlertTriangle, MessagesSquare, Images } from "lucide-react";
 
 const services = [
   {
@@ -16,6 +16,12 @@ const services = [
     description: "Share photos and videos, follow pet parents near you, and post 24-hour stories with your community.",
     icon: <Users className="w-8 h-8" />,
     color: "bg-[#9D8FE4]",
+  },
+  {
+    title: "CIRCLES & Q&A",
+    description: "Join local pet circles — Dogs, Cats, Rescue, Health, Training — to ask questions, share advice, and meet nearby pet parents.",
+    icon: <MessagesSquare className="w-8 h-8" />,
+    color: "bg-[#E84393]",
   },
   {
     title: "HEALTH PASSPORT",
@@ -40,6 +46,18 @@ const services = [
     description: "Report lost pets, browse spotted animals, and reunite families with photo-based alerts in your city.",
     icon: <AlertTriangle className="w-8 h-8" />,
     color: "bg-[#1A1A1A]",
+  },
+  {
+    title: "MEMORY VAULT",
+    description: "Keep a beautiful, year-by-year photo vault of every pet — preserving a lifetime of moments and milestones.",
+    icon: <Images className="w-8 h-8" />,
+    color: "bg-[#6C5CE7]",
+  },
+  {
+    title: "CHAT & MESSAGING",
+    description: "Message other pet parents directly, share posts and profiles, and keep matched conversations all in one inbox.",
+    icon: <MessageCircle className="w-8 h-8" />,
+    color: "bg-[#00B894]",
   },
 ];
 

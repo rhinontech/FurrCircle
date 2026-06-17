@@ -123,7 +123,7 @@ export function Hero() {
               text="India's Social Network \n For Pet Lovers"
               tag="h1"
               stagger={0.1}
-              className="text-5xl md:text-8xl font-black font-heading leading-[1.15] text-[#1A1A1A] uppercase tracking-tighter pt-5 relative z-10"
+              className="text-4xl sm:text-6xl md:text-8xl font-black font-heading leading-[1.1] text-[#1A1A1A] uppercase tracking-tighter pt-5 relative z-10"
             />
           </motion.div>
 
@@ -143,7 +143,9 @@ export function Hero() {
             className="flex flex-wrap items-center justify-center gap-4"
           >
             <a
-              href="#"
+              href="https://apps.apple.com/in/app/furrcircle/id6762140389"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="Download on the App Store"
               className="transition-transform hover:scale-105 active:scale-95"
             >
@@ -157,7 +159,9 @@ export function Hero() {
               />
             </a>
             <a
-              href="#"
+              href="https://play.google.com/store/apps/details?id=com.furrcircle.app"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="Get it on Google Play"
               className="transition-transform hover:scale-105 active:scale-95"
             >
