@@ -34,6 +34,9 @@ export interface Story {
   mediaType: "image" | "video";
   caption?: string;
   overlayText?: string;
+  overlayTextX?: number;
+  overlayTextY?: number;
+  textColor?: string;
   viewCount?: number;
 }
 
@@ -57,6 +60,8 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
   const router = useRouter();
   const tk = useTokens();
   const { isTablet } = useBreakpoint();
+  const viewerWidth = isTablet ? 480 : SCREEN_WIDTH;
+  const viewerHeight = isTablet ? (480 * 16) / 9 : SCREEN_HEIGHT;
   const insets = useSafeAreaInsets();
   const [groupIndex, setGroupIndex] = useState(initialGroupIndex);
   const [storyIndex, setStoryIndex] = useState(0);
@@ -400,8 +405,41 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
 
           {/* Center Overlay Text */}
           {currentStory.overlayText ? (
-            <View style={styles.overlayTextContainer}>
-              <Text style={styles.overlayText}>{currentStory.overlayText}</Text>
+            <View style={[
+              styles.overlayTextContainer,
+              currentStory.overlayTextX !== undefined && currentStory.overlayTextY !== undefined
+                ? {
+                    position: "absolute",
+                    left: currentStory.overlayTextX * viewerWidth,
+                    top: currentStory.overlayTextY * viewerHeight,
+                    right: 0,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    paddingHorizontal: 20,
+                    backgroundColor: "transparent",
+                    paddingVertical: 0,
+                  }
+                : null
+            ]}>
+              <Text style={[
+                styles.overlayText,
+                currentStory.textColor ? { color: currentStory.textColor } : null,
+                currentStory.overlayTextX !== undefined && currentStory.overlayTextY !== undefined
+                  ? {
+                      fontFamily: "Fredoka_700Bold",
+                      fontSize: 28,
+                      textShadowColor: "rgba(0, 0, 0, 0.75)",
+                      textShadowOffset: { width: -1, height: 1 },
+                      textShadowRadius: 10,
+                      backgroundColor: "rgba(0,0,0,0.3)",
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                    }
+                  : null
+              ]}>
+                {currentStory.overlayText}
+              </Text>
             </View>
           ) : null}
 

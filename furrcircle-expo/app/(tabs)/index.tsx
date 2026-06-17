@@ -349,12 +349,20 @@ export default function FeedScreen() {
       avatar: user?.avatar_url ? { uri: user.avatar_url } : require("../../src/assets/doodle-boy-dog.png"),
       stories: myStories.map((s: any) => {
         let overlayText = undefined;
+        let overlayTextX = undefined;
+        let overlayTextY = undefined;
+        let textColor = undefined;
         let caption = s.caption || undefined;
-        if (s.caption?.startsWith('{"overlayText":')) {
+        if (s.caption && s.caption.trim().startsWith('{')) {
           try {
             const parsed = JSON.parse(s.caption);
-            overlayText = parsed.overlayText || undefined;
-            caption = parsed.caption || undefined;
+            if (parsed && typeof parsed === 'object') {
+              overlayText = parsed.overlayText || undefined;
+              overlayTextX = parsed.overlayTextX !== undefined ? parsed.overlayTextX : undefined;
+              overlayTextY = parsed.overlayTextY !== undefined ? parsed.overlayTextY : undefined;
+              textColor = parsed.textColor || undefined;
+              caption = parsed.caption || undefined;
+            }
           } catch (e) { }
         }
         return {
@@ -363,6 +371,9 @@ export default function FeedScreen() {
           mediaType: s.mediaType,
           caption,
           overlayText,
+          overlayTextX,
+          overlayTextY,
+          textColor,
           viewCount: s.viewCount,
         };
       }),
@@ -377,12 +388,20 @@ export default function FeedScreen() {
       avatar: g.author?.avatar_url ? { uri: g.author.avatar_url } : require("../../src/assets/doodle-boy-dog.png"),
       stories: g.stories.map((s: any) => {
         let overlayText = undefined;
+        let overlayTextX = undefined;
+        let overlayTextY = undefined;
+        let textColor = undefined;
         let caption = s.caption || undefined;
-        if (s.caption?.startsWith('{"overlayText":')) {
+        if (s.caption && s.caption.trim().startsWith('{')) {
           try {
             const parsed = JSON.parse(s.caption);
-            overlayText = parsed.overlayText || undefined;
-            caption = parsed.caption || undefined;
+            if (parsed && typeof parsed === 'object') {
+              overlayText = parsed.overlayText || undefined;
+              overlayTextX = parsed.overlayTextX !== undefined ? parsed.overlayTextX : undefined;
+              overlayTextY = parsed.overlayTextY !== undefined ? parsed.overlayTextY : undefined;
+              textColor = parsed.textColor || undefined;
+              caption = parsed.caption || undefined;
+            }
           } catch (e) { }
         }
         return {
@@ -391,6 +410,9 @@ export default function FeedScreen() {
           mediaType: s.mediaType,
           caption,
           overlayText,
+          overlayTextX,
+          overlayTextY,
+          textColor,
           viewedByMe: s.viewedByMe,
           viewCount: s.viewCount,
         };
