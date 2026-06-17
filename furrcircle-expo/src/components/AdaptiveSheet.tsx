@@ -1,6 +1,7 @@
-import { Modal, View, Pressable, StyleSheet, DimensionValue } from "react-native";
+import { Modal, View, Pressable, StyleSheet, DimensionValue, KeyboardAvoidingView, Platform, Keyboard } from "react-native";
 import { useBreakpoint } from "../lib/breakpoints";
 import { useTokens } from "../lib/theme-store";
+import { useState, useEffect } from "react";
 
 interface AdaptiveSheetProps {
   visible: boolean;
@@ -19,6 +20,26 @@ export function AdaptiveSheet({
 }: AdaptiveSheetProps) {
   const { isTablet } = useBreakpoint();
   const tk = useTokens();
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    if (!visible) {
+      setKeyboardVisible(false);
+      return;
+    }
+
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [visible]);
 
   if (isTablet) {
     // Desktop: centered dialog, fade in, click outside to close
@@ -39,15 +60,20 @@ export function AdaptiveSheet({
   // Mobile: slide-up bottom sheet
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.overlayMobile} onPress={onClose}>
-        <View
-          style={[styles.sheet, { backgroundColor: tk.glassStrong, borderWidth: 1, borderBottomWidth: 0, borderColor: tk.glassBorder, maxHeight }]}
-          onStartShouldSetResponder={() => true}
-        >
-          <View style={[styles.handle, { backgroundColor: tk.textMuted }]} />
-          {children}
-        </View>
-      </Pressable>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
+        style={{ flex: 1 }}
+      >
+        <Pressable style={styles.overlayMobile} onPress={onClose}>
+          <View
+            style={[styles.sheet, { backgroundColor: tk.glassStrong, borderWidth: 1, borderBottomWidth: 0, borderColor: tk.glassBorder, maxHeight }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={[styles.handle, { backgroundColor: tk.textMuted }]} />
+            {children}
+          </View>
+        </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

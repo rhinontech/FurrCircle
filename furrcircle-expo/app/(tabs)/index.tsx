@@ -5,9 +5,10 @@ import {
   Platform,
   Dimensions,
   RefreshControl,
+  Animated,
 } from "react-native";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Heart, MessageCircle, Send, Bookmark, Plus, Bell, MapPin, ChevronDown, Volume2, VolumeX, MoreVertical, ChevronRight, X, Check, Edit2, Trash2, Info, Flag, Camera, HelpCircle, Sparkles, ArrowLeft } from "../../src/components/ui/icons";
@@ -1030,6 +1031,97 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
   const { isTablet } = useBreakpoint();
+  
+  const lastTap = useRef<number>(0);
+  const tapTimeout = useRef<any>(null);
+  const heartScale = useRef(new Animated.Value(0)).current;
+  const heartOpacity = useRef(new Animated.Value(0)).current;
+  const heartTranslate = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const [showHeart, setShowHeart] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (tapTimeout.current) clearTimeout(tapTimeout.current);
+    };
+  }, []);
+
+  const handleDoubleTap = () => {
+    if (!isLiked) {
+      onLike();
+    }
+
+    const cardWidth = isTablet ? 600 : (SCREEN_WIDTH - 32);
+    const W = cardWidth;
+    const H = W / (aspectRatio || 1);
+
+    const targetX = 28 - W / 2;
+    const targetY = H / 2 + 20;
+
+    setShowHeart(true);
+    heartScale.setValue(0);
+    heartOpacity.setValue(0);
+    heartTranslate.setValue({ x: 0, y: 0 });
+
+    Animated.sequence([
+      Animated.parallel([
+        Animated.spring(heartScale, {
+          toValue: 1.2,
+          friction: 4,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartOpacity, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.delay(150),
+      Animated.parallel([
+        Animated.timing(heartTranslate.x, {
+          toValue: targetX,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartTranslate.y, {
+          toValue: targetY,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartScale, {
+          toValue: 0.3,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartOpacity, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start(() => {
+      setShowHeart(false);
+    });
+  };
+
+  const handleImagePress = () => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+    if (now - lastTap.current < DOUBLE_TAP_DELAY) {
+      if (tapTimeout.current) {
+        clearTimeout(tapTimeout.current);
+        tapTimeout.current = null;
+      }
+      handleDoubleTap();
+    } else {
+      lastTap.current = now;
+      if (tapTimeout.current) clearTimeout(tapTimeout.current);
+      tapTimeout.current = setTimeout(() => {
+        router.push(`/post/${post.id}`);
+        tapTimeout.current = null;
+      }, DOUBLE_TAP_DELAY);
+    }
+  };
+
   const postTimeText = post.createdAt
     ? getPostTimeLabel(post.createdAt)
     : (post.time ? formatDummyTime(post.time) : "");
@@ -1253,7 +1345,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
 
       {/* Image in tinted container */}
       <TouchableOpacity
-        onPress={() => router.push(`/post/${post.id}`)}
+        onPress={handleImagePress}
         activeOpacity={0.9}
         style={[styles.imageWrapper, { backgroundColor: tintColor, aspectRatio: aspectRatio || 1 }]}
       >
@@ -1309,6 +1401,32 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
           <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.text, padding: 20, textAlign: "center", lineHeight: 22 }}>
             {post.content}
           </Text>
+        )}
+
+        {/* Heart Animation Overlay */}
+        {showHeart && (
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFillObject,
+              {
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "transparent",
+                zIndex: 20,
+              },
+              {
+                transform: [
+                  { scale: heartScale },
+                  { translateX: heartTranslate.x },
+                  { translateY: heartTranslate.y },
+                ],
+                opacity: heartOpacity,
+              },
+            ]}
+            pointerEvents="none"
+          >
+            <Heart size={80} color={colors.coral} fill={colors.coral} />
+          </Animated.View>
         )}
       </TouchableOpacity>
 

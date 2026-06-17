@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, Keyboard } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Pressable, TextInput, Alert, Keyboard } from "react-native";
 import { useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
@@ -17,7 +17,7 @@ type RecordType = "vaccine" | "allergy" | "insurance";
 const ADD_OPTIONS: { key: RecordType; label: string; icon: any; color: string }[] = [
   { key: "vaccine", label: "Vaccine", icon: Syringe, color: colors.success },
   { key: "allergy", label: "Allergy", icon: AlertCircle, color: colors.coral },
-  { key: "insurance", label: "Insurance", icon: ShieldCheck, color: colors.primary },
+  // { key: "insurance", label: "Insurance", icon: ShieldCheck, color: colors.primary },
 ];
 
 export default function RecordsScreen() {
@@ -175,78 +175,73 @@ export default function RecordsScreen() {
             </View>
           ))}
 
-          <Text style={[styles.sectionTitle, { color: tk.text }]}>Insurance</Text>
+          {/* <Text style={[styles.sectionTitle, { color: tk.text }]}>Insurance</Text>
           <View style={[styles.infoCard, { backgroundColor: tk.card }]}>
             <Text style={[styles.infoTitle, { color: tk.text }]}>{moonaPassport.insurance.provider}</Text>
             <Text style={[styles.infoMeta, { color: tk.textMuted }]}>Policy: {moonaPassport.insurance.policy}</Text>
             <Text style={[styles.infoMeta, { color: tk.textMuted }]}>{moonaPassport.insurance.valid}</Text>
-          </View>
+          </View> */}
         </ScrollView>
       </View>
 
       {/* Add Record Modal */}
       <AdaptiveSheet visible={addSheetOpen} onClose={handleClose} maxWidth={500} maxHeight="90%">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "padding" : undefined)}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 170}
-        >
-          <View style={{ padding: 24, paddingBottom: keyboardVisible ? 10 : 24 + insets.bottom }}>
-            <View style={styles.sheetTitleRow}>
-              <Text style={[styles.sheetTitle, { color: tk.text }]}>
-                {selectedType ? `Add ${selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}` : "Add Record"}
-              </Text>
-              <TouchableOpacity onPress={handleClose}>
-                <X size={20} color={tk.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Type picker */}
-            {!selectedType && (
-              <View style={{ gap: 10, marginTop: 8 }}>
-                {ADD_OPTIONS.map(({ key, label, icon: Icon, color }) => (
-                  <TouchableOpacity
-                    key={key}
-                    onPress={() => setSelectedType(key)}
-                    style={[styles.optionRow, { backgroundColor: tk.bg }]}
-                    activeOpacity={0.8}
-                  >
-                    <View style={[styles.optionIcon, { backgroundColor: color + "22" }]}>
-                      <Icon size={18} color={color} />
-                    </View>
-                    <Text style={[styles.optionLabel, { color: tk.text }]}>{label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            {/* Vaccine form */}
-            {selectedType === "vaccine" && (
-              <View style={{ gap: 12, marginTop: 8 }}>
-                <FormInput label="Vaccine name" value={vaccineName} onChangeText={setVaccineName} placeholder="e.g. DHPP" tk={tk} />
-                <FormInput label="Date given" value={vaccineDate} onChangeText={setVaccineDate} placeholder="e.g. Nov 8, 2026" tk={tk} />
-                <FormInput label="Next due" value={vaccineNext} onChangeText={setVaccineNext} placeholder="e.g. Nov 2027" tk={tk} />
-                <SaveButton onPress={handleSave} />
-              </View>
-            )}
-
-            {/* Allergy form */}
-            {selectedType === "allergy" && (
-              <View style={{ gap: 12, marginTop: 8 }}>
-                <FormInput label="Allergy" value={allergyName} onChangeText={setAllergyName} placeholder="e.g. Chicken" tk={tk} />
-                <SaveButton onPress={handleSave} />
-              </View>
-            )}
-
-            {/* Insurance form */}
-            {selectedType === "insurance" && (
-              <View style={{ gap: 12, marginTop: 8 }}>
-                <FormInput label="Provider" value={insuranceName} onChangeText={setInsuranceName} placeholder="e.g. Pawtect Gold" tk={tk} />
-                <FormInput label="Policy number" value={insurancePolicy} onChangeText={setInsurancePolicy} placeholder="e.g. PG-22-994 821" tk={tk} />
-                <SaveButton onPress={handleSave} />
-              </View>
-            )}
+        <View style={{ padding: 24, paddingBottom: keyboardVisible ? 10 : 24 + insets.bottom }}>
+          <View style={styles.sheetTitleRow}>
+            <Text style={[styles.sheetTitle, { color: tk.text }]}>
+              {selectedType ? `Add ${selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}` : "Add Record"}
+            </Text>
+            <TouchableOpacity onPress={handleClose}>
+              <X size={20} color={tk.textMuted} />
+            </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
+
+          {/* Type picker */}
+          {!selectedType && (
+            <View style={{ gap: 10, marginTop: 8 }}>
+              {ADD_OPTIONS.map(({ key, label, icon: Icon, color }) => (
+                <TouchableOpacity
+                  key={key}
+                  onPress={() => setSelectedType(key)}
+                  style={[styles.optionRow, { backgroundColor: tk.bg }]}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.optionIcon, { backgroundColor: color + "22" }]}>
+                    <Icon size={18} color={color} />
+                  </View>
+                  <Text style={[styles.optionLabel, { color: tk.text }]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Vaccine form */}
+          {selectedType === "vaccine" && (
+            <View style={{ gap: 12, marginTop: 8 }}>
+              <FormInput label="Vaccine name" value={vaccineName} onChangeText={setVaccineName} placeholder="e.g. DHPP" tk={tk} />
+              <FormInput label="Date given" value={vaccineDate} onChangeText={setVaccineDate} placeholder="e.g. Nov 8, 2026" tk={tk} />
+              <FormInput label="Next due" value={vaccineNext} onChangeText={setVaccineNext} placeholder="e.g. Nov 2027" tk={tk} />
+              <SaveButton onPress={handleSave} />
+            </View>
+          )}
+
+          {/* Allergy form */}
+          {selectedType === "allergy" && (
+            <View style={{ gap: 12, marginTop: 8 }}>
+              <FormInput label="Allergy" value={allergyName} onChangeText={setAllergyName} placeholder="e.g. Chicken" tk={tk} />
+              <SaveButton onPress={handleSave} />
+            </View>
+          )}
+
+          {/* Insurance form */}
+          {/* {selectedType === "insurance" && (
+            <View style={{ gap: 12, marginTop: 8 }}>
+              <FormInput label="Provider" value={insuranceName} onChangeText={setInsuranceName} placeholder="e.g. Pawtect Gold" tk={tk} />
+              <FormInput label="Policy number" value={insurancePolicy} onChangeText={setInsurancePolicy} placeholder="e.g. PG-22-994 821" tk={tk} />
+              <SaveButton onPress={handleSave} />
+            </View>
+          )} */}
+        </View>
       </AdaptiveSheet>
     </PageContainer>
   );
