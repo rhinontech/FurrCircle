@@ -33,12 +33,34 @@ type ToastState = {
 
 export const TOAST_MAX_VISIBLE = 1;
 
+// Cooldown history to deduplicate rapid duplicate notifications by title and content
+const recentToasts: Record<string, number> = {};
+const DUP_COOLDOWN_MS = 1500;
+
 export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
   show: (toast) => {
     const id = toast.id || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const contentKey = `${toast.title}|${toast.message || ""}`;
+    const now = Date.now();
+
+    // Prevent duplicate consecutive toasts with identical title and body content within 1.5s
+    if (recentToasts[contentKey] && now - recentToasts[contentKey] < DUP_COOLDOWN_MS) {
+      return id;
+    }
+
+    // Record the timestamp of this toast content
+    recentToasts[contentKey] = now;
+
+    // Prune stale items from recentToasts to avoid memory footprint growth
+    for (const key in recentToasts) {
+      if (now - recentToasts[key] > DUP_COOLDOWN_MS) {
+        delete recentToasts[key];
+      }
+    }
+
     set((state) => {
-      // Avoid duplicate consecutive toasts (e.g. same notification delivered twice)
+      // Avoid duplicate consecutive toasts by ID
       if (state.toasts.some((t) => t.id === id)) return state;
       // Replace the active toast list with only the newest toast to avoid stacking or queuing.
       return { toasts: [{ duration: 4000, variant: "info", ...toast, id }] };

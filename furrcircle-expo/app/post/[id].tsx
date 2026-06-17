@@ -36,6 +36,7 @@ export default function PostDetail() {
   const live = usePostEngagementStore(s => s.counts[id]);
   const isScreenFocused = useIsFocused();
   const { user } = useAuthStore();
+  const isDummy = dummyPosts.some(p => p.id === id);
   const [shareOpen, setShareOpen] = useState(false);
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -324,7 +325,10 @@ export default function PostDetail() {
     setSubmitting(true);
     try {
       const res = await feedApi.commentOnPost(id!, commentText.trim());
-      setComments(prev => [...prev, res.comment]);
+      setComments(prev => {
+        if (prev.some((c) => c.id === res.comment.id)) return prev;
+        return [...prev, res.comment];
+      });
       setCommentText("");
     } catch { Alert.alert("Error", "Could not post comment."); }
     finally { setSubmitting(false); }

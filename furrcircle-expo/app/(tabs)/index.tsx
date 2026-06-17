@@ -1299,7 +1299,10 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
     setSubmitting(true);
     try {
       const res = await feedApi.commentOnPost(post.id, commentText.trim());
-      setLocalComments(prev => [...prev, res.comment]);
+      setLocalComments(prev => {
+        if (prev.some((c) => c.id === res.comment.id)) return prev;
+        return [...prev, res.comment];
+      });
       setCommentText("");
     } catch {
       Alert.alert("Error", "Could not post comment.");
