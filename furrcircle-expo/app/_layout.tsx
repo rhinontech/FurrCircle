@@ -158,14 +158,15 @@ export default function RootLayout() {
       return;
     }
 
-    let cancelled = false;
+    let isActive = true;
+    let unsubscribes: Array<() => void> = [];
 
     const bootstrap = async () => {
       try {
         const token = Platform.OS === 'web'
           ? useAuthStore.getState().user?.token ?? null
           : await SecureStore.getItemAsync("token");
-        if (!token || cancelled) return;
+        if (!token || !isActive) return;
 
         socketService.connect(token);
 
@@ -173,10 +174,12 @@ export default function RootLayout() {
         // even before the first socket event arrives.
         try {
           const counts = await notificationApi.getUnreadCounts();
-          if (!cancelled) setUnreadCounts(counts);
+          if (isActive) setUnreadCounts(counts);
         } catch {
           // non-fatal — WS will sync counts on next notification
         }
+
+        if (!isActive) return;
 
         // Register WebSocket event handlers
         const unsubNew = socketService.on<AppNotification>(
@@ -224,30 +227,34 @@ export default function RootLayout() {
           }
         );
 
-        // Store cleanup refs on the cancel closure
-        return () => {
+        if (isActive) {
+          unsubscribes.push(unsubNew, unsubCounts, unsubChat, unsubPost);
+        } else {
+          // Clean up immediately if effect has cleaned up while bootstrap was running
           unsubNew();
           unsubCounts();
           unsubChat();
           unsubPost();
-        };
+        }
       } catch (err) {
         console.warn("[Socket] Bootstrap failed:", err);
       }
     };
 
-    let cleanup: (() => void) | undefined;
-    bootstrap().then((fn) => { cleanup = fn; });
+    bootstrap();
 
     return () => {
-      cancelled = true;
-      cleanup?.();
+      isActive = false;
+      unsubscribes.forEach((unsub) => unsub());
     };
   }, [user?.id]);
 
   // ── Push notification bootstrap ─────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
+    let isActive = true;
+    let unsubscribe: (() => void) | null = null;
+
     const bootstrapPush = async () => {
       try {
         const messaging = getMessaging();
@@ -268,11 +275,13 @@ export default function RootLayout() {
         const enabled =
           authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
           authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-        if (!enabled) return;
+        if (!enabled || !isActive) return;
 
         const fcmToken = await messaging().getToken();
+        if (!isActive) return;
+
         let installationId = await SecureStore.getItemAsync("push_installation_id");
-        if (!installationId) {
+        if (!installationId && isActive) {
           installationId = `${Platform.OS}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
           await SecureStore.setItemAsync("push_installation_id", installationId);
         }
@@ -284,27 +293,33 @@ export default function RootLayout() {
           }
         } catch (e) {}
 
+        if (!isActive) return;
+
         await notificationApi.registerDevice({
-          installationId,
+          installationId: installationId!,
           expoPushToken: fcmToken,
           platform: Platform.OS as "ios" | "android",
           pushEnabled: pushPref,
         });
 
+        if (!isActive) return;
+
         // Listen for foreground messages
-        const unsubscribe = messaging().onMessage(async (remoteMessage: any) => {
+        const unsub = messaging().onMessage(async (remoteMessage: any) => {
           console.log("A new FCM message arrived!", JSON.stringify(remoteMessage));
           if (!remoteMessage) return;
           const title = remoteMessage.notification?.title || remoteMessage.data?.title || "New Notification";
           const body = remoteMessage.notification?.body || remoteMessage.data?.body || "";
+          const notificationId = remoteMessage.data?.notificationId;
           // Non-blocking in-app banner instead of a full-screen Alert popup.
           toast.show({
+            id: notificationId,
             title,
             message: body,
             onPress: () => handleNotificationRedirect(remoteMessage, router),
           });
         });
-        
+
         // Listen for background clicks (app running in background)
         messaging().onNotificationOpenedApp((remoteMessage: any) => {
           console.log("Notification caused app to open from background state:", remoteMessage.notification);
@@ -313,25 +328,31 @@ export default function RootLayout() {
 
         // Check for killed-state clicks (app completely closed)
         messaging().getInitialNotification().then((remoteMessage: any) => {
-          if (remoteMessage) {
+          if (remoteMessage && isActive) {
             console.log("Notification caused app to open from quit state:", remoteMessage.notification);
             // Slight delay ensures the root layout and router are fully mounted before pushing
             setTimeout(() => {
-              handleNotificationRedirect(remoteMessage, router);
+              if (isActive) handleNotificationRedirect(remoteMessage, router);
             }, 1000);
           }
         });
-        
-        return unsubscribe;
+
+        if (isActive) {
+          unsubscribe = unsub;
+        } else {
+          unsub();
+        }
       } catch (err) {
         console.warn("[Push] Bootstrap failed:", err);
       }
     };
-    let unsubForeground: any;
-    bootstrapPush().then(unsub => { unsubForeground = unsub; });
+
+    bootstrapPush();
+
     return () => {
-      if (unsubForeground && typeof unsubForeground === 'function') {
-        unsubForeground();
+      isActive = false;
+      if (unsubscribe) {
+        unsubscribe();
       }
     };
   }, [user?.id]);

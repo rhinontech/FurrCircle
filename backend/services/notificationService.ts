@@ -132,7 +132,8 @@ const sendPushToActor = async (
   actionType: string | null,
   actionPayload: NotificationActionPayload,
   category: NotificationCategory,
-  respectMarketingPreference: boolean
+  respectMarketingPreference: boolean,
+  notificationId?: string
 ): Promise<PushSendResult> => {
   const { notification_devices: NotificationDevice } = db as any;
 
@@ -179,6 +180,7 @@ const sendPushToActor = async (
         body: message,
       };
       if (rId) rawData.relatedId = rId;
+      if (notificationId) rawData.notificationId = notificationId;
 
       // Firebase Admin STRICTLY requires all data values to be strings.
       // We strip out undefined/null and cast everything else to a string.
@@ -201,6 +203,7 @@ const sendPushToActor = async (
         actionPayload: JSON.stringify(actionPayload || {}),
       };
       if (rId) apnsPayload.relatedId = String(rId);
+      if (notificationId) apnsPayload.notificationId = String(notificationId);
 
       return {
         notification: { title, body: message },
@@ -331,7 +334,8 @@ export const createRichNotification = async ({
           (actionType ?? fallbackAction.actionType) || null,
           actionPayload ?? fallbackAction.actionPayload,
           category,
-        respectMarketingPreference
+          respectMarketingPreference,
+          notification.id
         );
     }
 
