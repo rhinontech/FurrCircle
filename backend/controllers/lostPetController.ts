@@ -1,16 +1,77 @@
 import type { Response } from "express";
 import db from "../models/index.ts";
+import { Op } from "sequelize";
 
 // @desc    Get all lost and found pets
 // @route   GET /api/lost-pets
 export const getLostPets = async (req: any, res: Response): Promise<void> => {
   try {
     const { lost_pets: LostPet, users: User } = db as any;
+    const { sequelize } = db as any;
+
+    const lat = req.query.lat ? parseFloat(req.query.lat as string) : null;
+    const lng = req.query.lng ? parseFloat(req.query.lng as string) : null;
+
+    const where: any = {};
+    let attributes: any = { exclude: [] };
+    let order: any[] = [['createdAt', 'DESC']];
+
+    if (lat && lng) {
+      where[Op.and] = [
+        sequelize.literal(`(
+          SELECT 6371 * acos(
+            cos(radians(${lat})) *
+            cos(radians(latitude)) *
+            cos(radians(longitude) - radians(${lng})) +
+            sin(radians(${lat})) *
+            sin(radians(latitude))
+          )
+          FROM users
+          WHERE users.id = lost_pets."userId"
+        ) <= 150`)
+      ];
+      attributes = {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT 6371 * acos(
+                cos(radians(${lat})) *
+                cos(radians(latitude)) *
+                cos(radians(longitude) - radians(${lng})) +
+                sin(radians(${lat})) *
+                sin(radians(latitude))
+              )
+              FROM users
+              WHERE users.id = lost_pets."userId"
+              AND users.latitude IS NOT NULL AND users.longitude IS NOT NULL
+            )`),
+            'distance',
+          ],
+        ],
+      };
+      order = [[sequelize.literal('distance'), 'ASC']];
+    }
+
     const list = await LostPet.findAll({
-      include: [{ model: User, as: 'author', attributes: ['id', 'name', 'username', 'avatar_url'] }],
-      order: [['createdAt', 'DESC']],
+      where,
+      attributes,
+      include: [{ model: User, as: 'author', attributes: ['id', 'name', 'username', 'avatar_url', 'city'] }],
+      order,
     });
-    res.json(list);
+
+    const enrichedList = list.map((item: any) => {
+      const payload = item.toJSON ? item.toJSON() : item;
+      const data: any = { ...payload };
+      if (item.getDataValue('distance') !== undefined && item.getDataValue('distance') !== null) {
+        data.distance = parseFloat(item.getDataValue('distance'));
+        data.distanceLabel = `${data.distance.toFixed(1)} km away`;
+      } else if (payload.author?.city) {
+        data.distanceLabel = payload.author.city;
+      }
+      return data;
+    });
+
+    res.json(enrichedList);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
