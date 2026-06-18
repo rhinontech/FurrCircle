@@ -120,7 +120,9 @@ export default function CommunityDetail() {
     if (!circle) return;
     try {
       await Share.share({
-        message: `Join "${circle.name}" on FurrCircle! furrcircle://circle/${circle.id}`,
+        message: `Join "${circle.name}" on FurrCircle! https://furrcircle.com/circle/${circle.id}`,
+        url: `https://furrcircle.com/circle/${circle.id}`,
+        title: `Join "${circle.name}" on FurrCircle!`,
       });
     } catch { /* user dismissed the share sheet */ }
   };
