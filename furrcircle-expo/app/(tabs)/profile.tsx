@@ -234,7 +234,7 @@ export default function ProfileScreen() {
           <Row onPress={() => router.push("/notifications")} icon={Bell} label="Notifications" meta="" tintColor="rgba(255,217,61,0.3)" tk={tk} />
           <Row onPress={() => router.push("/chat")} icon={MessageCircle} label="Messages" meta="" tintColor="rgba(37,99,235,0.1)" tk={tk} />
           <Row onPress={() => setPetPickerTarget("profile")} icon={Award} label="Badges & Achievements" meta="" tintColor="rgba(255,111,207,0.15)" tk={tk} />
-          <Row onPress={() => router.push("/discover")} icon={MapPin} label="Places visited" meta="" tintColor="rgba(76,175,80,0.15)" tk={tk} />
+          {/* <Row onPress={() => router.push("/discover")} icon={MapPin} label="Places visited" meta="" tintColor="rgba(76,175,80,0.15)" tk={tk} /> */}
         </View>
 
         {/* Log Out */}

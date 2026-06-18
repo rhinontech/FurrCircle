@@ -1,9 +1,11 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Image, TextInput,
   StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
   Modal, Pressable,
   Keyboard,
+  Animated,
+  Dimensions,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,16 +24,18 @@ import { Video, ResizeMode, Audio } from "expo-av";
 import { useIsFocused } from "@react-navigation/native";
 import { useBreakpoint } from "../../src/lib/breakpoints";
 
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
 export default function PostDetail() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const isDummy = dummyPosts.some(p => p.id === id);
   const tk = useTokens();
   const { isTablet } = useBreakpoint();
   const live = usePostEngagementStore(s => s.counts[id]);
   const isScreenFocused = useIsFocused();
   const { user } = useAuthStore();
-  const isDummy = dummyPosts.some(p => p.id === id);
   const [shareOpen, setShareOpen] = useState(false);
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -68,6 +72,92 @@ export default function PostDetail() {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
   const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+
+  const lastTap = useRef<number>(0);
+  const tapTimeout = useRef<any>(null);
+  const heartScale = useRef(new Animated.Value(0)).current;
+  const heartOpacity = useRef(new Animated.Value(0)).current;
+  const heartTranslate = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const [showHeart, setShowHeart] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (tapTimeout.current) clearTimeout(tapTimeout.current);
+    };
+  }, []);
+
+  const handleDoubleTap = () => {
+    if (!isLiked) {
+      handleLike();
+    }
+
+    const cardWidth = isTablet ? 600 : (SCREEN_WIDTH * 0.92);
+    const W = cardWidth;
+    const H = W / (aspectRatio || 1);
+
+    const targetX = 28 - W / 2;
+    const targetY = H / 2 + 20;
+
+    setShowHeart(true);
+    heartScale.setValue(0);
+    heartOpacity.setValue(0);
+    heartTranslate.setValue({ x: 0, y: 0 });
+
+    Animated.sequence([
+      Animated.parallel([
+        Animated.spring(heartScale, {
+          toValue: 1.2,
+          friction: 4,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartOpacity, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.delay(150),
+      Animated.parallel([
+        Animated.timing(heartTranslate.x, {
+          toValue: targetX,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartTranslate.y, {
+          toValue: targetY,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartScale, {
+          toValue: 0.3,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartOpacity, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start(() => {
+      setShowHeart(false);
+    });
+  };
+
+  const handleImagePress = () => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+    if (now - lastTap.current < DOUBLE_TAP_DELAY) {
+      if (tapTimeout.current) {
+        clearTimeout(tapTimeout.current);
+        tapTimeout.current = null;
+      }
+      handleDoubleTap();
+    } else {
+      lastTap.current = now;
+      if (tapTimeout.current) clearTimeout(tapTimeout.current);
+    }
+  };
 
   useEffect(() => {
     if (post) {
@@ -149,14 +239,12 @@ export default function PostDetail() {
 
   const handleLike = async () => {
     setIsLiked(v => !v);
-    const isDummy = dummyPosts.some(p => p.id === id);
     if (isDummy) return;
     try { await feedApi.likePost(id!); } catch { }
   };
 
   const handleSave = async () => {
     setIsSaved(v => !v);
-    const isDummy = dummyPosts.some(p => p.id === id);
     if (isDummy) return;
     try { await feedApi.savePost(id!); } catch { }
   };
@@ -218,7 +306,6 @@ export default function PostDetail() {
   const handleComment = async () => {
     if (!commentText.trim()) return;
 
-    const isDummy = dummyPosts.some(p => p.id === id);
     if (isDummy) {
       const newComment = {
         id: `dummy-c-${Date.now()}`,
@@ -325,11 +412,45 @@ export default function PostDetail() {
 
           {/* Image */}
           {post.image ? (
-            <View style={[styles.imageWrapper, { backgroundColor: post.tintColor || tintColor, aspectRatio: aspectRatio || 1 }]}>
+            <TouchableOpacity
+              onPress={handleImagePress}
+              activeOpacity={1}
+              style={[styles.imageWrapper, { backgroundColor: post.tintColor || tintColor, aspectRatio: aspectRatio || 1 }]}
+            >
               <Image source={post.image} style={styles.image} resizeMode="contain" />
-            </View>
+
+              {/* Heart Animation Overlay */}
+              {showHeart && (
+                <Animated.View
+                  style={[
+                    StyleSheet.absoluteFillObject,
+                    {
+                      justifyContent: "center",
+                      alignItems: "center",
+                      backgroundColor: "transparent",
+                      zIndex: 20,
+                    },
+                    {
+                      transform: [
+                        { scale: heartScale },
+                        { translateX: heartTranslate.x },
+                        { translateY: heartTranslate.y },
+                      ],
+                      opacity: heartOpacity,
+                    },
+                  ]}
+                  pointerEvents="none"
+                >
+                  <Heart size={80} color={colors.coral} fill={colors.coral} />
+                </Animated.View>
+              )}
+            </TouchableOpacity>
           ) : post.imageUrl ? (
-            <View style={[styles.imageWrapper, { backgroundColor: tintColor, aspectRatio: aspectRatio || 1 }]}>
+            <TouchableOpacity
+              onPress={handleImagePress}
+              activeOpacity={1}
+              style={[styles.imageWrapper, { backgroundColor: tintColor, aspectRatio: aspectRatio || 1 }]}
+            >
               {post.imageUrl.match(/\.(mp4|mov|quicktime|3gp|mpeg|avi|wmv|flv|mkv|webm)(\?|$)/i) ? (
                 <View style={{ width: "100%", height: "100%", position: "relative" }}>
                   <Video
@@ -373,7 +494,33 @@ export default function PostDetail() {
               ) : (
                 <Image source={{ uri: post.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
               )}
-            </View>
+
+              {/* Heart Animation Overlay */}
+              {showHeart && (
+                <Animated.View
+                  style={[
+                    StyleSheet.absoluteFillObject,
+                    {
+                      justifyContent: "center",
+                      alignItems: "center",
+                      backgroundColor: "transparent",
+                      zIndex: 20,
+                    },
+                    {
+                      transform: [
+                        { scale: heartScale },
+                        { translateX: heartTranslate.x },
+                        { translateY: heartTranslate.y },
+                      ],
+                      opacity: heartOpacity,
+                    },
+                  ]}
+                  pointerEvents="none"
+                >
+                  <Heart size={80} color={colors.coral} fill={colors.coral} />
+                </Animated.View>
+              )}
+            </TouchableOpacity>
           ) : null}
 
           {/* Actions */}
@@ -412,7 +559,7 @@ export default function PostDetail() {
           {comments.length === 0 ? (
             <Text style={{ paddingHorizontal: 16, color: tk.textMuted, fontFamily: "Inter_400Regular", fontSize: 13 }}>No comments yet. Be first!</Text>
           ) : (
-            comments.map((c: any, i) => (
+            [...comments].reverse().map((c: any, i) => (
               <View key={c.id || i} style={styles.comment}>
                 <TouchableOpacity onPress={() => c.author?.username && router.push(isDummy ? `/user/${c.author.username}` : `/u/${c.author.username}`)}>
                   {c.author?.avatar_url ? (
@@ -422,7 +569,14 @@ export default function PostDetail() {
                   )}
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.commentAuthor, { color: tk.text }]}>{c.author?.name || "User"}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+                    <Text style={[styles.commentAuthor, { color: tk.text }]}>
+                      {c.author?.username || c.author?.name || "parent"}
+                    </Text>
+                    <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: tk.textMuted }}>
+                      {c.createdAt ? getCommentTimeLabel(c.createdAt) : "now"}
+                    </Text>
+                  </View>
                   <Text style={[styles.commentBody, { color: tk.textMuted }]}>{c.text}</Text>
                 </View>
               </View>
@@ -624,6 +778,21 @@ export default function PostDetail() {
     </KeyboardAvoidingView>
   );
 }
+
+const getCommentTimeLabel = (createdAt?: string) => {
+  if (!createdAt) return "now";
+  const time = new Date(createdAt).getTime();
+  if (isNaN(time)) return "now";
+  const diff = Date.now() - time;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return "now";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h`;
+  const dy = Math.floor(hr / 24);
+  return `${dy}d`;
+};
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

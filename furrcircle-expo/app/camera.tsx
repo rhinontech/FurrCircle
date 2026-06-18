@@ -353,6 +353,16 @@ export default function CustomCameraScreen() {
     }
   };
 
+  const resetPreview = () => {
+    setPreviewUri(null);
+    setPreviewType(null);
+    setPreviewWH(null);
+    setOverlayText("");
+    setActiveFilterIndex(0);
+    setIsVideoPlaying(true);
+    pan.setValue({ x: 0, y: SCREEN_HEIGHT / 2 - 40 });
+  };
+
   // Cycle filters
   const nextFilter = () => {
     setActiveFilterIndex((prev) => (prev + 1) % FILTERS.length);
@@ -413,7 +423,7 @@ export default function CustomCameraScreen() {
             {overlayText.length > 0 && !isEditingText && (
               <Animated.View
                 {...panResponder.panHandlers}
-                style={[pan.getLayout(), styles.draggableTextContainer]}
+                style={[styles.draggableTextContainer, pan.getLayout()]}
               >
                 <TouchableOpacity onPress={() => setIsEditingText(true)} activeOpacity={0.9}>
                   <Text style={[styles.draggableText, { color: textColor }]}>{overlayText}</Text>
@@ -450,14 +460,7 @@ export default function CustomCameraScreen() {
             <View style={styles.previewTopBar}>
               <TouchableOpacity
                 style={styles.glassIconButton}
-                onPress={() => {
-                  setPreviewUri(null);
-                  setPreviewType(null);
-                  setPreviewWH(null);
-                  setOverlayText("");
-                  setActiveFilterIndex(0);
-                  setIsVideoPlaying(true);
-                }}
+                onPress={resetPreview}
               >
                 <ChevronLeft size={24} color="#FFF" />
               </TouchableOpacity>
@@ -509,14 +512,7 @@ export default function CustomCameraScreen() {
                 <View style={styles.editActionRow}>
                   <TouchableOpacity
                     style={styles.retakeBtn}
-                    onPress={() => {
-                      setPreviewUri(null);
-                      setPreviewType(null);
-                      setPreviewWH(null);
-                      setOverlayText("");
-                      setActiveFilterIndex(0);
-                      setIsVideoPlaying(true);
-                    }}
+                    onPress={resetPreview}
                     activeOpacity={0.85}
                   >
                     <RefreshCw size={18} color="#FFF" />
@@ -1231,8 +1227,7 @@ const styles = StyleSheet.create({
   },
   draggableTextContainer: {
     position: "absolute",
-    left: 0,
-    right: 0,
+    width: SCREEN_WIDTH,
     alignItems: "center",
     zIndex: 10,
     paddingHorizontal: 20,

@@ -412,14 +412,17 @@ export function StoryViewer({ visible, onClose, storyGroups, initialGroupIndex, 
                     position: "absolute",
                     left: currentStory.overlayTextX * viewerWidth,
                     top: currentStory.overlayTextY * viewerHeight,
-                    right: 0,
+                    width: viewerWidth,
                     alignItems: "center",
                     justifyContent: "center",
                     paddingHorizontal: 20,
                     backgroundColor: "transparent",
                     paddingVertical: 0,
                   }
-                : null
+                : {
+                    left: 20,
+                    right: 20,
+                  }
             ]}>
               <Text style={[
                 styles.overlayText,
@@ -579,8 +582,6 @@ const styles = StyleSheet.create({
   overlayTextContainer: {
     position: "absolute",
     top: "40%",
-    left: 20,
-    right: 20,
     backgroundColor: "rgba(0,0,0,0.5)",
     paddingVertical: 12,
     paddingHorizontal: 20,
