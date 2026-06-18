@@ -968,6 +968,21 @@ export const getPublicEventById = async (req: any, res: Response): Promise<void>
   }
 };
 
+export const getPublicCircleById = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { circles: Circle } = db as any;
+    const circle = await Circle.findByPk(req.params.id);
+    if (!circle) {
+      res.status(404).json({ message: "Circle not found" });
+      return;
+    }
+    res.json(toPlain(circle));
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 // @desc    Book an event
 // @route   POST /api/community/events/:id/book
 export const bookEvent = async (req: any, res: Response): Promise<void> => {

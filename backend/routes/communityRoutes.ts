@@ -17,6 +17,7 @@ import {
   getEvents,
   getEventById,
   getPublicEventById,
+  getPublicCircleById,
   bookEvent,
   shareEvent,
   getChats,
@@ -41,6 +42,7 @@ const router = express.Router();
 
 router.get("/public/events/:id", getPublicEventById);
 router.get("/public/posts/:id", getPublicPostById);
+router.get("/public/circles/:id", getPublicCircleById);
 
 router.get("/events", protect, getEvents);
 router.get("/events/:id", protect, getEventById);
