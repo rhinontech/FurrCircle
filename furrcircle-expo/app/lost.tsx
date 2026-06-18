@@ -12,6 +12,7 @@ import { chatApi } from "../services/chat/chatApi";
 import { userApi } from "../services/user/userApi";
 import { useAuthStore } from "../src/lib/auth-store";
 import { useFocusEffect, useRouter } from "expo-router";
+import { useLocationStore } from "../src/lib/location-store";
 
 const lostDoodle = require("../src/assets/doodle-lost.png");
 const tabs = ["Lost", "Spotted"] as const;
@@ -22,6 +23,8 @@ export default function LostScreen() {
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
   const currentUserId = user?.id;
+  const locationLat = useLocationStore((s) => s.latitude);
+  const locationLng = useLocationStore((s) => s.longitude);
 
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
@@ -57,7 +60,8 @@ export default function LostScreen() {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const data = await lostPetApi.getLostPets();
+      const coords = locationLat && locationLng ? { lat: locationLat, lng: locationLng } : undefined;
+      const data = await lostPetApi.getLostPets(coords);
       setPosts(data || []);
     } catch (err) {
       console.error("Failed to load lost pets", err);
@@ -69,7 +73,7 @@ export default function LostScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchPosts();
-    }, [])
+    }, [locationLat, locationLng])
   );
 
   const openCreateModal = (initialStatus: "lost" | "spotted") => {
@@ -311,7 +315,9 @@ export default function LostScreen() {
 
                         <View style={styles.areaRow}>
                           <MapPin size={12} color={tk.textMuted} />
-                          <Text style={[styles.areaText, { color: tk.textMuted }]}>{p.address}</Text>
+                          <Text style={[styles.areaText, { color: tk.textMuted }]} numberOfLines={1}>
+                            {p.distanceLabel ? `${p.distanceLabel} • ` : ""}{p.address}
+                          </Text>
                         </View>
 
                         {p.description ? (
@@ -381,7 +387,9 @@ export default function LostScreen() {
 
                 <View style={[styles.detailLocationRow, { borderBottomColor: tk.border }]}>
                   <MapPin size={16} color={tk.textMuted} />
-                  <Text style={[styles.detailLocationText, { color: tk.text }]}>{selectedPost?.address}</Text>
+                  <Text style={[styles.detailLocationText, { color: tk.text }]}>
+                    {selectedPost?.distanceLabel ? `${selectedPost.distanceLabel} • ` : ""}{selectedPost?.address}
+                  </Text>
                 </View>
 
                 {selectedPost?.description ? (

@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
-  FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, Pressable, Alert, Keyboard, Image
+  FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, Pressable, Alert, Keyboard, Image, useWindowDimensions
 } from "react-native";
 import { tints } from "../src/lib/theme";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { Avatar } from "../src/components/Avatar";
 import { colors } from "../src/lib/theme";
-import { Send, Plus, Search, MessageCircle, Check, CheckCheck, ChevronRight, Users, Heart } from "../src/components/ui/icons";
+import { Send, Plus, Search, MessageCircle, Check, CheckCheck, ChevronRight, Users, Heart, ChevronLeft, X } from "../src/components/ui/icons";
 import { useAuthStore } from "../src/lib/auth-store";
 import { chatApi } from "../services/chat/chatApi";
 import { petApi } from "../services/pet/petApi";
@@ -20,6 +20,10 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { feedApi } from "../services/community/feedApi";
 import { Video, ResizeMode } from "expo-av";
 import { useTokens } from "@/lib/theme-store";
+import * as ImagePicker from "expo-image-picker";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
+import { useCameraStore } from "../src/lib/camera-store";
+import { Camera, Image as ImageIcon, X as XIcon } from "lucide-react-native";
 
 // --- Helpers ---
 const formatTime = (dateStr: string) => {
@@ -136,9 +140,9 @@ function SharedPostCard({ postId, isMe, tk, router }: { postId: string; isMe: bo
       activeOpacity={0.9}
       style={[
         styles.sharedCardContainer,
-        { 
-          backgroundColor: tk.bg, 
-          borderColor: tk.border 
+        {
+          backgroundColor: tk.bg,
+          borderColor: tk.border
         }
       ]}
     >
@@ -276,8 +280,8 @@ function SharedProfileCard({ username, isMe, tk, router }: { username: string; i
       activeOpacity={0.9}
       style={[
         styles.sharedProfileCardContainer,
-        { 
-          backgroundColor: tk.bg, 
+        {
+          backgroundColor: tk.bg,
         }
       ]}
     >
@@ -296,9 +300,9 @@ function SharedProfileCard({ username, isMe, tk, router }: { username: string; i
           </Text>
         </View>
       </View>
-      
+
       <View style={[styles.sharedProfileDivider, { backgroundColor: tk.border }]} />
-      
+
       <View style={styles.sharedProfileFooter}>
         <Text style={{ fontFamily: "Poppins_600SemiBold", color: colors.primary, fontSize: 12 }}>View Profile</Text>
         <ChevronRight size={16} color={colors.primary} />
@@ -374,8 +378,8 @@ function SharedCircleCard({ circleId, isMe, tk, router }: { circleId: string; is
       activeOpacity={0.9}
       style={[
         styles.sharedCircleCardContainer,
-        { 
-          backgroundColor: tk.bg, 
+        {
+          backgroundColor: tk.bg,
         }
       ]}
     >
@@ -396,9 +400,9 @@ function SharedCircleCard({ circleId, isMe, tk, router }: { circleId: string; is
           </Text>
         </View>
       </View>
-      
+
       <View style={[styles.sharedCircleDivider, { backgroundColor: tk.border }]} />
-      
+
       <View style={styles.sharedCircleFooter}>
         <Text style={{ fontFamily: "Poppins_600SemiBold", color: colors.primary, fontSize: 12 }}>View Circle</Text>
         <ChevronRight size={16} color={colors.primary} />
@@ -493,8 +497,8 @@ function SharedThreadCard({ threadId, isMe, tk, router }: { threadId: string; is
       activeOpacity={0.9}
       style={[
         styles.sharedThreadCardContainer,
-        { 
-          backgroundColor: tk.bg, 
+        {
+          backgroundColor: tk.bg,
         }
       ]}
     >
@@ -506,9 +510,9 @@ function SharedThreadCard({ threadId, isMe, tk, router }: { threadId: string; is
           Asked by <Text style={{ fontFamily: "Poppins_700Bold", color: tk.text }}>{askerName}</Text>
         </Text>
       </View>
-      
+
       <View style={[styles.sharedThreadDivider, { backgroundColor: tk.border }]} />
-      
+
       <View style={styles.sharedThreadFooter}>
         <Text style={{ fontFamily: "Poppins_600SemiBold", color: colors.primary, fontSize: 12 }}>View Discussion</Text>
         <ChevronRight size={16} color={colors.primary} />
@@ -573,8 +577,8 @@ function SharedPetCard({ petId, isMe, tk, router }: { petId: string; isMe: boole
     <View
       style={[
         styles.sharedCircleCardContainer,
-        { 
-          backgroundColor: tk.bg, 
+        {
+          backgroundColor: tk.bg,
         }
       ]}
     >
@@ -604,9 +608,9 @@ function SharedPetCard({ petId, isMe, tk, router }: { petId: string; isMe: boole
           {breedAge}
         </Text>
       </View>
-      
+
       <View style={[styles.sharedCircleDivider, { backgroundColor: tk.border }]} />
-      
+
       <TouchableOpacity
         onPress={() => router.push(`/p/${petId}`)}
         activeOpacity={0.7}
@@ -687,7 +691,7 @@ export default function ChatScreen() {
           }
 
           const updatedConversations = [...prevConvs];
-          const conversationToUpdate = { 
+          const conversationToUpdate = {
             ...updatedConversations[index],
             lastMessage: data.message,
             updatedAt: data.message.createdAt,
@@ -756,6 +760,72 @@ export default function ChatScreen() {
   const [msgInput, setMsgInput] = useState("");
   const [chatDetail, setChatDetail] = useState<any>(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [sending, setSending] = useState(false);
+  const [viewerImages, setViewerImages] = useState<string[]>([]);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const { capturedUri, capturedType, setCapturedMedia } = useCameraStore();
+
+  const compressImage = async (uri: string) => {
+    try {
+      const result = await manipulateAsync(
+        uri,
+        [{ resize: { width: 1080 } }],
+        { compress: 0.7, format: SaveFormat.JPEG }
+      );
+      return result.uri;
+    } catch (error) {
+      console.error("Compression failed, using original image:", error);
+      return uri;
+    }
+  };
+
+  useEffect(() => {
+    if (capturedUri) {
+      compressImage(capturedUri).then((compressedUri) => {
+        setSelectedImages((prev) => [...prev, compressedUri]);
+      });
+      setCapturedMedia(null, null);
+    }
+  }, [capturedUri]);
+
+  const pickImagesFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission required", "Please allow gallery access to choose photos.");
+      return;
+    }
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets) {
+        const compressedUris = await Promise.all(
+          result.assets.map(async (asset) => {
+            try {
+              return await compressImage(asset.uri);
+            } catch (err) {
+              return asset.uri;
+            }
+          })
+        );
+        setSelectedImages((prev) => [...prev, ...compressedUris]);
+      }
+    } catch (error) {
+      console.error("Gallery picker error:", error);
+    }
+  };
+
+  const openCamera = () => {
+    router.push({
+      pathname: "/camera",
+      params: { origin: "chat" },
+    });
+  };
 
   useEffect(() => {
     if (selectedChat) {
@@ -801,7 +871,7 @@ export default function ChatScreen() {
 
     const unsubRead = socketService.on("chat:read", (data: any) => {
       if (data.conversationId === selectedChat) {
-        setMessages((prev) => prev.map(m => 
+        setMessages((prev) => prev.map(m =>
           m.sender?.id === user?.id ? { ...m, isRead: true } : m
         ));
       }
@@ -811,17 +881,38 @@ export default function ChatScreen() {
   }, [selectedChat, user?.id]);
 
   const handleSend = async () => {
-    if (!msgInput.trim() || !selectedChat) return;
+    if ((!msgInput.trim() && selectedImages.length === 0) || !selectedChat || sending) return;
     const textToSend = msgInput.trim();
+    const imagesToUpload = [...selectedImages];
+
     setMsgInput(""); // Optimistic clear
+    setSelectedImages([]); // Optimistic clear
+    setSending(true);
 
     try {
-      await chatApi.sendMessage(selectedChat, textToSend);
-      // We don't manually append here because the backend emits `chat:message` to the sender too,
-      // which our socket listener above will catch and append.
+      let finalMessageText = textToSend;
+
+      if (imagesToUpload.length > 0) {
+        // Upload images first
+        const uploadedUrls = await Promise.all(
+          imagesToUpload.map(async (uri) => {
+            const res = await userApi.uploadImage(uri, "chats");
+            return res.url;
+          })
+        );
+        const urlsString = uploadedUrls.join(",");
+        finalMessageText = `furrcircle://images/${urlsString}|${textToSend}`;
+      }
+
+      await chatApi.sendMessage(selectedChat, finalMessageText);
     } catch (e) {
       console.error("Send failed", e);
-      setMsgInput(textToSend); // Revert on failure
+      // Restore input on failure
+      setMsgInput(textToSend);
+      setSelectedImages(imagesToUpload);
+      Alert.alert("Error", "Failed to send message. Please try again.");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -835,6 +926,44 @@ export default function ChatScreen() {
 
   // --- Message Content Renderer ---
   const renderMessageContent = (text: string, isMe: boolean, tk: any, router: any) => {
+    const imagesMatch = text.match(/furrcircle:\/\/images\/([^|]+)\|(.*)/s);
+    if (imagesMatch) {
+      const urls = imagesMatch[1].split(",");
+      const attachedText = imagesMatch[2];
+
+      return (
+        <View style={{ width: 230, padding: 4 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: attachedText ? 8 : 0 }}>
+            {urls.map((url, i) => (
+              <TouchableOpacity
+                key={url + i}
+                onPress={() => {
+                  setViewerImages(urls);
+                  setViewerIndex(i);
+                }}
+                activeOpacity={0.9}
+              >
+                <Image
+                  source={{ uri: url }}
+                  style={{
+                    width: urls.length === 1 ? 222 : (urls.length === 2 ? 108 : 70),
+                    height: urls.length === 1 ? 160 : (urls.length === 2 ? 108 : 70),
+                    borderRadius: 12,
+                  }}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+          {attachedText ? (
+            <Text style={[styles.bubbleText, { color: isMe ? "#fff" : tk.text, paddingHorizontal: 4, marginTop: 4 }]}>
+              {attachedText}
+            </Text>
+          ) : null}
+        </View>
+      );
+    }
+
     const match = text.match(/furrcircle:\/\/post\/([A-Za-z0-9-]+)/);
     if (match) {
       const postId = match[1];
@@ -984,119 +1113,177 @@ export default function ChatScreen() {
 
     return (
       <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
-      enabled={true}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-    >
-      <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader
-          title={otherUser.name}
-          onBack={() => {
-            setSelectedChat(null);
-            // Optionally clear the query param so refresh doesn't stick inside
-            router.setParams({ id: "" });
-          }}
-          right={
-            <TouchableOpacity onPress={() => otherUser.username && router.push(`/u/${otherUser.username}`)}>
-              <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={32} />
-            </TouchableOpacity>
-          }
-        />
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
+        enabled={true}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      >
+        <View style={[styles.container, { backgroundColor: tk.bg }]}>
+          <ScreenHeader
+            title={otherUser.name}
+            onBack={() => {
+              setSelectedChat(null);
+              // Optionally clear the query param so refresh doesn't stick inside
+              router.setParams({ id: "" });
+            }}
+            right={
+              <TouchableOpacity onPress={() => otherUser.username && router.push(`/u/${otherUser.username}`)}>
+                <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={32} />
+              </TouchableOpacity>
+            }
+          />
 
-        {loadingMessages ? (
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : (
-          <FlatList
-            inverted
-            data={groupedMessages}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: 16, gap: 12 }}
-            renderItem={({ item }) => {
-              if (item.type === 'divider') {
+          {loadingMessages ? (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : (
+            <FlatList
+              inverted
+              data={groupedMessages}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ padding: 16, gap: 12 }}
+              renderItem={({ item }) => {
+                if (item.type === 'divider') {
+                  return (
+                    <View style={styles.dateDivider}>
+                      <Text style={[styles.dateDividerText, { color: tk.textMuted }]}>{item.text}</Text>
+                    </View>
+                  );
+                }
+
+                const isMe = item.sender?.id === user?.id;
+                const isPostShare = item.text && item.text.includes("furrcircle://post/");
+                const isProfileShare = item.text && item.text.includes("furrcircle://profile/");
+                const isCircleShare = item.text && item.text.includes("furrcircle://circle/");
+                const isThreadShare = item.text && item.text.includes("furrcircle://thread/");
+                const isPetShare = item.text && item.text.includes("furrcircle://pet/");
+                const isImageMessage = item.text && item.text.includes("furrcircle://images/");
+                const isCardShare = isPostShare || isProfileShare || isCircleShare || isThreadShare || isPetShare;
                 return (
-                  <View style={styles.dateDivider}>
-                    <Text style={[styles.dateDividerText, { color: tk.textMuted }]}>{item.text}</Text>
-                  </View>
-                );
-              }
-
-              const isMe = item.sender?.id === user?.id;
-              const isPostShare = item.text && item.text.includes("furrcircle://post/");
-              const isProfileShare = item.text && item.text.includes("furrcircle://profile/");
-              const isCircleShare = item.text && item.text.includes("furrcircle://circle/");
-              const isThreadShare = item.text && item.text.includes("furrcircle://thread/");
-              const isPetShare = item.text && item.text.includes("furrcircle://pet/");
-              const isCardShare = isPostShare || isProfileShare || isCircleShare || isThreadShare || isPetShare;
-              return (
-                <View style={isMe ? styles.msgRowMe : styles.msgRowOther}>
-                  {!isMe && (
-                    <TouchableOpacity onPress={() => otherUser.username && router.push(`/u/${otherUser.username}`)}>
-                      <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={28} />
-                    </TouchableOpacity>
-                  )}
-                  <View style={
-                    isCardShare
-                      ? [
-                          isMe ? styles.sharedBubbleMe : styles.sharedBubbleOther,
-                          { backgroundColor: tk.bg, borderColor: tk.border, borderWidth: 1, width: 230 }
-                        ]
-                      : [
+                  <View style={isMe ? styles.msgRowMe : styles.msgRowOther}>
+                    {!isMe && (
+                      <TouchableOpacity onPress={() => otherUser.username && router.push(`/u/${otherUser.username}`)}>
+                        <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={28} />
+                      </TouchableOpacity>
+                    )}
+                    <View style={
+                      isImageMessage
+                        ? [
                           isMe ? styles.bubbleMe : styles.bubbleOther,
-                          !isMe && { backgroundColor: tk.card }
+                          !isMe && { backgroundColor: tk.card },
+                          { paddingHorizontal: 2, paddingVertical: 2, paddingBottom: 2 }
                         ]
-                  }>
-                    {renderMessageContent(item.text, isMe, tk, router)}
-                    <View style={{ 
-                      flexDirection: 'row', 
-                      alignItems: 'center', 
-                      alignSelf: isMe ? "flex-end" : "flex-start", 
-                      gap: 4,
-                      paddingHorizontal: isCardShare ? 12 : 0,
-                      paddingBottom: isCardShare ? 8 : 0,
-                      marginTop: isCardShare ? 6 : 0
-                    }}>
-                      <Text style={[styles.timeText, { color: (isMe && !isCardShare) ? "rgba(255,255,255,0.7)" : tk.textMuted }]}>
-                        {formatTime(item.createdAt)}
-                      </Text>
-                      {isMe && (
-                        (item.isRead || item.readAt || item.seen) ? (
-                          <CheckCheck size={14} color="#60a5fa" />
-                        ) : (
-                          <Check size={14} color={(isMe && !isCardShare) ? "rgba(255,255,255,0.7)" : tk.textMuted} />
-                        )
-                      )}
+                        : isCardShare
+                          ? [
+                            isMe ? styles.sharedBubbleMe : styles.sharedBubbleOther,
+                            { backgroundColor: tk.bg, borderColor: tk.border, borderWidth: 1, width: 230 }
+                          ]
+                          : [
+                            isMe ? styles.bubbleMe : styles.bubbleOther,
+                            !isMe && { backgroundColor: tk.card }
+                          ]
+                    }>
+                      {renderMessageContent(item.text, isMe, tk, router)}
+                      <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        alignSelf: isMe ? "flex-end" : "flex-start",
+                        gap: 4,
+                        paddingHorizontal: isCardShare ? 12 : (isImageMessage ? 0 : 0),
+                        paddingBottom: isCardShare ? 8 : (isImageMessage ? 2 : 0),
+                        marginTop: isCardShare ? 6 : (isImageMessage ? 4 : 0)
+                      }}>
+                        <Text style={[styles.timeText, { color: (isMe && !isCardShare) ? "rgba(255,255,255,0.7)" : tk.textMuted }]}>
+                          {formatTime(item.createdAt)}
+                        </Text>
+                        {isMe && (
+                          (item.isRead || item.readAt || item.seen) ? (
+                            <CheckCheck size={14} color="#60a5fa" />
+                          ) : (
+                            <Check size={14} color={(isMe && !isCardShare) ? "rgba(255,255,255,0.7)" : tk.textMuted} />
+                          )
+                        )}
+                      </View>
                     </View>
                   </View>
-                </View>
-              );
-            }}
-          />
-        )}
-
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-          <View style={[styles.inputBar, { backgroundColor: tk.card, borderTopColor: tk.border }]}>
-            <TextInput
-              value={msgInput}
-              onChangeText={setMsgInput}
-              placeholder="Message…"
-              placeholderTextColor={tk.textMuted}
-              style={[styles.msgInput, { backgroundColor: tk.bg, color: tk.text }]}
-              multiline
-              maxLength={500}
+                );
+              }}
             />
-            <TouchableOpacity
-              style={[styles.sendBtn, { backgroundColor: msgInput.trim() ? colors.primary : tk.border }]}
-              onPress={handleSend}
-              disabled={!msgInput.trim()}
-            >
-              <Send size={18} color={msgInput.trim() ? "#fff" : tk.textMuted} />
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
+          )}
+
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+            {selectedImages.length > 0 && (
+              <View style={[styles.imagePreviewContainer, { backgroundColor: tk.card, borderTopColor: tk.border }]}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.imagePreviewScroll}>
+                  {selectedImages.map((uri, index) => (
+                    <View key={uri + index} style={styles.previewImageWrapper}>
+                      <Image source={{ uri }} style={styles.previewImage} />
+                      <TouchableOpacity
+                        style={styles.removeImageBtn}
+                        onPress={() => setSelectedImages((prev) => prev.filter((_, i) => i !== index))}
+                      >
+                        <XIcon size={12} color="#fff" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+            <View style={[styles.inputBar, { backgroundColor: tk.card, borderTopColor: tk.border }]}>
+              
+
+              <TextInput
+                value={msgInput}
+                onChangeText={setMsgInput}
+                placeholder="Message…"
+                placeholderTextColor={tk.textMuted}
+                style={[styles.msgInput, { backgroundColor: tk.bg, color: tk.text }]}
+                multiline
+                maxLength={500}
+              />
+              <TouchableOpacity onPress={pickImagesFromGallery} style={styles.actionBtn}>
+                <ImageIcon size={22} color={tk.textMuted} />
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={openCamera} style={styles.actionBtn}>
+                <Camera size={22} color={tk.textMuted} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.sendBtn,
+                  {
+                    backgroundColor:
+                      (msgInput.trim() || selectedImages.length > 0) && !sending
+                        ? colors.primary
+                        : tk.border,
+                  },
+                ]}
+                onPress={handleSend}
+                disabled={(!msgInput.trim() && selectedImages.length === 0) || sending}
+              >
+                {sending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Send
+                    size={18}
+                    color={
+                      (msgInput.trim() || selectedImages.length > 0) && !sending
+                        ? "#fff"
+                        : tk.textMuted
+                    }
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+        {/* Full Screen Swipeable Image Viewer */}
+      <ImageViewer
+        images={viewerImages}
+        index={viewerIndex}
+        onClose={() => setViewerIndex(null)}
+      />
       </KeyboardAvoidingView>
     );
   }
@@ -1108,14 +1295,14 @@ export default function ChatScreen() {
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
       <ScreenHeader
         title="Messages"
-        // right={
-        //   <TouchableOpacity
-        //     style={[styles.headerIconBtn, { backgroundColor: tk.card }]}
-        //     onPress={() => setIsNewChatOpen(true)}
-        //   >
-        //     <Plus size={22} color={tk.text} />
-        //   </TouchableOpacity>
-        // }
+      // right={
+      //   <TouchableOpacity
+      //     style={[styles.headerIconBtn, { backgroundColor: tk.card }]}
+      //     onPress={() => setIsNewChatOpen(true)}
+      //   >
+      //     <Plus size={22} color={tk.text} />
+      //   </TouchableOpacity>
+      // }
       />
 
       {/* Search pill */}
@@ -1260,8 +1447,10 @@ export default function ChatScreen() {
             </View>
           </Pressable>
         </KeyboardAvoidingView>
+
       </Modal>
 
+      
     </View>
   );
 }
@@ -1396,4 +1585,122 @@ const styles = StyleSheet.create({
   sharedThreadAsker: { fontFamily: "Inter_400Regular", fontSize: 12 },
   sharedThreadDivider: { height: 1 },
   sharedThreadFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 12 },
+
+  // Image Preview & Actions in Chat Input
+  imagePreviewContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    flexDirection: "row",
+  },
+  imagePreviewScroll: {
+    gap: 12,
+  },
+  previewImageWrapper: {
+    position: "relative",
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  previewImage: {
+    width: 60,
+    height: 60,
+  },
+  removeImageBtn: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionBtn: {
+    padding: 4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullScreenModal: { flex: 1, backgroundColor: "rgba(0,0,0,0.95)", justifyContent: "center", alignItems: "center" },
+  closeModalBtn: { position: "absolute", top: 56, right: 20, zIndex: 10, width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  counterPill: { position: "absolute", top: 60, alignSelf: "center", backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 16, paddingHorizontal: 14, paddingVertical: 6 },
+  counterText: { color: "#fff", fontFamily: "Poppins_600SemiBold", fontSize: 13 },
+  navArrow: { position: "absolute", top: "50%", marginTop: -24, width: 48, height: 48, borderRadius: 24, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center", zIndex: 10 },
+  navArrowLeft: { left: 16 },
+  navArrowRight: { right: 16 },
 });
+
+function ImageViewer({
+  images,
+  index,
+  onClose,
+}: {
+  images: string[];
+  index: number | null;
+  onClose: () => void;
+}) {
+  const { width, height } = useWindowDimensions();
+  const listRef = useRef<FlatList<string>>(null);
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    if (index !== null) setCurrent(index);
+  }, [index]);
+
+  const goTo = (next: number) => {
+    if (next < 0 || next > images.length - 1) return;
+    listRef.current?.scrollToIndex({ index: next, animated: true });
+    setCurrent(next);
+  };
+
+  return (
+    <Modal visible={index !== null} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.fullScreenModal}>
+        <FlatList
+          ref={listRef}
+          data={images}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          initialScrollIndex={index ?? 0}
+          keyExtractor={(item, i) => `${i}-${item}`}
+          getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+          onMomentumScrollEnd={(e) => {
+            setCurrent(Math.round(e.nativeEvent.contentOffset.x / width));
+          }}
+          renderItem={({ item }) => (
+            <View style={{ width, height, alignItems: "center", justifyContent: "center" }}>
+              <Image source={{ uri: item }} style={{ width, height: height * 0.8 }} resizeMode="contain" />
+            </View>
+          )}
+        />
+
+        {/* Close */}
+        <TouchableOpacity style={styles.closeModalBtn} onPress={onClose}>
+          <X size={28} color="#fff" />
+        </TouchableOpacity>
+
+        {/* Counter */}
+        {images.length > 0 && (
+          <View style={styles.counterPill}>
+            <Text style={styles.counterText}>{current + 1} / {images.length}</Text>
+          </View>
+        )}
+
+        {/* Prev / Next arrows */}
+        {current > 0 && (
+          <TouchableOpacity style={[styles.navArrow, styles.navArrowLeft]} onPress={() => goTo(current - 1)}>
+            <ChevronLeft size={28} color="#fff" />
+          </TouchableOpacity>
+        )}
+        {current < images.length - 1 && (
+          <TouchableOpacity style={[styles.navArrow, styles.navArrowRight]} onPress={() => goTo(current + 1)}>
+            <ChevronRight size={28} color="#fff" />
+          </TouchableOpacity>
+        )}
+      </View>
+    </Modal>
+  );
+}

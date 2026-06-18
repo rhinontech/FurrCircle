@@ -1,7 +1,8 @@
 import { PrivateAxios } from '../../helpers/PrivateAxios';
 
-export const getLostPets = async () => {
-    const response = await PrivateAxios.get('/lost-pets');
+export const getLostPets = async (coords?: { lat: number; lng: number }) => {
+    const params = coords ? { lat: coords.lat, lng: coords.lng } : {};
+    const response = await PrivateAxios.get('/lost-pets', { params });
     return response.data;
 };
 

@@ -51,13 +51,13 @@ const queryClient = new QueryClient();
 const handleNotificationRedirect = (remoteMessage: any, router: any) => {
   if (!remoteMessage?.data) return;
   const { actionType, actionPayload: actionPayloadStr, relatedId } = remoteMessage.data;
-  
+
   let actionPayload: any = {};
   try {
     if (actionPayloadStr) {
       actionPayload = JSON.parse(actionPayloadStr);
     }
-  } catch (e) {}
+  } catch (e) { }
 
   if (actionType === 'chat_thread') {
     const chatId = actionPayload.conversationId || actionPayload.id || relatedId;
@@ -189,9 +189,9 @@ export default function RootLayout() {
             // Surface it as a non-blocking banner that stacks/queues.
             const variant =
               notif.type === "like" ? "like"
-              : notif.type === "comment" ? "comment"
-              : notif.type === "match" ? "match"
-              : "info";
+                : notif.type === "comment" ? "comment"
+                  : notif.type === "match" ? "match"
+                    : "info";
             toast.show({
               id: notif.id,
               title: notif.title,
@@ -291,7 +291,7 @@ export default function RootLayout() {
           if (storedPref !== null) {
             pushPref = storedPref === "true";
           }
-        } catch (e) {}
+        } catch (e) { }
 
         if (!isActive) return;
 
@@ -382,7 +382,7 @@ export default function RootLayout() {
   if (!fontsLoaded || authLoading) return <View style={{ flex: 1, backgroundColor: "#F7F8FA" }} />;
 
   const stackScreens = (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tokens.bg, paddingBottom:  Platform.OS === 'ios' ? 0 : insets.bottom } }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tokens.bg, paddingBottom: Platform.OS === 'ios' ? 0 : insets.bottom } }}>
       <Stack.Screen name="(tabs)" options={{ contentStyle: { paddingBottom: 0 } }} />
       <Stack.Screen name="post/[id]" options={{ presentation: "card" }} />
       <Stack.Screen name="thread/[id]" options={{ presentation: "card" }} />
@@ -430,21 +430,24 @@ export default function RootLayout() {
           // sidebar sits flush against the feed (no left gap) with balanced margins.
           <View style={{ flex: 1, backgroundColor: tokens.bg }}>
             <AmbientBackground />
-            <View style={{ flex: 1, alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
               <View
                 style={{
                   flex: 1,
                   width: "100%",
-                  maxWidth: showRightRail ? 1260 : 960,
+                  maxWidth: showRightRail ? '100%' : '100%',
                   flexDirection: "row",
+
                 }}
               >
-                <SideNav />
+                <View style={{ paddingLeft: showRightRail ? 60 : 0, backgroundColor:'white' }}>
+                  <SideNav />
+                </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   {stackScreens}
                 </View>
                 {showRightRail && (
-                  <View style={{ width: 300, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: tokens.border }}>
+                  <View style={{ width: 400, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: tokens.border, paddingRight: 60 }}>
                     <RightRail />
                   </View>
                 )}
