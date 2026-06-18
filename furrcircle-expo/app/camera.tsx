@@ -725,44 +725,46 @@ export default function CustomCameraScreen() {
               </View>
 
               {/* Capture mode slider selector */}
-              <View style={styles.modeSelector}>
-                <TouchableOpacity
-                  onPress={() => {
-                    if (!isRecording) setCaptureMode("picture");
-                  }}
-                  style={[
-                    styles.modeOption,
-                    captureMode === "picture" && styles.modeOptionActive,
-                  ]}
-                >
-                  <Text
+              {origin !== "chat" && (
+                <View style={styles.modeSelector}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (!isRecording) setCaptureMode("picture");
+                    }}
                     style={[
-                      styles.modeOptionText,
-                      captureMode === "picture" && styles.modeOptionTextActive,
+                      styles.modeOption,
+                      captureMode === "picture" && styles.modeOptionActive,
                     ]}
                   >
-                    PHOTO
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    if (!isRecording) setCaptureMode("video");
-                  }}
-                  style={[
-                    styles.modeOption,
-                    captureMode === "video" && styles.modeOptionActive,
-                  ]}
-                >
-                  <Text
+                    <Text
+                      style={[
+                        styles.modeOptionText,
+                        captureMode === "picture" && styles.modeOptionTextActive,
+                      ]}
+                    >
+                      PHOTO
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (!isRecording) setCaptureMode("video");
+                    }}
                     style={[
-                      styles.modeOptionText,
-                      captureMode === "video" && styles.modeOptionTextActive,
+                      styles.modeOption,
+                      captureMode === "video" && styles.modeOptionActive,
                     ]}
                   >
-                    VIDEO
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                    <Text
+                      style={[
+                        styles.modeOptionText,
+                        captureMode === "video" && styles.modeOptionTextActive,
+                      ]}
+                    >
+                      VIDEO
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
         )}
