@@ -22,7 +22,7 @@ import { petApi } from "../../services/pet/petApi";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { useLocationStore } from "../../src/lib/location-store";
 
-type Mode = "all" | "adoption" | "foster" | "breed";
+type Mode = "all" | "adoption" | "foster"/* | "breed"*/;
 
 export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
@@ -92,12 +92,10 @@ export default function DiscoverScreen() {
 
   const pets = allPets.filter((p) =>
     mode === "all"
-      ? p.isAdoptionOpen || p.isFosterOpen || p.isBreedingOpen
+      ? p.isAdoptionOpen || p.isFosterOpen
       : mode === "adoption"
       ? p.isAdoptionOpen
-      : mode === "foster"
-      ? p.isFosterOpen
-      : p.isBreedingOpen
+      : p.isFosterOpen
   );
 
   return (
@@ -203,7 +201,7 @@ export default function DiscoverScreen() {
               { k: "all" as Mode, label: "All" },
               { k: "adoption" as Mode, label: "Adoption" },
               { k: "foster" as Mode, label: "Foster" },
-              { k: "breed" as Mode, label: "Breed" },
+              // { k: "breed" as Mode, label: "Breed" },
             ]).map(({ k, label }) => {
               const isActive = mode === k;
               return (
@@ -226,7 +224,7 @@ export default function DiscoverScreen() {
                   <View style={styles.petBadges}>
                     {p.isAdoptionOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.success }]}><Text style={styles.adoptBadgeText}>Adopt</Text></View>}
                     {p.isFosterOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.coral }]}><Text style={styles.adoptBadgeText}>Foster</Text></View>}
-                    {p.isBreedingOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.sunshine }]}><Text style={[styles.adoptBadgeText, { color: colors.foreground }]}>Breed</Text></View>}
+                    {/* {p.isBreedingOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.sunshine }]}><Text style={[styles.adoptBadgeText, { color: colors.foreground }]}>Breed</Text></View>} */}
                   </View>
                 </View>
                 <View style={styles.petInfo}>

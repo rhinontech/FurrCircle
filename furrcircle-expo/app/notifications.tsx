@@ -1,22 +1,26 @@
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, RefreshControl,
+  ActivityIndicator, RefreshControl, Modal, Alert, FlatList, Image,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { useFocusEffect } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { Avatar } from "../src/components/Avatar";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 import { glassSurface } from "../src/components/ui/Glass";
 import { PageContainer } from "../src/components/PageContainer";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { Inbox, MessageCircle, X } from "../src/components/ui/icons";
+import { adoptionApi, type AdoptionRequest } from "../services/adoption/adoptionApi";
+import { matchApi } from "../services/match/matchApi";
+import { chatApi } from "../services/chat/chatApi";
 import { userApi } from "../services/user/userApi";
 import { notificationApi } from "../services/notification/notificationApi";
 import type { AppNotification } from "../services/notification/notificationApi";
 import { useNotificationStore } from "../src/lib/notification-store";
 import { navigateForNotification } from "../src/lib/notification-nav";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 // ─── Type → visual config ─────────────────────────────────────────────────────
 // Solid colour icon circles, lovable-style: coloured disc + white glyph.
@@ -66,12 +70,75 @@ const formatRelTime = (iso: string): string => {
 export default function NotificationsScreen() {
   const tk = useTokens();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { openRequests: openRequestsParam } = useLocalSearchParams<{ openRequests?: string }>();
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Requests inbox states
+  const [requestsVisible, setRequestsVisible] = useState(false);
+  const [requestsTab, setRequestsTab] = useState<"received" | "sent" | "matches">("received");
+  const [receivedRequests, setReceivedRequests] = useState<AdoptionRequest[]>([]);
+  const [sentRequests, setSentRequests] = useState<AdoptionRequest[]>([]);
+  const [playdateMatches, setPlaydateMatches] = useState<any[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+
+  const loadRequests = useCallback(async () => {
+    setRequestsLoading(true);
+    try {
+      const [received, sent, pMatches, bMatches] = await Promise.all([
+        adoptionApi.getReceivedApplications(),
+        adoptionApi.getMyApplications(),
+        matchApi.getPlaydateMatches().catch(() => []),
+        matchApi.getBreedMatches().catch(() => []),
+      ]);
+      setReceivedRequests(received);
+      setSentRequests(sent);
+      
+      const mappedPlaydate = (pMatches || []).map((m: any) => ({ ...m, matchType: "playdate" }));
+      const mappedBreed = (bMatches || []).map((m: any) => ({ ...m, matchType: "breed" }));
+      const allMatches = [...mappedPlaydate, ...mappedBreed].sort(
+        (a, b) => new Date(b.matchedAt).getTime() - new Date(a.matchedAt).getTime()
+      );
+      
+      setPlaydateMatches(allMatches);
+    } catch { }
+    setRequestsLoading(false);
+  }, []);
+
+  const openRequests = () => {
+    setRequestsVisible(true);
+    loadRequests();
+  };
+
+  const handleReview = async (id: string, status: "approved" | "rejected") => {
+    setReviewingId(id);
+    try {
+      const updated = await adoptionApi.reviewApplication(id, status);
+      setReceivedRequests((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status: updated.status, conversationId: updated.conversationId } : r))
+      );
+      if (status === "approved" && updated.conversationId) {
+        setRequestsVisible(false);
+        router.push({ pathname: "/chat", params: { id: updated.conversationId } });
+      }
+    } catch {
+      Alert.alert("Error", "Failed to update request. Please try again.");
+    }
+    setReviewingId(null);
+  };
+
+  useEffect(() => {
+    if (openRequestsParam === "true") {
+      openRequests();
+    }
+  }, [openRequestsParam]);
 
   // Real-time notifications prepended from WebSocket
   const realtimeNotifs = useNotificationStore((s) => s.realtimeNotifs);
@@ -138,6 +205,9 @@ export default function NotificationsScreen() {
     try {
       await notificationApi.markAllRead("activity");
       setNotifications(ns => ns.map(n => ({ ...n, isRead: true })));
+      useNotificationStore.setState(state => ({
+        realtimeNotifs: state.realtimeNotifs.map(n => ({ ...n, isRead: true }))
+      }));
       // Also zero out the global badge counter
       clearUnread();
     } finally {
@@ -151,7 +221,21 @@ export default function NotificationsScreen() {
     if (!n.isRead) {
       notificationApi.markRead(n.id).catch(() => {});
       setNotifications(ns => ns.map(x => x.id === n.id ? { ...x, isRead: true } : x));
+      useNotificationStore.setState(state => ({
+        realtimeNotifs: state.realtimeNotifs.map(x => x.id === n.id ? { ...x, isRead: true } : x)
+      }));
     }
+
+    if (
+      n.actionType === "match_requests" ||
+      n.actionType === "adoption_application" ||
+      n.relatedType === "adoption_application" ||
+      n.type === "adoption"
+    ) {
+      openRequests();
+      return;
+    }
+
     navigateForNotification(n, router);
   };
 
@@ -162,16 +246,27 @@ export default function NotificationsScreen() {
   const newRealtime = realtimeNotifs.filter((n) => !restIds.has(n.id));
   const mergedNotifications = [...newRealtime, ...notifications];
 
-  const hasUnread = mergedNotifications.some(n => !n.isRead);
+  const unseenNotifications = mergedNotifications.filter(n => !n.isRead);
+  const seenNotifications = mergedNotifications.filter(n => n.isRead);
+  const hasUnread = unseenNotifications.length > 0;
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
     <PageContainer>
       <View style={styles.container}>
-        <ScreenHeader title="Notifications" />
+        <ScreenHeader
+          title={showHistory ? "History" : "Notifications"}
+          onBack={showHistory ? () => setShowHistory(false) : undefined}
+          right={showHistory ? null : (
+            <TouchableOpacity onPress={openRequests} style={[styles.inboxBtn, glassSurface(tk)]} activeOpacity={0.75}>
+              <Inbox size={20} color={tk.text} strokeWidth={2} />
+              <Text style={[styles.inboxBtnText, { color: tk.text }]}>Requests</Text>
+            </TouchableOpacity>
+          )}
+        />
 
-        {hasUnread && (
+        {!showHistory && hasUnread && (
           <View style={styles.markAllRow}>
             <TouchableOpacity
               onPress={handleMarkAllRead}
@@ -197,55 +292,323 @@ export default function NotificationsScreen() {
             contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 60 }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           >
-            {/* ── Follow Requests ─────────────────────────────────────────── */}
-            {pendingRequests.length > 0 && (
+            {/* ── Unseen Notification View ───────────────────────────────── */}
+            {!showHistory && (
               <>
-                <Text style={[styles.sectionText, { color: tk.textMuted }]}>FOLLOW REQUESTS</Text>
-                {pendingRequests.map(r => (
-                  <View key={r.id} style={[styles.card, glassSurface(tk)]}>
-                    <Avatar
-                      source={r.followerUser?.avatar_url ? { uri: r.followerUser.avatar_url } : require("../src/assets/doodle-puppy.png")}
-                      name={r.followerUser?.name}
-                      size={44}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.cardBody, { color: tk.text }]}>
-                        <Text style={[styles.cardTitle, { color: tk.text }]}>{r.followerUser?.name || "Someone"} </Text>
-                        requested to follow you
-                      </Text>
-                      <View style={styles.btnRow}>
-                        <TouchableOpacity onPress={() => handleAccept(r.followerId)} style={[styles.btn, { backgroundColor: colors.primary }]}>
-                          <Text style={[styles.btnText, { color: "#fff" }]}>Accept</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleReject(r.followerId)} style={[styles.btn, { backgroundColor: tk.glassChip }]}>
-                          <Text style={[styles.btnText, { color: tk.text }]}>Reject</Text>
-                        </TouchableOpacity>
+                {/* ── Follow Requests ─────────────────────────────────────────── */}
+                {pendingRequests.length > 0 && (
+                  <>
+                    <Text style={[styles.sectionText, { color: tk.textMuted }]}>FOLLOW REQUESTS</Text>
+                    {pendingRequests.map(r => (
+                      <View key={r.id} style={[styles.card, glassSurface(tk)]}>
+                        <Avatar
+                          source={r.followerUser?.avatar_url ? { uri: r.followerUser.avatar_url } : require("../src/assets/doodle-puppy.png")}
+                          name={r.followerUser?.name}
+                          size={44}
+                        />
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.cardBody, { color: tk.text }]}>
+                            <Text style={[styles.cardTitle, { color: tk.text }]}>{r.followerUser?.name || "Someone"} </Text>
+                            requested to follow you
+                          </Text>
+                          <View style={styles.btnRow}>
+                            <TouchableOpacity onPress={() => handleAccept(r.followerId)} style={[styles.btn, { backgroundColor: colors.primary }]}>
+                              <Text style={[styles.btnText, { color: "#fff" }]}>Accept</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => handleReject(r.followerId)} style={[styles.btn, { backgroundColor: tk.glassChip }]}>
+                              <Text style={[styles.btnText, { color: tk.text }]}>Reject</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
                       </View>
-                    </View>
-                  </View>
+                    ))}
+                  </>
+                )}
+
+                {/* ── Notifications List ───────────────────────────────────────── */}
+                {unseenNotifications.map(n => (
+                  <NotifCard key={n.id} n={n} tk={tk} onPress={() => handleTap(n)} />
                 ))}
+
+                {/* ── Empty state ──────────────────────────────────────────────── */}
+                {pendingRequests.length === 0 && unseenNotifications.length === 0 && (
+                  <View style={[styles.emptyBox, glassSurface(tk)]}>
+                    <View style={[styles.emptyIcon, { backgroundColor: tk.glassChip }]}>
+                      <Ionicons name="notifications-outline" size={28} color={tk.textMuted} />
+                    </View>
+                    <Text style={[styles.emptyTitle, { color: tk.text }]}>All caught up!</Text>
+                    <Text style={[styles.emptyBody, { color: tk.textMuted }]}>
+                      No new notifications.
+                    </Text>
+                  </View>
+                )}
+
+                {/* ── History Icon Link at bottom of unseen list ────────────── */}
+                <View style={styles.historyToggleContainer}>
+                  <TouchableOpacity
+                    onPress={() => setShowHistory(true)}
+                    style={[styles.historyToggleBtn, glassSurface(tk)]}
+                    activeOpacity={0.8}
+                  >
+                    <MaterialCommunityIcons name="history" size={20} color={colors.primary} />
+                    <Text style={[styles.historyToggleText, { color: tk.text }]}>View History</Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
 
-            {/* ── Notifications List ───────────────────────────────────────── */}
-            {mergedNotifications.map(n => (
-              <NotifCard key={n.id} n={n} tk={tk} onPress={() => handleTap(n)} />
-            ))}
+            {/* ── Seen Notification View (History) ───────────────────────── */}
+            {showHistory && (
+              <>
+                {/* ── Notifications List ───────────────────────────────────────── */}
+                {seenNotifications.map(n => (
+                  <NotifCard key={n.id} n={n} tk={tk} onPress={() => handleTap(n)} />
+                ))}
 
-            {/* ── Empty state ──────────────────────────────────────────────── */}
-            {pendingRequests.length === 0 && mergedNotifications.length === 0 && (
-              <View style={[styles.emptyBox, glassSurface(tk)]}>
-                <View style={[styles.emptyIcon, { backgroundColor: tk.glassChip }]}>
-                  <Ionicons name="notifications-outline" size={28} color={tk.textMuted} />
-                </View>
-                <Text style={[styles.emptyTitle, { color: tk.text }]}>No notifications yet</Text>
-                <Text style={[styles.emptyBody, { color: tk.textMuted }]}>
-                  Likes, comments, follows, reminders, and appointments will appear here.
-                </Text>
-              </View>
+                {/* ── Empty state ──────────────────────────────────────────────── */}
+                {seenNotifications.length === 0 && (
+                  <View style={[styles.emptyBox, glassSurface(tk)]}>
+                    <View style={[styles.emptyIcon, { backgroundColor: tk.glassChip }]}>
+                      <MaterialCommunityIcons name="history" size={28} color={tk.textMuted} />
+                    </View>
+                    <Text style={[styles.emptyTitle, { color: tk.text }]}>No history yet</Text>
+                    <Text style={[styles.emptyBody, { color: tk.textMuted }]}>
+                      Your read notifications will appear here.
+                    </Text>
+                  </View>
+                )}
+              </>
             )}
           </ScrollView>
         )}
+
+        {/* Adoption Requests Modal */}
+        <Modal visible={requestsVisible} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setRequestsVisible(false)}>
+          <View style={[styles.reqModal, { backgroundColor: tk.bg, paddingTop: insets.top }]}>
+            {/* Modal header */}
+            <View style={styles.reqHeader}>
+              <Text style={[styles.reqTitle, { color: tk.text }]}>Inbox</Text>
+              <TouchableOpacity onPress={() => setRequestsVisible(false)} style={[styles.reqCloseBtn, glassSurface(tk)]}>
+                <X size={18} color={tk.text} strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Received / Sent / Matches tabs */}
+            <View style={[styles.reqTabs, glassSurface(tk)]}>
+              {(["received", "sent", "matches"] as const).map((t) => {
+                const pendingCount = receivedRequests.filter((r) => r.status === "pending").length;
+                const label = t === "received" ? "Received" : t === "sent" ? "Sent" : "Matches";
+                const badge = t === "received" && pendingCount > 0
+                  ? ` (${pendingCount})`
+                  : t === "matches" && playdateMatches.length > 0
+                    ? ` (${playdateMatches.length})`
+                    : "";
+                return (
+                  <TouchableOpacity
+                    key={t}
+                    onPress={() => setRequestsTab(t)}
+                    style={[styles.reqTab, requestsTab === t && { backgroundColor: tk.text }]}
+                  >
+                    <Text style={[styles.reqTabText, { color: requestsTab === t ? tk.bg : tk.textMuted }]}>
+                      {label}{badge}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {requestsLoading ? (
+              <View style={styles.reqLoading}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : requestsTab === "matches" ? (
+              <FlatList
+                data={playdateMatches}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.reqList}
+                ListEmptyComponent={
+                  <View style={styles.reqEmpty}>
+                    <Text style={[styles.reqEmptyText, { color: tk.textMuted }]}>
+                      No matches yet. Swipe right to find a match!
+                    </Text>
+                  </View>
+                }
+                renderItem={({ item }) => {
+                  const petImg = item.pet?.avatar_url ? { uri: item.pet.avatar_url } : null;
+                  const isBreed = item.matchType === "breed";
+                  return (
+                    <View style={[styles.reqCard, glassSurface(tk)]}>
+                      <View style={styles.reqCardImgWrap}>
+                        {petImg ? (
+                          <Image source={petImg} style={styles.reqCardImg} />
+                        ) : (
+                          <View style={[styles.reqCardImg, { backgroundColor: tk.glassBorder, alignItems: "center", justifyContent: "center" }]}>
+                            <Text style={{ fontSize: 28 }}>🐾</Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.reqCardBody}>
+                        <View style={styles.reqCardTop}>
+                          <Text style={[styles.reqCardPetName, { color: tk.text }]}>{item.pet?.name || "Pet"}</Text>
+                          <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
+                            <View style={[styles.reqStatusBadge, { backgroundColor: colors.success + "22", borderColor: colors.success }]}>
+                              <Text style={[styles.reqStatusText, { color: colors.success }]}>Matched</Text>
+                            </View>
+                            <View style={[styles.reqStatusBadge, { backgroundColor: isBreed ? colors.primary + "22" : colors.sunshine + "22", borderColor: isBreed ? colors.primary : colors.sunshine }]}>
+                              <Text style={[styles.reqStatusText, { color: isBreed ? colors.primary : colors.sunshine }]}>
+                                {isBreed ? "Breed" : "Playdate"}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                        <Text style={[styles.reqCardMeta, { color: tk.textMuted }]}>
+                          {item.myPet?.name ? `${item.myPet.name} & ${item.pet?.name || "Pet"}` : item.pet?.breed || item.pet?.species || (isBreed ? "Breed" : "Playdate")}
+                          {item.owner?.name ? ` · with ${item.owner.name}` : ""}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setRequestsVisible(false);
+                            if (item.conversationId) {
+                              router.push({ pathname: "/chat", params: { id: item.conversationId } });
+                            } else {
+                              router.push("/chat");
+                            }
+                          }}
+                          style={[styles.reqOpenChatBtn, { backgroundColor: colors.primary }]}
+                          activeOpacity={0.85}
+                        >
+                          <MessageCircle size={15} color="#fff" strokeWidth={2.5} />
+                          <Text style={styles.reqOpenChatBtnText}>Open Chat</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                }}
+              />
+            ) : (
+              <FlatList
+                data={requestsTab === "received" ? receivedRequests : sentRequests}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.reqList}
+                ListEmptyComponent={
+                  <View style={styles.reqEmpty}>
+                    <Text style={[styles.reqEmptyText, { color: tk.textMuted }]}>
+                      {requestsTab === "received" ? "No requests received yet." : "You haven't sent any requests yet."}
+                    </Text>
+                  </View>
+                }
+                renderItem={({ item }) => {
+                  const isReceived = requestsTab === "received";
+                  const petImg = item.pet?.avatar_url ? { uri: item.pet.avatar_url } : null;
+                  const applicantImg = item.applicant?.avatar_url ? { uri: item.applicant.avatar_url } : null;
+                  const statusColor = item.status === "approved" ? colors.success : item.status === "rejected" ? colors.coral : colors.sunshine;
+                  return (
+                    <View style={[styles.reqCard, glassSurface(tk)]}>
+                      {/* Pet image */}
+                      <View style={styles.reqCardImgWrap}>
+                        {petImg ? (
+                          <Image source={petImg} style={styles.reqCardImg} />
+                        ) : (
+                          <View style={[styles.reqCardImg, { backgroundColor: tk.glassBorder, alignItems: "center", justifyContent: "center" }]}>
+                            <Text style={{ fontSize: 28 }}>🐾</Text>
+                          </View>
+                        )}
+                      </View>
+
+                      <View style={styles.reqCardBody}>
+                        <View style={styles.reqCardTop}>
+                          <Text style={[styles.reqCardPetName, { color: tk.text }]}>{item.pet?.name || "Pet"}</Text>
+                          <View style={[styles.reqStatusBadge, { backgroundColor: statusColor + "22", borderColor: statusColor }]}>
+                            <Text style={[styles.reqStatusText, { color: statusColor }]}>
+                              {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <Text style={[styles.reqCardMeta, { color: tk.textMuted }]}>
+                          {item.type.charAt(0).toUpperCase() + item.type.slice(1)} · {isReceived
+                            ? `from ${item.applicant?.name || item.applicantName || "Someone"}`
+                            : `to ${item.pet?.owner?.name || "Owner"}`}
+                        </Text>
+
+                        {/* Applicant avatar row (received view) */}
+                        {isReceived && applicantImg && (
+                          <View style={styles.reqApplicantRow}>
+                            <Image source={applicantImg} style={styles.reqApplicantAvatar} />
+                            <Text style={[styles.reqApplicantCity, { color: tk.textMuted }]}>
+                              {item.applicant?.city || ""}
+                            </Text>
+                          </View>
+                        )}
+
+                        {/* Action buttons for received + pending */}
+                        {isReceived && item.status === "pending" && (
+                          <View style={styles.reqActions}>
+                            <TouchableOpacity
+                              onPress={() => handleReview(item.id, "rejected")}
+                              disabled={reviewingId === item.id}
+                              style={[styles.reqActionBtn, { borderColor: colors.coral }]}
+                            >
+                              {reviewingId === item.id ? (
+                                <ActivityIndicator size="small" color={colors.coral} />
+                              ) : (
+                                <Text style={[styles.reqActionBtnText, { color: colors.coral }]}>Decline</Text>
+                              )}
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => handleReview(item.id, "approved")}
+                              disabled={reviewingId === item.id}
+                              style={[styles.reqActionBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                            >
+                              {reviewingId === item.id ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                              ) : (
+                                <Text style={[styles.reqActionBtnText, { color: "#fff" }]}>Accept & Chat</Text>
+                              )}
+                            </TouchableOpacity>
+                          </View>
+                        )}
+
+                        {/* Open Chat button — all approved requests (both tabs) */}
+                        {item.status === "approved" && (
+                          <TouchableOpacity
+                            onPress={async () => {
+                              setRequestsVisible(false);
+                              if (item.conversationId) {
+                                router.push({ pathname: "/chat", params: { id: item.conversationId } });
+                              } else {
+                                try {
+                                  const recipientId = requestsTab === "received"
+                                    ? item.applicantId
+                                    : item.ownerId;
+                                  
+                                  if (recipientId) {
+                                    const conv = await chatApi.startChat(recipientId);
+                                    router.push({ pathname: "/chat", params: { id: conv.id } });
+                                  } else {
+                                    router.push("/chat");
+                                  }
+                                } catch (err) {
+                                  console.error("Failed to start/open chat:", err);
+                                  router.push("/chat");
+                                }
+                              }
+                            }}
+                            style={[styles.reqOpenChatBtn, { backgroundColor: colors.primary }]}
+                            activeOpacity={0.85}
+                          >
+                            <MessageCircle size={15} color="#fff" strokeWidth={2.5} />
+                            <Text style={styles.reqOpenChatBtnText}>Open Chat</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  );
+                }}
+              />
+            )}
+          </View>
+        </Modal>
       </View>
     </PageContainer>
   );
@@ -330,4 +693,102 @@ const styles = StyleSheet.create({
   emptyIcon:   { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center" },
   emptyTitle:  { fontFamily: "Poppins_700Bold", fontSize: 16 },
   emptyBody:   { fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 20, textAlign: "center" },
+
+  // Header inbox button
+  inboxBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  inboxBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
+
+  // Requests Modal
+  reqModal: { flex: 1, paddingTop: 20 },
+  reqHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  reqTitle: { fontFamily: "Poppins_700Bold", fontSize: 24 },
+  reqCloseBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  reqTabs: {
+    flexDirection: "row",
+    marginHorizontal: 20,
+    borderRadius: 24,
+    padding: 4,
+    marginBottom: 16,
+  },
+  reqTab: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 20 },
+  reqTabText: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
+  reqLoading: { flex: 1, alignItems: "center", justifyContent: "center" },
+  reqList: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
+  reqEmpty: { alignItems: "center", paddingTop: 60 },
+  reqEmptyText: { fontFamily: "Inter_400Regular", fontSize: 14, textAlign: "center" },
+  reqCard: {
+    flexDirection: "row",
+    borderRadius: 20,
+    padding: 14,
+    gap: 12,
+  },
+  reqCardImgWrap: { width: 72, height: 72, borderRadius: 16, overflow: "hidden" },
+  reqCardImg: { width: 72, height: 72 },
+  reqCardBody: { flex: 1, gap: 4 },
+  reqCardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  reqCardPetName: { fontFamily: "Poppins_700Bold", fontSize: 15 },
+  reqStatusBadge: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  reqStatusText: { fontFamily: "Poppins_600SemiBold", fontSize: 11 },
+  reqCardMeta: { fontFamily: "Inter_400Regular", fontSize: 12 },
+  reqApplicantRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
+  reqApplicantAvatar: { width: 20, height: 20, borderRadius: 10 },
+  reqApplicantCity: { fontFamily: "Inter_400Regular", fontSize: 11 },
+  reqActions: { flexDirection: "row", gap: 8, marginTop: 8 },
+  reqActionBtn: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 8,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  reqActionBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
+  reqChatBtn: { marginTop: 6 },
+  reqChatBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
+  reqOpenChatBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 8,
+    borderRadius: 14,
+    paddingVertical: 9,
+  },
+  reqOpenChatBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 13, color: "#fff" },
+
+  // History Toggle Button
+  historyToggleContainer: {
+    alignItems: "center",
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  historyToggleBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  historyToggleText: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 14,
+  },
 });

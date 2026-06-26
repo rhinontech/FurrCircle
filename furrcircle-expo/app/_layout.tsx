@@ -102,7 +102,7 @@ const handleNotificationRedirect = (remoteMessage: any, router: any) => {
   } else if (actionType === 'community') {
     router.push('/community');
   } else if (actionType === 'match_requests' || actionType === 'adoption_application') {
-    router.push('/match?openRequests=true');
+    router.push('/notifications?openRequests=true');
   } else {
     // Default fallback
     router.push('/notifications');

@@ -240,8 +240,8 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
           {[
             { icon: <Home size={18} color={colors.success} />, label: "Open for Adoption", sub: "Listed in Discover & Match", active: adoption, color: colors.success, onToggle: toggleAdoption },
             { icon: <HandHeart size={18} color={colors.coral} />, label: "Open for Foster", sub: "Listed in Discover & Match", active: foster, color: colors.coral, onToggle: toggleFoster },
-            { icon: <PawPrint size={18} color={colors.sunshine} />, label: "Open for Breeding", sub: "Listed in Breed Match", active: breed, color: colors.sunshine, onToggle: toggleBreed },
-          ].map((item, i, arr) => (
+            // { icon: <PawPrint size={18} color={colors.sunshine} />, label: "Open for Breeding", sub: "Listed in Breed Match", active: breed, color: colors.sunshine, onToggle: toggleBreed },
+          ].slice(0, 2).map((item, i, arr) => (
             <View key={item.label}>
               <View style={styles.availRow}>
                 <View style={[styles.availIconWrap, { backgroundColor: item.color + "18" }]}>

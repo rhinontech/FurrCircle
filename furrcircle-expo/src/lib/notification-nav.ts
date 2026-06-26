@@ -20,7 +20,7 @@ export function navigateForNotification(n: NotifLike & { type?: string; relatedT
     n.relatedType === "adoption_application" ||
     n.type === "adoption"
   ) {
-    router.push({ pathname: "/match", params: { openRequests: "true" } });
+    router.push({ pathname: "/notifications", params: { openRequests: "true" } });
     return true;
   }
 
