@@ -1,13 +1,16 @@
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from "react-native";
-import { useRouter, useFocusEffect } from "expo-router";
-import { useState, useCallback } from "react";
-import { Check, Heart, ArrowRight, ChevronRight } from "../src/components/ui/icons";
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useState, useCallback, useEffect } from "react";
+import { Check, Heart, ChevronRight, Plus, ChevronDown } from "../src/components/ui/icons";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 import { useAuthStore } from "../src/lib/auth-store";
 import { petApi } from "../services/pet/petApi";
+import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
+import { Avatar } from "../src/components/Avatar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const boyDog = require("../src/assets/doodle-boy-dog.png");
 const stethoscope = require("../src/assets/icon-stethoscope.png");
@@ -18,90 +21,294 @@ export default function TodayScreen() {
   const tk = useTokens();
   const router = useRouter();
   const { user } = useAuthStore();
+  const { petId: paramPetId } = useLocalSearchParams<{ petId?: string }>();
 
-  const [petName, setPetName] = useState("Moona");
+  const [pets, setPets] = useState<any[]>([]);
+  const [activePet, setActivePet] = useState<any>(null);
+  const [dailyLog, setDailyLog] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingLog, setIsLoadingLog] = useState(false);
+
+  // Modals state
+  const [isPetPickerOpen, setIsPetPickerOpen] = useState(false);
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+
+  // Form state
+  const [formAppetite, setFormAppetite] = useState<string>("normal");
+  const [formWater, setFormWater] = useState<string>("normal");
+  const [formMood, setFormMood] = useState<string>("normal");
+
+  const loadPets = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const fetchedPets = await petApi.getMyPets();
+      setPets(fetchedPets || []);
+      
+      if (fetchedPets && fetchedPets.length > 0) {
+        let selected = fetchedPets[0];
+        if (paramPetId) {
+          const found = fetchedPets.find((p: any) => p.id === paramPetId);
+          if (found) selected = found;
+        }
+        setActivePet(selected);
+      }
+    } catch (err) {
+      console.error("loadPets Error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [paramPetId]);
 
   useFocusEffect(
     useCallback(() => {
-      petApi.getMyPets()
-        .then((fetchedPets) => {
-          if (fetchedPets && fetchedPets.length > 0) {
-            const randomIndex = Math.floor(Math.random() * fetchedPets.length);
-            setPetName(fetchedPets[randomIndex].name || "Moona");
-          }
-        })
-        .catch(console.error);
-    }, [])
+      loadPets();
+    }, [loadPets])
   );
 
+  // Fetch daily log when activePet changes
+  useEffect(() => {
+    if (activePet?.id) {
+      setIsLoadingLog(true);
+      petApi.getDailyLog(activePet.id)
+        .then((log) => {
+          setDailyLog(log);
+        })
+        .catch(console.error)
+        .finally(() => setIsLoadingLog(false));
+    } else {
+      setDailyLog(null);
+    }
+  }, [activePet?.id]);
+
+  const openLogModal = () => {
+    if (dailyLog) {
+      setFormAppetite(dailyLog.appetite || "normal");
+      setFormWater(dailyLog.waterIntake || "normal");
+      setFormMood(dailyLog.mood || "normal");
+    } else {
+      setFormAppetite("normal");
+      setFormWater("normal");
+      setFormMood("normal");
+    }
+    setIsLogModalOpen(true);
+  };
+
+  const handleSaveLog = async () => {
+    if (!activePet) return;
+    try {
+      const payload = {
+        appetite: formAppetite,
+        waterIntake: formWater,
+        mood: formMood
+      };
+      const updatedLog = await petApi.upsertDailyLog(activePet.id, payload);
+      setDailyLog(updatedLog);
+      setIsLogModalOpen(false);
+    } catch (err) {
+      console.error("handleSaveLog Error:", err);
+    }
+  };
+
   const greetingName = user?.name || user?.username || "Goutham";
+
+  // Calculate percentage and mood text
+  const getLogStats = (log: any) => {
+    if (!log) return { statusText: "No data", percentage: 0, statusColor: "pinky" as const };
+    
+    const appetiteVal = log.appetite === "good" ? 2 : log.appetite === "normal" ? 1 : 0;
+    const waterVal = log.waterIntake === "good" ? 2 : log.waterIntake === "normal" ? 1 : 0;
+    const moodVal = log.mood === "good" ? 2 : log.mood === "normal" ? 1 : 0;
+    
+    const sum = appetiteVal + waterVal + moodVal;
+    const pct = Math.round((sum / 6) * 100);
+    
+    let statusText = "Normal";
+    let statusColor: "success" | "sunshine" | "pinky" = "sunshine";
+    
+    if (pct >= 70) {
+      statusText = "Good";
+      statusColor = "success";
+    } else if (pct < 40) {
+      statusText = "Bad";
+      statusColor = "pinky";
+    }
+    
+    return { statusText, percentage: pct, statusColor };
+  };
+
+  const { statusText, percentage, statusColor } = getLogStats(dailyLog);
+
+  const valueColorMap = {
+    good: "success" as const,
+    normal: "sunshine" as const,
+    bad: "pinky" as const
+  };
+
+  const capitalize = (str: string) => str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
 
   return (
     <PageContainer>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Today" />
-        <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
-          {/* Greeting */}
-          <View style={styles.greetingWrap}>
-            <Text style={[styles.greetingSub, { color: tk.textMuted }]}>Hi {greetingName} 👋</Text>
-            <Text style={[styles.greetingTitle, { color: tk.text }]}>{`How is ${petName}\ndoing today?`}</Text>
+        <ScreenHeader 
+          title="Today" 
+          right={
+            activePet ? (
+              <TouchableOpacity onPress={openLogModal} style={[styles.headerPlusBtn, { backgroundColor: tk.card, borderColor: tk.glassBorder }]}>
+                <Plus size={20} color={tk.text} strokeWidth={2.5} />
+              </TouchableOpacity>
+            ) : undefined
+          }
+        />
+        
+        {isLoading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
-
-          {/* Status card */}
-          <View style={styles.px5}>
-            <View style={[styles.statusCard, { backgroundColor: tk.card }]}>
-              <View style={styles.statusCardInner}>
-                {/* Status rows */}
-                <View style={styles.statusList}>
-                  <StatusRow color="success" label="Park Walk" tk={tk} />
-                  <StatusRow color="success" label="Food" meta="3/3" tk={tk} />
-                  <StatusRow color="sunshine" label="Snack" meta="1/2" tk={tk} />
-                  <View style={[styles.divider, { backgroundColor: tk.border }]} />
-                  <StatusRow color="pinky" label="Good" meta="87%" icon="heart" tk={tk} />
-                </View>
-                {/* Dog image */}
-                <Image source={boyDog} style={styles.dogImg} resizeMode="contain" />
-              </View>
+        ) : (
+          <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
+            {/* Greeting */}
+            <View style={styles.greetingWrap}>
+              <Text style={[styles.greetingSub, { color: tk.textMuted }]}>Hi {greetingName} 👋</Text>
+              
+              {pets.length > 0 ? (
+                <TouchableOpacity onPress={() => setIsPetPickerOpen(true)} activeOpacity={0.7} style={styles.greetingTitleRow}>
+                  <Text style={[styles.greetingTitle, { color: tk.text }]}>
+                    {`How is ${activePet?.name || "Moona"}\ndoing today?`}
+                  </Text>
+                  <View style={[styles.chevronDownWrap, { backgroundColor: tk.card }]}>
+                    <ChevronDown size={18} color={tk.text} />
+                  </View>
+                </TouchableOpacity>
+              ) : (
+                <Text style={[styles.greetingTitle, { color: tk.text }]}>
+                  Please add a pet to get started!
+                </Text>
+              )}
             </View>
-          </View>
 
-          {/* Upcoming events header */}
-          <View style={styles.eventsHeader}>
-            <Text style={[styles.eventsTitle, { color: tk.text }]}>Upcoming</Text>
-            {/* <ArrowRight size={20} color={tk.text} /> */}
-          </View>
+            {/* Status card */}
+            {activePet && (
+              <View style={styles.px5}>
+                <TouchableOpacity onPress={openLogModal} activeOpacity={0.92}>
+                  <View style={[styles.statusCard, { backgroundColor: tk.card, borderColor: tk.glassBorder, borderWidth: 1 }]}>
+                    {isLoadingLog ? (
+                      <View style={styles.cardLoadingWrap}>
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      </View>
+                    ) : (
+                      <View style={styles.statusCardInner}>
+                        {/* Status rows */}
+                        <View style={styles.statusList}>
+                          <StatusRow 
+                            color={dailyLog ? valueColorMap[dailyLog.appetite as "good" | "normal" | "bad"] : "sunshine"} 
+                            label="Appetite" 
+                            meta={dailyLog ? capitalize(dailyLog.appetite) : "Not Logged"} 
+                            tk={tk} 
+                          />
+                          <StatusRow 
+                            color={dailyLog ? valueColorMap[dailyLog.waterIntake as "good" | "normal" | "bad"] : "sunshine"} 
+                            label="Water Intake" 
+                            meta={dailyLog ? capitalize(dailyLog.waterIntake) : "Not Logged"} 
+                            tk={tk} 
+                          />
+                          <StatusRow 
+                            color={dailyLog ? valueColorMap[dailyLog.mood as "good" | "normal" | "bad"] : "sunshine"} 
+                            label="Mood" 
+                            meta={dailyLog ? capitalize(dailyLog.mood) : "Not Logged"} 
+                            tk={tk} 
+                          />
+                          
+                          <View style={[styles.divider, { backgroundColor: tk.border }]} />
+                          
+                          <StatusRow 
+                            color={statusColor} 
+                            label={statusText} 
+                            meta={dailyLog ? `${percentage}%` : "--%"} 
+                            icon="heart" 
+                            tk={tk} 
+                          />
+                        </View>
+                        {/* Dog image */}
+                        <Image source={boyDog} style={styles.dogImg} resizeMode="contain" />
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
 
-          {/* Event cards */}
-          <View style={styles.px5}>
-            <EventCard
-              bg={colors.primary}
-              icon={stethoscope}
-              title="Manage Care"
-              subtitle="Reminders & Schedules"
-              onPress={() => router.push("/reminders")}
-              textColor={colors.white}
-              imgStyle={styles.eventIconImg}
-            />
-            <EventCard
-              bg={colors.coral}
-              icon={party}
-              title="Upcoming Birthdays"
-              subtitle="Celebrate special days"
-              onPress={() => router.push("/birthdays")}
-              textColor={colors.white}
-              imgStyle={styles.eventIconImg}
-            />
-            <EventCard
-              bg={colors.sunshine}
-              icon={walk}
-              title="Weekend Playdate"
-              subtitle="Match with nearby pets"
-              onPress={() => router.push("/match")}
-              textColor={colors.foreground}
-              imgStyle={styles.eventIconImgLg}
-            />
-          </View>
-        </ScrollView>
+                {!dailyLog && !isLoadingLog && (
+                  <TouchableOpacity onPress={openLogModal} style={[styles.logBtn, { backgroundColor: colors.primary }]} activeOpacity={0.9}>
+                    <Plus size={16} color={colors.white} strokeWidth={3} />
+                    <Text style={styles.logBtnText}>Log Today's Care</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {/* Upcoming events header */}
+            <View style={styles.eventsHeader}>
+              <Text style={[styles.eventsTitle, { color: tk.text }]}>Upcoming</Text>
+            </View>
+
+            {/* Event cards */}
+            <View style={styles.px5}>
+              <EventCard
+                bg={colors.primary}
+                icon={stethoscope}
+                title="Manage Care"
+                subtitle="Reminders & Schedules"
+                onPress={() => router.push("/reminders")}
+                textColor={colors.white}
+                imgStyle={styles.eventIconImg}
+              />
+              <EventCard
+                bg={colors.coral}
+                icon={party}
+                title="Upcoming Birthdays"
+                subtitle="Celebrate special days"
+                onPress={() => router.push("/birthdays")}
+                textColor={colors.white}
+                imgStyle={styles.eventIconImg}
+              />
+              <EventCard
+                bg={colors.sunshine}
+                icon={walk}
+                title="Weekend Playdate"
+                subtitle="Match with nearby pets"
+                onPress={() => router.push("/match")}
+                textColor={colors.foreground}
+                imgStyle={styles.eventIconImgLg}
+              />
+            </View>
+          </ScrollView>
+        )}
+
+        {/* Pet Picker Bottom Sheet */}
+        <PetPickerModal
+          open={isPetPickerOpen}
+          onClose={() => setIsPetPickerOpen(false)}
+          pets={pets}
+          activePetId={activePet?.id}
+          onSelect={(petId: string) => {
+            const found = pets.find((p) => p.id === petId);
+            if (found) setActivePet(found);
+          }}
+          tk={tk}
+        />
+
+        {/* Log Entry Bottom Sheet */}
+        <LogEntryModal
+          open={isLogModalOpen}
+          onClose={() => setIsLogModalOpen(false)}
+          petName={activePet?.name}
+          appetite={formAppetite}
+          waterIntake={formWater}
+          mood={formMood}
+          setAppetite={setFormAppetite}
+          setWaterIntake={setFormWater}
+          setMood={setFormMood}
+          onSave={handleSaveLog}
+          tk={tk}
+        />
       </View>
     </PageContainer>
   );
@@ -141,12 +348,106 @@ function EventCard({ bg, icon, title, subtitle, onPress, textColor, imgStyle }: 
   );
 }
 
+function PetPickerModal({ open, onClose, pets, activePetId, onSelect, tk }: any) {
+  const insets = useSafeAreaInsets();
+  return (
+    <AdaptiveSheet visible={open} onClose={onClose} maxWidth={420}>
+      <View style={{ padding: 20, paddingBottom: 20 + insets.bottom }}>
+        <Text style={[styles.modalTitle, { color: tk.text }]}>Choose a Pet</Text>
+        <ScrollView style={styles.petListScroll} showsVerticalScrollIndicator={false}>
+          {pets.map((pet: any) => (
+            <TouchableOpacity
+              key={pet.id}
+              onPress={() => {
+                onSelect(pet.id);
+                onClose();
+              }}
+              style={[
+                styles.petRow, 
+                { borderBottomColor: tk.border },
+                pet.id === activePetId && { backgroundColor: tk.border, borderRadius: 12 }
+              ]}
+            >
+              <Avatar source={pet.avatar_url ? { uri: pet.avatar_url } : require("../src/assets/doodle-puppy.png")} name={pet.name} size={40} />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={[styles.petNameText, { color: tk.text }]}>{pet.name}</Text>
+                <Text style={[styles.petBreedText, { color: tk.textMuted }]}>{pet.breed || pet.species}</Text>
+              </View>
+              {pet.id === activePetId ? (
+                <View style={[styles.activeIndicator, { backgroundColor: colors.success }]}>
+                  <Check size={12} color={colors.white} strokeWidth={3} />
+                </View>
+              ) : (
+                <ChevronRight size={16} color={tk.textMuted} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    </AdaptiveSheet>
+  );
+}
+
+function LogEntryModal({ open, onClose, petName, appetite, waterIntake, mood, setAppetite, setWaterIntake, setMood, onSave, tk }: any) {
+  const insets = useSafeAreaInsets();
+
+  const options = [
+    { label: "Bad", value: "bad", bg: colors.pinky, text: colors.white },
+    { label: "Normal", value: "normal", bg: colors.sunshine, text: colors.foreground },
+    { label: "Good", value: "good", bg: colors.success, text: colors.white },
+  ];
+
+  const OptionSelector = ({ label, currentValue, onChange }: any) => (
+    <View style={styles.selectorSection}>
+      <Text style={[styles.sectionLabel, { color: tk.text }]}>{label}</Text>
+      <View style={styles.optionGroup}>
+        {options.map((opt) => {
+          const isSelected = currentValue === opt.value;
+          return (
+            <TouchableOpacity
+              key={opt.value}
+              onPress={() => onChange(opt.value)}
+              style={[
+                styles.optionBtn,
+                { borderColor: tk.border, backgroundColor: isSelected ? opt.bg : "transparent" }
+              ]}
+            >
+              <Text style={[styles.optionText, { color: isSelected ? opt.text : tk.text }]}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+
+  return (
+    <AdaptiveSheet visible={open} onClose={onClose} maxWidth={420}>
+      <View style={{ padding: 20, paddingBottom: 20 + insets.bottom }}>
+        <Text style={[styles.modalTitle, { color: tk.text }]}>Log Daily Care</Text>
+        <Text style={[styles.modalSubtitle, { color: tk.textMuted }]}>How is {petName || "your pet"} doing today?</Text>
+
+        <OptionSelector label="Appetite" currentValue={appetite} onChange={setAppetite} />
+        <OptionSelector label="Water Intake" currentValue={waterIntake} onChange={setWaterIntake} />
+        <OptionSelector label="Mood" currentValue={mood} onChange={setMood} />
+
+        <TouchableOpacity onPress={onSave} style={[styles.saveBtn, { backgroundColor: colors.primary }]} activeOpacity={0.9}>
+          <Text style={styles.saveBtnText}>Save Log</Text>
+        </TouchableOpacity>
+      </View>
+    </AdaptiveSheet>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   px5: { paddingHorizontal: 20 },
   greetingWrap: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 4 },
   greetingSub: { fontFamily: "Poppins_400Regular", fontSize: 15 },
-  greetingTitle: { fontFamily: "Poppins_700Bold", fontSize: 30, lineHeight: 36, marginTop: 6 },
+  greetingTitle: { fontFamily: "Poppins_700Bold", fontSize: 30, lineHeight: 36 },
+  greetingTitleRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 6, flexWrap: "wrap" },
+  chevronDownWrap: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   statusCard: { borderRadius: 24, padding: 20 },
   statusCardInner: { flexDirection: "row", alignItems: "center", gap: 12 },
   statusList: { flex: 1, gap: 10 },
@@ -164,4 +465,26 @@ const styles = StyleSheet.create({
   eventIconImgLg: { width: 52, height: 52 },
   eventCardText: { fontFamily: "Poppins_600SemiBold", fontSize: 18, lineHeight: 24 },
   eventCardSubText: { fontFamily: "Inter_500Medium", fontSize: 13, lineHeight: 18, marginTop: 2 },
+  
+  loadingWrap: { flex: 1, justifyContent: "center", alignItems: "center" },
+  cardLoadingWrap: { padding: 40, justifyContent: "center", alignItems: "center", width: "100%" },
+  headerPlusBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  logBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 14, marginTop: 12 },
+  logBtnText: { color: colors.white, fontFamily: "Poppins_700Bold", fontSize: 14 },
+  
+  modalTitle: { fontFamily: "Poppins_700Bold", fontSize: 20 },
+  modalSubtitle: { fontFamily: "Inter_500Medium", fontSize: 13, marginTop: 2 },
+  petListScroll: { maxHeight: 300, marginTop: 12 },
+  petRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, paddingHorizontal: 8 },
+  petNameText: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },
+  petBreedText: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
+  activeIndicator: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  
+  selectorSection: { marginVertical: 4 },
+  sectionLabel: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
+  optionGroup: { flexDirection: "row", justifyContent: "space-between", gap: 10, marginTop: 8, marginBottom: 14 },
+  optionBtn: { flex: 1, paddingVertical: 12, borderRadius: 14, borderWidth: 1, alignItems: "center" },
+  optionText: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
+  saveBtn: { borderRadius: 16, paddingVertical: 14, alignItems: "center", marginTop: 16 },
+  saveBtnText: { color: colors.white, fontFamily: "Poppins_700Bold", fontSize: 15 },
 });

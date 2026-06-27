@@ -90,6 +90,9 @@ db.pets.hasMany(db.allergies, { foreignKey: 'petId', as: 'Allergies' });
 db.memories.belongsTo(db.pets, { foreignKey: 'petId', as: 'pet' });
 db.pets.hasMany(db.memories, { foreignKey: 'petId', as: 'Memories' });
 
+db.daily_logs.belongsTo(db.pets, { foreignKey: 'petId', as: 'pet' });
+db.pets.hasMany(db.daily_logs, { foreignKey: 'petId', as: 'dailyLogs' });
+
 // Community: Post <-> User / Comments / Likes
 db.posts.belongsTo(db.users, { foreignKey: 'userId', as: 'author', constraints: false });
 db.users.hasMany(db.posts, { foreignKey: 'userId', as: 'posts', constraints: false });
@@ -237,6 +240,7 @@ export const lost_pets = db.lost_pets;
 export const memories = db.memories;
 export const reports = db.reports;
 export const user_blocks = db.user_blocks;
+export const daily_logs = db.daily_logs;
 
 export { sequelize, Sequelize };
 export default db;

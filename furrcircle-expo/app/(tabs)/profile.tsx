@@ -25,7 +25,7 @@ export default function ProfileScreen() {
   const [pets, setPets] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [reminders, setReminders] = useState<any[]>([]);
-  const [petPickerTarget, setPetPickerTarget] = useState<"records" | "passport" | "profile" | null>(null);
+  const [petPickerTarget, setPetPickerTarget] = useState<"records" | "passport" | "profile" | "today" | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -219,7 +219,7 @@ export default function ProfileScreen() {
         {/* Quick access */}
         <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Quick access</Text>
         <View style={styles.tilesGrid}>
-          <Tile onPress={() => router.push("/today")} icon={Sun} label="Today" tintColor="rgba(255,107,107,0.15)" tk={tk} />
+          <Tile onPress={() => setPetPickerTarget("today")} icon={Sun} label="Today" tintColor="rgba(255,107,107,0.15)" tk={tk} />
           <Tile onPress={() => router.push("/events")} icon={CalendarDays} label="Events" tintColor="rgba(255,217,61,0.3)" tk={tk} />
           <Tile onPress={() => router.push("/lost")} icon={Siren} label="Lost & Found" tintColor="rgba(255,111,207,0.15)" tk={tk} />
           <Tile onPress={() => router.push("/care")} icon={Stethoscope} label="Care" tintColor="rgba(37,99,235,0.1)" tk={tk} />
@@ -257,6 +257,8 @@ export default function ProfileScreen() {
               router.push({ pathname: "/records", params: { petId } });
             } else if (petPickerTarget === "passport") {
               router.push({ pathname: "/pet", params: { id: petId, tab: "Passport" } });
+            } else if (petPickerTarget === "today") {
+              router.push({ pathname: "/today", params: { petId } });
             } else {
               router.push({ pathname: "/pet", params: { id: petId } });
             }

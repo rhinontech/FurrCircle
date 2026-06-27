@@ -96,6 +96,26 @@ export const deletePet = async (id: string) => {
     }
 };
 
+export const getDailyLog = async (petId: string, date?: string) => {
+    try {
+        const response = await PrivateAxios.get(`/pets/${petId}/daily-log`, { params: { date } });
+        return response.data;
+    } catch (error: any) {
+        console.error("getDailyLog Error:", error?.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const upsertDailyLog = async (petId: string, payload: { date?: string; appetite: string; waterIntake: string; mood: string }) => {
+    try {
+        const response = await PrivateAxios.post(`/pets/${petId}/daily-log`, payload);
+        return response.data;
+    } catch (error: any) {
+        console.error("upsertDailyLog Error:", error?.response?.data || error.message);
+        throw error;
+    }
+};
+
 export const petApi = {
     getMyPets,
     createPet,
@@ -106,4 +126,6 @@ export const petApi = {
     getPetMemories,
     addPetMemory,
     deletePet,
+    getDailyLog,
+    upsertDailyLog,
 };
