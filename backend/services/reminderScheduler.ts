@@ -2,13 +2,6 @@ import { Op } from "sequelize";
 import db from "../models/index.ts";
 import { createRichNotification } from "./notificationService.ts";
 
-/**
- * Fires once per minute.
- * Finds all reminders whose date+time window falls in [now-1min, now+1min]
- * and have not been marked done, then sends a push + in-app notification.
- */
-const TICK_MS = 60_000; // 1 minute
-
 const parseDateTimeUTC = (date: string | null, time: string): Date | null => {
   try {
     // time is stored as "HH:MM" or "HH:MM:SS"
@@ -33,84 +26,180 @@ const getReminderIcon = (type: string): string => {
   }
 };
 
-export const startReminderScheduler = () => {
-  console.log("[ReminderScheduler] Started — polling every 60s");
+// Set of scheduled notification keys to prevent duplicate timers
+const scheduledKeys = new Set<string>();
 
-  setInterval(async () => {
+const sendNotification = async (reminder: any, alertType: "due" | "2h" | "24h" | "7d") => {
+  try {
+    const icon = getReminderIcon(reminder.type);
+    const petName = reminder.pet?.name ? ` for ${reminder.pet.name}` : "";
+    
+    let title = "";
+    let message = "";
+
+    if (alertType === "due") {
+      title = `${icon} ${reminder.title}`;
+      message = reminder.notes
+        ? String(reminder.notes).slice(0, 100)
+        : `Reminder${petName} at ${reminder.time}`;
+    } else if (alertType === "2h") {
+      title = `⏰ In 2 Hours: ${reminder.title}`;
+      message = `Upcoming reminder${petName} in 2 hours at ${reminder.time}.`;
+    } else if (alertType === "24h") {
+      title = `📅 Tomorrow: ${reminder.title}`;
+      message = `Upcoming reminder${petName} tomorrow at ${reminder.time}.`;
+    } else if (alertType === "7d") {
+      title = `💉 In 7 Days: ${reminder.title}`;
+      message = `Vaccine reminder${petName} is due in 7 days.`;
+    }
+
+    await createRichNotification({
+      actorId: reminder.userId,
+      actorType: "user",
+      type: "reminder",
+      category: "activity",
+      title,
+      message,
+      relatedId: reminder.id,
+      relatedType: "reminder",
+      actionType: "reminder",
+      actionPayload: {
+        reminderId: reminder.id,
+        petId: reminder.petId || null,
+      },
+      sendPush: true,
+      respectMarketingPreference: false,
+    });
+
+    // For the final due notification, mark one-time reminders as done after firing
+    if (alertType === "due" && reminder.recurrence === "none") {
+      reminder.isDone = true;
+      await reminder.save();
+    }
+  } catch (err: any) {
+    console.error(`[ReminderScheduler] Error sending ${alertType} notification for reminder ${reminder.id}:`, err.message);
+  }
+};
+
+const scheduleNotification = (reminder: any, delayMs: number, alertType: "due" | "2h") => {
+  const key = `${alertType}-${reminder.id}-${reminder.date}-${reminder.time}`;
+  if (scheduledKeys.has(key)) return;
+
+  scheduledKeys.add(key);
+  setTimeout(async () => {
+    scheduledKeys.delete(key);
+    // Fetch fresh state to ensure it wasn't cancelled/deleted/updated in the meantime
     try {
       const { reminders: Reminder, pets: Pet } = db as any;
-
-      const now = new Date();
-      const windowStart = new Date(now.getTime() - TICK_MS);
-      const windowEnd   = new Date(now.getTime() + TICK_MS);
-
-      // Pull all non-done reminders that have a date within today ±1 day (rough pre-filter)
-      const todayStr = now.toISOString().slice(0, 10);
-      const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
-      const tomorrow  = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const candidates = await Reminder.findAll({
-        where: {
-          isDone: false,
-          [Op.or]: [
-            { date: null },
-            {
-              date: {
-                [Op.between]: [
-                  yesterday.toISOString().slice(0, 10),
-                  tomorrow.toISOString().slice(0, 10),
-                ],
-              },
-            },
-          ],
-        },
-        include: [{ model: Pet, as: "pet", attributes: ["id", "name"] }],
+      const freshReminder = await Reminder.findByPk(reminder.id, {
+        include: [{ model: Pet, as: "pet", attributes: ["id", "name"] }]
       });
+      if (freshReminder && !freshReminder.isDone) {
+        await sendNotification(freshReminder, alertType);
+      }
+    } catch (err: any) {
+      console.error(`[ReminderScheduler] Timer task check failed for key ${key}:`, err.message);
+    }
+  }, delayMs);
+};
 
-      const dueReminders = candidates.filter((r: any) => {
-        const dt = parseDateTimeUTC(r.date, r.time);
-        if (!dt) return false;
-        return dt >= windowStart && dt <= windowEnd;
-      });
+// Hourly scan task
+const runHourlyScan = async () => {
+  try {
+    const { reminders: Reminder, pets: Pet } = db as any;
+    const now = new Date();
+    const nowTime = now.getTime();
 
-      if (dueReminders.length === 0) return;
+    const todayStr = now.toISOString().slice(0, 10);
+    const tomorrowStr = new Date(nowTime + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-      console.log(`[ReminderScheduler] ${dueReminders.length} due reminder(s) at ${now.toISOString()}`);
+    // Fetch active reminders for today & tomorrow using indexed range
+    const candidates = await Reminder.findAll({
+      where: {
+        isDone: false,
+        [Op.or]: [
+          { date: null },
+          { date: { [Op.in]: [todayStr, tomorrowStr] } }
+        ]
+      },
+      include: [{ model: Pet, as: "pet", attributes: ["id", "name"] }]
+    });
 
-      for (const reminder of dueReminders) {
-        const icon = getReminderIcon(reminder.type);
-        const petName = reminder.pet?.name ? ` for ${reminder.pet.name}` : "";
-        const title = `${icon} ${reminder.title}`;
-        const message = reminder.notes
-          ? String(reminder.notes).slice(0, 100)
-          : `Reminder${petName} at ${reminder.time}`;
+    const oneHourLater = nowTime + 60 * 60 * 1000;
+    const twoHoursLater = nowTime + 2 * 60 * 60 * 1000;
+    const threeHoursLater = nowTime + 3 * 60 * 60 * 1000;
 
-        await createRichNotification({
-          actorId: reminder.userId,
-          actorType: "user",
-          type: "reminder",
-          category: "activity",
-          title,
-          message,
-          relatedId: reminder.id,
-          relatedType: "reminder",
-          actionType: "reminder",
-          actionPayload: {
-            reminderId: reminder.id,
-            petId: reminder.petId || null,
-          },
-          sendPush: true,
-          respectMarketingPreference: false,
-        });
+    console.log(`[ReminderScheduler] Hourly scan running. Found ${candidates.length} active candidates.`);
 
-        // Mark one-time reminders as done after firing
-        if (reminder.recurrence === "none") {
-          reminder.isDone = true;
-          await reminder.save();
+    for (const reminder of candidates) {
+      const dt = parseDateTimeUTC(reminder.date, reminder.time);
+      if (!dt) continue;
+
+      const dtTime = dt.getTime();
+
+      // 1. Check if due in next hour (due-now alert)
+      if (dtTime >= nowTime && dtTime <= oneHourLater) {
+        const delay = dtTime - nowTime;
+        scheduleNotification(reminder, delay, "due");
+      }
+
+      // 2. Check if due in 2 hours (2h advance alert)
+      if (dtTime >= twoHoursLater && dtTime <= threeHoursLater) {
+        const delay = (dtTime - 2 * 60 * 60 * 1000) - nowTime;
+        if (delay >= 0) {
+          scheduleNotification(reminder, delay, "2h");
         }
       }
-    } catch (err) {
-      console.error("[ReminderScheduler] Tick error:", err);
     }
-  }, TICK_MS);
+  } catch (err: any) {
+    console.error("[ReminderScheduler] Hourly scan error:", err.message);
+  }
+};
+
+// Daily scan task
+const runDailyScan = async () => {
+  try {
+    const { reminders: Reminder, pets: Pet } = db as any;
+    const now = new Date();
+    const nowTime = now.getTime();
+
+    const tomorrowStr = new Date(nowTime + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const in7DaysStr = new Date(nowTime + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    console.log(`[ReminderScheduler] Daily scan running. tomorrow: ${tomorrowStr}, in 7 days: ${in7DaysStr}`);
+
+    // 1. Fetch 24-hour advance reminders (due tomorrow)
+    const tomorrowReminders = await Reminder.findAll({
+      where: { isDone: false, date: tomorrowStr },
+      include: [{ model: Pet, as: "pet", attributes: ["id", "name"] }]
+    });
+
+    for (const reminder of tomorrowReminders) {
+      await sendNotification(reminder, "24h");
+    }
+
+    // 2. Fetch 7-day advance reminders (vaccines due in 7 days)
+    const vaccineReminders = await Reminder.findAll({
+      where: { isDone: false, date: in7DaysStr, type: "vaccine" },
+      include: [{ model: Pet, as: "pet", attributes: ["id", "name"] }]
+    });
+
+    for (const reminder of vaccineReminders) {
+      await sendNotification(reminder, "7d");
+    }
+  } catch (err: any) {
+    console.error("[ReminderScheduler] Daily scan error:", err.message);
+  }
+};
+
+export const startReminderScheduler = () => {
+  console.log("[ReminderScheduler] Started — executing tasks");
+
+  // Run immediately on startup
+  runHourlyScan();
+  runDailyScan();
+
+  // Schedule tasks
+  setInterval(runHourlyScan, 60 * 60 * 1000); // Run hourly
+  setInterval(runDailyScan, 24 * 60 * 60 * 1000); // Run daily
 };
