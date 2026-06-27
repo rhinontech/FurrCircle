@@ -38,6 +38,53 @@ const serializeAppointment = (appointment: any) => {
   };
 };
 
+const calculateExactAge = (birthDateString: string | null | undefined, ageFallback: string | null | undefined): string | null | undefined => {
+  if (!birthDateString) {
+    if (ageFallback) {
+      const clean = String(ageFallback).trim().toLowerCase();
+      if (clean.endsWith("y") || clean.endsWith("m") || clean.endsWith("d") || clean.includes("year") || clean.includes("month")) {
+        return ageFallback;
+      }
+      return `${ageFallback}y`;
+    }
+    return ageFallback;
+  }
+  const birthDate = new Date(birthDateString);
+  if (isNaN(birthDate.getTime())) {
+    if (ageFallback) {
+      const clean = String(ageFallback).trim().toLowerCase();
+      if (clean.endsWith("y") || clean.endsWith("m") || clean.endsWith("d") || clean.includes("year") || clean.includes("month")) {
+        return ageFallback;
+      }
+      return `${ageFallback}y`;
+    }
+    return ageFallback;
+  }
+  
+  const today = new Date();
+  let years = today.getFullYear() - birthDate.getFullYear();
+  let months = today.getMonth() - birthDate.getMonth();
+  if (today.getDate() < birthDate.getDate()) {
+    months--;
+  }
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+  
+  if (years > 0 && months > 0) {
+    return `${years}y ${months}m`;
+  } else if (years > 0) {
+    return `${years}y`;
+  } else if (months > 0) {
+    return `${months}m`;
+  } else {
+    const diffTime = Math.abs(today.getTime() - birthDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return `${diffDays}d`;
+  }
+};
+
 const normalizePetPayload = (pet: any) => {
   const payload = toPlain(pet);
   const appointments = Array.isArray(payload?.Appointments)
@@ -46,7 +93,7 @@ const normalizePetPayload = (pet: any) => {
 
   return {
     ...payload,
-    age: payload?.age != null ? String(payload.age) : payload?.age,
+    age: calculateExactAge(payload?.birth_date, payload?.age),
     Vaccines: Array.isArray(payload?.Vaccines) ? payload.Vaccines.slice().sort(sortByDateDesc("dateAdministered")) : [],
     Medications: Array.isArray(payload?.Medications) ? payload.Medications.slice().sort(sortByDateDesc("startDate")) : [],
     Allergies: Array.isArray(payload?.Allergies) ? payload.Allergies.slice().sort(sortByDateDesc("diagnosedAt")) : [],

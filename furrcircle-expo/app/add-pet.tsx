@@ -1,10 +1,11 @@
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, Image, KeyboardAvoidingView, ActivityIndicator, Keyboard } from "react-native";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Camera, LocateFixed } from "../src/components/ui/icons";
+import { Camera, LocateFixed, ChevronDown } from "../src/components/ui/icons";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
+import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
 import { petApi } from "../services/pet/petApi";
 import { uploadImage } from "../services/user/userApi";
 import { colors } from "../src/lib/theme";
@@ -15,6 +16,7 @@ import { LocationPickerModal, LocationResult } from "../src/components/LocationP
 import * as Location from "expo-location";
 
 const PERSONALITY_TAGS = ["Friendly", "Playful", "Calm", "Active", "Independent", "Cuddly", "Protective", "Curious"];
+const SPECIES_OPTIONS = ["dog", "cat", "rabbit", "horse", "pigeon", "goat", "cow", "other"];
 
 export default function AddPetScreen() {
   const router = useRouter();
@@ -23,6 +25,9 @@ export default function AddPetScreen() {
   const dark = useThemeStore((s) => s.dark);
   const [name, setName] = useState("");
   const [species, setSpecies] = useState("dog");
+  const [selectedOption, setSelectedOption] = useState("dog");
+  const [otherSpecies, setOtherSpecies] = useState("");
+  const [showSpeciesSheet, setShowSpeciesSheet] = useState(false);
   const [breed, setBreed] = useState("");
   const [gender, setGender] = useState<"male" | "female">("female");
   const [birthDate, setBirthDate] = useState<Date | null>(null);
@@ -105,6 +110,7 @@ export default function AddPetScreen() {
 
   const save = async () => {
     if (!name.trim()) { Alert.alert("Required", "Please enter your pet's name."); return; }
+    if (!species.trim()) { Alert.alert("Required", "Please select or enter your pet's species."); return; }
     if (!breed.trim()) { Alert.alert("Required", "Please enter your pet's breed."); return; }
     if (!birthDate) { Alert.alert("Required", "Please select your pet's Date of Birth."); return; }
     setSaving(true);
@@ -174,16 +180,32 @@ export default function AddPetScreen() {
             <TextInput value={name} onChangeText={setName} placeholder="e.g. Moona" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
 
             <Text style={[styles.label, { color: tk.textMuted }]}>Species</Text>
-            <View style={styles.toggle}>
-              {["dog", "cat", "other"].map((s) => {
-                const isActive = species === s;
-                return (
-                  <TouchableOpacity key={s} onPress={() => setSpecies(s)} style={[styles.toggleBtn, { backgroundColor: isActive ? tk.text : tk.card }]}>
-                    <Text style={[styles.toggleText, { color: isActive ? tk.bg : tk.textMuted }]}>{s.charAt(0).toUpperCase() + s.slice(1)}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            <TouchableOpacity
+              onPress={() => setShowSpeciesSheet(true)}
+              style={[styles.input, { backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: selectedOption ? tk.text : tk.textMuted, fontFamily: "Inter_400Regular" }}>
+                {selectedOption ? (selectedOption.charAt(0).toUpperCase() + selectedOption.slice(1)) : "Select Species"}
+              </Text>
+              <ChevronDown size={20} color={tk.textMuted} />
+            </TouchableOpacity>
+
+            {selectedOption === "other" && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={[styles.label, { color: tk.textMuted, marginTop: 4 }]}>Custom Species</Text>
+                <TextInput
+                  value={otherSpecies}
+                  onChangeText={(val) => {
+                    setOtherSpecies(val);
+                    setSpecies(val.trim());
+                  }}
+                  placeholder="Enter species type"
+                  placeholderTextColor={tk.textMuted}
+                  style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]}
+                />
+              </View>
+            )}
 
             <Text style={[styles.label, { color: tk.textMuted }]}>Breed</Text>
             <TextInput value={breed} onChangeText={setBreed} placeholder="e.g. Border Collie" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
@@ -282,6 +304,46 @@ export default function AddPetScreen() {
         onClose={() => setLocationModalVisible(false)}
         onSelectLocation={handleLocationSelect}
       />
+
+      <AdaptiveSheet visible={showSpeciesSheet} onClose={() => setShowSpeciesSheet(false)}>
+        <View style={{ padding: 24, backgroundColor: tk.card }}>
+          <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 18, color: tk.text, marginBottom: 16 }}>
+            Select Species
+          </Text>
+          <ScrollView style={{ maxHeight: 300 }} keyboardShouldPersistTaps="handled">
+            {SPECIES_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt}
+                onPress={() => {
+                  setSelectedOption(opt);
+                  if (opt !== "other") {
+                    setSpecies(opt);
+                  } else {
+                    setSpecies(otherSpecies.trim());
+                  }
+                  setShowSpeciesSheet(false);
+                }}
+                style={{
+                  paddingVertical: 14,
+                  borderBottomWidth: 1,
+                  borderBottomColor: tk.border,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}
+              >
+                <Text style={{
+                  fontFamily: selectedOption === opt ? "Poppins_600SemiBold" : "Inter_400Regular",
+                  fontSize: 16,
+                  color: selectedOption === opt ? colors.primary : tk.text
+                }}>
+                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </AdaptiveSheet>
     </PageContainer>
   );
 }

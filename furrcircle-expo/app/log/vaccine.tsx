@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator, Platform } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator, Platform, Switch } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { PageContainer } from "../../src/components/PageContainer";
@@ -18,6 +18,7 @@ export default function LogVaccineScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [nextDate, setNextDate] = useState<Date | null>(null);
   const [showNextDatePicker, setShowNextDatePicker] = useState(false);
+  const [setReminder, setSetReminder] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
@@ -35,7 +36,8 @@ export default function LogVaccineScreen() {
             name: vaccine,
             dateAdministered: dateGiven.toISOString().slice(0, 10),
             nextDueDate: nextDate ? nextDate.toISOString().slice(0, 10) : undefined,
-            status: "done"
+            status: "done",
+            setReminder: nextDate ? setReminder : false
         });
         Alert.alert("Success", "Vaccine logged successfully.");
         router.back();
@@ -96,6 +98,7 @@ export default function LogVaccineScreen() {
               value={nextDate || new Date()}
               mode="date"
               display="default"
+              minimumDate={new Date()}
               themeVariant={dark ? "dark" : "light"}
               onChange={(e, date) => {
                 if (date) setNextDate(date);
@@ -130,6 +133,7 @@ export default function LogVaccineScreen() {
                 value={nextDate || new Date()}
                 mode="date"
                 display="default"
+                minimumDate={new Date()}
                 onChange={(e, date) => {
                   setShowNextDatePicker(false);
                   if (date) setNextDate(date);
@@ -137,6 +141,19 @@ export default function LogVaccineScreen() {
               />
             )}
           </>
+        )}
+
+        {nextDate && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, paddingHorizontal: 4 }}>
+            <Text style={{ fontFamily: "Poppins_600SemiBold", fontSize: 14, color: tk.text }}>Set reminder for next due date</Text>
+            <Switch
+              value={setReminder}
+              onValueChange={setSetReminder}
+              trackColor={{ false: tk.border, true: colors.primary }}
+              thumbColor="#fff"
+              ios_backgroundColor={tk.border}
+            />
+          </View>
         )}
 
         <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={loading}>

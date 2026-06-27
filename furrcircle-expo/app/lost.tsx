@@ -10,6 +10,7 @@ import * as ImagePicker from "expo-image-picker";
 import { lostPetApi } from "../services/lost/lostPetApi";
 import { chatApi } from "../services/chat/chatApi";
 import { userApi } from "../services/user/userApi";
+import { petApi } from "../services/pet/petApi";
 import { useAuthStore } from "../src/lib/auth-store";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useLocationStore } from "../src/lib/location-store";
@@ -56,6 +57,22 @@ export default function LostScreen() {
   const [description, setDescription] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [myPets, setMyPets] = useState<any[]>([]);
+
+  useEffect(() => {
+    petApi.getMyPets()
+      .then((res) => setMyPets(res || []))
+      .catch((err) => console.log("Failed to load my pets", err));
+  }, []);
+
+  const handleSelectPet = (pet: any) => {
+    setName(pet.name || "");
+    if (pet.avatar_url) {
+      setImageUri(pet.avatar_url);
+    }
+    const locationStr = user?.address || user?.city || "";
+    setAddress(locationStr);
+  };
 
   const fetchPosts = async () => {
     try {
@@ -489,6 +506,29 @@ export default function LostScreen() {
                   </TouchableOpacity>
                 </View>
 
+                {/* Select from My Pets */}
+                {!editingPost && myPets.length > 0 && (
+                  <View style={{ marginBottom: 12 }}>
+                    <Text style={[styles.label, { color: tk.textMuted }]}>Select from my pets</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingVertical: 4 }}>
+                      {myPets.map((p) => (
+                        <TouchableOpacity
+                          key={p.id}
+                          onPress={() => handleSelectPet(p)}
+                          style={[
+                            styles.petOptionCard,
+                            { backgroundColor: tk.inputBg, borderColor: tk.border, borderWidth: 1 }
+                          ]}
+                          activeOpacity={0.8}
+                        >
+                          <Image source={p.avatar_url?.startsWith('http') ? { uri: p.avatar_url } : require("../src/assets/doodle-boy-dog.png")} style={styles.petOptionAvatar} />
+                          <Text style={[styles.petOptionName, { color: tk.text }]} numberOfLines={1}>{p.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
                 {/* Photo Picker */}
                 <Text style={[styles.label, { color: tk.textMuted }]}>Photo (Required)</Text>
                 <TouchableOpacity onPress={pickImage} style={[styles.photoZone, { backgroundColor: tk.inputBg, borderColor: tk.border }]}>
@@ -616,4 +656,7 @@ const styles = StyleSheet.create({
   detailActionRow: { flexDirection: 'row', gap: 12 },
   detailActionBtn: { flex: 1, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   detailActionBtnText: { fontFamily: "Poppins_700Bold", fontSize: 14 },
+  petOptionCard: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16 },
+  petOptionAvatar: { width: 32, height: 32, borderRadius: 16 },
+  petOptionName: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
 });

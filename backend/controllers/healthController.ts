@@ -107,12 +107,18 @@ export const getVaccines = async (req: any, res: Response): Promise<void> => {
 
 export const addVaccine = async (req: any, res: Response): Promise<void> => {
   try {
-    const { vaccines: Vaccine, pets: Pet, vets: Vet, appointments: Appointment } = db as any;
+    const { vaccines: Vaccine, pets: Pet, vets: Vet, appointments: Appointment, reminders: Reminder } = db as any;
     const userType: "user" | "vet" = req.userType || "user";
     const isVet = userType === "vet";
 
     if (!(await canAccessPet(req.params.petId, req.user.id, userType))) {
       res.status(403).json({ message: "Not authorized for this pet" });
+      return;
+    }
+
+    const pet = await Pet.findByPk(req.params.petId);
+    if (!pet) {
+      res.status(404).json({ message: "Pet not found" });
       return;
     }
 
@@ -130,13 +136,30 @@ export const addVaccine = async (req: any, res: Response): Promise<void> => {
       hasCertificate: false, // will update after cert generation
     });
 
+    console.log("sdsadfsdfkasdjfashdfhasdflhsdjkhfljksdh ",req.body);
+
+    // Set reminder if requested and nextDueDate is provided
+    if (req.body.setReminder && req.body.nextDueDate) {
+      try {
+        await Reminder.create({
+          userId: pet.ownerId || req.user.id,
+          petId: req.params.petId,
+          title: `Due ${req.body.name} Vaccine`,
+          time: "13:00",
+          date: req.body.nextDueDate,
+          recurrence: "none",
+          type: "vaccine",
+          isDone: false,
+        });
+      } catch (remErr: any) {
+        console.error("Failed to create vaccine reminder:", remErr.message);
+      }
+    }
+
     // Auto-generate certificate if vet opted in
     if (isVet && hasCertificate) {
       try {
-        const [vet, pet] = await Promise.all([
-          Vet.findByPk(req.user.id),
-          Pet.findByPk(req.params.petId),
-        ]);
+        const vet = await Vet.findByPk(req.user.id);
 
         const certificateUrl = await generateVaccineCertificate({
           petName: pet?.name || "Pet",
