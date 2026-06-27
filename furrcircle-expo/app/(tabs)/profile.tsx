@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, Modal, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
-import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut, Clock, Trash2, Syringe, Pill, Activity } from "../../src/components/ui/icons";
+import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut, Clock, Trash2, Syringe, Pill, FolderHeart, FileText } from "../../src/components/ui/icons";
 import { useCallback, useState } from "react";
 import { getPets, type Pet } from "../../src/lib/pets-store";
 import { colors } from "../../src/lib/theme";
@@ -25,7 +25,7 @@ export default function ProfileScreen() {
   const [pets, setPets] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [reminders, setReminders] = useState<any[]>([]);
-  const [petPickerTarget, setPetPickerTarget] = useState<"vaccine" | "vitals" | "meds" | "profile" | null>(null);
+  const [petPickerTarget, setPetPickerTarget] = useState<"records" | "passport" | "profile" | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -211,10 +211,9 @@ export default function ProfileScreen() {
 
         {/* Log care */}
         <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Log care</Text>
-        <View style={styles.tilesRowThree}>
-          <TileThree onPress={() => setPetPickerTarget("vaccine")} icon={Syringe} label="Log Vaccine" tintColor="rgba(76,175,80,0.15)" tk={tk} />
-          <TileThree onPress={() => setPetPickerTarget("vitals")} icon={Activity} label="Log Vitals" tintColor="rgba(255,107,107,0.15)" tk={tk} />
-          <TileThree onPress={() => setPetPickerTarget("meds")} icon={Pill} label="Log Meds" tintColor="rgba(255,111,207,0.15)" tk={tk} />
+        <View style={styles.tilesGrid}>
+          <Tile onPress={() => setPetPickerTarget("records")} icon={FolderHeart} label="Medical Records" tintColor="rgba(255,217,61,0.3)" tk={tk} />
+          <Tile onPress={() => setPetPickerTarget("passport")} icon={FileText} label="Pet Passport" tintColor="rgba(37,99,235,0.1)" tk={tk} />
         </View>
 
         {/* Quick access */}
@@ -254,12 +253,10 @@ export default function ProfileScreen() {
           onClose={() => setPetPickerTarget(null)}
           pets={pets}
           onSelect={(petId: string) => {
-            if (petPickerTarget === "vaccine") {
-              router.push({ pathname: "/log/vaccine", params: { petId } });
-            } else if (petPickerTarget === "vitals") {
-              router.push({ pathname: "/log/vitals", params: { petId } });
-            } else if (petPickerTarget === "meds") {
-              router.push({ pathname: "/log/meds", params: { petId } });
+            if (petPickerTarget === "records") {
+              router.push({ pathname: "/records", params: { petId } });
+            } else if (petPickerTarget === "passport") {
+              router.push({ pathname: "/pet", params: { id: petId, tab: "Passport" } });
             } else {
               router.push({ pathname: "/pet", params: { id: petId } });
             }
