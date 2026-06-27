@@ -148,7 +148,7 @@ export default function RemindersScreen() {
                 const IconComponent =
                   r.type === "appointment"
                     ? Stethoscope
-                    : r.type === "vaccination"
+                    : (r.type === "vaccination" || r.type === "vaccine")
                     ? Syringe
                     : r.type === "medication"
                     ? Pill

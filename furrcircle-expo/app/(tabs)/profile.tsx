@@ -134,7 +134,7 @@ export default function ProfileScreen() {
                 )}
               </View>
               <Text style={[styles.petCardName, { color: tk.text }]}>{p.name}</Text>
-              <Text style={[styles.petCardBreed, { color: tk.textMuted }]}>{p.species} · {p.gender === "female" ? "♀" : "♂"} · {p.age || "?"}y</Text>
+              <Text style={[styles.petCardBreed, { color: tk.textMuted }]}>{p.species} · {p.gender === "female" ? "♀" : "♂"} · {p.age || "?"}</Text>
             </TouchableOpacity>
           ))}
           <TouchableOpacity onPress={() => router.push("/add-pet")} style={[styles.petCardAdd, { backgroundColor: tk.glass, borderColor: tk.glassBorder }]} activeOpacity={0.85}>

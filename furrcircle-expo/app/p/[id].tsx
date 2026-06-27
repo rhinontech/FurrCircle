@@ -109,11 +109,11 @@ export default function PetPublicProfile() {
   const tintColor = TINT[String(pet.species || "").toLowerCase()] || "rgba(255,217,61,0.3)";
   const petBreed = pet.breed || pet.species || "Unknown breed";
   const petGender = pet.gender === "male" ? "♂" : pet.gender === "female" ? "♀" : "";
-  const breedString = `${petBreed} · ${petGender} · ${pet.age ? `${pet.age} y` : "?"}`;
+  const petAge = pet.age ? String(pet.age) : "?";
+  const breedString = `${petBreed} · ${petGender} · ${petAge.includes("y") || petAge.includes("m") || petAge.includes("d") ? petAge : `${petAge} years`}`;
   const ownerName = pet.owner?.name || "Pet parent";
   const ownerHandle = pet.owner?.username || pet.owner?.name?.toLowerCase().replace(/[^a-z0-9]/g, "") || "owner";
   const petBio = pet.description || pet.history || "No bio available.";
-  const petAge = pet.age ? `${pet.age} y` : "?";
   const petWeight = pet.weight ? `${pet.weight} kg` : "?";
   const petLocation = pet.owner?.city || "Unknown";
   const traits = Array.isArray(pet.personality) ? pet.personality : [];

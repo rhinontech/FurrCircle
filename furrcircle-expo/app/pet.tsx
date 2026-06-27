@@ -136,7 +136,9 @@ export default function PetScreen() {
           <View style={styles.nameRow}>
             <View>
               <Text style={[styles.petName, { color: tk.text }]}>{petName}</Text>
-              <Text style={[styles.petBreed, { color: tk.textMuted }]}>{petBreed} · {petGender} · {petAge} years</Text>
+              <Text style={[styles.petBreed, { color: tk.textMuted }]}>
+                {petBreed} · {petGender} · {petAge.includes("y") || petAge.includes("m") || petAge.includes("d") ? petAge : `${petAge} years`}
+              </Text>
             </View>
             <View style={styles.verifiedBadge}>
               <ShieldCheck size={12} color={colors.white} />
@@ -175,6 +177,7 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
   const [memories, setMemories] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const petName = pet?.name || "this pet";
+  const petAge = pet?.age ? String(pet.age) : "?";
 
   useEffect(() => {
     if (pet?.id) {
@@ -227,7 +230,7 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
     <View style={{ gap: 20 }}>
       {/* Stats */}
       <View style={styles.statsGrid}>
-        <StatCard icon={Cake} label="Age" value={pet?.age ? `${pet.age} y` : "?"} />
+        <StatCard icon={Cake} label="Age" value={petAge} />
         <StatCard icon={Ruler} label="Weight" value={pet?.weight ? `${pet.weight} kg` : "?"} />
         <StatCard icon={MapPin} label="City" value={pet?.owner?.city || "?"} />
       </View>
@@ -353,10 +356,12 @@ function TimelineTab({ tk, pet }: { tk: any, pet: any }) {
 
 function PassportTab({ tk, pet }: { tk: any, pet: any }) {
   const vaccines = pet?.Vaccines || [];
-  const meds = pet?.Medications || [];
+  const meds = (pet?.Medications || []).slice(0, 1);
   const allergies = pet?.Allergies?.map((a: any) => a.allergen) || [];
-  const vitals = pet?.vitals || [];
+  const vitals = (pet?.vitals || []).slice(0, 1);
   const microchip = pet?.microchip_id;
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
   return (
     <View style={{ gap: 16 }}>
       {/* Microchip */}
@@ -412,9 +417,15 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
           {meds.length === 0 && <Text style={{ color: tk.textMuted }}>No active medications.</Text>}
           {meds.map((m: any, i: number) => (
             <View key={m.id ? String(m.id) : String(i)} style={[styles.vaccineRow, { backgroundColor: tk.card }]}>
-              <View style={[styles.vaccineIcon, { backgroundColor: "rgba(255,111,207,0.15)" }]}>
-                <Pill size={16} color={colors.pinky} />
-              </View>
+              {m.imageUrl ? (
+                <TouchableOpacity onPress={() => setPreviewImage(m.imageUrl)} activeOpacity={0.85}>
+                  <Image source={{ uri: m.imageUrl }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                </TouchableOpacity>
+              ) : (
+                <View style={[styles.vaccineIcon, { backgroundColor: "rgba(255,111,207,0.15)" }]}>
+                  <Pill size={16} color={colors.pinky} />
+                </View>
+              )}
               <View style={{ flex: 1 }}>
                 <Text style={[styles.vaccineName, { color: tk.text }]}>{m.name}</Text>
                 <Text style={[styles.vaccineDate, { color: tk.textMuted }]}>
@@ -453,14 +464,17 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
         </View>
       </View>
 
-
-
-      {/* Insurance */}
-      {/* <View style={[styles.passportCard, { backgroundColor: tk.card }]}>
-        <Text style={styles.passportCardLabel}>INSURANCE</Text>
-        <Text style={[styles.passportCardValue, { color: tk.text }]}>PawCare Health</Text>
-        <Text style={[styles.passportCardSub, { color: tk.textMuted }]}>Policy PAW-2023 · Valid till Dec 2024</Text>
-      </View> */}
+      {/* Full Screen Image Modal */}
+      <Modal visible={!!previewImage} transparent={true} animationType="fade" onRequestClose={() => setPreviewImage(null)}>
+        <View style={styles.fullScreenModal}>
+          <TouchableOpacity style={styles.closeModalBtn} onPress={() => setPreviewImage(null)}>
+            <X size={28} color={colors.white} />
+          </TouchableOpacity>
+          {previewImage && (
+            <Image source={{ uri: previewImage }} style={styles.fullScreenImg} resizeMode="contain" />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }

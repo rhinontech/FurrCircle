@@ -1,33 +1,35 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Pressable, TextInput, Alert, Keyboard } from "react-native";
-import { useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, Pressable, TextInput, Alert, Keyboard, Image } from "react-native";
+import { useState, useEffect, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
-import { useEffect } from "react";
 import { healthApi } from "../services/health/healthApi";
 import { moonaPassport } from "../src/lib/demo-data";
 import { FileText, Plus, X, Syringe, AlertCircle, ShieldCheck, Activity, Pill } from "../src/components/ui/icons";
 import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
 
-type RecordType = "vaccine" | "allergy" | "insurance";
+type RecordType = "vaccine" | "allergy" | "insurance" | "medication" | "vital";
 
 const ADD_OPTIONS: { key: RecordType; label: string; icon: any; color: string }[] = [
   { key: "vaccine", label: "Vaccine", icon: Syringe, color: colors.success },
+  { key: "medication", label: "Medication", icon: Pill, color: colors.pinky },
+  { key: "vital", label: "Vital", icon: Activity, color: colors.coral },
   { key: "allergy", label: "Allergy", icon: AlertCircle, color: colors.coral },
-  // { key: "insurance", label: "Insurance", icon: ShieldCheck, color: colors.primary },
 ];
 
 export default function RecordsScreen() {
   const tk = useTokens();
   const insets = useSafeAreaInsets();
   const { petId } = useLocalSearchParams<{ petId?: string }>();
+  const router = useRouter();
 
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<RecordType | null>(null);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
@@ -59,22 +61,18 @@ export default function RecordsScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchRecords();
-  }, [petId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchRecords();
+    }, [petId])
+  );
 
   // Form fields
-  const [vaccineName, setVaccineName] = useState("");
-  const [vaccineDate, setVaccineDate] = useState("");
-  const [vaccineNext, setVaccineNext] = useState("");
   const [allergyName, setAllergyName] = useState("");
-  const [insuranceName, setInsuranceName] = useState("");
-  const [insurancePolicy, setInsurancePolicy] = useState("");
 
   const resetForm = () => {
     setSelectedType(null);
-    setVaccineName(""); setVaccineDate(""); setVaccineNext("");
-    setAllergyName(""); setInsuranceName(""); setInsurancePolicy("");
+    setAllergyName("");
   };
 
   const handleClose = () => { setAddSheetOpen(false); resetForm(); };
@@ -82,21 +80,11 @@ export default function RecordsScreen() {
   const handleSave = async () => {
     if (!petId) { Alert.alert("Error", "No pet selected"); return; }
     try {
-      if (selectedType === "vaccine") {
-        if (!vaccineName.trim()) { Alert.alert("Required", "Please enter a vaccine name."); return; }
-        await healthApi.addVaccine(petId, {
-          name: vaccineName,
-          dateAdministered: vaccineDate || new Date().toISOString().slice(0, 10),
-          nextDueDate: vaccineNext || undefined,
-          status: "done"
-        });
-      } else if (selectedType === "allergy") {
+      if (selectedType === "allergy") {
         if (!allergyName.trim()) { Alert.alert("Required", "Please enter an allergy."); return; }
         await healthApi.addAllergy(petId, {
           allergen: allergyName,
         });
-      } else if (selectedType === "insurance") {
-        if (!insuranceName.trim()) { Alert.alert("Required", "Please enter the insurance provider."); return; }
       }
       Alert.alert("Saved", "Record added successfully.");
       handleClose();
@@ -147,7 +135,13 @@ export default function RecordsScreen() {
           {data.meds.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No medications recorded.</Text>}
           {data.meds.map((m: any, i: number) => (
             <View key={m.id ? String(m.id) : String(i)} style={[styles.card, { backgroundColor: tk.card }]}>
-              <Pill size={20} color={colors.pinky} />
+              {m.imageUrl ? (
+                <TouchableOpacity onPress={() => setPreviewImage(m.imageUrl)} activeOpacity={0.85}>
+                  <Image source={{ uri: m.imageUrl }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                </TouchableOpacity>
+              ) : (
+                <Pill size={20} color={colors.pinky} />
+              )}
               <View style={{ flex: 1 }}>
                 <Text style={[styles.cardTitle, { color: tk.text }]}>{m.name}</Text>
                 <Text style={[styles.cardMeta, { color: tk.textMuted }]}>
@@ -167,8 +161,9 @@ export default function RecordsScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[styles.cardTitle, { color: tk.text }]}>
                   {v.weight ? `Weight: ${v.weight}kg ` : ""}
-                  {v.temperature ? `Temp: ${v.temperature}°C` : ""}
-                  {!v.weight && !v.temperature ? "Vitals Logged" : ""}
+                  {v.temperature ? `Temp: ${v.temperature}°C ` : ""}
+                  {v.heartRate ? `HR: ${v.heartRate} bpm` : ""}
+                  {!v.weight && !v.temperature && !v.heartRate ? "Vitals Logged" : ""}
                 </Text>
                 <Text style={[styles.cardMeta, { color: tk.textMuted }]}>{v.timestamp ? new Date(v.timestamp).toLocaleDateString() : ""} {v.notes ? `· ${v.notes}` : ""}</Text>
               </View>
@@ -202,7 +197,20 @@ export default function RecordsScreen() {
               {ADD_OPTIONS.map(({ key, label, icon: Icon, color }) => (
                 <TouchableOpacity
                   key={key}
-                  onPress={() => setSelectedType(key)}
+                  onPress={() => {
+                    if (key === "vaccine") {
+                      handleClose();
+                      router.push({ pathname: "/log/vaccine", params: { petId } });
+                    } else if (key === "medication") {
+                      handleClose();
+                      router.push({ pathname: "/log/meds", params: { petId } });
+                    } else if (key === "vital") {
+                      handleClose();
+                      router.push({ pathname: "/log/vitals", params: { petId } });
+                    } else {
+                      setSelectedType(key);
+                    }
+                  }}
                   style={[styles.optionRow, { backgroundColor: tk.bg }]}
                   activeOpacity={0.8}
                 >
@@ -215,16 +223,6 @@ export default function RecordsScreen() {
             </View>
           )}
 
-          {/* Vaccine form */}
-          {selectedType === "vaccine" && (
-            <View style={{ gap: 12, marginTop: 8 }}>
-              <FormInput label="Vaccine name" value={vaccineName} onChangeText={setVaccineName} placeholder="e.g. DHPP" tk={tk} />
-              <FormInput label="Date given" value={vaccineDate} onChangeText={setVaccineDate} placeholder="e.g. Nov 8, 2026" tk={tk} />
-              <FormInput label="Next due" value={vaccineNext} onChangeText={setVaccineNext} placeholder="e.g. Nov 2027" tk={tk} />
-              <SaveButton onPress={handleSave} />
-            </View>
-          )}
-
           {/* Allergy form */}
           {selectedType === "allergy" && (
             <View style={{ gap: 12, marginTop: 8 }}>
@@ -232,17 +230,19 @@ export default function RecordsScreen() {
               <SaveButton onPress={handleSave} />
             </View>
           )}
-
-          {/* Insurance form */}
-          {/* {selectedType === "insurance" && (
-            <View style={{ gap: 12, marginTop: 8 }}>
-              <FormInput label="Provider" value={insuranceName} onChangeText={setInsuranceName} placeholder="e.g. Pawtect Gold" tk={tk} />
-              <FormInput label="Policy number" value={insurancePolicy} onChangeText={setInsurancePolicy} placeholder="e.g. PG-22-994 821" tk={tk} />
-              <SaveButton onPress={handleSave} />
-            </View>
-          )} */}
         </View>
       </AdaptiveSheet>
+
+      <Modal visible={!!previewImage} transparent={true} animationType="fade" onRequestClose={() => setPreviewImage(null)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.9)", justifyContent: "center", alignItems: "center" }} onPress={() => setPreviewImage(null)}>
+          <TouchableOpacity style={{ position: "absolute", top: 56, right: 20, zIndex: 10, width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" }} onPress={() => setPreviewImage(null)}>
+            <X size={28} color={colors.white} />
+          </TouchableOpacity>
+          {previewImage && (
+            <Image source={{ uri: previewImage }} style={{ width: "100%", height: "80%" }} resizeMode="contain" />
+          )}
+        </Pressable>
+      </Modal>
     </PageContainer>
   );
 }
