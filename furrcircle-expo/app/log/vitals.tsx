@@ -77,12 +77,19 @@ export const animalVitals: AnimalVitals[] = [
 
 export default function LogVitalsScreen() {
   const router = useRouter();
-  const { petId } = useLocalSearchParams<{ petId: string }>();
+  const { petId, editId, weight: initWeight, temp: initTemp, heartRate: initHeartRate, notes: initNotes } = useLocalSearchParams<{
+    petId: string;
+    editId?: string;
+    weight?: string;
+    temp?: string;
+    heartRate?: string;
+    notes?: string;
+  }>();
   const tk = useTokens();
-  const [weight, setWeight] = useState("");
-  const [temp, setTemp] = useState("");
-  const [heartRate, setHeartRate] = useState("");
-  const [notes, setNotes] = useState("");
+  const [weight, setWeight] = useState(initWeight || "");
+  const [temp, setTemp] = useState(initTemp || "");
+  const [heartRate, setHeartRate] = useState(initHeartRate || "");
+  const [notes, setNotes] = useState(initNotes || "");
   const [loading, setLoading] = useState(false);
   const [petSpecies, setPetSpecies] = useState<string | null>(null);
   const [fetchingPet, setFetchingPet] = useState(true);
@@ -150,18 +157,28 @@ export default function LogVitalsScreen() {
 
     setLoading(true);
     try {
-        await healthApi.addVital(petId, {
-            weight: weight ? Number(weight) : undefined,
-            temperature: temp ? Number(temp) : undefined,
-            heartRate: heartRate ? parseInt(heartRate, 10) : undefined,
-            notes: notes.trim() || undefined,
-            timestamp: new Date().toISOString()
-        });
-        Alert.alert("Success", "Vitals logged successfully.");
+        if (editId) {
+            await healthApi.updateVital(petId, editId, {
+                weight: weight ? Number(weight) : null,
+                temperature: temp ? Number(temp) : null,
+                heartRate: heartRate ? parseInt(heartRate, 10) : null,
+                notes: notes.trim() || null,
+            });
+            Alert.alert("Success", "Vitals updated successfully.");
+        } else {
+            await healthApi.addVital(petId, {
+                weight: weight ? Number(weight) : undefined,
+                temperature: temp ? Number(temp) : undefined,
+                heartRate: heartRate ? parseInt(heartRate, 10) : undefined,
+                notes: notes.trim() || undefined,
+                timestamp: new Date().toISOString()
+            });
+            Alert.alert("Success", "Vitals logged successfully.");
+        }
         router.back();
     } catch (err) {
-        console.error("Failed to log vitals:", err);
-        Alert.alert("Error", "Failed to log vitals.");
+        console.error("Failed to save vitals:", err);
+        Alert.alert("Error", "Failed to save vitals.");
     } finally {
         setLoading(false);
     }
@@ -170,7 +187,7 @@ export default function LogVitalsScreen() {
   return (
     <PageContainer>
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title="Log Vitals" />
+      <ScreenHeader title={editId ? "Edit Vitals" : "Log Vitals"} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
         <Text style={[styles.label, { color: tk.textMuted }]}>Weight (kg)</Text>
         <TextInput value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder="e.g. 14.2" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />

@@ -12,12 +12,19 @@ import { healthApi } from "../../services/health/healthApi";
 
 export default function LogMedsScreen() {
   const router = useRouter();
-  const { petId } = useLocalSearchParams<{ petId: string }>();
+  const { petId, editId, name: initName, dosage: initDosage, notes: initNotes, photo: initPhoto } = useLocalSearchParams<{
+    petId: string;
+    editId?: string;
+    name?: string;
+    dosage?: string;
+    notes?: string;
+    photo?: string;
+  }>();
   const tk = useTokens();
-  const [med, setMed] = useState("");
-  const [dose, setDose] = useState("");
-  const [notes, setNotes] = useState("");
-  const [photo, setPhoto] = useState<string | undefined>();
+  const [med, setMed] = useState(initName || "");
+  const [dose, setDose] = useState(initDosage || "");
+  const [notes, setNotes] = useState(initNotes || "");
+  const [photo, setPhoto] = useState<string | undefined>(initPhoto || undefined);
   const [loading, setLoading] = useState(false);
 
   const pickPhoto = async () => {
@@ -36,24 +43,34 @@ export default function LogMedsScreen() {
     }
     setLoading(true);
     try {
-        let uploadedImageUrl = undefined;
-        if (photo?.startsWith('file://') || (photo && !photo.startsWith('http'))) {
+        let uploadedImageUrl = photo;
+        if (photo?.startsWith('file://')) {
           const result = await uploadImage(photo, 'medications');
           uploadedImageUrl = result?.url ?? result;
         }
 
-        await healthApi.addMedication(petId, {
-            name: med.trim(),
-            dosage: dose.trim() || undefined,
-            notes: notes.trim() || undefined,
-            imageUrl: uploadedImageUrl,
-            startDate: new Date().toISOString().slice(0, 10),
-        });
-        Alert.alert("Success", "Medication logged successfully.");
+        if (editId) {
+            await healthApi.updateMedication(petId, editId, {
+                name: med.trim(),
+                dosage: dose.trim() || null,
+                notes: notes.trim() || null,
+                imageUrl: uploadedImageUrl || null,
+            });
+            Alert.alert("Success", "Medication updated successfully.");
+        } else {
+            await healthApi.addMedication(petId, {
+                name: med.trim(),
+                dosage: dose.trim() || undefined,
+                notes: notes.trim() || undefined,
+                imageUrl: uploadedImageUrl,
+                startDate: new Date().toISOString().slice(0, 10),
+            });
+            Alert.alert("Success", "Medication logged successfully.");
+        }
         router.back();
     } catch (err) {
-        console.error("Failed to log medication:", err);
-        Alert.alert("Error", "Failed to log medication.");
+        console.error("Failed to save medication:", err);
+        Alert.alert("Error", "Failed to save medication.");
     } finally {
         setLoading(false);
     }
@@ -62,7 +79,7 @@ export default function LogMedsScreen() {
   return (
     <PageContainer>
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title="Log Medication" />
+      <ScreenHeader title={editId ? "Edit Medication" : "Log Medication"} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
         <Text style={[styles.label, { color: tk.textMuted }]}>Medication name</Text>
         <TextInput value={med} onChangeText={setMed} placeholder="e.g. Nexgard" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />

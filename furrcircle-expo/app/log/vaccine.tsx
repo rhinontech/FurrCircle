@@ -10,16 +10,26 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function LogVaccineScreen() {
   const router = useRouter();
-  const { petId } = useLocalSearchParams<{ petId: string }>();
+  const { petId, editId, name: initName, dateAdministered: initDateAdministered, nextDueDate: initNextDueDate, status: initStatus } = useLocalSearchParams<{
+    petId: string;
+    editId?: string;
+    name?: string;
+    dateAdministered?: string;
+    nextDueDate?: string;
+    status?: string;
+  }>();
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
-  const [vaccine, setVaccine] = useState("");
-  const [dateGiven, setDateGiven] = useState<Date>(new Date());
+  const [vaccine, setVaccine] = useState(initName || "");
+  const [dateGiven, setDateGiven] = useState<Date>(initDateAdministered ? new Date(initDateAdministered) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [nextDate, setNextDate] = useState<Date | null>(null);
+  const [nextDate, setNextDate] = useState<Date | null>(initNextDueDate ? new Date(initNextDueDate) : null);
   const [showNextDatePicker, setShowNextDatePicker] = useState(false);
   const [setReminder, setSetReminder] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
   const handleSave = async () => {
     if (!vaccine.trim()) {
@@ -32,18 +42,28 @@ export default function LogVaccineScreen() {
     }
     setLoading(true);
     try {
-        await healthApi.addVaccine(petId, {
-            name: vaccine,
-            dateAdministered: dateGiven.toISOString().slice(0, 10),
-            nextDueDate: nextDate ? nextDate.toISOString().slice(0, 10) : undefined,
-            status: "done",
-            setReminder: nextDate ? setReminder : false
-        });
-        Alert.alert("Success", "Vaccine logged successfully.");
+        if (editId) {
+            await healthApi.updateVaccine(petId, editId, {
+                name: vaccine,
+                dateAdministered: dateGiven.toISOString().slice(0, 10),
+                nextDueDate: nextDate ? nextDate.toISOString().slice(0, 10) : null,
+                status: nextDate ? "due" : "done",
+            });
+            Alert.alert("Success", "Vaccine updated successfully.");
+        } else {
+            await healthApi.addVaccine(petId, {
+                name: vaccine,
+                dateAdministered: dateGiven.toISOString().slice(0, 10),
+                nextDueDate: nextDate ? nextDate.toISOString().slice(0, 10) : undefined,
+                status: "done",
+                setReminder: nextDate ? setReminder : false
+            });
+            Alert.alert("Success", "Vaccine logged successfully.");
+        }
         router.back();
     } catch (err) {
-        console.error("Failed to add vaccine:", err);
-        Alert.alert("Error", "Failed to log vaccine.");
+        console.error("Failed to save vaccine:", err);
+        Alert.alert("Error", "Failed to save vaccine.");
     } finally {
         setLoading(false);
     }
@@ -52,7 +72,7 @@ export default function LogVaccineScreen() {
   return (
     <PageContainer>
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title="Log Vaccine" />
+      <ScreenHeader title={editId ? "Edit Vaccine" : "Log Vaccine"} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
         <Text style={[styles.label, { color: tk.textMuted }]}>Vaccine name</Text>
         <TextInput value={vaccine} onChangeText={setVaccine} placeholder="e.g. DHPP" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
@@ -95,10 +115,10 @@ export default function LogVaccineScreen() {
         {Platform.OS === 'ios' ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 }}>
             <DateTimePicker
-              value={nextDate || new Date()}
+              value={nextDate || tomorrow}
               mode="date"
               display="default"
-              minimumDate={new Date()}
+              minimumDate={tomorrow}
               themeVariant={dark ? "dark" : "light"}
               onChange={(e, date) => {
                 if (date) setNextDate(date);
@@ -130,10 +150,10 @@ export default function LogVaccineScreen() {
             </View>
             {showNextDatePicker && (
               <DateTimePicker
-                value={nextDate || new Date()}
+                value={nextDate || tomorrow}
                 mode="date"
                 display="default"
-                minimumDate={new Date()}
+                minimumDate={tomorrow}
                 onChange={(e, date) => {
                   setShowNextDatePicker(false);
                   if (date) setNextDate(date);

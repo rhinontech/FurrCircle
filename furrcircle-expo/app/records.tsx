@@ -8,7 +8,7 @@ import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 import { healthApi } from "../services/health/healthApi";
 import { moonaPassport } from "../src/lib/demo-data";
-import { FileText, Plus, X, Syringe, AlertCircle, ShieldCheck, Activity, Pill } from "../src/components/ui/icons";
+import { FileText, Plus, X, Syringe, AlertCircle, ShieldCheck, Activity, Pill, Edit2, Trash2 } from "../src/components/ui/icons";
 import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
 
 type RecordType = "vaccine" | "allergy" | "insurance" | "medication" | "vital";
@@ -69,10 +69,12 @@ export default function RecordsScreen() {
 
   // Form fields
   const [allergyName, setAllergyName] = useState("");
+  const [editAllergyId, setEditAllergyId] = useState<string | null>(null);
 
   const resetForm = () => {
     setSelectedType(null);
     setAllergyName("");
+    setEditAllergyId(null);
   };
 
   const handleClose = () => { setAddSheetOpen(false); resetForm(); };
@@ -82,17 +84,158 @@ export default function RecordsScreen() {
     try {
       if (selectedType === "allergy") {
         if (!allergyName.trim()) { Alert.alert("Required", "Please enter an allergy."); return; }
-        await healthApi.addAllergy(petId, {
-          allergen: allergyName,
-        });
+        if (editAllergyId) {
+          await healthApi.updateAllergy(petId, editAllergyId, {
+            allergen: allergyName,
+          });
+          Alert.alert("Saved", "Allergy updated successfully.");
+        } else {
+          await healthApi.addAllergy(petId, {
+            allergen: allergyName,
+          });
+          Alert.alert("Saved", "Allergy added successfully.");
+        }
       }
-      Alert.alert("Saved", "Record added successfully.");
       handleClose();
       fetchRecords(); // refresh
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Failed to save record.");
     }
+  };
+
+  // Edit/Delete handlers
+  const handleDeleteVaccine = async (id: string) => {
+    Alert.alert("Delete Vaccine", "Are you sure you want to delete this vaccine record?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          if (!petId) return;
+          try {
+            await healthApi.deleteVaccine(petId, id);
+            Alert.alert("Success", "Vaccine record deleted.");
+            fetchRecords();
+          } catch (err) {
+            console.error(err);
+            Alert.alert("Error", "Failed to delete vaccine record.");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleEditVaccine = (v: any) => {
+    router.push({
+      pathname: "/log/vaccine",
+      params: {
+        petId,
+        editId: v.id,
+        name: v.name,
+        dateAdministered: v.dateAdministered,
+        nextDueDate: v.nextDueDate || "",
+        status: v.status,
+      },
+    });
+  };
+
+  const handleDeleteAllergy = async (id: string) => {
+    Alert.alert("Delete Allergy", "Are you sure you want to delete this allergy record?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          if (!petId) return;
+          try {
+            await healthApi.deleteAllergy(petId, id);
+            Alert.alert("Success", "Allergy record deleted.");
+            fetchRecords();
+          } catch (err) {
+            console.error(err);
+            Alert.alert("Error", "Failed to delete allergy record.");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleEditAllergy = (a: any) => {
+    setSelectedType("allergy");
+    setAllergyName(a.allergen);
+    setEditAllergyId(a.id);
+    setAddSheetOpen(true);
+  };
+
+  const handleDeleteMedication = async (id: string) => {
+    Alert.alert("Delete Medication", "Are you sure you want to delete this medication?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          if (!petId) return;
+          try {
+            await healthApi.deleteMedication(petId, id);
+            Alert.alert("Success", "Medication deleted.");
+            fetchRecords();
+          } catch (err) {
+            console.error(err);
+            Alert.alert("Error", "Failed to delete medication.");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleEditMedication = (m: any) => {
+    router.push({
+      pathname: "/log/meds",
+      params: {
+        petId,
+        editId: m.id,
+        name: m.name,
+        dosage: m.dosage || "",
+        notes: m.notes || "",
+        photo: m.imageUrl || "",
+      },
+    });
+  };
+
+  const handleDeleteVital = async (id: string) => {
+    Alert.alert("Delete Vitals", "Are you sure you want to delete this vital record?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          if (!petId) return;
+          try {
+            await healthApi.deleteVital(petId, id);
+            Alert.alert("Success", "Vital record deleted.");
+            fetchRecords();
+          } catch (err) {
+            console.error(err);
+            Alert.alert("Error", "Failed to delete vital record.");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleEditVital = (v: any) => {
+    router.push({
+      pathname: "/log/vitals",
+      params: {
+        petId,
+        editId: v.id,
+        weight: v.weight ? String(v.weight) : "",
+        temp: v.temperature ? String(v.temperature) : "",
+        heartRate: v.heartRate ? String(v.heartRate) : "",
+        notes: v.notes || "",
+      },
+    });
   };
 
   return (
@@ -119,16 +262,37 @@ export default function RecordsScreen() {
               <View style={[styles.badge, { backgroundColor: v.status === "done" || v.status === "ok" ? "rgba(76,175,80,0.15)" : "rgba(255,107,107,0.15)" }]}>
                 <Text style={[styles.badgeText, { color: v.status === "done" || v.status === "ok" ? colors.success : colors.coral }]}>{v.status === "done" || v.status === "ok" ? "OK" : "DUE"}</Text>
               </View>
+              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', marginLeft: 8 }}>
+                <TouchableOpacity onPress={() => handleEditVaccine(v)}>
+                  <Edit2 size={18} color={tk.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDeleteVaccine(v.id)}>
+                  <Trash2 size={18} color={colors.coral} />
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
+
           {/* Allergies */}
           <Text style={[styles.sectionTitle, { color: tk.text }]}>Allergies</Text>
           {data.allergies.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>No allergies recorded.</Text>}
-          <View style={styles.tagRow}>
-            {data.allergies.map((a) => (
-              <View key={a.id || a.allergen} style={styles.allergyTag}><Text style={styles.allergyText}>{a.allergen}</Text></View>
-            ))}
-          </View>
+          {data.allergies.map((a) => (
+            <View key={a.id || a.allergen} style={[styles.card, { backgroundColor: tk.card }]}>
+              <AlertCircle size={20} color={colors.coral} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.cardTitle, { color: tk.text }]}>{a.allergen}</Text>
+                <Text style={[styles.cardMeta, { color: tk.textMuted }]}>Allergy Record</Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', marginLeft: 8 }}>
+                <TouchableOpacity onPress={() => handleEditAllergy(a)}>
+                  <Edit2 size={18} color={tk.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDeleteAllergy(a.id)}>
+                  <Trash2 size={18} color={colors.coral} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
 
           {/* Medications */}
           <Text style={[styles.sectionTitle, { color: tk.text }]}>Medications</Text>
@@ -149,6 +313,14 @@ export default function RecordsScreen() {
                   {m.startDate ? `· Started: ${m.startDate}` : ""}
                 </Text>
               </View>
+              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', marginLeft: 8 }}>
+                <TouchableOpacity onPress={() => handleEditMedication(m)}>
+                  <Edit2 size={18} color={tk.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDeleteMedication(m.id)}>
+                  <Trash2 size={18} color={colors.coral} />
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
 
@@ -167,6 +339,14 @@ export default function RecordsScreen() {
                 </Text>
                 <Text style={[styles.cardMeta, { color: tk.textMuted }]}>{v.timestamp ? new Date(v.timestamp).toLocaleDateString() : ""} {v.notes ? `· ${v.notes}` : ""}</Text>
               </View>
+              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center', marginLeft: 8 }}>
+                <TouchableOpacity onPress={() => handleEditVital(v)}>
+                  <Edit2 size={18} color={tk.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDeleteVital(v.id)}>
+                  <Trash2 size={18} color={colors.coral} />
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
 
@@ -184,7 +364,7 @@ export default function RecordsScreen() {
         <View style={{ padding: 24, paddingBottom: keyboardVisible ? 10 : 24 + insets.bottom }}>
           <View style={styles.sheetTitleRow}>
             <Text style={[styles.sheetTitle, { color: tk.text }]}>
-              {selectedType ? `Add ${selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}` : "Add Record"}
+              {editAllergyId ? "Edit Allergy" : selectedType ? `Add ${selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}` : "Add Record"}
             </Text>
             <TouchableOpacity onPress={handleClose}>
               <X size={20} color={tk.textMuted} />
