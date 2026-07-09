@@ -47,6 +47,11 @@
       "package": "com.furrcircle.app",
       "versionCode": 22,
       "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAHcd4AzBoK4WqDmBbn5e4t8rq-Qi9lc7s"
+        }
+      },
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.ACCESS_COARSE_LOCATION",

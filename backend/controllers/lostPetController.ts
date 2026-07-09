@@ -17,34 +17,25 @@ export const getLostPets = async (req: any, res: Response): Promise<void> => {
     let order: any[] = [['createdAt', 'DESC']];
 
     if (lat && lng) {
+      const distanceSql = `(
+        SELECT 6371 * acos(
+          cos(radians(${lat})) *
+          cos(radians(COALESCE(lost_pets.latitude, users.latitude))) *
+          cos(radians(COALESCE(lost_pets.longitude, users.longitude)) - radians(${lng})) +
+          sin(radians(${lat})) *
+          sin(radians(COALESCE(lost_pets.latitude, users.latitude)))
+        )
+        FROM users
+        WHERE users.id = lost_pets."userId"
+      )`;
+
       where[Op.and] = [
-        sequelize.literal(`(
-          SELECT 6371 * acos(
-            cos(radians(${lat})) *
-            cos(radians(latitude)) *
-            cos(radians(longitude) - radians(${lng})) +
-            sin(radians(${lat})) *
-            sin(radians(latitude))
-          )
-          FROM users
-          WHERE users.id = lost_pets."userId"
-        ) <= 150`)
+        sequelize.literal(`${distanceSql} <= 150`)
       ];
       attributes = {
         include: [
           [
-            sequelize.literal(`(
-              SELECT 6371 * acos(
-                cos(radians(${lat})) *
-                cos(radians(latitude)) *
-                cos(radians(longitude) - radians(${lng})) +
-                sin(radians(${lat})) *
-                sin(radians(latitude))
-              )
-              FROM users
-              WHERE users.id = lost_pets."userId"
-              AND users.latitude IS NOT NULL AND users.longitude IS NOT NULL
-            )`),
+            sequelize.literal(distanceSql),
             'distance',
           ],
         ],
@@ -82,9 +73,15 @@ export const getLostPets = async (req: any, res: Response): Promise<void> => {
 export const createLostPet = async (req: any, res: Response): Promise<void> => {
   try {
     const { lost_pets: LostPet } = db as any;
-    const { imageUrl, name, address, description, status } = req.body;
+    const { imageUrl, name, address, description, status, latitude, longitude, images } = req.body;
 
-    if (!imageUrl || !address || !status) {
+    const finalImages = Array.isArray(images) ? images : [];
+    let finalImageUrl = imageUrl;
+    if (finalImages.length > 0 && !finalImageUrl) {
+      finalImageUrl = finalImages[0];
+    }
+
+    if (!finalImageUrl || !address || !status) {
       res.status(400).json({ message: "Image, address and status are required fields" });
       return;
     }
@@ -96,11 +93,14 @@ export const createLostPet = async (req: any, res: Response): Promise<void> => {
 
     const post = await LostPet.create({
       userId: req.user.id,
-      imageUrl,
+      imageUrl: finalImageUrl,
       name: name || null,
       address,
       description: description || null,
       status,
+      latitude: latitude != null ? parseFloat(latitude) : null,
+      longitude: longitude != null ? parseFloat(longitude) : null,
+      images: finalImages,
     });
 
     res.status(201).json(post);
@@ -121,12 +121,23 @@ export const updateLostPet = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
-    const updatableFields = ['imageUrl', 'name', 'address', 'description', 'status'];
+    const updatableFields = ['imageUrl', 'name', 'address', 'description', 'status', 'latitude', 'longitude', 'images'];
     updatableFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        post[field] = req.body[field];
+        if (field === 'latitude' || field === 'longitude') {
+          post[field] = req.body[field] != null ? parseFloat(req.body[field]) : null;
+        } else {
+          post[field] = req.body[field];
+        }
       }
     });
+
+    // Keep legacy imageUrl field in sync if images array is modified
+    if (req.body.images !== undefined && Array.isArray(req.body.images)) {
+      if (req.body.images.length > 0) {
+        post.imageUrl = req.body.images[0];
+      }
+    }
 
     await post.save();
     res.json(post);

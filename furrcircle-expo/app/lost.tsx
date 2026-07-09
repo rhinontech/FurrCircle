@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, Modal, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard } from "react-native";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, Modal, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
@@ -7,6 +7,8 @@ import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 import { MapPin, Siren, Eye, Plus, Camera, Trash2, Edit2, X, AlertCircle } from "../src/components/ui/icons";
 import * as ImagePicker from "expo-image-picker";
+import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
 import { lostPetApi } from "../services/lost/lostPetApi";
 import { chatApi } from "../services/chat/chatApi";
 import { userApi } from "../services/user/userApi";
@@ -17,6 +19,8 @@ import { useLocationStore } from "../src/lib/location-store";
 
 const lostDoodle = require("../src/assets/doodle-lost.png");
 const tabs = ["Lost", "Spotted"] as const;
+const { width: screenWidth } = Dimensions.get("window");
+const carouselImageWidth = screenWidth - 40;
 
 export default function LostScreen() {
   const tk = useTokens();
@@ -55,9 +59,32 @@ export default function LostScreen() {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [description, setDescription] = useState("");
-  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [myPets, setMyPets] = useState<any[]>([]);
+
+  // Geolocation Map State
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [mapModalVisible, setMapModalVisible] = useState(false);
+  const [tempLat, setTempLat] = useState<number | null>(null);
+  const [tempLng, setTempLng] = useState<number | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const mapRef = useRef<MapView | null>(null);
+
+  const isWeb = Platform.OS === "web";
+
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [selectedPost]);
+
+  useEffect(() => {
+    if (mapModalVisible) {
+      setTempLat(latitude || locationLat || 37.78825);
+      setTempLng(longitude || locationLng || -122.4324);
+    }
+  }, [mapModalVisible]);
 
   useEffect(() => {
     petApi.getMyPets()
@@ -68,7 +95,7 @@ export default function LostScreen() {
   const handleSelectPet = (pet: any) => {
     setName(pet.name || "");
     if (pet.avatar_url) {
-      setImageUri(pet.avatar_url);
+      setImages([pet.avatar_url]);
     }
     const locationStr = user?.address || user?.city || "";
     setAddress(locationStr);
@@ -99,7 +126,9 @@ export default function LostScreen() {
     setName("");
     setAddress("");
     setDescription("");
-    setImageUri(null);
+    setImages([]);
+    setLatitude(null);
+    setLongitude(null);
     setModalVisible(true);
   };
 
@@ -109,7 +138,15 @@ export default function LostScreen() {
     setName(post.name || "");
     setAddress(post.address || "");
     setDescription(post.description || "");
-    setImageUri(post.imageUrl);
+    setLatitude(post.latitude ? parseFloat(post.latitude) : null);
+    setLongitude(post.longitude ? parseFloat(post.longitude) : null);
+    if (post.images && post.images.length > 0) {
+      setImages(post.images);
+    } else if (post.imageUrl) {
+      setImages([post.imageUrl]);
+    } else {
+      setImages([]);
+    }
     setModalVisible(true);
   };
 
@@ -123,21 +160,79 @@ export default function LostScreen() {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        allowsMultipleSelection: true,
+        selectionLimit: 4 - images.length,
+        allowsEditing: false,
         quality: 0.8,
       });
 
-      if (!result.canceled && result.assets?.[0]) {
-        setImageUri(result.assets[0].uri);
+      if (!result.canceled && result.assets) {
+        const pickedUris = result.assets.map(asset => asset.uri);
+        setImages(prev => [...prev, ...pickedUris].slice(0, 4));
       }
     } catch (err) {
       console.error("pickImage error", err);
     }
   };
 
+  const handlePinCurrentLocation = async () => {
+    try {
+      let { status: gpsStatus } = await Location.requestForegroundPermissionsAsync();
+      if (gpsStatus !== 'granted') {
+        Alert.alert("Permission Denied", "We need location permission to pin your current location.");
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({});
+      const lat = loc.coords.latitude;
+      const lng = loc.coords.longitude;
+      setTempLat(lat);
+      setTempLng(lng);
+
+      if (mapRef.current) {
+        mapRef.current.animateToRegion({
+          latitude: lat,
+          longitude: lng,
+          latitudeDelta: 0.015,
+          longitudeDelta: 0.015,
+        }, 1000);
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Error", "Could not fetch current location.");
+    }
+  };
+
+  const handleConfirmLocation = async () => {
+    if (tempLat && tempLng) {
+      setLatitude(tempLat);
+      setLongitude(tempLng);
+      setMapModalVisible(false);
+
+      // Trigger reverse geocoding to auto-fill address
+      try {
+        const geocode = await Location.reverseGeocodeAsync({ latitude: tempLat, longitude: tempLng });
+        if (geocode && geocode.length > 0) {
+          const first = geocode[0];
+          const parts = [
+            first.name || first.streetNumber,
+            first.street,
+            first.district || first.subregion || first.city,
+            first.city || first.region,
+          ].filter(Boolean);
+          const formatted = parts.join(", ");
+          if (formatted) {
+            setAddress(formatted);
+          }
+        }
+      } catch (err) {
+        console.warn("Reverse geocode failed", err);
+      }
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!imageUri) {
-      Alert.alert("Photo Required", "Please upload a photo of the pet.");
+    if (images.length === 0) {
+      Alert.alert("Photo Required", "Please upload at least one photo.");
       return;
     }
     if (!address.trim()) {
@@ -147,11 +242,14 @@ export default function LostScreen() {
 
     setSubmitting(true);
     try {
-    
-      let finalImageUrl = imageUri;
-      if (imageUri.startsWith("file:/") || imageUri.startsWith("content:/")) {
-        const uploadRes = await userApi.uploadImage(imageUri, "reports");
-        finalImageUrl = uploadRes.url;
+      const uploadedImages: string[] = [];
+      for (const img of images) {
+        if (img.startsWith("file:/") || img.startsWith("content:/")) {
+          const uploadRes = await userApi.uploadImage(img, "reports");
+          uploadedImages.push(uploadRes.url);
+        } else {
+          uploadedImages.push(img);
+        }
       }
 
       const payload = {
@@ -159,10 +257,11 @@ export default function LostScreen() {
         address: address.trim(),
         description: description.trim() || undefined,
         status,
-        imageUrl: finalImageUrl,
+        imageUrl: uploadedImages[0],
+        images: uploadedImages,
+        latitude: status === "spotted" ? latitude : null,
+        longitude: status === "spotted" ? longitude : null,
       };
-
-
 
       if (editingPost) {
         await lostPetApi.updateLostPet(editingPost.id, payload);
@@ -306,16 +405,16 @@ export default function LostScreen() {
                           {/* Owner controls */}
                           {isOwner && (
                             <View style={styles.ownerControls}>
-                              <TouchableOpacity 
-                                onPress={(e) => { (e as any).stopPropagation?.(); openEditModal(p); }} 
-                                style={styles.actionIcon} 
+                              <TouchableOpacity
+                                onPress={(e) => { (e as any).stopPropagation?.(); openEditModal(p); }}
+                                style={styles.actionIcon}
                                 activeOpacity={0.7}
                               >
                                 <Edit2 size={13} color={tk.text} />
                               </TouchableOpacity>
-                              <TouchableOpacity 
-                                onPress={(e) => { (e as any).stopPropagation?.(); handleDelete(p.id); }} 
-                                style={styles.actionIcon} 
+                              <TouchableOpacity
+                                onPress={(e) => { (e as any).stopPropagation?.(); handleDelete(p.id); }}
+                                style={styles.actionIcon}
                                 activeOpacity={0.7}
                               >
                                 <Trash2 size={13} color="#FF4D4D" />
@@ -359,9 +458,9 @@ export default function LostScreen() {
         </ScrollView>
 
         {/* FAB */}
-        <TouchableOpacity 
-          style={styles.fab} 
-          onPress={() => openCreateModal(tab === "Lost" ? "lost" : "spotted")} 
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => openCreateModal(tab === "Lost" ? "lost" : "spotted")}
           activeOpacity={0.85}
         >
           <Plus size={16} color={colors.white} strokeWidth={3} />
@@ -388,11 +487,46 @@ export default function LostScreen() {
               </View>
 
               <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-                {selectedPost?.imageUrl ? (
-                  <Image source={{ uri: selectedPost.imageUrl }} style={styles.detailPetImg} resizeMode="cover" />
-                ) : (
-                  <View style={[styles.detailPetImgPlaceholder, { backgroundColor: tk.inputBg }]} />
-                )}
+                {(() => {
+                  const postImages = selectedPost?.images && selectedPost.images.length > 0
+                    ? selectedPost.images
+                    : (selectedPost?.imageUrl ? [selectedPost.imageUrl] : []);
+
+                  return postImages.length > 0 ? (
+                    <View style={{ position: 'relative', marginBottom: 16 }}>
+                      <ScrollView
+                        horizontal
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={false}
+                        onScroll={(e) => {
+                          const idx = Math.round(e.nativeEvent.contentOffset.x / carouselImageWidth);
+                          setCurrentImageIndex(idx);
+                        }}
+                        scrollEventThrottle={16}
+                        style={[styles.detailPetImgScroll, { width: carouselImageWidth }]}
+                      >
+                        {postImages.map((imgUrl: string, idx: number) => (
+                          <Image key={idx} source={{ uri: imgUrl }} style={[styles.detailPetImgItem, { width: carouselImageWidth }]} resizeMode="cover" />
+                        ))}
+                      </ScrollView>
+                      {postImages.length > 1 && (
+                        <View style={styles.carouselIndicatorContainer}>
+                          {postImages.map((_: any, idx: number) => (
+                            <View
+                              key={idx}
+                              style={[
+                                styles.carouselIndicatorDot,
+                                currentImageIndex === idx ? { backgroundColor: colors.primary } : { backgroundColor: 'rgba(255,255,255,0.5)' }
+                              ]}
+                            />
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  ) : (
+                    <View style={[styles.detailPetImgPlaceholder, { backgroundColor: tk.inputBg }]} />
+                  );
+                })()}
 
                 <View style={[styles.detailStatusBadge, { backgroundColor: selectedPost?.status === "lost" ? colors.coral : colors.success }]}>
                   <Text style={styles.detailStatusText}>{(selectedPost?.status || "").toUpperCase()}</Text>
@@ -413,6 +547,58 @@ export default function LostScreen() {
                   <View style={{ marginTop: 16 }}>
                     <Text style={[styles.detailLabel, { color: tk.textMuted }]}>Description</Text>
                     <Text style={[styles.detailDescText, { color: tk.text }]}>{selectedPost.description}</Text>
+                  </View>
+                ) : null}
+
+                {/* Geolocation Map inside Detail view */}
+                {selectedPost?.latitude && selectedPost?.longitude ? (
+                  <View style={{ marginTop: 16 }}>
+                    <Text style={[styles.detailLabel, { color: tk.textMuted }]}>Pinned Location</Text>
+                    <View style={[styles.detailMapContainer, { borderColor: tk.border }]}>
+                      {!isWeb ? (
+                        <MapView
+                          style={{ width: '100%', height: 160 }}
+                          initialRegion={{
+                            latitude: parseFloat(selectedPost.latitude),
+                            longitude: parseFloat(selectedPost.longitude),
+                            latitudeDelta: 0.01,
+                            longitudeDelta: 0.01,
+                          }}
+                          scrollEnabled={true}
+                          zoomEnabled={true}
+                        >
+                          <Marker
+                            coordinate={{
+                              latitude: parseFloat(selectedPost.latitude),
+                              longitude: parseFloat(selectedPost.longitude),
+                            }}
+                            pinColor={colors.coral}
+                          />
+                        </MapView>
+                      ) : (
+                        <View style={{ height: 160, alignItems: 'center', justifyContent: 'center', backgroundColor: tk.inputBg }}>
+                          <Text style={{ color: tk.textMuted }}>Coordinates: {selectedPost.latitude}, {selectedPost.longitude}</Text>
+                        </View>
+                      )}
+                      <TouchableOpacity
+                        style={styles.openInMapsBtn}
+                        onPress={() => {
+                          const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
+                          const latLng = `${selectedPost.latitude},${selectedPost.longitude}`;
+                          const label = selectedPost.name ? `${selectedPost.name}'s Last Known Location` : 'Spotted Pet Location';
+                          const url = Platform.select({
+                            ios: `${scheme}${label}@${latLng}`,
+                            android: `${scheme}${latLng}(${label})`
+                          });
+                          if (url) {
+                            import('react-native').then(({ Linking }) => Linking.openURL(url));
+                          }
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.openInMapsText}>Get Directions</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 ) : null}
 
@@ -438,8 +624,8 @@ export default function LostScreen() {
 
                   {selectedPost?.userId !== currentUserId && (
                     <View style={styles.detailActionRow}>
-                      <TouchableOpacity 
-                        style={[styles.detailActionBtn, { borderColor: colors.primary, borderWidth: 1 }]} 
+                      <TouchableOpacity
+                        style={[styles.detailActionBtn, { borderColor: colors.primary, borderWidth: 1 }]}
                         onPress={() => {
                           const authorUsername = selectedPost?.author?.username;
                           setSelectedPost(null);
@@ -478,119 +664,257 @@ export default function LostScreen() {
           >
             <View style={styles.modalOverlay}>
               <View style={[styles.modalContent, { backgroundColor: tk.card, paddingBottom: keyboardVisible ? 0 : 0 + insets.bottom }]}>
-              {/* Header */}
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: tk.text }]}>
-                  {editingPost ? "Edit Report" : `Report ${status === "lost" ? "Lost" : "Spotted"} Pet`}
-                </Text>
-                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeModalBtn}>
-                  <X size={20} color={tk.text} />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-                {/* Status Toggle */}
-                <Text style={[styles.label, { color: tk.textMuted }]}>Report Status</Text>
-                <View style={styles.statusToggleRow}>
-                  <TouchableOpacity
-                    onPress={() => setStatus("lost")}
-                    style={[styles.toggleOption, status === "lost" ? { backgroundColor: colors.coral } : { backgroundColor: tk.inputBg }]}
-                  >
-                    <Text style={[styles.toggleOptionText, status === "lost" && { color: colors.white }]}>Lost</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setStatus("spotted")}
-                    style={[styles.toggleOption, status === "spotted" ? { backgroundColor: colors.success } : { backgroundColor: tk.inputBg }]}
-                  >
-                    <Text style={[styles.toggleOptionText, status === "spotted" && { color: colors.white }]}>Spotted / Found</Text>
+                {/* Header */}
+                <View style={styles.modalHeader}>
+                  <Text style={[styles.modalTitle, { color: tk.text }]}>
+                    {editingPost ? "Edit Report" : `Report ${status === "lost" ? "Lost" : "Spotted"} Pet`}
+                  </Text>
+                  <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeModalBtn}>
+                    <X size={20} color={tk.text} />
                   </TouchableOpacity>
                 </View>
 
-                {/* Select from My Pets */}
-                {!editingPost && myPets.length > 0 && (
-                  <View style={{ marginBottom: 12 }}>
-                    <Text style={[styles.label, { color: tk.textMuted }]}>Select from my pets</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingVertical: 4 }}>
-                      {myPets.map((p) => (
-                        <TouchableOpacity
-                          key={p.id}
-                          onPress={() => handleSelectPet(p)}
-                          style={[
-                            styles.petOptionCard,
-                            { backgroundColor: tk.inputBg, borderColor: tk.border, borderWidth: 1 }
-                          ]}
-                          activeOpacity={0.8}
-                        >
-                          <Image source={p.avatar_url?.startsWith('http') ? { uri: p.avatar_url } : require("../src/assets/doodle-boy-dog.png")} style={styles.petOptionAvatar} />
-                          <Text style={[styles.petOptionName, { color: tk.text }]} numberOfLines={1}>{p.name}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
+                <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+                  {/* Status Toggle */}
+                  <Text style={[styles.label, { color: tk.textMuted }]}>Report Status</Text>
+                  <View style={styles.statusToggleRow}>
+                    <TouchableOpacity
+                      onPress={() => setStatus("lost")}
+                      style={[styles.toggleOption, status === "lost" ? { backgroundColor: colors.coral } : { backgroundColor: tk.inputBg }]}
+                    >
+                      <Text style={[styles.toggleOptionText, status === "lost" && { color: colors.white }]}>Lost</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setStatus("spotted")}
+                      style={[styles.toggleOption, status === "spotted" ? { backgroundColor: colors.success } : { backgroundColor: tk.inputBg }]}
+                    >
+                      <Text style={[styles.toggleOptionText, status === "spotted" && { color: colors.white }]}>Spotted / Found</Text>
+                    </TouchableOpacity>
                   </View>
-                )}
 
-                {/* Photo Picker */}
-                <Text style={[styles.label, { color: tk.textMuted }]}>Photo (Required)</Text>
-                <TouchableOpacity onPress={pickImage} style={[styles.photoZone, { backgroundColor: tk.inputBg, borderColor: tk.border }]}>
-                  {imageUri ? (
-                    <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="cover" />
-                  ) : (
-                    <View style={{ alignItems: "center", gap: 6 }}>
-                      <Camera size={28} color={tk.textMuted} />
-                      <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: tk.textMuted }}>Upload Photo</Text>
+                  {/* Select from My Pets */}
+                  {!editingPost && status === "lost" && myPets.length > 0 && (
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={[styles.label, { color: tk.textMuted }]}>Select from my pets</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingVertical: 4 }}>
+                        {myPets.map((p) => (
+                          <TouchableOpacity
+                            key={p.id}
+                            onPress={() => handleSelectPet(p)}
+                            style={[
+                              styles.petOptionCard,
+                              { backgroundColor: tk.inputBg, borderColor: tk.border, borderWidth: 1 }
+                            ]}
+                            activeOpacity={0.8}
+                          >
+                            <Image source={p.avatar_url?.startsWith('http') ? { uri: p.avatar_url } : require("../src/assets/doodle-boy-dog.png")} style={styles.petOptionAvatar} />
+                            <Text style={[styles.petOptionName, { color: tk.text }]} numberOfLines={1}>{p.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
                     </View>
                   )}
-                </TouchableOpacity>
 
-                {/* Name */}
-                <Text style={[styles.label, { color: tk.textMuted }]}>Pet Name (Optional)</Text>
-                <TextInput
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="e.g. Max"
-                  placeholderTextColor={tk.textMuted}
-                  style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, borderWidth: 1 }]}
-                />
+                  {/* Multi-Photo Picker */}
+                  <Text style={[styles.label, { color: tk.textMuted }]}>Photos (Required, Max 4)</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 12 }}>
+                    {images.map((uri, index) => (
+                      <View key={index} style={styles.photoWrapper}>
+                        <Image source={{ uri }} style={styles.pickedImage} resizeMode="cover" />
+                        <TouchableOpacity
+                          onPress={() => setImages(prev => prev.filter((_, i) => i !== index))}
+                          style={styles.deletePhotoBtn}
+                          activeOpacity={0.8}
+                        >
+                          <X size={14} color={colors.white} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                    {images.length < 4 && (
+                      <TouchableOpacity onPress={pickImage} style={[styles.photoZoneSmall, { backgroundColor: tk.inputBg, borderColor: tk.border }]}>
+                        <Camera size={20} color={tk.textMuted} />
+                        <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: tk.textMuted, marginTop: 4 }}>Add Photo</Text>
+                      </TouchableOpacity>
+                    )}
+                  </ScrollView>
 
-                {/* Address */}
-                <Text style={[styles.label, { color: tk.textMuted }]}>Location / Address (Required)</Text>
-                <TextInput
-                  value={address}
-                  onChangeText={setAddress}
-                  placeholder="e.g. Central Park, Sector 4"
-                  placeholderTextColor={tk.textMuted}
-                  style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, borderWidth: 1 }]}
-                />
+                  {/* Name */}
+                  <Text style={[styles.label, { color: tk.textMuted }]}>Pet Name (Optional)</Text>
+                  <TextInput
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="e.g. Max"
+                    placeholderTextColor={tk.textMuted}
+                    style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, borderWidth: 1 }]}
+                  />
 
-                {/* Description */}
-                <Text style={[styles.label, { color: tk.textMuted }]}>Description / Notes (Optional)</Text>
-                <TextInput
-                  value={description}
-                  onChangeText={setDescription}
-                  placeholder="e.g. Wearing a red collar, friendly but timid."
-                  placeholderTextColor={tk.textMuted}
-                  multiline
-                  style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, borderWidth: 1, minHeight: 80, textAlignVertical: 'top' }]}
-                />
+                  {/* Location Pinning Option */}
+                  {status === "spotted" && (
+                    <>
+                      <Text style={[styles.label, { color: tk.textMuted }]}>Pin Geolocation (Optional)</Text>
+                      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 8, alignItems: 'center' }}>
+                        <TouchableOpacity
+                          onPress={() => setMapModalVisible(true)}
+                          style={[styles.mapBtn, { backgroundColor: tk.inputBg, borderColor: tk.border, borderWidth: 1 }]}
+                          activeOpacity={0.8}
+                        >
+                          <MapPin size={16} color={colors.primary} />
+                          <Text style={[styles.mapBtnText, { color: tk.text }]}>
+                            {latitude && longitude ? "Change Pin Location" : "Select Pin on Map"}
+                          </Text>
+                        </TouchableOpacity>
+                        {latitude && longitude && (
+                          <TouchableOpacity
+                            onPress={() => { setLatitude(null); setLongitude(null); }}
+                            style={styles.clearLocBtn}
+                            activeOpacity={0.8}
+                          >
+                            <Trash2 size={16} color="#FF4D4D" />
+                          </TouchableOpacity>
+                        )}
+                      </View>
 
-                {/* Submit button */}
-                <TouchableOpacity
-                  onPress={handleSubmit}
-                  disabled={submitting}
-                  style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
-                  activeOpacity={0.85}
-                >
-                  {submitting ? (
-                    <ActivityIndicator size="small" color={colors.white} />
-                  ) : (
-                    <Text style={styles.submitBtnText}>{editingPost ? "Save Changes" : "Post Report"}</Text>
+                      {/* Mini Preview of Pinned Location */}
+                      {latitude && longitude && (
+                        <View style={[styles.miniMapContainer, { borderColor: tk.border, borderRadius: 14, overflow: 'hidden', marginBottom: 12 }]}>
+                          {!isWeb ? (
+                            <MapView
+                              style={{ width: '100%', height: 110 }}
+                              initialRegion={{
+                                latitude,
+                                longitude,
+                                latitudeDelta: 0.01,
+                                longitudeDelta: 0.01,
+                              }}
+                              scrollEnabled={false}
+                              zoomEnabled={false}
+                              pitchEnabled={false}
+                              rotateEnabled={false}
+                            >
+                              <Marker coordinate={{ latitude, longitude }} pinColor={colors.coral} />
+                            </MapView>
+                          ) : (
+                            <View style={{ height: 110, alignItems: 'center', justifyContent: 'center', backgroundColor: tk.inputBg }}>
+                              <Text style={{ color: tk.textMuted, fontSize: 12 }}>Map Preview (Coordinates: {latitude.toFixed(4)}, {longitude.toFixed(4)})</Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
+                    </>
                   )}
-                </TouchableOpacity>
-              </ScrollView>
+
+                  {/* Address */}
+                  <Text style={[styles.label, { color: tk.textMuted }]}>Location / Address (Required)</Text>
+                  <TextInput
+                    value={address}
+                    onChangeText={setAddress}
+                    placeholder="e.g. Central Park, Sector 4"
+                    placeholderTextColor={tk.textMuted}
+                    style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, borderWidth: 1 }]}
+                  />
+
+                  {/* Description */}
+                  <Text style={[styles.label, { color: tk.textMuted }]}>Description / Notes (Optional)</Text>
+                  <TextInput
+                    value={description}
+                    onChangeText={setDescription}
+                    placeholder="e.g. Wearing a red collar, friendly but timid."
+                    placeholderTextColor={tk.textMuted}
+                    multiline
+                    style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, borderWidth: 1, minHeight: 80, textAlignVertical: 'top' }]}
+                  />
+
+                  {/* Submit button */}
+                  <TouchableOpacity
+                    onPress={handleSubmit}
+                    disabled={submitting}
+                    style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
+                    activeOpacity={0.85}
+                  >
+                    {submitting ? (
+                      <ActivityIndicator size="small" color={colors.white} />
+                    ) : (
+                      <Text style={styles.submitBtnText}>{editingPost ? "Save Changes" : "Post Report"}</Text>
+                    )}
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
             </View>
-          </View>
           </KeyboardAvoidingView>
+          {/* Map Picker Modal */}
+          <Modal
+            visible={mapModalVisible}
+            animationType="slide"
+            onRequestClose={() => setMapModalVisible(false)}
+          >
+            <View style={{ flex: 1, backgroundColor: tk.bg }}>
+              {/* Header */}
+              <View style={[styles.mapHeader, { borderBottomColor: tk.border, borderBottomWidth: 1, paddingTop: 10 + insets.top, backgroundColor: tk.card }]}>
+                <TouchableOpacity onPress={() => setMapModalVisible(false)} style={styles.mapHeaderBtn}>
+                  <X size={20} color={tk.text} />
+                </TouchableOpacity>
+                <Text style={[styles.mapHeaderTitle, { color: tk.text }]}>Pin Location</Text>
+                <TouchableOpacity onPress={handleConfirmLocation} style={[styles.mapHeaderBtn, styles.mapConfirmBtn]}>
+                  <Text style={{ color: colors.white, fontFamily: 'Poppins_700Bold', fontSize: 13 }}>Confirm</Text>
+                </TouchableOpacity>
+              </View>
+
+              {!isWeb ? (
+                <View style={{ flex: 1, position: 'relative' }}>
+                  <MapView
+                    ref={mapRef}
+                    style={{ flex: 1 }}
+                    initialRegion={{
+                      latitude: tempLat || locationLat || 37.78825,
+                      longitude: tempLng || locationLng || -122.4324,
+                      latitudeDelta: 0.015,
+                      longitudeDelta: 0.015,
+                    }}
+                    onPress={(e) => {
+                      const { latitude: lat, longitude: lng } = e.nativeEvent.coordinate;
+                      setTempLat(lat);
+                      setTempLng(lng);
+                      if (mapRef.current) {
+                        mapRef.current.animateToRegion({
+                          latitude: lat,
+                          longitude: lng,
+                          latitudeDelta: 0.015,
+                          longitudeDelta: 0.015,
+                        }, 500);
+                      }
+                    }}
+                  >
+                    <Marker
+                      coordinate={{
+                        latitude: tempLat || locationLat || 37.78825,
+                        longitude: tempLng || locationLng || -122.4324,
+                      }}
+                      pinColor={colors.coral}
+                    />
+                  </MapView>
+
+                  {/* Current Location Button */}
+                  <TouchableOpacity
+                    style={[styles.currentLocationBtn, { backgroundColor: tk.card }]}
+                    onPress={handlePinCurrentLocation}
+                    activeOpacity={0.8}
+                  >
+                    <MapPin size={22} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+                  <Text style={{ color: tk.text, textAlign: 'center', marginBottom: 20 }}>Map picker is not supported in the web environment.</Text>
+                  <TouchableOpacity onPress={() => setMapModalVisible(false)} style={[styles.submitBtn, { width: 200 }]}>
+                    <Text style={styles.submitBtnText}>Go Back</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </Modal>
         </Modal>
+
+
       </View>
     </PageContainer>
   );
@@ -659,4 +983,31 @@ const styles = StyleSheet.create({
   petOptionCard: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16 },
   petOptionAvatar: { width: 32, height: 32, borderRadius: 16 },
   petOptionName: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
+
+  // New Geolocation Map & Carousel styles
+  photoWrapper: { position: 'relative', width: 90, height: 90, borderRadius: 16, overflow: 'hidden' },
+  pickedImage: { width: '100%', height: '100%' },
+  deletePhotoBtn: { position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 12, width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
+  photoZoneSmall: { width: 90, height: 90, borderRadius: 16, borderStyle: 'dashed', borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+
+  mapBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12 },
+  mapBtnText: { fontFamily: 'Poppins_600SemiBold', fontSize: 13 },
+  clearLocBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#FF4D4D20', alignItems: 'center', justifyContent: 'center' },
+  miniMapContainer: { width: '100%', height: 110, borderWidth: 1 },
+
+  mapModalContainer: { flex: 1 },
+  mapHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
+  mapHeaderBtn: { padding: 8 },
+  mapConfirmBtn: { backgroundColor: colors.primary, borderRadius: 14, paddingHorizontal: 16 },
+  mapHeaderTitle: { fontFamily: 'Poppins_700Bold', fontSize: 16 },
+  currentLocationBtn: { position: 'absolute', bottom: 30, right: 20, width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84 },
+
+  detailPetImgScroll: { borderRadius: 20, height: 340 },
+  detailPetImgItem: { height: 340, borderRadius: 20 },
+  carouselIndicatorContainer: { position: 'absolute', bottom: 16, width: '100%', flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  carouselIndicatorDot: { width: 8, height: 8, borderRadius: 4 },
+
+  detailMapContainer: { width: '100%', height: 210, borderWidth: 1, borderRadius: 20, overflow: 'hidden' },
+  openInMapsBtn: { height: 44, width: '100%', backgroundColor: colors.primary + "1A", alignItems: 'center', justifyContent: 'center', borderTopWidth: 1, borderTopColor: '#eaeaea' },
+  openInMapsText: { fontFamily: 'Poppins_700Bold', fontSize: 13, color: colors.primary },
 });
