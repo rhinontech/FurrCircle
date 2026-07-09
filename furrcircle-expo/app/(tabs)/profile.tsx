@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, Modal, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
-import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut, Clock, Trash2, Syringe, Pill, FolderHeart, FileText } from "../../src/components/ui/icons";
+import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut, Clock, Trash2, Syringe, Pill, FolderHeart, FileText, Globe } from "../../src/components/ui/icons";
 import { useCallback, useState } from "react";
 import { getPets, type Pet } from "../../src/lib/pets-store";
 import { colors } from "../../src/lib/theme";
@@ -13,6 +13,7 @@ import { userApi } from "../../services/user/userApi";
 import { reminderApi } from "../../services/reminder/reminderApi";
 import { AdaptiveSheet } from "../../src/components/AdaptiveSheet";
 import { glassSurface } from "../../src/components/ui/Glass";
+import { useLanguage } from "../../src/lib/language-context";
 
 const TINT_COLORS = ["rgba(255,107,107,0.15)", "rgba(37,99,235,0.1)", "rgba(255,217,61,0.3)", "rgba(255,111,207,0.15)", "rgba(76,175,80,0.15)"];
 
@@ -22,6 +23,8 @@ export default function ProfileScreen() {
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
   const { user, logout } = useAuthStore();
+  const { language, setLanguage, t } = useLanguage();
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [pets, setPets] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [reminders, setReminders] = useState<any[]>([]);
@@ -89,7 +92,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
 
         <View style={styles.header}>
-          <Text style={[styles.title, { color: tk.text }]}>Profile</Text>
+          <Text style={[styles.title, { color: tk.text }]}>{t("profile")}</Text>
           <View style={styles.headerActions}>
             {/* <TouchableOpacity onPress={() => user?.username && router.push(`/u/${user.username}`)} style={[styles.iconBtn, { backgroundColor: tk.card }]}>
               <Share2 size={20} color={tk.text} strokeWidth={2} />
@@ -115,9 +118,9 @@ export default function ProfileScreen() {
 
         {/* Pets */}
         <View style={styles.sectionRow}>
-          <Text style={[styles.sectionTitle, { color: tk.text }]}>My pets</Text>
+          <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("myPets")}</Text>
           <TouchableOpacity onPress={() => router.push("/add-pet")} style={styles.addPetBtn}>
-            <Plus size={16} color={colors.primary} /><Text style={styles.addPetText}>Add pet</Text>
+            <Plus size={16} color={colors.primary} /><Text style={styles.addPetText}>{t("addPet")}</Text>
           </TouchableOpacity>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 8 }}>
@@ -139,7 +142,7 @@ export default function ProfileScreen() {
           ))}
           <TouchableOpacity onPress={() => router.push("/add-pet")} style={[styles.petCardAdd, { backgroundColor: tk.glass, borderColor: tk.glassBorder }]} activeOpacity={0.85}>
             <Plus size={24} color={tk.textMuted} />
-            <Text style={[styles.addPetCardText, { color: tk.textMuted }]}>Add pet</Text>
+            <Text style={[styles.addPetCardText, { color: tk.textMuted }]}>{t("addPet")}</Text>
           </TouchableOpacity>
         </ScrollView>
 
@@ -161,7 +164,7 @@ export default function ProfileScreen() {
             <>
               {/* Upcoming Reminders */}
               <View style={styles.sectionRow}>
-                <Text style={[styles.sectionTitle, { color: tk.text }]}>Upcoming Reminders</Text>
+                <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("upcomingReminders")}</Text>
               </View>
 
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 8 }}>
@@ -210,30 +213,30 @@ export default function ProfileScreen() {
 
 
         {/* Log care */}
-        <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Log care</Text>
+        <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>{t("logCare")}</Text>
         <View style={styles.tilesGrid}>
-          <Tile onPress={() => setPetPickerTarget("records")} icon={FolderHeart} label="Medical Records" tintColor="rgba(255,217,61,0.3)" tk={tk} />
-          <Tile onPress={() => setPetPickerTarget("passport")} icon={FileText} label="Pet Passport" tintColor="rgba(37,99,235,0.1)" tk={tk} />
+          <Tile onPress={() => setPetPickerTarget("records")} icon={FolderHeart} label={t("medicalRecords")} tintColor="rgba(255,217,61,0.3)" tk={tk} />
+          <Tile onPress={() => setPetPickerTarget("passport")} icon={FileText} label={t("petPassport")} tintColor="rgba(37,99,235,0.1)" tk={tk} />
         </View>
 
         {/* Quick access */}
-        <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Quick access</Text>
+        <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>{t("quickAccess")}</Text>
         <View style={styles.tilesGrid}>
-          <Tile onPress={() => setPetPickerTarget("today")} icon={Sun} label="Today" tintColor="rgba(255,107,107,0.15)" tk={tk} />
-          <Tile onPress={() => router.push("/events")} icon={CalendarDays} label="Events" tintColor="rgba(255,217,61,0.3)" tk={tk} />
-          <Tile onPress={() => router.push("/lost")} icon={Siren} label="Lost & Found" tintColor="rgba(255,111,207,0.15)" tk={tk} />
-          <Tile onPress={() => router.push("/care")} icon={Stethoscope} label="Care" tintColor="rgba(37,99,235,0.1)" tk={tk} />
+          <Tile onPress={() => setPetPickerTarget("today")} icon={Sun} label={t("today")} tintColor="rgba(255,107,107,0.15)" tk={tk} />
+          <Tile onPress={() => router.push("/events")} icon={CalendarDays} label={t("events")} tintColor="rgba(255,217,61,0.3)" tk={tk} />
+          <Tile onPress={() => router.push("/lost")} icon={Siren} label={t("lostFound")} tintColor="rgba(255,111,207,0.15)" tk={tk} />
+          <Tile onPress={() => router.push("/care")} icon={Stethoscope} label={t("care")} tintColor="rgba(37,99,235,0.1)" tk={tk} />
         </View>
 
 
 
         {/* Activity */}
-        <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>Activity</Text>
+        <Text style={[styles.sectionTitle, { paddingHorizontal: 24, marginTop: 24, marginBottom: 12, color: tk.text }]}>{t("activity")}</Text>
         <View style={styles.activityList}>
-          <Row onPress={() => router.push("/notifications")} icon={Bell} label="Notifications" meta="" tintColor="rgba(255,217,61,0.3)" tk={tk} />
-          <Row onPress={() => router.push("/chat")} icon={MessageCircle} label="Messages" meta="" tintColor="rgba(37,99,235,0.1)" tk={tk} />
-          <Row onPress={() => setPetPickerTarget("profile")} icon={Award} label="Badges & Achievements" meta="" tintColor="rgba(255,111,207,0.15)" tk={tk} />
-          {/* <Row onPress={() => router.push("/discover")} icon={MapPin} label="Places visited" meta="" tintColor="rgba(76,175,80,0.15)" tk={tk} /> */}
+          <Row onPress={() => router.push("/notifications")} icon={Bell} label={t("notifications")} meta="" tintColor="rgba(255,217,61,0.3)" tk={tk} />
+          <Row onPress={() => router.push("/chat")} icon={MessageCircle} label={t("messages")} meta="" tintColor="rgba(37,99,235,0.1)" tk={tk} />
+          <Row onPress={() => setPetPickerTarget("profile")} icon={Award} label={t("badgesAchievements")} meta="" tintColor="rgba(255,111,207,0.15)" tk={tk} />
+          <Row onPress={() => setIsLanguageModalOpen(true)} icon={Globe} label={t("language")} meta={language === "en" ? "English" : language === "hi" ? "हिन्दी" : "తెలుగు"} tintColor="rgba(76,175,80,0.15)" tk={tk} />
         </View>
 
         {/* Log Out */}
@@ -243,7 +246,7 @@ export default function ProfileScreen() {
             <LogOut size={20} color={colors.primary} strokeWidth={2} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.dangerLabel, { color: colors.primary }]}>Sign out</Text>
+            <Text style={[styles.dangerLabel, { color: colors.primary }]}>{t("signOut")}</Text>
             <Text style={[styles.dangerSub, { color: tk.textMuted }]}>{user?.email ?? ""}</Text>
           </View>
           <ChevronRight size={16} color={tk.textMuted} />
@@ -262,6 +265,15 @@ export default function ProfileScreen() {
             } else {
               router.push({ pathname: "/pet", params: { id: petId } });
             }
+          }}
+          tk={tk}
+        />
+        <LanguagePickerModal
+          open={isLanguageModalOpen}
+          onClose={() => setIsLanguageModalOpen(false)}
+          currentLanguage={language}
+          onSelect={async (lang: any) => {
+            await setLanguage(lang);
           }}
           tk={tk}
         />
@@ -301,6 +313,63 @@ function PetPickerModal({ open, onClose, pets, onSelect, tk }: any) {
               </TouchableOpacity>
             ))
           )}
+        </ScrollView>
+      </View>
+    </AdaptiveSheet>
+  );
+}
+
+function LanguagePickerModal({ open, onClose, currentLanguage, onSelect, tk }: any) {
+  const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
+  const languages = [
+    { code: "en", label: "English" },
+    { code: "hi", label: "हिन्दी (Hindi)" },
+    { code: "te", label: "తెలుగు (Telugu)" }
+  ];
+
+  return (
+    <AdaptiveSheet visible={open} onClose={onClose} maxWidth={420}>
+      <View style={{ padding: 20, paddingBottom: 20 + insets.bottom }}>
+        <Text style={[styles.modalTitle, { color: tk.text }]}>{t("chooseLanguage")}</Text>
+
+        <ScrollView style={styles.petListScroll} showsVerticalScrollIndicator={false}>
+          {languages.map((lang) => (
+            <TouchableOpacity
+              key={lang.code}
+              onPress={() => {
+                onSelect(lang.code);
+                onClose();
+              }}
+              style={[
+                styles.petRow,
+                {
+                  borderBottomColor: tk.border,
+                  backgroundColor: currentLanguage === lang.code ? tk.glassChip : "transparent",
+                  borderRadius: 12,
+                  paddingHorizontal: 12,
+                  marginVertical: 2,
+                }
+              ]}
+            >
+              <View style={{ flex: 1, flexDirection: "row", alignItems: "center", height: 40 }}>
+                <Text
+                  style={[
+                    styles.petNameText,
+                    {
+                      color: tk.text,
+                      fontFamily: currentLanguage === lang.code ? "Poppins_700Bold" : "Poppins_600SemiBold",
+                    }
+                  ]}
+                >
+                  {lang.label}
+                </Text>
+              </View>
+              {currentLanguage === lang.code && (
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary }} />
+              )}
+            </TouchableOpacity>
+          ))}
         </ScrollView>
       </View>
     </AdaptiveSheet>

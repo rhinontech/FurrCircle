@@ -6,6 +6,7 @@ import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
+import { useLanguage } from "../src/lib/language-context";
 import { SEED_USERS } from "../src/lib/seed-data";
 import {
   Stethoscope, FileText, Sparkles, ShieldCheck,
@@ -17,14 +18,14 @@ import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
 
 type PickerTarget = "records" | "passport" | "vaccine" | "vitals" | "meds" | "book" | null;
 
-const DIRECT_TILES: { icon: any; label: string; bg: string; text: string; target: PickerTarget }[] = [
-  { icon: Stethoscope, label: "Book a Vet", bg: colors.primary, text: "#fff", target: "book" },
-  { icon: Syringe, label: "Log Vaccine", bg: colors.success, text: "#fff", target: "vaccine" },
-  { icon: Activity, label: "Log Vitals", bg: colors.coral, text: "#fff", target: "vitals" },
-  { icon: Pill, label: "Log Meds", bg: colors.pinky, text: "#fff", target: "meds" },
+const DIRECT_TILES: { icon: any; labelKey: string; bg: string; text: string; target: PickerTarget }[] = [
+  { icon: Stethoscope, labelKey: "bookAVetLabel", bg: colors.primary, text: "#fff", target: "book" },
+  { icon: Syringe, labelKey: "logVaccineLabel", bg: colors.success, text: "#fff", target: "vaccine" },
+  { icon: Activity, labelKey: "logVitalsLabel", bg: colors.coral, text: "#fff", target: "vitals" },
+  { icon: Pill, labelKey: "logMedsLabel", bg: colors.pinky, text: "#fff", target: "meds" },
 ];
-
 export default function CareScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const tk = useTokens();
   const insets = useSafeAreaInsets();
@@ -66,15 +67,17 @@ export default function CareScreen() {
   return (
     <PageContainer>
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title="Care & Health" />
+      <ScreenHeader title={t("careAndHealthHeaderTitle")} />
       <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
         {/* Hero reminder banner */}
         <View style={styles.heroBanner}>
           <View style={styles.heroContent}>
-            <Text style={styles.heroEyebrow}>MOONA · REMINDER</Text>
-            <Text style={styles.heroTitle}>Monthly checkup is due this week</Text>
+            <Text style={styles.heroEyebrow}>
+              {(myPets[0]?.name || "PET").toUpperCase()} · {t("reminderLabel").toUpperCase()}
+            </Text>
+            <Text style={styles.heroTitle}>{t("monthlyCheckupDueMsg")}</Text>
             <TouchableOpacity onPress={() => router.push("/discover")} style={styles.heroBtn} activeOpacity={0.85}>
-              <Text style={styles.heroBtnText}>Book now</Text>
+              <Text style={styles.heroBtnText}>{t("bookNowBtn")}</Text>
               <ChevronRight size={16} color={colors.primary} strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
@@ -85,12 +88,12 @@ export default function CareScreen() {
           />
         </View>
 
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Care services</Text>
+        <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("careServicesLabel")}</Text>
 
         <View style={styles.grid}>
-          {DIRECT_TILES.map(({ icon: Icon, label, bg, text, target }) => (
+          {DIRECT_TILES.map(({ icon: Icon, labelKey, bg, text, target }) => (
             <TouchableOpacity
-              key={label}
+              key={labelKey}
               onPress={() => setPickerTarget(target)}
               style={[styles.tile, { backgroundColor: bg }]}
               activeOpacity={0.85}
@@ -98,7 +101,7 @@ export default function CareScreen() {
               <View style={styles.tileIconWrap}>
                 <Icon size={20} color={text} strokeWidth={2.2} />
               </View>
-              <Text style={[styles.tileLabel, { color: text }]}>{label}</Text>
+              <Text style={[styles.tileLabel, { color: text }]}>{t(labelKey as any)}</Text>
             </TouchableOpacity>
           ))}
 
@@ -111,7 +114,7 @@ export default function CareScreen() {
             <View style={styles.tileIconWrap}>
               <FolderHeart size={20} color={colors.foreground} strokeWidth={2.2} />
             </View>
-            <Text style={[styles.tileLabel, { color: colors.foreground }]}>Medical Records</Text>
+            <Text style={[styles.tileLabel, { color: colors.foreground }]}>{t("medicalRecordsTile")}</Text>
           </TouchableOpacity>
 
           {/* Pet Passport — shows pet picker first, then opens Passport tab */}
@@ -123,7 +126,7 @@ export default function CareScreen() {
             <View style={styles.tileIconWrap}>
               <FileText size={20} color="#fff" strokeWidth={2.2} />
             </View>
-            <Text style={[styles.tileLabel, { color: "#fff" }]}>Pet Passport</Text>
+            <Text style={[styles.tileLabel, { color: "#fff" }]}>{t("petPassportTile")}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -134,7 +137,7 @@ export default function CareScreen() {
         <View style={{ padding: 24, paddingBottom: 24 + insets.bottom }}>
           <View style={styles.sheetTitleRow}>
             <Text style={[styles.sheetTitle, { color: tk.text }]}>
-              {pickerTarget === "passport" ? "Whose passport?" : "Which pet?"}
+              {pickerTarget === "passport" ? t("whosePassportQuestion") : t("whichPetQuestion")}
             </Text>
             <TouchableOpacity onPress={() => setPickerTarget(null)}>
               <X size={20} color={tk.textMuted} />
@@ -142,8 +145,8 @@ export default function CareScreen() {
           </View>
           <Text style={[styles.sheetSub, { color: tk.textMuted }]}>
             {pickerTarget === "passport"
-              ? "Select a pet to view their passport"
-              : "Select a pet to view health records"}
+              ? t("selectPetPassportSub")
+              : t("selectPetRecordsSub")}
           </Text>
           <View style={{ gap: 10, marginTop: 8 }}>
             {myPets.map((pet) => (
@@ -162,7 +165,7 @@ export default function CareScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.petName, { color: tk.text }]}>{pet.name}</Text>
-                  <Text style={[styles.petMeta, { color: tk.textMuted }]}>{pet.breed || pet.species} · {pet.gender === "female" ? "♀" : "♂"} · {pet.age || "?"}y</Text>
+                  <Text style={[styles.petMeta, { color: tk.textMuted }]}>{pet.breed || pet.species} · {pet.gender === "female" ? "♀" : "♂"} · {pet.age ? t("yearsShort").replace("{years}", String(pet.age)) : "?"}</Text>
                 </View>
                 <ChevronRight size={18} color={tk.textMuted} />
               </TouchableOpacity>

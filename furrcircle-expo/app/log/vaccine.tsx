@@ -4,11 +4,13 @@ import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";
 import { useTokens, useThemeStore } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { useState } from "react";
 import { healthApi } from "../../services/health/healthApi";
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function LogVaccineScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const { petId, editId, name: initName, dateAdministered: initDateAdministered, nextDueDate: initNextDueDate, status: initStatus } = useLocalSearchParams<{
     petId: string;
@@ -33,11 +35,11 @@ export default function LogVaccineScreen() {
 
   const handleSave = async () => {
     if (!vaccine.trim()) {
-        Alert.alert("Error", "Please enter vaccine name.");
+        Alert.alert(t("error"), t("pleaseEnterVaccineName"));
         return;
     }
     if (!petId) {
-        Alert.alert("Error", "No pet selected.");
+        Alert.alert(t("error"), t("noPetSelected"));
         return;
     }
     setLoading(true);
@@ -49,7 +51,7 @@ export default function LogVaccineScreen() {
                 nextDueDate: nextDate ? nextDate.toISOString().slice(0, 10) : null,
                 status: nextDate ? "due" : "done",
             });
-            Alert.alert("Success", "Vaccine updated successfully.");
+            Alert.alert(t("success"), t("vaccineUpdatedSuccessfully"));
         } else {
             await healthApi.addVaccine(petId, {
                 name: vaccine,
@@ -58,12 +60,12 @@ export default function LogVaccineScreen() {
                 status: "done",
                 setReminder: nextDate ? setReminder : false
             });
-            Alert.alert("Success", "Vaccine logged successfully.");
+            Alert.alert(t("success"), t("vaccineLoggedSuccessfully"));
         }
         router.back();
     } catch (err) {
         console.error("Failed to save vaccine:", err);
-        Alert.alert("Error", "Failed to save vaccine.");
+        Alert.alert(t("error"), t("failedToSaveVaccine"));
     } finally {
         setLoading(false);
     }
@@ -72,12 +74,12 @@ export default function LogVaccineScreen() {
   return (
     <PageContainer>
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title={editId ? "Edit Vaccine" : "Log Vaccine"} />
+      <ScreenHeader title={editId ? t("editVaccineHeaderTitle") : t("logVaccineHeaderTitle")} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
-        <Text style={[styles.label, { color: tk.textMuted }]}>Vaccine name</Text>
-        <TextInput value={vaccine} onChangeText={setVaccine} placeholder="e.g. DHPP" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>{t("vaccineNameLabel")}</Text>
+        <TextInput value={vaccine} onChangeText={setVaccine} placeholder={t("vaccineNamePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
         
-        <Text style={[styles.label, { color: tk.textMuted }]}>Date Given</Text>
+        <Text style={[styles.label, { color: tk.textMuted }]}>{t("vaccineDateGivenLabel")}</Text>
         {Platform.OS === 'ios' ? (
           <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
             <DateTimePicker
@@ -111,7 +113,7 @@ export default function LogVaccineScreen() {
           </>
         )}
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>Next due date</Text>
+        <Text style={[styles.label, { color: tk.textMuted }]}>{t("vaccineNextDueDateLabel")}</Text>
         {Platform.OS === 'ios' ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 }}>
             <DateTimePicker
@@ -126,7 +128,7 @@ export default function LogVaccineScreen() {
             />
             {nextDate && (
               <TouchableOpacity onPress={() => setNextDate(null)} style={styles.clearBtn} activeOpacity={0.7}>
-                <Text style={{ color: colors.coral, fontFamily: "Poppins_600SemiBold", fontSize: 13 }}>Clear</Text>
+                <Text style={{ color: colors.coral, fontFamily: "Poppins_600SemiBold", fontSize: 13 }}>{t("clear")}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -139,12 +141,12 @@ export default function LogVaccineScreen() {
                 activeOpacity={0.8}
               >
                 <Text style={{ color: nextDate ? tk.text : tk.textMuted, fontFamily: "Inter_400Regular" }}>
-                  {nextDate ? nextDate.toLocaleDateString() : "Select date (Optional)"}
+                  {nextDate ? nextDate.toLocaleDateString() : t("selectDateOptional")}
                 </Text>
               </TouchableOpacity>
               {nextDate && (
                 <TouchableOpacity onPress={() => setNextDate(null)} style={[styles.input, { backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }]} activeOpacity={0.7}>
-                  <Text style={{ color: colors.coral, fontFamily: "Poppins_600SemiBold", fontSize: 13 }}>Clear</Text>
+                  <Text style={{ color: colors.coral, fontFamily: "Poppins_600SemiBold", fontSize: 13 }}>{t("clear")}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -165,7 +167,7 @@ export default function LogVaccineScreen() {
 
         {nextDate && (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, paddingHorizontal: 4 }}>
-            <Text style={{ fontFamily: "Poppins_600SemiBold", fontSize: 14, color: tk.text }}>Set reminder for next due date</Text>
+            <Text style={{ fontFamily: "Poppins_600SemiBold", fontSize: 14, color: tk.text }}>{t("setReminderNextDueDate")}</Text>
             <Switch
               value={setReminder}
               onValueChange={setSetReminder}
@@ -177,7 +179,7 @@ export default function LogVaccineScreen() {
         )}
 
         <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save</Text>}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
         </TouchableOpacity>
       </ScrollView>
     </View>

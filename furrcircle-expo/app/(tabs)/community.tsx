@@ -21,6 +21,7 @@ import { ImageCropper } from "../../src/components/ImageCropper";
 import { LinearGradient } from "expo-linear-gradient";
 import { glassSurface } from "../../src/components/ui/Glass";
 import { tabBarClearance } from "../../src/lib/tabbar";
+import { useLanguage } from "../../src/lib/language-context";
 
 type FilterType = "all" | "people" | "pets" | "posts" | "circles" | "questions" | "tags";
 const FILTERS: { key: FilterType; label: string }[] = [
@@ -43,6 +44,7 @@ const CATEGORY_PRESETS = [
 ];
 
 export default function CommunityScreen() {
+  const { t } = useLanguage();
   const { refresh } = useLocalSearchParams<{ refresh?: string }>();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -165,7 +167,7 @@ export default function CommunityScreen() {
       }
       await loadCircles();
     } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || "Action failed.");
+      Alert.alert(t("error"), err?.response?.data?.message || t("actionFailed"));
     }
   };
 
@@ -197,8 +199,8 @@ export default function CommunityScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={[styles.title, { color: tk.text }]}>Circles</Text>
-              {!isSearchActive && <Text style={[styles.subtitle, { color: tk.textMuted }]} numberOfLines={1}>Conversations that bring pet parents together</Text>}
+              <Text style={[styles.title, { color: tk.text }]}>{t("communityTitle")}</Text>
+              {!isSearchActive && <Text style={[styles.subtitle, { color: tk.textMuted }]} numberOfLines={1}>{t("communitySubtitle")}</Text>}
             </View>
             {!isSearchActive && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -219,7 +221,7 @@ export default function CommunityScreen() {
             <Search size={16} color={tk.textMuted} />
             <TextInput
               ref={searchInputRef}
-              placeholder="Search people, pets, circles, posts…"
+              placeholder={t("searchPlaceholder")}
               placeholderTextColor={tk.textMuted}
               style={[styles.searchInput, { color: tk.text }]}
               value={searchQuery}
@@ -243,9 +245,18 @@ export default function CommunityScreen() {
                 {FILTERS.map((f) => {
                   const isActive = activeFilter === f.key;
                   const count = getFilterCount(f.key);
+                  const filterLabelMap: Record<FilterType, any> = {
+                    all: "filterAll",
+                    people: "filterPeople",
+                    pets: "filterPets",
+                    posts: "filterPosts",
+                    circles: "filterCircles",
+                    questions: "filterQuestions",
+                    tags: "filterTags",
+                  };
                   return (
                     <TouchableOpacity key={f.key} onPress={() => setActiveFilter(f.key)} style={[styles.chip, isActive ? { backgroundColor: tk.text } : glassSurface(tk)]} activeOpacity={0.8}>
-                      <Text style={[styles.chipLabel, { color: isActive ? tk.bg : tk.textMuted }]}>{f.label}</Text>
+                      <Text style={[styles.chipLabel, { color: isActive ? tk.bg : tk.textMuted }]}>{t(filterLabelMap[f.key])}</Text>
                       {searchQuery.trim() && count > 0 && (
                         <View style={[styles.chipBadge, { backgroundColor: isActive ? tk.bg + "33" : tk.text + "22" }]}>
                           <Text style={[styles.chipBadgeText, { color: isActive ? tk.bg : tk.text }]}>{count}</Text>
@@ -259,17 +270,17 @@ export default function CommunityScreen() {
               {searching ? (
                 <View style={{ paddingTop: 40, alignItems: "center" }}><ActivityIndicator size="large" color={colors.primary} /></View>
               ) : !searchQuery.trim() ? (
-                <View style={styles.emptyState}><Text style={[styles.emptyText, { color: tk.textMuted }]}>Type to search circles, posts, and questions</Text></View>
+                <View style={styles.emptyState}><Text style={[styles.emptyText, { color: tk.textMuted }]}>{t("typeToSearch")}</Text></View>
               ) : totalResults === 0 ? (
                 <View style={styles.emptyState}>
-                  <Text style={[styles.emptyTitle, { color: tk.text }]}>No results for "{searchQuery}"</Text>
-                  <Text style={[styles.emptyText, { color: tk.textMuted }]}>Try a different name or keyword</Text>
+                  <Text style={[styles.emptyTitle, { color: tk.text }]}>{t("noResultsFor")} "{searchQuery}"</Text>
+                  <Text style={[styles.emptyText, { color: tk.textMuted }]}>{t("tryDifferentKeyword")}</Text>
                 </View>
               ) : (
                 <View style={{ paddingHorizontal: 20 }}>
                   {/* PEOPLE */}
                   {(activeFilter === "all" || activeFilter === "people") && (searchResults?.people || []).length > 0 && (
-                    <ResultSection label="PEOPLE" count={searchResults.people.length} showSeeAll={activeFilter === "all" && searchResults.people.length > 3} onSeeAll={() => setActiveFilter("people")} tk={tk}>
+                    <ResultSection label={t("filterPeople").toUpperCase()} count={searchResults.people.length} showSeeAll={activeFilter === "all" && searchResults.people.length > 3} onSeeAll={() => setActiveFilter("people")} tk={tk}>
                       {(activeFilter === "all" ? searchResults.people.slice(0, 3) : searchResults.people).map((p: any) => (
                         <TouchableOpacity key={p.id} onPress={() => router.push(`/u/${p.username}`)} style={[styles.resultRow, glassSurface(tk)]} activeOpacity={0.8}>
                           <View style={[styles.resultIcon, { backgroundColor: "rgba(255,107,107,0.12)", overflow: "hidden" }]}>
@@ -300,7 +311,7 @@ export default function CommunityScreen() {
                               style={[styles.joinBtn, { backgroundColor: p.followStatus === "none" ? colors.primary : tk.glassChip, borderColor: p.followStatus === "none" ? colors.primary : tk.glassBorder }]}
                             >
                               <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 11, color: p.followStatus === "none" ? colors.white : tk.textMuted }}>
-                                {p.followStatus === "none" ? "Follow" : p.followStatus === "pending" ? "Requested" : "Following"}
+                                {p.followStatus === "none" ? t("follow") : p.followStatus === "pending" ? t("requested") : t("following")}
                               </Text>
                             </TouchableOpacity>
                           )}
@@ -311,7 +322,7 @@ export default function CommunityScreen() {
 
                   {/* CIRCLES */}
                   {(activeFilter === "all" || activeFilter === "circles") && (searchResults?.circles || []).length > 0 && (
-                    <ResultSection label="CIRCLES" count={searchResults.circles.length} showSeeAll={activeFilter === "all" && searchResults.circles.length > 3} onSeeAll={() => setActiveFilter("circles")} tk={tk}>
+                    <ResultSection label={t("filterCircles").toUpperCase()} count={searchResults.circles.length} showSeeAll={activeFilter === "all" && searchResults.circles.length > 3} onSeeAll={() => setActiveFilter("circles")} tk={tk}>
                       {(activeFilter === "all" ? searchResults.circles.slice(0, 3) : searchResults.circles).map((c: any) => (
                         <TouchableOpacity key={c.id} onPress={() => router.push(`/community/${c.id}`)} style={[styles.resultRow, glassSurface(tk)]} activeOpacity={0.8}>
                           <View style={[styles.resultIcon, { backgroundColor: colors.primary + "22", overflow: "hidden" }]}>
@@ -321,10 +332,10 @@ export default function CommunityScreen() {
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={[styles.resultTitle, { color: tk.text }]}>{c.name}</Text>
-                            <Text style={[styles.resultMeta, { color: tk.textMuted }]}>{c.memberCount} members · {c.category}</Text>
+                            <Text style={[styles.resultMeta, { color: tk.textMuted }]}>{c.memberCount} {t("members")} · {c.category}</Text>
                           </View>
                           <TouchableOpacity onPress={() => handleJoinToggle(c.id, c.isJoined)} style={[styles.joinBtn, { backgroundColor: c.isJoined ? tk.glassChip : colors.primary, borderColor: c.isJoined ? tk.glassBorder : colors.primary }]}>
-                            <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 11, color: c.isJoined ? tk.textMuted : colors.white }}>{c.isJoined ? "Joined" : "Join"}</Text>
+                            <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 11, color: c.isJoined ? tk.textMuted : colors.white }}>{c.isJoined ? t("joined") : t("join")}</Text>
                           </TouchableOpacity>
                         </TouchableOpacity>
                       ))}
@@ -333,7 +344,7 @@ export default function CommunityScreen() {
 
                   {/* QUESTIONS */}
                   {(activeFilter === "all" || activeFilter === "questions") && (searchResults?.questions || []).length > 0 && (
-                    <ResultSection label="QUESTIONS" count={searchResults.questions.length} showSeeAll={activeFilter === "all" && searchResults.questions.length > 3} onSeeAll={() => setActiveFilter("questions")} tk={tk}>
+                    <ResultSection label={t("filterQuestions").toUpperCase()} count={searchResults.questions.length} showSeeAll={activeFilter === "all" && searchResults.questions.length > 3} onSeeAll={() => setActiveFilter("questions")} tk={tk}>
                       {(activeFilter === "all" ? searchResults.questions.slice(0, 3) : searchResults.questions).map((q: any) => (
                         <TouchableOpacity
                           key={q.id}
@@ -346,7 +357,7 @@ export default function CommunityScreen() {
                               title: q.title,
                               body: q.body || "",
                               tags: q.tags?.[0] || "",
-                              askerName: q.author?.name || "Someone",
+                              askerName: q.author?.name || t("petParent"),
                               time: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : "",
                               upvotes: q.upvotes || 0,
                               hasVoted: q.hasVoted ? "1" : "0",
@@ -357,7 +368,7 @@ export default function CommunityScreen() {
                           <View style={[styles.resultIcon, { backgroundColor: q.hasVoted ? colors.primary + "22" : "#FFD93D44" }]}><HelpCircle size={18} color={q.hasVoted ? colors.primary : "#B8860B"} /></View>
                           <View style={{ flex: 1 }}>
                             <Text style={[styles.resultTitle, { color: tk.text }]} numberOfLines={2}>{q.title}</Text>
-                            <Text style={[styles.resultMeta, { color: q.hasVoted ? colors.primary : tk.textMuted }]}>{q.upvotes} upvotes{q.hasVoted ? " · Upvoted ✓" : ""} · {q.answerCount} answers</Text>
+                            <Text style={[styles.resultMeta, { color: q.hasVoted ? colors.primary : tk.textMuted }]}>{q.upvotes} {t("upvotes")}{q.hasVoted ? ` · ${t("upvoted")}` : ""} · {q.answerCount} {t("answers")}</Text>
                           </View>
                         </TouchableOpacity>
                       ))}
@@ -366,7 +377,7 @@ export default function CommunityScreen() {
 
                   {/* POSTS */}
                   {(activeFilter === "all" || activeFilter === "posts") && (searchResults?.posts || []).length > 0 && (
-                    <ResultSection label="POSTS" count={searchResults.posts.length} showSeeAll={activeFilter === "all" && searchResults.posts.length > 3} onSeeAll={() => setActiveFilter("posts")} tk={tk}>
+                    <ResultSection label={t("filterPosts").toUpperCase()} count={searchResults.posts.length} showSeeAll={activeFilter === "all" && searchResults.posts.length > 3} onSeeAll={() => setActiveFilter("posts")} tk={tk}>
                       {(activeFilter === "all" ? searchResults.posts.slice(0, 3) : searchResults.posts).map((p: any) => (
                         <TouchableOpacity key={p.id} onPress={() => router.push(`/post/${p.id}`)} style={[styles.resultRow, glassSurface(tk)]} activeOpacity={0.8}>
                           <View style={[styles.resultIcon, { backgroundColor: "rgba(37,99,235,0.1)" }]}>
@@ -374,7 +385,7 @@ export default function CommunityScreen() {
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={[styles.resultTitle, { color: tk.text }]} numberOfLines={2}>{p.content}</Text>
-                            <Text style={[styles.resultMeta, { color: tk.textMuted }]}>{p.author?.name} · {p.category || "General"}</Text>
+                            <Text style={[styles.resultMeta, { color: tk.textMuted }]}>{p.author?.name || t("petParent")} · {p.category || "General"}</Text>
                           </View>
                         </TouchableOpacity>
                       ))}
@@ -383,7 +394,7 @@ export default function CommunityScreen() {
 
                   {/* TAGS */}
                   {(activeFilter === "all" || activeFilter === "tags") && (searchResults?.tags || []).length > 0 && (
-                    <ResultSection label="#TAGS" count={searchResults.tags.length} showSeeAll={false} onSeeAll={() => { }} tk={tk}>
+                    <ResultSection label={t("filterTags").toUpperCase()} count={searchResults.tags.length} showSeeAll={false} onSeeAll={() => { }} tk={tk}>
                       <View style={styles.tagsWrap}>
                         {searchResults.tags.map((tag: string) => (
                           <TouchableOpacity key={tag} onPress={() => setSearchQuery(tag)} style={[styles.tagChip, { backgroundColor: tk.glass, borderColor: tk.glassBorder }]} activeOpacity={0.8}>
@@ -403,14 +414,14 @@ export default function CommunityScreen() {
               {/* Trending Today */}
               <View style={styles.sectionHeader}>
                 <Flame size={16} color={colors.coral} />
-                <Text style={[styles.sectionTitle, { color: tk.text }]}>Trending today</Text>
+                <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("trendingToday")}</Text>
               </View>
 
               {loadingTrending ? (
                 <View style={{ paddingVertical: 20, alignItems: "center" }}><ActivityIndicator color={colors.primary} /></View>
               ) : trending.length === 0 ? (
                 <View style={{ paddingHorizontal: 24, paddingBottom: 8 }}>
-                  <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.textMuted }}>No trending questions yet. Be the first to ask!</Text>
+                  <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.textMuted }}>{t("noTrendingQuestions")}</Text>
                 </View>
               ) : (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 8 }}>
@@ -426,7 +437,7 @@ export default function CommunityScreen() {
                           title: q.title,
                           body: q.body || "",
                           tags: q.tags?.[0] || "",
-                          askerName: q.author?.name || "Someone",
+                          askerName: q.author?.name || t("petParent"),
                           time: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : "",
                           upvotes: q.upvotes || 0,
                           hasVoted: q.hasVoted ? "1" : "0",
@@ -438,19 +449,19 @@ export default function CommunityScreen() {
                         <Text style={styles.trendTagText}>{(q.tags?.[0] || q.circleId ? "CIRCLE" : "GLOBAL").toUpperCase()}</Text>
                       </View>
                       <Text style={[styles.trendCardTitle, { color: tk.text }]} numberOfLines={3}>{q.title}</Text>
-                      <Text style={[styles.trendMeta, { color: tk.textMuted }]}>{q.upvotes} upvotes · {q.answerCount} replies</Text>
+                      <Text style={[styles.trendMeta, { color: tk.textMuted }]}>{q.upvotes} {t("upvotes")} · {q.answerCount} {t("replies")}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
               )}
 
               {/* My Circles */}
-              <Text style={[styles.sectionTitle, { marginTop: 24, paddingHorizontal: 24, marginBottom: 8, color: tk.text }]}>Your circles</Text>
+              <Text style={[styles.sectionTitle, { marginTop: 24, paddingHorizontal: 24, marginBottom: 8, color: tk.text }]}>{t("yourCircles")}</Text>
               {loadingCircles ? (
                 <View style={{ paddingVertical: 20, alignItems: "center" }}><ActivityIndicator color={colors.primary} /></View>
               ) : myCircles.length === 0 ? (
                 <View style={{ paddingHorizontal: 24, paddingBottom: 8 }}>
-                  <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.textMuted }}>You haven't joined any circles yet. Discover some below!</Text>
+                  <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.textMuted }}>{t("notJoinedCircles")}</Text>
                 </View>
               ) : (
                 <View style={styles.circleList}>
@@ -463,7 +474,7 @@ export default function CommunityScreen() {
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.circleName, { color: tk.text }]}>{c.name}</Text>
-                        <Text style={[styles.circleMeta, { color: tk.textMuted }]}>{c.memberCount >= 1000 ? `${(c.memberCount / 1000).toFixed(1)}k` : c.memberCount} members</Text>
+                        <Text style={[styles.circleMeta, { color: tk.textMuted }]}>{c.memberCount >= 1000 ? `${(c.memberCount / 1000).toFixed(1)}k` : c.memberCount} {t("members")}</Text>
                       </View>
                       <ChevronRight size={18} color={tk.textMuted} />
                     </TouchableOpacity>
@@ -474,7 +485,7 @@ export default function CommunityScreen() {
               {/* Discover Circles */}
               {discoverCircles.length > 0 && (
                 <>
-                  <Text style={[styles.sectionTitle, { marginTop: 24, paddingHorizontal: 24, marginBottom: 8, color: tk.text }]}>Discover circles</Text>
+                  <Text style={[styles.sectionTitle, { marginTop: 24, paddingHorizontal: 24, marginBottom: 8, color: tk.text }]}>{t("discoverCircles")}</Text>
                   <View style={styles.circleList}>
                     {discoverCircles.slice(0, 5).map((c: any) => (
                       <TouchableOpacity key={c.id} onPress={() => router.push(`/community/${c.id}`)} style={[styles.circleRow, glassSurface(tk)]} activeOpacity={0.8}>
@@ -485,10 +496,10 @@ export default function CommunityScreen() {
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.circleName, { color: tk.text }]}>{c.name}</Text>
-                          <Text style={[styles.circleMeta, { color: tk.textMuted }]}>{c.memberCount >= 1000 ? `${(c.memberCount / 1000).toFixed(1)}k` : c.memberCount} members</Text>
+                          <Text style={[styles.circleMeta, { color: tk.textMuted }]}>{c.memberCount >= 1000 ? `${(c.memberCount / 1000).toFixed(1)}k` : c.memberCount} {t("members")}</Text>
                         </View>
                         <TouchableOpacity onPress={() => handleJoinToggle(c.id, false)} style={[styles.joinBtn, { backgroundColor: colors.primary }]}>
-                          <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 11, color: colors.white }}>Join</Text>
+                          <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 11, color: colors.white }}>{t("join")}</Text>
                         </TouchableOpacity>
                       </TouchableOpacity>
                     ))}
@@ -520,11 +531,12 @@ export default function CommunityScreen() {
 }
 
 function ResultSection({ label, count, showSeeAll, onSeeAll, tk, children }: { label: string; count: number; showSeeAll: boolean; onSeeAll: () => void; tk: any; children: React.ReactNode }) {
+  const { t } = useLanguage();
   return (
     <View style={{ marginBottom: 16 }}>
       <View style={styles.sectionLabelRow}>
         <Text style={[styles.sectionLabel, { color: tk.textMuted }]}>{label}</Text>
-        {showSeeAll && <TouchableOpacity onPress={onSeeAll}><Text style={[styles.seeAll, { color: colors.primary }]}>See all {count} →</Text></TouchableOpacity>}
+        {showSeeAll && <TouchableOpacity onPress={onSeeAll}><Text style={[styles.seeAll, { color: colors.primary }]}>{t("seeAll")} {count} →</Text></TouchableOpacity>}
       </View>
       <View style={{ gap: 8 }}>{children}</View>
     </View>

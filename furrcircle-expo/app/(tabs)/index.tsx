@@ -38,6 +38,7 @@ import { useLocationStore } from "../../src/lib/location-store";
 import { LinearGradient } from "expo-linear-gradient";
 import { GlassCard, GlassBlur, glassSurface } from "../../src/components/ui/Glass";
 import { tabBarClearance } from "../../src/lib/tabbar";
+import { useLanguage } from "../../src/lib/language-context";
 
 const FEED_PAGE_SIZE = 15;
 // Height of the header content below the status bar — feed content is padded by
@@ -47,18 +48,19 @@ const HEADER_CONTENT_HEIGHT = 62;
 // Shown after the "following" section is exhausted. Tapping the button
 // reveals the "suggested" section (posts from people you don't follow).
 function CaughtUpBoundary({ empty, loading, onReveal, tk }: { empty: boolean; loading: boolean; onReveal: () => void; tk: any }) {
+  const { t } = useLanguage();
   return (
     <View style={styles.boundaryWrap}>
       <View style={[styles.boundaryIcon, { backgroundColor: tk.card, borderColor: tk.border }]}>
         <Check size={22} color={colors.primary} strokeWidth={3} />
       </View>
       <Text style={[styles.boundaryTitle, { color: tk.text }]}>
-        {empty ? "Nothing in your feed yet" : "You're all caught up"}
+        {empty ? t("nothingInFeedYet") : t("allCaughtUp")}
       </Text>
       <Text style={[styles.boundaryText, { color: tk.textMuted }]}>
         {empty
-          ? "Follow people or post to fill your feed. Want to see what others are sharing?"
-          : "You've seen all posts from people you follow. Want to discover more?"}
+          ? t("followToFillFeed")
+          : t("seenAllPosts")}
       </Text>
       <TouchableOpacity
         style={[styles.boundaryBtn, { opacity: loading ? 0.6 : 1 }]}
@@ -70,7 +72,7 @@ function CaughtUpBoundary({ empty, loading, onReveal, tk }: { empty: boolean; lo
           <ActivityIndicator color="#fff" size="small" />
         ) : (
           <>
-            <Text style={styles.boundaryBtnText}>Show suggested posts</Text>
+            <Text style={styles.boundaryBtnText}>{t("showSuggestedPosts")}</Text>
             <ChevronDown size={18} color="#fff" strokeWidth={2.6} />
           </>
         )}
@@ -81,12 +83,13 @@ function CaughtUpBoundary({ empty, loading, onReveal, tk }: { empty: boolean; lo
 
 // Divider that introduces the suggested section once it has been revealed.
 function SuggestedDivider({ tk }: { tk: any }) {
+  const { t } = useLanguage();
   return (
     <View style={styles.suggestedDivider}>
       <View style={[styles.suggestedLine, { backgroundColor: tk.border }]} />
       <View style={styles.suggestedLabel}>
         <Sparkles size={14} color={colors.primary} />
-        <Text style={[styles.suggestedLabelText, { color: tk.textMuted }]}>Suggested for you</Text>
+        <Text style={[styles.suggestedLabelText, { color: tk.textMuted }]}>{t("suggestedForYou")}</Text>
       </View>
       <View style={[styles.suggestedLine, { backgroundColor: tk.border }]} />
     </View>
@@ -94,6 +97,7 @@ function SuggestedDivider({ tk }: { tk: any }) {
 }
 
 export default function FeedScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const { refresh } = useLocalSearchParams<{ refresh?: string }>();
   const insets = useSafeAreaInsets();
@@ -346,7 +350,7 @@ export default function FeedScreen() {
   const mappedMyStoryGroup = myStories.length > 0
     ? {
       userId: "me",
-      username: "Your Story",
+      username: t("yourStory"),
       avatar: user?.avatar_url ? { uri: user.avatar_url } : require("../../src/assets/doodle-boy-dog.png"),
       stories: myStories.map((s: any) => {
         let overlayText = undefined;
@@ -435,11 +439,11 @@ export default function FeedScreen() {
 
   const handleAddStory = () => {
     Alert.alert(
-      "Add Story",
-      "Choose a media source for your story",
+      t("addStory"),
+      t("chooseStorySource"),
       [
         {
-          text: "Open Camera",
+          text: t("openCamera"),
           onPress: () => {
             router.push({
               pathname: "/camera",
@@ -448,11 +452,11 @@ export default function FeedScreen() {
           },
         },
         {
-          text: "Choose from Gallery",
+          text: t("chooseFromGallery"),
           onPress: () => handleAddStorySource("gallery"),
         },
         {
-          text: "Cancel",
+          text: t("cancel"),
           style: "cancel",
         },
       ]
@@ -463,13 +467,13 @@ export default function FeedScreen() {
     if (source === "gallery") {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permission Required", "Please allow gallery access to share stories.");
+        Alert.alert(t("permissionRequired"), t("allowGalleryAccess"));
         return;
       }
     } else {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permission Required", "Please allow camera access to capture stories.");
+        Alert.alert(t("permissionRequired"), t("allowCameraAccess"));
         return;
       }
     }
@@ -497,7 +501,7 @@ export default function FeedScreen() {
           const duration = asset.duration || 0;
           const durationInSeconds = duration > 1000 ? duration / 1000 : duration;
           if (durationInSeconds > 30) {
-            Alert.alert("Video too long", "Please select a video shorter than 30 seconds.");
+            Alert.alert(t("videoTooLong"), t("selectShorterVideo"));
             return;
           }
         }
@@ -593,8 +597,8 @@ export default function FeedScreen() {
           !feedLoading ? (
             <View style={[styles.emptyState, { paddingHorizontal: 16 }]}>
               <Image source={require("../../src/assets/doodle-puppy.png")} style={styles.emptyImage} resizeMode="contain" />
-              <Text style={[styles.emptyTitle, { color: tk.text }]}>No posts yet</Text>
-              <Text style={[styles.emptyText, { color: tk.textMuted }]}>Be the first to share a moment of your pet!</Text>
+              <Text style={[styles.emptyTitle, { color: tk.text }]}>{t("noPostsYet")}</Text>
+              <Text style={[styles.emptyText, { color: tk.textMuted }]}>{t("shareFirstMoment")}</Text>
             </View>
           ) : (
             <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
@@ -675,7 +679,7 @@ export default function FeedScreen() {
       {compressing && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>Compressing...</Text>
+          <Text style={styles.loadingText}>{t("compressing")}</Text>
         </View>
       )}
     </View>
@@ -683,6 +687,7 @@ export default function FeedScreen() {
 }
 
 function FeedHeader() {
+  const { t } = useLanguage();
   const router = useRouter();
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
@@ -729,7 +734,7 @@ function FeedHeader() {
       });
     } catch (err) {
       console.error('Failed to update location', err);
-      Alert.alert('Error', 'Failed to save location.');
+      Alert.alert(t("error"), t("failedToSaveLocation"));
     }
   };
 
@@ -753,7 +758,7 @@ function FeedHeader() {
             >
               {/* <MapPin size={12} color={tk.textMuted} style={{ marginRight: 2 }} /> */}
               <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted }}>
-                {locationCity || user?.city || "Select Location"}
+                {locationCity || user?.city || t("selectLocation")}
               </Text>
               <ChevronDown size={12} color={tk.textMuted} style={{ marginLeft: 2 }} />
             </TouchableOpacity>
@@ -899,6 +904,7 @@ function StoryRail({
   onPressStory: (userId: string) => void;
   onAddStory: () => void;
 }) {
+  const { t } = useLanguage();
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
   const user = useAuthStore(s => s.user);
@@ -940,7 +946,7 @@ function StoryRail({
             <Plus size={10} color="#fff" strokeWidth={3} />
           </TouchableOpacity>
         </View>
-        <Text style={[styles.storyLabel, { color: tk.text }]} numberOfLines={1}>Your Story</Text>
+        <Text style={[styles.storyLabel, { color: tk.text }]} numberOfLines={1}>{t("yourStory")}</Text>
       </TouchableOpacity>
 
       {/* Others' stories */}
@@ -970,13 +976,13 @@ function StoryRail({
   );
 }
 
-const getCommentTimeLabel = (createdAt?: string) => {
-  if (!createdAt) return "now";
+const getCommentTimeLabel = (createdAt?: string, t?: any) => {
+  if (!createdAt) return t ? t("justNow") : "now";
   const time = new Date(createdAt).getTime();
-  if (isNaN(time)) return "now";
+  if (isNaN(time)) return t ? t("justNow") : "now";
   const diff = Date.now() - time;
   const sec = Math.floor(diff / 1000);
-  if (sec < 60) return "now";
+  if (sec < 60) return t ? t("justNow") : "now";
   const min = Math.floor(sec / 60);
   if (min < 60) return `${min}m`;
   const hr = Math.floor(min / 60);
@@ -985,37 +991,37 @@ const getCommentTimeLabel = (createdAt?: string) => {
   return `${dy}d`;
 };
 
-const getPostTimeLabel = (createdAt?: string) => {
+const getPostTimeLabel = (createdAt?: string, t?: any) => {
   if (!createdAt) return "";
   const time = new Date(createdAt).getTime();
   if (isNaN(time)) return "";
   const diff = Date.now() - time;
   const sec = Math.floor(diff / 1000);
-  if (sec < 60) return "just now";
+  if (sec < 60) return t ? t("justNow") : "just now";
   const min = Math.floor(sec / 60);
-  if (min < 60) return min === 1 ? "1 minute ago" : `${min} minutes ago`;
+  if (min < 60) return min === 1 ? (t ? t("minuteAgo") : "1 minute ago") : (t ? `${min} ${t("minutesAgo")}` : `${min} minutes ago`);
   const hr = Math.floor(min / 60);
-  if (hr < 24) return hr === 1 ? "1 hour ago" : `${hr} hours ago`;
+  if (hr < 24) return hr === 1 ? (t ? t("hourAgo") : "1 hour ago") : (t ? `${hr} ${t("hoursAgo")}` : `${hr} hours ago`);
   const dy = Math.floor(hr / 24);
-  if (dy < 7) return dy === 1 ? "1 day ago" : `${dy} days ago`;
+  if (dy < 7) return dy === 1 ? (t ? t("dayAgo") : "1 day ago") : (t ? `${dy} ${t("daysAgo")}` : `${dy} days ago`);
   const wk = Math.floor(dy / 7);
-  if (wk < 4) return wk === 1 ? "1 week ago" : `${wk} weeks ago`;
+  if (wk < 4) return wk === 1 ? (t ? t("weekAgo") : "1 week ago") : (t ? `${wk} ${t("weeksAgo")}` : `${wk} weeks ago`);
   const mo = Math.floor(dy / 30);
-  if (mo < 12) return mo === 1 ? "1 month ago" : `${mo} months ago`;
+  if (mo < 12) return mo === 1 ? (t ? t("monthAgo") : "1 month ago") : (t ? `${mo} ${t("monthsAgo")}` : `${mo} months ago`);
   const yr = Math.floor(dy / 365);
-  return yr === 1 ? "1 year ago" : `${yr} years ago`;
+  return yr === 1 ? (t ? t("yearAgo") : "1 year ago") : (t ? `${yr} ${t("yearsAgo")}` : `${yr} years ago`);
 };
 
-const formatDummyTime = (timeStr?: string) => {
+const formatDummyTime = (timeStr?: string, t?: any) => {
   if (!timeStr) return "";
   const match = timeStr.match(/^(\d+)([mhdw])$/);
   if (!match) return timeStr;
   const val = parseInt(match[1], 10);
   const unit = match[2];
-  if (unit === "m") return val === 1 ? "1 minute ago" : `${val} minutes ago`;
-  if (unit === "h") return val === 1 ? "1 hour ago" : `${val} hours ago`;
-  if (unit === "d") return val === 1 ? "1 day ago" : `${val} days ago`;
-  if (unit === "w") return val === 1 ? "1 week ago" : `${val} weeks ago`;
+  if (unit === "m") return val === 1 ? (t ? t("minuteAgo") : "1 minute ago") : (t ? `${val} ${t("minutesAgo")}` : `${val} minutes ago`);
+  if (unit === "h") return val === 1 ? (t ? t("hourAgo") : "1 hour ago") : (t ? `${val} ${t("hoursAgo")}` : `${val} hours ago`);
+  if (unit === "d") return val === 1 ? (t ? t("dayAgo") : "1 day ago") : (t ? `${val} ${t("daysAgo")}` : `${val} days ago`);
+  if (unit === "w") return val === 1 ? (t ? t("weekAgo") : "1 week ago") : (t ? `${val} ${t("weeksAgo")}` : `${val} weeks ago`);
   return timeStr;
 };
 
@@ -1025,6 +1031,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   isMuted: boolean; onToggleMute: () => void; isActive: boolean;
   onDelete?: () => void; onUpdate?: (updatedPost: any) => void;
 }) {
+  const { t } = useLanguage();
   const router = useRouter();
   const tk = useTokens();
   const isScreenFocused = useIsFocused();
@@ -1123,8 +1130,8 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   };
 
   const postTimeText = post.createdAt
-    ? getPostTimeLabel(post.createdAt)
-    : (post.time ? formatDummyTime(post.time) : "");
+    ? getPostTimeLabel(post.createdAt, t)
+    : (post.time ? formatDummyTime(post.time, t) : "");
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -1176,21 +1183,21 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   const handleDeletePost = () => {
     setMenuOpen(false);
     Alert.alert(
-      "Delete Post",
-      "Are you sure you want to delete this post?",
+      t("deletePost"),
+      t("confirmDeletePost"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("delete"),
           style: "destructive",
           onPress: async () => {
             try {
               setDeleting(true);
               await feedApi.deletePost(post.id);
-              Alert.alert("Success", "Post deleted successfully.");
+              Alert.alert(t("success"), t("postDeletedSuccessfully"));
               if (onDelete) onDelete();
             } catch (err: any) {
-              Alert.alert("Error", err?.response?.data?.message || "Could not delete post.");
+              Alert.alert(t("error"), err?.response?.data?.message || t("couldNotDeletePost"));
             } finally {
               setDeleting(false);
             }
@@ -1209,7 +1216,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   const handleSelectReason = async (reason: string) => {
     const reportedUserId = post?.userId || post?.author?.id;
     if (!reportedUserId) {
-      Alert.alert("Error", "Could not identify the user to report.");
+      Alert.alert(t("error"), t("couldNotIdentifyUser"));
       return;
     }
 
@@ -1217,7 +1224,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
       await feedApi.reportUser(reportedUserId, reason);
       setReportStep(2);
     } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || "Failed to submit report.");
+      Alert.alert(t("error"), err?.response?.data?.message || t("failedToSubmitReport"));
     }
   };
 
@@ -1239,7 +1246,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
     username: post.owner?.toLowerCase().replace(/[^a-z0-9]/g, ""),
   } : (post.author || {});
 
-  const displayName = author.name || "Pet parent";
+  const displayName = author.name || t("petParent");
   const avatarSource = post.avatar || (author.avatar_url ? { uri: author.avatar_url } : null);
 
   const TINT: Record<string, string> = {
@@ -1305,7 +1312,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
       });
       setCommentText("");
     } catch {
-      Alert.alert("Error", "Could not post comment.");
+      Alert.alert(t("error"), t("couldNotPostComment"));
     } finally {
       setSubmitting(false);
     }
@@ -1500,7 +1507,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
               <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted, marginTop: 20 }]} />
 
               {/* Header */}
-              <Text style={[styles.sheetTitle, { color: tk.text, paddingHorizontal: 16, marginBottom: 12 }]}>Comments</Text>
+              <Text style={[styles.sheetTitle, { color: tk.text, paddingHorizontal: 16, marginBottom: 12 }]}>{t("comments")}</Text>
 
               {/* Scrollable list of comments */}
               <ScrollView
@@ -1510,7 +1517,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
               >
                 {localComments.length === 0 ? (
                   <View style={{ alignItems: "center", justifyContent: "center", paddingVertical: 40 }}>
-                    <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted }}>No comments yet. Start the conversation!</Text>
+                    <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted }}>{t("noCommentsYet")}</Text>
                   </View>
                 ) : (
                   [...localComments].reverse().map((c: any, i) => (
@@ -1526,7 +1533,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                             {c.author?.username || c.author?.name || "user"}
                           </Text>
                           <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: tk.textMuted }}>
-                            {c.createdAt ? getCommentTimeLabel(c.createdAt) : "now"}
+                            {c.createdAt ? getCommentTimeLabel(c.createdAt, t) : t("justNow")}
                           </Text>
                         </View>
                         <Text style={[styles.commentTextContent, { color: tk.text }]}>{c.text}</Text>
@@ -1547,7 +1554,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                   <TextInput
                     value={commentText}
                     onChangeText={setCommentText}
-                    placeholder="Add Comment..."
+                    placeholder={t("addCommentPlaceholder")}
                     placeholderTextColor={tk.textMuted}
                     style={[styles.commentTextInput, { color: tk.text }]}
                     multiline
@@ -1567,7 +1574,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                           color: commentText.trim() ? colors.primary : colors.primary + "55",
                         }}
                       >
-                        Post
+                        {t("post")}
                       </Text>
                     )}
                   </TouchableOpacity>
@@ -1583,7 +1590,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
         <Pressable style={[styles.overlay, isTablet && styles.overlayCenter]} onPress={() => setMenuOpen(false)}>
           <View style={[isTablet ? styles.dialog : styles.sheet, { paddingBottom: 10 + insets.bottom, backgroundColor: tk.glassStrong, borderWidth: 1, borderColor: tk.glassBorder }, !isTablet && { borderBottomWidth: 0 }]} onStartShouldSetResponder={() => true} onTouchEnd={(e) => e.stopPropagation()}>
             {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
-            <Text style={[styles.sheetTitle, { color: tk.text }]}>Options</Text>
+            <Text style={[styles.sheetTitle, { color: tk.text }]}>{t("options")}</Text>
 
             {/* Save Option */}
             <TouchableOpacity
@@ -1593,7 +1600,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
             >
               <Bookmark size={20} color={isSaved ? colors.primary : tk.text} fill={isSaved ? colors.primary : "none"} />
               <Text style={[styles.sheetRowTitle, { color: tk.text }]}>
-                {isSaved ? "Remove from Saved" : "Save Post"}
+                {isSaved ? t("removeFromSaved") : t("savePost")}
               </Text>
             </TouchableOpacity>
 
@@ -1617,7 +1624,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                   activeOpacity={0.8}
                 >
                   <Edit2 size={20} color={tk.text} />
-                  <Text style={[styles.sheetRowTitle, { color: tk.text }]}>Edit Post</Text>
+                  <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{t("editPost")}</Text>
                 </TouchableOpacity>
 
                 {/* Delete Post Option */}
@@ -1627,7 +1634,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                   activeOpacity={0.8}
                 >
                   <Trash2 size={20} color={colors.coral} />
-                  <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Delete Post</Text>
+                  <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>{t("deletePost")}</Text>
                 </TouchableOpacity>
               </>
             ) : (
@@ -1649,7 +1656,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                   activeOpacity={0.8}
                 >
                   <Info size={20} color={tk.text} />
-                  <Text style={[styles.sheetRowTitle, { color: tk.text }]}>About this Account</Text>
+                  <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{t("aboutThisAccount")}</Text>
                 </TouchableOpacity>
 
                 {/* Report Option */}
@@ -1659,7 +1666,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                   activeOpacity={0.8}
                 >
                   <Flag size={20} color={colors.coral} />
-                  <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Report</Text>
+                  <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>{t("report")}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -1670,7 +1677,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
               style={[styles.sheetRow, { backgroundColor: tk.glassChip, marginTop: 12, justifyContent: "center", alignItems: "center" }]}
               activeOpacity={0.8}
             >
-              <Text style={[styles.sheetRowTitle, { color: tk.textMuted }]}>Cancel</Text>
+              <Text style={[styles.sheetRowTitle, { color: tk.textMuted }]}>{t("cancel")}</Text>
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -1682,7 +1689,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
           {/* Header */}
           <View style={[styles.reportHeader, { borderBottomColor: tk.border }]}>
             <View style={{ width: 40 }} />
-            <Text style={[styles.reportHeaderTitle, { color: tk.text }]}>Report</Text>
+            <Text style={[styles.reportHeaderTitle, { color: tk.text }]}>{t("report")}</Text>
             <TouchableOpacity onPress={() => setReportModalOpen(false)} style={styles.reportCloseBtn}>
               <X size={24} color={tk.text} />
             </TouchableOpacity>
@@ -1690,29 +1697,29 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
 
           {reportStep === 1 ? (
             <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.reportContent} showsVerticalScrollIndicator={false}>
-              <Text style={[styles.reportTitle, { color: tk.text }]}>Why are you reporting this post?</Text>
+              <Text style={[styles.reportTitle, { color: tk.text }]}>{t("whyReportingPost")}</Text>
               <Text style={[styles.reportSubtitle, { color: tk.textMuted }]}>
-                Your report is anonymous. If someone is in immediate danger, call the local emergency services - don't wait.
+                {t("reportDisclaimer")}
               </Text>
 
               <View style={{ marginTop: 24 }}>
                 {[
-                  "I just don't like it",
-                  "Bullying or unwanted contact",
-                  "Suicide, self-injury or eating disorders",
-                  "Violence, hate or exploitation",
-                  "Selling or promoting restricted items",
-                  "Nudity or sexual activity",
-                  "Scam, fraud or spam",
-                  "False information",
-                  "Intellectual property"
-                ].map((reason, idx) => (
+                  { key: "reasonDontLikeIt", raw: "I just don't like it" },
+                  { key: "reasonBullying", raw: "Bullying or unwanted contact" },
+                  { key: "reasonSuicideSelfInjury", raw: "Suicide, self-injury or eating disorders" },
+                  { key: "reasonViolenceHate", raw: "Violence, hate or exploitation" },
+                  { key: "reasonRestrictedItems", raw: "Selling or promoting restricted items" },
+                  { key: "reasonNudity", raw: "Nudity or sexual activity" },
+                  { key: "reasonScamSpam", raw: "Scam, fraud or spam" },
+                  { key: "reasonFalseInfo", raw: "False information" },
+                  { key: "reasonIntellectualProperty", raw: "Intellectual property" }
+                ].map((item, idx) => (
                   <TouchableOpacity
                     key={idx}
                     style={[styles.reasonRow, { borderBottomColor: tk.border }]}
-                    onPress={() => handleSelectReason(reason)}
+                    onPress={() => handleSelectReason(item.raw)}
                   >
-                    <Text style={[styles.reasonText, { color: tk.text }]}>{reason}</Text>
+                    <Text style={[styles.reasonText, { color: tk.text }]}>{t(item.key as any)}</Text>
                     <ChevronRight size={20} color={tk.textMuted} />
                   </TouchableOpacity>
                 ))}
@@ -1724,9 +1731,9 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                 <View style={[styles.checkCircle, { backgroundColor: tk.border }]}>
                   <Check size={40} color={colors.primary} strokeWidth={3} />
                 </View>
-                <Text style={[styles.successTitle, { color: tk.text }]}>Thanks for your feedback</Text>
+                <Text style={[styles.successTitle, { color: tk.text }]}>{t("thanksFeedback")}</Text>
                 <Text style={[styles.successSubtitle, { color: tk.textMuted }]}>
-                  We use these reports to show you less of this kind of content in the future.
+                  {t("reportFeedbackDetail")}
                 </Text>
               </View>
 
@@ -1735,7 +1742,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
                   style={[styles.doneBtn, { backgroundColor: colors.primary }]}
                   onPress={() => setReportModalOpen(false)}
                 >
-                  <Text style={styles.doneBtnText}>Done</Text>
+                  <Text style={styles.doneBtnText}>{t("done")}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1756,6 +1763,7 @@ const composeOptions = [
 ];
 
 function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: () => void; onPublished: () => void }) {
+  const { t } = useLanguage();
   const router = useRouter();
   const tk = useTokens();
   const { isTablet } = useBreakpoint();
@@ -1781,11 +1789,11 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
         if (!myPets || myPets.length === 0) {
           onClose();
           Alert.alert(
-            "No Pets Found",
-            "Please add a pet to your profile first before adding a memory.",
+            t("noPetsFound"),
+            t("addPetToProfileBeforeMemory"),
             [
-              { text: "Cancel", style: "cancel" },
-              { text: "Add Pet", onPress: () => router.push("/add-pet") }
+              { text: t("cancel"), style: "cancel" },
+              { text: t("addPet"), onPress: () => router.push("/add-pet") }
             ]
           );
           return;
@@ -1799,7 +1807,7 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
           setStep('select_pet');
         }
       } catch (err) {
-        Alert.alert("Error", "Failed to retrieve your pets.");
+        Alert.alert(t("error"), t("failedRetrievePets"));
       } finally {
         setLoadingPets(false);
       }
@@ -1818,21 +1826,35 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
     <View style={[isTablet ? styles.dialog : styles.sheet, { paddingBottom: 28 + insets.bottom, backgroundColor: tk.glassStrong, borderWidth: 1, borderColor: tk.glassBorder }, !isTablet && { borderBottomWidth: 0 }]}>
       {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <Text style={[styles.sheetTitle, { color: tk.text, marginBottom: 0 }]}>Create</Text>
+        <Text style={[styles.sheetTitle, { color: tk.text, marginBottom: 0 }]}>{t("create")}</Text>
         {loadingPets && <ActivityIndicator size="small" color={colors.primary} />}
       </View>
-      {composeOptions.map((o) => (
-        <TouchableOpacity key={o.label} onPress={() => handleOptionPress(o)} disabled={loadingPets}
-          style={[styles.sheetRow, { backgroundColor: tk.glassChip }]} activeOpacity={0.8}>
-          <View style={[styles.sheetIcon, { backgroundColor: o.tintColor }]}>
-            <o.Icon size={22} color={o.iconColor} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{o.label}</Text>
-            <Text style={[styles.sheetRowDesc, { color: tk.textMuted }]}>{o.desc}</Text>
-          </View>
-        </TouchableOpacity>
-      ))}
+      {composeOptions.map((o) => {
+        let label = o.label;
+        let desc = o.desc;
+        if (o.label === "New Post") {
+          label = t("newPost");
+          desc = t("sharePetPhoto");
+        } else if (o.label === "Ask the Community") {
+          label = t("askCommunity");
+          desc = t("getPetHelp");
+        } else if (o.label === "Add Memory") {
+          label = t("addMemory");
+          desc = t("saveToVault");
+        }
+        return (
+          <TouchableOpacity key={o.label} onPress={() => handleOptionPress(o)} disabled={loadingPets}
+            style={[styles.sheetRow, { backgroundColor: tk.glassChip }]} activeOpacity={0.8}>
+            <View style={[styles.sheetIcon, { backgroundColor: o.tintColor }]}>
+              <o.Icon size={22} color={o.iconColor} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{label}</Text>
+              <Text style={[styles.sheetRowDesc, { color: tk.textMuted }]}>{desc}</Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   ) : (
     <View style={[isTablet ? styles.dialog : styles.sheet, { paddingBottom: 28 + insets.bottom, backgroundColor: tk.glassStrong, borderWidth: 1, borderColor: tk.glassBorder }, !isTablet && { borderBottomWidth: 0 }]}>
@@ -1853,7 +1875,7 @@ function ComposeSheet({ open, onClose, onPublished }: { open: boolean; onClose: 
         >
           <ArrowLeft size={18} color={tk.text} />
         </TouchableOpacity>
-        <Text style={[styles.sheetTitle, { color: tk.text, marginBottom: 0 }]}>Select Pet</Text>
+        <Text style={[styles.sheetTitle, { color: tk.text, marginBottom: 0 }]}>{t("selectPet")}</Text>
       </View>
       <ScrollView style={{ maxHeight: 250 }} showsVerticalScrollIndicator={false}>
         {pets.map((p) => (

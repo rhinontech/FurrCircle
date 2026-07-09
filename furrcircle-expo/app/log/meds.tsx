@@ -7,10 +7,12 @@ import * as ImagePicker from "expo-image-picker";
 import { uploadImage } from "../../services/user/userApi";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { useState } from "react";
 import { healthApi } from "../../services/health/healthApi";
 
 export default function LogMedsScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const { petId, editId, name: initName, dosage: initDosage, notes: initNotes, photo: initPhoto } = useLocalSearchParams<{
     petId: string;
@@ -34,11 +36,11 @@ export default function LogMedsScreen() {
 
   const handleSave = async () => {
     if (!med.trim()) {
-        Alert.alert("Error", "Please enter medication name.");
+        Alert.alert(t("error"), t("pleaseEnterMedicationName"));
         return;
     }
     if (!petId) {
-        Alert.alert("Error", "No pet selected.");
+        Alert.alert(t("error"), t("noPetSelected"));
         return;
     }
     setLoading(true);
@@ -56,7 +58,7 @@ export default function LogMedsScreen() {
                 notes: notes.trim() || null,
                 imageUrl: uploadedImageUrl || null,
             });
-            Alert.alert("Success", "Medication updated successfully.");
+            Alert.alert(t("success"), t("medicationUpdatedSuccessfully"));
         } else {
             await healthApi.addMedication(petId, {
                 name: med.trim(),
@@ -65,12 +67,12 @@ export default function LogMedsScreen() {
                 imageUrl: uploadedImageUrl,
                 startDate: new Date().toISOString().slice(0, 10),
             });
-            Alert.alert("Success", "Medication logged successfully.");
+            Alert.alert(t("success"), t("medicationLoggedSuccessfully"));
         }
         router.back();
     } catch (err) {
         console.error("Failed to save medication:", err);
-        Alert.alert("Error", "Failed to save medication.");
+        Alert.alert(t("error"), t("failedToSaveMedication"));
     } finally {
         setLoading(false);
     }
@@ -79,35 +81,35 @@ export default function LogMedsScreen() {
   return (
     <PageContainer>
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title={editId ? "Edit Medication" : "Log Medication"} />
+      <ScreenHeader title={editId ? t("editMedicationHeaderTitle") : t("logMedicationHeaderTitle")} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
-        <Text style={[styles.label, { color: tk.textMuted }]}>Medication name</Text>
-        <TextInput value={med} onChangeText={setMed} placeholder="e.g. Nexgard" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        <Text style={[styles.label, { color: tk.textMuted }]}>Dose</Text>
-        <TextInput value={dose} onChangeText={setDose} placeholder="e.g. 1 tablet" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        <Text style={[styles.label, { color: tk.textMuted }]}>Notes</Text>
-        <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={4} placeholder="Any observations…" placeholderTextColor={tk.textMuted} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationNameLabel")}</Text>
+        <TextInput value={med} onChangeText={setMed} placeholder={t("medicationNamePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationDoseLabel")}</Text>
+        <TextInput value={dose} onChangeText={setDose} placeholder={t("medicationDosePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+        <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationNotesLabel")}</Text>
+        <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={4} placeholder={t("medicationNotesPlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>Medication Photo</Text>
+        <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationPhotoLabel")}</Text>
         <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { borderColor: tk.border, backgroundColor: tk.card }]} activeOpacity={0.8}>
           {photo ? (
             <>
               <Image source={{ uri: photo }} style={styles.photoPreview} />
               <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", gap: 8 }]}>
                 <Camera size={32} color="#FFFFFF" />
-                <Text style={[styles.photoBtnText, { color: "#FFFFFF" }]}>Change photo</Text>
+                <Text style={[styles.photoBtnText, { color: "#FFFFFF" }]}>{t("changePhoto")}</Text>
               </View>
             </>
           ) : (
             <>
               <Camera size={32} color={tk.textMuted} />
-              <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>Add photo</Text>
+              <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>{t("addPhoto")}</Text>
             </>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save</Text>}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
         </TouchableOpacity>
       </ScrollView>
     </View>

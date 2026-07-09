@@ -4,12 +4,14 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
+import { useLanguage } from "../src/lib/language-context";
 import { blockApi } from "../services/user/blockApi";
 import { ShieldOff } from "../src/components/ui/icons";
 
 const puppy = require("../src/assets/doodle-puppy.png");
 
 export default function BlockedAccountsScreen() {
+  const { t } = useLanguage();
   const tk = useTokens();
   const router = useRouter();
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
@@ -28,19 +30,19 @@ export default function BlockedAccountsScreen() {
 
   const handleUnblock = (user: any) => {
     Alert.alert(
-      `Unblock @${user.username}?`,
-      `They will be able to see your profile and contact you again.`,
+      t("unblockUserTitle").replace("{username}", user.username),
+      t("unblockUserSub"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Unblock",
+          text: t("unblockActionBtn"),
           onPress: async () => {
             setUnblockingId(user.id);
             try {
               await blockApi.unblockUser(user.id);
               setBlockedUsers(prev => prev.filter(u => u.id !== user.id));
             } catch (err: any) {
-              Alert.alert("Error", err.message || "Failed to unblock user");
+              Alert.alert(t("errorTitle"), err.message || t("failedToUnblockMsg"));
             } finally {
               setUnblockingId(null);
             }
@@ -52,7 +54,7 @@ export default function BlockedAccountsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title="Blocked Accounts" />
+      <ScreenHeader title={t("blockedAccountsHeaderTitle")} />
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -64,10 +66,10 @@ export default function BlockedAccountsScreen() {
             <ShieldOff size={36} color="#EF4444" />
           </View>
           <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 18, color: tk.text, marginBottom: 8 }}>
-            No blocked accounts
+            {t("noBlockedAccountsTitle")}
           </Text>
           <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, textAlign: "center" }}>
-            Users you block will appear here. You can unblock them at any time.
+            {t("noBlockedAccountsSub")}
           </Text>
         </View>
       ) : (
@@ -77,7 +79,7 @@ export default function BlockedAccountsScreen() {
           contentContainerStyle={{ padding: 16, gap: 10 }}
           ListHeaderComponent={
             <Text style={[styles.subtitle, { color: tk.textMuted }]}>
-              {blockedUsers.length} blocked {blockedUsers.length === 1 ? "account" : "accounts"}
+              {blockedUsers.length === 1 ? t("blockedAccountsCountSingle").replace("{count}", String(blockedUsers.length)) : t("blockedAccountsCountPlural").replace("{count}", String(blockedUsers.length))}
             </Text>
           }
           renderItem={({ item }) => (
@@ -107,7 +109,7 @@ export default function BlockedAccountsScreen() {
                 {unblockingId === item.id ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <Text style={[styles.unblockText, { color: tk.text }]}>Unblock</Text>
+                  <Text style={[styles.unblockText, { color: tk.text }]}>{t("unblockBtnLabel")}</Text>
                 )}
               </TouchableOpacity>
             </View>

@@ -1231,7 +1231,7 @@ export default function ChatScreen() {
               </View>
             )}
             <View style={[styles.inputBar, { backgroundColor: tk.card, borderTopColor: tk.border }]}>
-              
+
 
               <TextInput
                 value={msgInput}
@@ -1279,11 +1279,11 @@ export default function ChatScreen() {
           </KeyboardAvoidingView>
         </View>
         {/* Full Screen Swipeable Image Viewer */}
-      <ImageViewer
-        images={viewerImages}
-        index={viewerIndex}
-        onClose={() => setViewerIndex(null)}
-      />
+        <ImageViewer
+          images={viewerImages}
+          index={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+        />
       </KeyboardAvoidingView>
     );
   }
@@ -1450,7 +1450,7 @@ export default function ChatScreen() {
 
       </Modal>
 
-      
+
     </View>
   );
 }

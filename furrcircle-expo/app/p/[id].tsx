@@ -8,6 +8,7 @@ import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { ShareSheet } from "../../src/components/ShareSheet";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { petApi } from "../../services/pet/petApi";
 import { chatApi } from "../../services/chat/chatApi";
 
@@ -33,6 +34,7 @@ const galleryTints = [
 ];
 
 export default function PetPublicProfile() {
+  const { t } = useLanguage();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const tk = useTokens();
@@ -46,8 +48,11 @@ export default function PetPublicProfile() {
 
   const handleMessageOwner = async () => {
     if (!pet || !pet.ownerId) return;
-    const action = pet.isFosterOpen ? "foster" : "adopt";
-    const introMessage = `I am interested to ${action} your pet named ${pet.name}! furrcircle://pet/${pet.id}`;
+    const action = pet.isFosterOpen ? t("fosterAction") : t("adoptAction");
+    const introMessage = t("petInterestMessage")
+      .replace("{action}", action)
+      .replace("{name}", pet.name)
+      .replace("{id}", pet.id);
     try {
       const conv = await chatApi.startChat(pet.ownerId, introMessage);
       if (conv?.id) {
@@ -57,7 +62,7 @@ export default function PetPublicProfile() {
       }
     } catch (err) {
       console.error("Failed to start chat with owner:", err);
-      Alert.alert("Error", "Failed to start a conversation with the owner.");
+      Alert.alert(t("error"), t("failedStartConversationOwner"));
     }
   };
 
@@ -93,9 +98,9 @@ export default function PetPublicProfile() {
     return (
       <PageContainer>
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
-          <ScreenHeader title="Pet Profile" />
+          <ScreenHeader title={t("petProfileHeaderTitle")} />
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-            <Text style={{ fontFamily: "Inter_400Regular", color: tk.textMuted }}>Pet not found.</Text>
+            <Text style={{ fontFamily: "Inter_400Regular", color: tk.textMuted }}>{t("petNotFound")}</Text>
           </View>
         </View>
       </PageContainer>
@@ -107,22 +112,22 @@ export default function PetPublicProfile() {
     cat: "rgba(255,111,207,0.2)",
   };
   const tintColor = TINT[String(pet.species || "").toLowerCase()] || "rgba(255,217,61,0.3)";
-  const petBreed = pet.breed || pet.species || "Unknown breed";
+  const petBreed = pet.breed || pet.species || t("unknownBreed");
   const petGender = pet.gender === "male" ? "♂" : pet.gender === "female" ? "♀" : "";
   const petAge = pet.age ? String(pet.age) : "?";
-  const breedString = `${petBreed} · ${petGender} · ${petAge.includes("y") || petAge.includes("m") || petAge.includes("d") ? petAge : `${petAge} years`}`;
-  const ownerName = pet.owner?.name || "Pet parent";
+  const breedString = `${petBreed} · ${petGender} · ${petAge.includes("y") || petAge.includes("m") || petAge.includes("d") ? petAge : `${petAge} ${t("years")}`}`;
+  const ownerName = pet.owner?.name || t("petParent");
   const ownerHandle = pet.owner?.username || pet.owner?.name?.toLowerCase().replace(/[^a-z0-9]/g, "") || "owner";
-  const petBio = pet.description || pet.history || "No bio available.";
+  const petBio = pet.description || pet.history || t("noBioAvailable");
   const petWeight = pet.weight ? `${pet.weight} kg` : "?";
-  const petLocation = pet.owner?.city || "Unknown";
+  const petLocation = pet.owner?.city || t("unknownLocation");
   const traits = Array.isArray(pet.personality) ? pet.personality : [];
 
   return (
     <PageContainer>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
-          title="Pet profile"
+          title={t("petProfileHeaderTitle")}
           right={
             <View style={{ flexDirection: "row", gap: 8 }}>
               {pet?.canManage && (
@@ -162,7 +167,7 @@ export default function PetPublicProfile() {
             </View>
             <View style={styles.verifiedBadge}>
               <ShieldCheck size={12} color={colors.white} />
-              <Text style={styles.verifiedText}>Verified</Text>
+              <Text style={styles.verifiedText}>{t("verified")}</Text>
             </View>
           </View>
 
@@ -185,17 +190,17 @@ export default function PetPublicProfile() {
 
           {/* Stats */}
           <View style={styles.statsRow}>
-            <StatCard icon={Cake} label="Age" value={petAge} tk={tk} />
-            <StatCard icon={Ruler} label="Weight" value={petWeight} tk={tk} />
-            <StatCard icon={MapPin} label="City" value={petLocation} tk={tk} />
+            <StatCard icon={Cake} label={t("ageLabel")} value={petAge} tk={tk} />
+            <StatCard icon={Ruler} label={t("weightStatLabel")} value={petWeight} tk={tk} />
+            <StatCard icon={MapPin} label={t("cityLabel")} value={petLocation} tk={tk} />
           </View>
 
           {/* Personality */}
           <View style={styles.px6}>
-            <Text style={[styles.sectionTitle, { color: tk.text }]}>Personality</Text>
+            <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("personalitySectionTitle")}</Text>
             <View style={styles.tagsRow}>
               {traits.length === 0 ? (
-                <Text style={{ color: tk.textMuted, fontSize: 13, fontFamily: "Inter_400Regular" }}>No traits specified.</Text>
+                <Text style={{ color: tk.textMuted, fontSize: 13, fontFamily: "Inter_400Regular" }}>{t("noTraitsSpecified")}</Text>
               ) : (
                 traits.map((t: string, i: number) => (
                   <View key={t} style={[styles.traitChip, { backgroundColor: traitColors[i % 5].bg }]}>
@@ -208,9 +213,9 @@ export default function PetPublicProfile() {
 
           {/* Gallery */}
           <View style={styles.px5}>
-            <Text style={[styles.sectionTitle, { color: tk.text, paddingHorizontal: 4 }]}>Gallery</Text>
+            <Text style={[styles.sectionTitle, { color: tk.text, paddingHorizontal: 4 }]}>{t("gallerySectionTitle")}</Text>
             {memories.length === 0 ? (
-              <Text style={{ color: tk.textMuted, fontSize: 13, fontFamily: "Inter_400Regular", paddingHorizontal: 4 }}>No memory</Text>
+              <Text style={{ color: tk.textMuted, fontSize: 13, fontFamily: "Inter_400Regular", paddingHorizontal: 4 }}>{t("noMemory")}</Text>
             ) : (
               <View style={styles.galleryGrid}>
                 {memories.slice(0, 6).map((m, i) => (
@@ -223,7 +228,7 @@ export default function PetPublicProfile() {
                     {m.media_url ? (
                       <Image source={{ uri: m.media_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
                     ) : (
-                      <Text style={{ color: tk.textMuted, fontSize: 10, alignSelf: "center", marginTop: 20 }}>No Photo</Text>
+                      <Text style={{ color: tk.textMuted, fontSize: 10, alignSelf: "center", marginTop: 20 }}>{t("noPhoto")}</Text>
                     )}
                   </TouchableOpacity>
                 ))}
@@ -240,7 +245,7 @@ export default function PetPublicProfile() {
               activeOpacity={0.8}
             >
               <MessageCircle size={16} color={colors.white} />
-              <Text style={styles.messageBtnText}>Message owner</Text>
+              <Text style={styles.messageBtnText}>{t("messageOwnerBtn")}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

@@ -5,6 +5,7 @@ import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { Stethoscope, MapPin, Star, Clock, Phone, Globe } from "../../src/components/ui/icons";
 import { useEffect, useState } from "react";
 import { placesApi } from "../../services/places/placesApi";
@@ -12,6 +13,7 @@ import { ActivityIndicator, Linking, Alert } from "react-native";
 import { VetHeaderBackground } from "../../src/components/ui/VetHeaderBackground";
 
 export default function VetProfileScreen() {
+  const { t } = useLanguage();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -30,7 +32,7 @@ export default function VetProfileScreen() {
 
   const handleCall = async () => {
     if (!vet?.nationalPhoneNumber && !vet?.internationalPhoneNumber) {
-      Alert.alert("Phone unavailable", "This clinic does not have a phone number listed.");
+      Alert.alert(t("phoneUnavailableTitle"), t("phoneUnavailableMsg"));
       return;
     }
     const phone = vet.nationalPhoneNumber || vet.internationalPhoneNumber;
@@ -38,7 +40,7 @@ export default function VetProfileScreen() {
     try {
       await Linking.openURL(`tel:${phoneNumber}`);
     } catch {
-      Alert.alert("Call Clinic", `Call ${vet.name} at ${phone}.`);
+      Alert.alert(t("callClinicTitle"), t("callClinicMsg").replace("{name}", vet.name || "").replace("{phone}", phone || ""));
     }
   };
 
@@ -47,14 +49,14 @@ export default function VetProfileScreen() {
     try {
       await Linking.openURL(vet.googleMapsUri);
     } catch {
-      Alert.alert("Could not open maps");
+      Alert.alert(t("couldNotOpenMaps"));
     }
   };
 
   return (
     <PageContainer>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Vet Details" />
+        <ScreenHeader title={t("vetDetailsHeaderTitle")} />
         <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
           <VetHeaderBackground />
           
@@ -64,7 +66,7 @@ export default function VetProfileScreen() {
             </View>
           ) : !vet ? (
             <View style={{ paddingTop: 100, alignItems: "center" }}>
-              <Text style={[styles.name, { color: tk.text }]}>Clinic not found</Text>
+              <Text style={[styles.name, { color: tk.text }]}>{t("clinicNotFound")}</Text>
             </View>
           ) : (
             <View style={styles.content}>
@@ -72,26 +74,26 @@ export default function VetProfileScreen() {
                 <Image source={require("../../src/assets/doodle-vet.png")} style={styles.avatarImg} resizeMode="contain" />
               </View>
 
-              <Text style={[styles.name, { color: tk.text }]}>{vet.name || "Veterinary Clinic"}</Text>
+              <Text style={[styles.name, { color: tk.text }]}>{vet.name || t("vetClinicFallback")}</Text>
 
               <View style={styles.metaRow}>
                 {vet.rating ? (
                   <View style={[styles.metaItem, { backgroundColor: tk.card }]}>
                     <Star size={16} color={colors.sunshine} fill={colors.sunshine} />
-                    <Text style={[styles.metaText, { color: tk.text }]}>{vet.rating} Rating</Text>
+                    <Text style={[styles.metaText, { color: tk.text }]}>{vet.rating} {t("ratingSuffix")}</Text>
                   </View>
                 ) : null}
                 {vet.businessStatus === "OPERATIONAL" ? (
                   <View style={[styles.metaItem, { backgroundColor: tk.card }]}>
                     <Clock size={16} color={colors.success} />
-                    <Text style={[styles.metaText, { color: tk.text }]}>Open</Text>
+                    <Text style={[styles.metaText, { color: tk.text }]}>{t("openLabel")}</Text>
                   </View>
                 ) : null}
               </View>
 
               {(vet.address || vet.googleMapsUri) && (
                 <TouchableOpacity onPress={handleOpenMaps} activeOpacity={0.8} style={[styles.section, { backgroundColor: tk.card }]}>
-                  <Text style={[styles.sectionTitle, { color: tk.text }]}>Location</Text>
+                  <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("locationLabel")}</Text>
                   <View style={styles.locationRow}>
                     <MapPin size={20} color={tk.textMuted} />
                     <Text style={[styles.locationText, { color: tk.text }]} numberOfLines={2}>{vet.address}</Text>
@@ -99,7 +101,7 @@ export default function VetProfileScreen() {
                   {vet.googleMapsUri && (
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12 }}>
                       <Globe size={14} color={colors.primary} />
-                      <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.primary }}>Open in Maps</Text>
+                      <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.primary }}>{t("openInMaps")}</Text>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -107,7 +109,7 @@ export default function VetProfileScreen() {
 
               {(vet.nationalPhoneNumber || vet.internationalPhoneNumber) && (
                 <TouchableOpacity onPress={handleCall} activeOpacity={0.8} style={[styles.section, { backgroundColor: tk.card }]}>
-                  <Text style={[styles.sectionTitle, { color: tk.text }]}>Contact</Text>
+                  <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("contactLabel")}</Text>
                   <View style={styles.locationRow}>
                     <Phone size={20} color={tk.textMuted} />
                     <Text style={[styles.locationText, { color: tk.text }]}>{vet.nationalPhoneNumber || vet.internationalPhoneNumber}</Text>
@@ -117,7 +119,7 @@ export default function VetProfileScreen() {
 
               {vet.regularOpeningHours?.weekdayDescriptions && (
                 <View style={[styles.section, { backgroundColor: tk.card }]}>
-                  <Text style={[styles.sectionTitle, { color: tk.text }]}>Hours</Text>
+                  <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("hoursLabel")}</Text>
                   {vet.regularOpeningHours.weekdayDescriptions.map((desc: string, i: number) => {
                     const parts = desc.split(":");
                     const day = parts[0];
@@ -142,7 +144,7 @@ export default function VetProfileScreen() {
             activeOpacity={0.8}
             onPress={() => router.push(`/vets/reminder?vetId=${id}`)}
           >
-            <Text style={styles.bookBtnText}>Set Reminder</Text>
+            <Text style={styles.bookBtnText}>{t("setReminder")}</Text>
           </TouchableOpacity>
         </View>
       </View>

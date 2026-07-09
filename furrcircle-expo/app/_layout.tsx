@@ -26,6 +26,7 @@ import { ToastHost } from "../src/components/ToastHost";
 import { toast } from "../src/lib/toast-store";
 import { navigateForNotification } from "../src/lib/notification-nav";
 import { usePostEngagementStore } from "../src/lib/post-engagement-store";
+import { LanguageProvider } from "../src/lib/language-context";
 
 // Safe dynamic import for Firebase messaging
 const getMessaging = () => {
@@ -421,44 +422,46 @@ export default function RootLayout() {
   );
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: tokens.bg }}>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style={dark ? "light" : "dark"} />
-        <LocationSync />
-        {showSideNav ? (
-          // Desktop / tablet: ambient backdrop + a centred 3-column cluster so the
-          // sidebar sits flush against the feed (no left gap) with balanced margins.
-          <View style={{ flex: 1, backgroundColor: tokens.bg }}>
-            <AmbientBackground />
-            <View style={{ flex: 1 }}>
-              <View
-                style={{
-                  flex: 1,
-                  width: "100%",
-                  maxWidth: showRightRail ? '100%' : '100%',
-                  flexDirection: "row",
+    <LanguageProvider>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: tokens.bg }}>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style={dark ? "light" : "dark"} />
+          <LocationSync />
+          {showSideNav ? (
+            // Desktop / tablet: ambient backdrop + a centred 3-column cluster so the
+            // sidebar sits flush against the feed (no left gap) with balanced margins.
+            <View style={{ flex: 1, backgroundColor: tokens.bg }}>
+              <AmbientBackground />
+              <View style={{ flex: 1 }}>
+                <View
+                  style={{
+                    flex: 1,
+                    width: "100%",
+                    maxWidth: showRightRail ? '100%' : '100%',
+                    flexDirection: "row",
 
-                }}
-              >
-                <View style={{ paddingLeft: showRightRail ? 60 : 0, backgroundColor:'white' }}>
-                  <SideNav />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  {stackScreens}
-                </View>
-                {showRightRail && (
-                  <View style={{ width: 400, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: tokens.border, paddingRight: 60 }}>
-                    <RightRail />
+                  }}
+                >
+                  <View style={{ paddingLeft: showRightRail ? 60 : 0, backgroundColor:'white' }}>
+                    <SideNav />
                   </View>
-                )}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    {stackScreens}
+                  </View>
+                  {showRightRail && (
+                    <View style={{ width: 400, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: tokens.border, paddingRight: 60 }}>
+                      <RightRail />
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
-        ) : (
-          stackScreens
-        )}
-        <ToastHost />
-      </QueryClientProvider>
-    </GestureHandlerRootView>
+          ) : (
+            stackScreens
+          )}
+          <ToastHost />
+        </QueryClientProvider>
+      </GestureHandlerRootView>
+    </LanguageProvider>
   );
 }

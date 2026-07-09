@@ -13,23 +13,26 @@ import { Avatar } from "../../src/components/Avatar";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { questionApi } from "../../services/community/questionApi";
 import { useRouter } from "expo-router";
 import { threads as dummyThreads } from "../../src/lib/demo-data";
 import { socketService } from "../../services/socket/socketService";
 
-const formatRelTime = (iso?: string): string => {
+const formatRelTime = (iso?: string, t?: any): string => {
   if (!iso) return "";
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60_000);
-  if (m < 1) return "Just now";
-  if (m < 60) return `${m}m ago`;
+  if (m < 1) return t ? t("justNow") : "Just now";
+  if (m < 60) return t ? `${m}${t("minShort")} ${t("ago")}` : `${m}m ago`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  if (h < 24) return t ? `${h}${t("hourShort")} ${t("ago")}` : `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return t ? `${d}${t("dayShort")} ${t("ago")}` : `${d}d ago`;
 };
 
 export default function ThreadDetail() {
+  const { t } = useLanguage();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const tk = useTokens();
@@ -126,12 +129,12 @@ export default function ThreadDetail() {
 
   const handleDelete = () => {
     Alert.alert(
-      "Delete Question",
-      "Delete this question and all its answers? This cannot be undone.",
+      t("deleteQuestion"),
+      t("confirmDeleteQuestion"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Delete", style: "destructive",
+          text: t("delete"), style: "destructive",
           onPress: async () => {
             setDeleting(true);
             try {
@@ -139,7 +142,7 @@ export default function ThreadDetail() {
               router.back();
             } catch (err: any) {
               setDeleting(false);
-              Alert.alert("Error", err?.response?.data?.message || "Failed to delete.");
+              Alert.alert(t("error"), err?.response?.data?.message || t("failedToDelete"));
             }
           },
         },
@@ -147,11 +150,11 @@ export default function ThreadDetail() {
     );
   };
 
-  const displayTitle = questionData?.title || title || dummy?.title || "Question";
+  const displayTitle = questionData?.title || title || dummy?.title || t("questionFallbackTitle");
   const displayBody = questionData?.body || body || dummy?.body || "";
   const displayTags = questionData?.tags ? (Array.isArray(questionData.tags) ? questionData.tags.join(", ") : questionData.tags) : (tags || dummy?.tag || "");
-  const displayAsker = questionData?.author?.name || askerName || dummy?.asker || "Someone";
-  const displayTime = questionData?.createdAt ? formatRelTime(questionData.createdAt) : (time || dummy?.time || "");
+  const displayAsker = questionData?.author?.name || askerName || dummy?.asker || t("someone");
+  const displayTime = questionData?.createdAt ? formatRelTime(questionData.createdAt, t) : (time || dummy?.time || "");
   const displayUpvotes = Number(upvotes || dummy?.upvotes || 0);
 
   // Initialise upvote count + voted state once from params (only on first render, if no backend questionData is loaded yet)
@@ -198,7 +201,7 @@ export default function ThreadDetail() {
         author: {
           name: user?.name || "Demo User",
           avatar_url: user?.avatar_url || null,
-          city: user?.city || "Member",
+          city: user?.city || t("member"),
         }
       };
       setAnswers(prev => [newAnswer, ...prev]);
@@ -212,7 +215,7 @@ export default function ThreadDetail() {
       setAnswers(prev => [res, ...prev]);
       setAnswerText("");
     } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || "Failed to post answer.");
+      Alert.alert(t("error"), err?.response?.data?.message || t("failedToPostAnswer"));
     } finally {
       setSubmitting(false);
     }
@@ -226,7 +229,7 @@ export default function ThreadDetail() {
     <PageContainer>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}>
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
-          <ScreenHeader title="Discussion" />
+          <ScreenHeader title={t("discussionHeaderTitle")} />
           <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
             {/* Thread question */}
             <View style={styles.article}>
@@ -238,7 +241,7 @@ export default function ThreadDetail() {
               <Text style={[styles.title, { color: tk.text }]}>{displayTitle}</Text>
               {displayBody ? <Text style={[styles.body, { color: tk.text + "CC" }]}>{displayBody}</Text> : null}
               <Text style={[styles.askerLine, { color: tk.textMuted }]}>
-                Asked by <Text style={{ fontFamily: "Poppins_700Bold", color: tk.text }}>{displayAsker}</Text> · {displayTime}
+                {t("askedBy")} <Text style={{ fontFamily: "Poppins_700Bold", color: tk.text }}>{displayAsker}</Text> · {displayTime}
               </Text>
 
               {/* Health warning */}
@@ -246,7 +249,7 @@ export default function ThreadDetail() {
                 <View style={[styles.warningBox, { backgroundColor: tk.card, borderColor: tk.border, borderWidth: 1 }]}>
                   <ShieldAlert size={16} color={colors.coral} style={{ marginTop: 1 }} />
                   <Text style={[styles.warningText, { color: tk.text + "CC" }]}>
-                    Community advice is not a substitute for a vet. For emergencies, find care now.
+                    {t("vetDisclaimer")}
                   </Text>
                 </View>
               )}
@@ -278,7 +281,7 @@ export default function ThreadDetail() {
 
             {/* Answers */}
             <Text style={[styles.answersTitle, { color: tk.text }]}>
-              {answers.length === 0 ? "No answers yet — be first!" : `${answers.length} answer${answers.length === 1 ? "" : "s"}`}
+              {answers.length === 0 ? t("noAnswersBeFirst") : (answers.length === 1 ? t("answersCountOne") : t("answersCountMany").replace("{count}", String(answers.length)))}
             </Text>
 
             {loading ? (
@@ -293,12 +296,12 @@ export default function ThreadDetail() {
                       {a.author?.avatar_url ? (
                         <Image source={{ uri: a.author.avatar_url }} style={{ width: 32, height: 32, borderRadius: 16 }} />
                       ) : (
-                        <Avatar name={a.author?.name || "User"} size={32} />
+                        <Avatar name={a.author?.name || t("someone")} size={32} />
                       )}
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.answerAuthor, { color: tk.text }]}>{a.author?.name || "User"}</Text>
+                        <Text style={[styles.answerAuthor, { color: tk.text }]}>{a.author?.name || t("someone")}</Text>
                         <Text style={[styles.answerRole, { color: tk.textMuted }]}>
-                          {a.author?.city || "Member"} · {a.createdAt ? new Date(a.createdAt).toLocaleDateString() : ""}
+                          {a.author?.city || t("member")} · {a.createdAt ? new Date(a.createdAt).toLocaleDateString() : ""}
                         </Text>
                       </View>
                       {a.author?.isVerified && (
@@ -318,7 +321,7 @@ export default function ThreadDetail() {
           <View style={[styles.replyBar, { backgroundColor: tk.card, borderTopColor: tk.border }]}>
             <View style={[styles.replyInputWrap, { backgroundColor: tk.bg, borderColor: tk.border, borderWidth: 1 }]}>
               <TextInput
-                placeholder="Add an answer…"
+                placeholder={t("addAnswerPlaceholder")}
                 placeholderTextColor={tk.textMuted}
                 value={answerText}
                 onChangeText={setAnswerText}
@@ -326,7 +329,7 @@ export default function ThreadDetail() {
                 multiline
               />
               <TouchableOpacity onPress={handleSubmitAnswer} disabled={submitting || !answerText.trim()}>
-                <Text style={[styles.postBtn, { opacity: answerText.trim() ? 1 : 0.4 }]}>Post</Text>
+                <Text style={[styles.postBtn, { opacity: answerText.trim() ? 1 : 0.4 }]}>{t("postBtnLabel")}</Text>
               </TouchableOpacity>
             </View>
           </View>

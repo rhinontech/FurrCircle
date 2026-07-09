@@ -8,10 +8,12 @@ import { appointmentApi } from "../../services/appointment/appointmentApi";
 import { reminderApi } from "../../services/reminder/reminderApi";
 import { colors } from "../../src/lib/theme";
 import { useTokens, useThemeStore } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ChevronDown } from "../../src/components/ui/icons";
 
 export default function BookVetScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const { vetId } = useLocalSearchParams<{ vetId: string }>();
   const tk = useTokens();
@@ -35,9 +37,9 @@ export default function BookVetScreen() {
   }, []);
 
   const save = async () => {
-    if (!selectedPet) { Alert.alert("Error", "Please select a pet"); return; }
-    if (!reason.trim()) { Alert.alert("Error", "Please enter a reason for the visit"); return; }
-    if (!vetId) { Alert.alert("Error", "Invalid Vet"); return; }
+    if (!selectedPet) { Alert.alert(t("errorTitle"), t("pleaseSelectPet")); return; }
+    if (!reason.trim()) { Alert.alert(t("errorTitle"), t("pleaseEnterReasonVisit")); return; }
+    if (!vetId) { Alert.alert(t("errorTitle"), t("invalidVet")); return; }
     
     setSaving(true);
     
@@ -56,19 +58,19 @@ export default function BookVetScreen() {
         });
       } else {
         await reminderApi.createReminder({
-          title: "Vet Appointment",
+          title: t("vetAppointmentReminderTitle"),
           type: "appointment",
           date: dateStr,
           time: timeStr,
           petId: selectedPet,
-          notes: reason.trim() ? `Reason: ${reason.trim()}` : undefined
+          notes: reason.trim() ? t("reasonColonLabel").replace("{reason}", reason.trim()) : undefined
         });
       }
       
-      Alert.alert("Success", "Appointment reminder set!");
+      Alert.alert(t("successTitle"), t("appointmentReminderSet"));
       router.back();
     } catch (err: any) {
-      Alert.alert("Error booking appointment", err?.response?.data?.message || err.message);
+      Alert.alert(t("errorBookingAppointment"), err?.response?.data?.message || err.message);
       setSaving(false);
     }
   };
@@ -76,17 +78,17 @@ export default function BookVetScreen() {
   return (
     <PageContainer>
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title="Book Appointment" />
+      <ScreenHeader title={t("bookAppointmentHeaderTitle")} />
       <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 20 }}>
         
-        <Text style={[styles.label, { color: tk.textMuted }]}>Select Pet</Text>
+        <Text style={[styles.label, { color: tk.textMuted }]}>{t("selectPet")}</Text>
         <TouchableOpacity 
           onPress={() => setShowPetDropdown(!showPetDropdown)} 
           style={[styles.dropdownHeader, { backgroundColor: tk.inputBg, borderColor: tk.border }]} 
           activeOpacity={0.8}
         >
           <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.text }}>
-            {selectedPet ? pets.find(p => p.id === selectedPet)?.name || "Select a pet" : "Select a pet"}
+            {selectedPet ? pets.find(p => p.id === selectedPet)?.name || t("selectPet") : t("selectPet")}
           </Text>
           <ChevronDown size={20} color={tk.textMuted} />
         </TouchableOpacity>
@@ -106,23 +108,23 @@ export default function BookVetScreen() {
             ))}
             {pets.length === 0 && (
               <View style={styles.dropdownItem}>
-                <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.textMuted }}>No pets found</Text>
+                <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.textMuted }}>{t("noPetsFound")}</Text>
               </View>
             )}
           </View>
         )}
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>Reason for visit</Text>
+        <Text style={[styles.label, { color: tk.textMuted }]}>{t("reasonForVisitLabel")}</Text>
         <TextInput 
           value={reason} 
           onChangeText={setReason} 
-          placeholder="e.g. Annual vaccination" 
+          placeholder={t("reasonForVisitPlaceholder")} 
           placeholderTextColor={tk.textMuted} 
           style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border, minHeight: 80 }]} 
           multiline
         />
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>Date</Text>
+        <Text style={[styles.label, { color: tk.textMuted }]}>{t("dateLabel")}</Text>
         {Platform.OS === 'ios' ? (
           <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
             <DateTimePicker
@@ -151,7 +153,7 @@ export default function BookVetScreen() {
           </>
         )}
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>Time</Text>
+        <Text style={[styles.label, { color: tk.textMuted }]}>{t("timeLabel")}</Text>
         {Platform.OS === 'ios' ? (
           <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
             <DateTimePicker
@@ -181,7 +183,7 @@ export default function BookVetScreen() {
         )}
 
         <TouchableOpacity onPress={save} disabled={saving || !selectedPet} style={[styles.saveBtn, (!selectedPet || saving) && { opacity: 0.6 }]} activeOpacity={0.85}>
-          <Text style={styles.saveBtnText}>{saving ? "Booking…" : "Confirm Booking"}</Text>
+          <Text style={styles.saveBtnText}>{saving ? t("bookingProgress") : t("confirmBooking")}</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

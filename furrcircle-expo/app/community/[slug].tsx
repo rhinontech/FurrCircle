@@ -6,6 +6,7 @@ import { PageContainer } from "../../src/components/PageContainer";
 import { ShareSheet } from "../../src/components/ShareSheet";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { circleApi } from "../../services/community/circleApi";
 import { questionApi } from "../../services/community/questionApi";
@@ -22,6 +23,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function CommunityDetail() {
+  const { t } = useLanguage();
   const { slug, refresh } = useLocalSearchParams<{ slug: string; refresh?: string }>();
   const router = useRouter();
   const tk = useTokens();
@@ -109,7 +111,7 @@ export default function CommunityDetail() {
       await circleApi.joinCircle(circle.id);
       setCircle((prev: any) => ({ ...prev, isJoined: true, memberCount: prev.memberCount + 1 }));
     } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || "Action failed.");
+      Alert.alert(t("error"), err?.response?.data?.message || t("actionFailed"));
     } finally {
       setJoining(false);
     }
@@ -120,9 +122,9 @@ export default function CommunityDetail() {
     if (!circle) return;
     try {
       await Share.share({
-        message: `Join "${circle.name}" on FurrCircle! https://furrcircle.com/circle/${circle.id}`,
+        message: `${t("joinInviteMsg")} "${circle.name}" ${t("joinInviteMsg2")} https://furrcircle.com/circle/${circle.id}`,
         url: `https://furrcircle.com/circle/${circle.id}`,
-        title: `Join "${circle.name}" on FurrCircle!`,
+        title: `${t("joinInviteMsg")} "${circle.name}" ${t("joinInviteMsg2")}`,
       });
     } catch { /* user dismissed the share sheet */ }
   };
@@ -130,17 +132,17 @@ export default function CommunityDetail() {
   const handleLeave = () => {
     if (!circle) return;
     setMenuOpen(false);
-    Alert.alert("Leave Circle", `Leave "${circle.name}"?`, [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("leaveCircleAlertTitle"), `${t("leaveCircleAlertMsg")} "${circle.name}"?`, [
+      { text: t("cancel"), style: "cancel" },
       {
-        text: "Leave",
+        text: t("leave"),
         style: "destructive",
         onPress: async () => {
           try {
             await circleApi.leaveCircle(circle.id);
             setCircle((prev: any) => ({ ...prev, isJoined: false, memberCount: Math.max(0, prev.memberCount - 1) }));
           } catch (err: any) {
-            Alert.alert("Error", err?.response?.data?.message || "Failed to leave circle.");
+            Alert.alert(t("error"), err?.response?.data?.message || t("failedToLeaveCircle"));
           }
         },
       },
@@ -151,19 +153,19 @@ export default function CommunityDetail() {
     if (!circle) return;
     setMenuOpen(false);
     Alert.alert(
-      "Delete Circle",
-      `Permanently delete "${circle.name}"? This removes all its discussions and cannot be undone.`,
+      t("deleteCircleAlertTitle"),
+      `${t("deleteCircleAlertMsg")} "${circle.name}"? ${t("deleteCircleAlertMsg2")}`,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("delete"),
           style: "destructive",
           onPress: async () => {
             try {
               await circleApi.deleteCircle(circle.id);
               router.back();
             } catch (err: any) {
-              Alert.alert("Error", err?.response?.data?.message || "Failed to delete circle.");
+              Alert.alert(t("error"), err?.response?.data?.message || t("failedToDeleteCircle"));
             }
           },
         },
@@ -198,7 +200,7 @@ export default function CommunityDetail() {
     return (
       <PageContainer>
         <View style={{ flex: 1, backgroundColor: tk.bg }}>
-          <ScreenHeader title="Circle" />
+          <ScreenHeader title={t("circleHeaderTitle")} />
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
@@ -211,9 +213,9 @@ export default function CommunityDetail() {
     return (
       <PageContainer>
         <View style={{ flex: 1, backgroundColor: tk.bg }}>
-          <ScreenHeader title="Circle" />
+          <ScreenHeader title={t("circleHeaderTitle")} />
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
-            <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 16, color: tk.text }}>Circle not found</Text>
+            <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 16, color: tk.text }}>{t("circleNotFound")}</Text>
           </View>
         </View>
       </PageContainer>
@@ -256,7 +258,7 @@ export default function CommunityDetail() {
             <View style={styles.membersRow}>
               <Users size={14} color={tk.textMuted} />
               <Text style={[styles.membersText, { color: tk.textMuted }]}>
-                {circle.memberCount >= 1000 ? `${(circle.memberCount / 1000).toFixed(1)}k` : circle.memberCount} members
+                {circle.memberCount >= 1000 ? `${(circle.memberCount / 1000).toFixed(1)}k` : circle.memberCount} {t("members")}
               </Text>
             </View>
             {circle.description ? (
@@ -273,7 +275,7 @@ export default function CommunityDetail() {
                 : <View style={styles.joinBtnInner}>
                     {circle.isJoined && <UserPlus size={18} color={colors.primary} />}
                     <Text style={[styles.joinBtnText, circle.isJoined && { color: colors.primary }]}>
-                      {circle.isJoined ? "Invite members" : "Join Circle"}
+                      {circle.isJoined ? t("inviteMembers") : t("joinCircle")}
                     </Text>
                   </View>
               }
@@ -282,19 +284,19 @@ export default function CommunityDetail() {
 
           {/* Discussions */}
           <View style={styles.sectionRow}>
-            <Text style={[styles.sectionTitle, { color: tk.text }]}>Discussions</Text>
+            <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("discussions")}</Text>
             <TouchableOpacity
               onPress={() => router.push({ pathname: "/ask", params: { circleId: circle.id, circleName: circle.name } })}
               style={styles.askBtn}
             >
               <Plus size={14} color={colors.primary} />
-              <Text style={styles.askBtnText}>Ask</Text>
+              <Text style={styles.askBtnText}>{t("ask")}</Text>
             </TouchableOpacity>
           </View>
 
           {questions.length === 0 ? (
             <View style={{ paddingHorizontal: 16, paddingVertical: 24, alignItems: "center" }}>
-              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted }}>No discussions yet. Be the first to ask!</Text>
+              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted }}>{t("noDiscussionsYet")}</Text>
             </View>
           ) : (
             questions.map((q: any) => (
@@ -309,7 +311,7 @@ export default function CommunityDetail() {
                     title: q.title,
                     body: q.body || "",
                     tags: q.tags?.[0] || "",
-                    askerName: q.author?.name || "Someone",
+                    askerName: q.author?.name || t("petParent"),
                     time: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : "",
                     upvotes: q.upvotes || 0,
                     hasVoted: q.hasVoted ? "1" : "0",
@@ -327,14 +329,14 @@ export default function CommunityDetail() {
                 <View style={styles.threadFooter}>
                   <TouchableOpacity onPress={(e) => { (e as any).stopPropagation?.(); handleUpvote(q.id); }} style={styles.threadAction}>
                     <ThumbsUp size={13} color={q.hasVoted ? colors.primary : tk.textMuted} fill={q.hasVoted ? colors.primary : "none"} />
-                    <Text style={[styles.threadMeta, { color: q.hasVoted ? colors.primary : tk.textMuted, fontFamily: q.hasVoted ? "Poppins_600SemiBold" : "Inter_400Regular" }]}>{q.upvotes} upvotes</Text>
+                    <Text style={[styles.threadMeta, { color: q.hasVoted ? colors.primary : tk.textMuted, fontFamily: q.hasVoted ? "Poppins_600SemiBold" : "Inter_400Regular" }]}>{q.upvotes} {t("upvotes")}</Text>
                   </TouchableOpacity>
                   <View style={styles.threadAction}>
                     <MessageCircle size={13} color={tk.textMuted} />
-                    <Text style={[styles.threadMeta, { color: tk.textMuted }]}>{q.answerCount || 0} replies</Text>
+                    <Text style={[styles.threadMeta, { color: tk.textMuted }]}>{q.answerCount || 0} {t("replies")}</Text>
                   </View>
                   {q.author?.name && (
-                    <Text style={[styles.threadMeta, { color: tk.textMuted, marginLeft: "auto" }]}>by {q.author.name.split(" ")[0]}</Text>
+                    <Text style={[styles.threadMeta, { color: tk.textMuted, marginLeft: "auto" }]}>{t("byAuthor")} {q.author.name.split(" ")[0]}</Text>
                   )}
                 </View>
               </TouchableOpacity>
@@ -360,7 +362,7 @@ export default function CommunityDetail() {
               activeOpacity={0.7}
             >
               <Share2 size={18} color={tk.text} />
-              <Text style={[styles.menuItemText, { color: tk.text }]}>Send to a friend</Text>
+              <Text style={[styles.menuItemText, { color: tk.text }]}>{t("sendToFriend")}</Text>
             </TouchableOpacity>
 
             {circle.isAdmin ? (
@@ -371,17 +373,17 @@ export default function CommunityDetail() {
                   activeOpacity={0.7}
                 >
                   <Edit2 size={18} color={tk.text} />
-                  <Text style={[styles.menuItemText, { color: tk.text }]}>Edit Circle</Text>
+                  <Text style={[styles.menuItemText, { color: tk.text }]}>{t("editCircle")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.menuItem} onPress={handleDelete} activeOpacity={0.7}>
                   <Trash2 size={18} color={colors.coral} />
-                  <Text style={[styles.menuItemText, { color: colors.coral }]}>Delete Circle</Text>
+                  <Text style={[styles.menuItemText, { color: colors.coral }]}>{t("deleteCircle")}</Text>
                 </TouchableOpacity>
               </>
             ) : circle.isJoined ? (
               <TouchableOpacity style={styles.menuItem} onPress={handleLeave} activeOpacity={0.7}>
                 <LogOut size={18} color={colors.coral} />
-                <Text style={[styles.menuItemText, { color: colors.coral }]}>Leave Circle</Text>
+                <Text style={[styles.menuItemText, { color: colors.coral }]}>{t("leaveCircle")}</Text>
               </TouchableOpacity>
             ) : null}
           </View>

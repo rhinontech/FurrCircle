@@ -30,6 +30,7 @@ import { PrivateAxios } from "../../helpers/PrivateAxios";
 import { useLocationStore } from "../../src/lib/location-store";
 import { glassSurface } from "../../src/components/ui/Glass";
 import { tabBarClearance } from "../../src/lib/tabbar";
+import { useLanguage } from "../../src/lib/language-context";
 
 const { width, height } = Dimensions.get("window");
 const CARD_WIDTH = width - 40;
@@ -42,13 +43,13 @@ const modes: Mode[] = ["Playdate"/*, "Adoption", "Breed", "Owner"*/];
 const TINTS = ["#FFEBEE", "#E3F2FD", "#FFFDE7", "#FCE4EC", "#E8F5E9", "#F3E5F5"];
 const tintForIndex = (i: number) => TINTS[i % TINTS.length];
 
-function mapPetToCard(pet: any, index: number) {
+function mapPetToCard(pet: any, index: number, t: (key: any) => string) {
   return {
     id: pet.id,
     img: pet.avatar_url ? { uri: pet.avatar_url } : null,
     name: pet.name,
     meta: [pet.breed, pet.age, pet.distanceLabel || pet.city || pet.owner?.city].filter(Boolean).join(" · "),
-    tag: pet.description || (pet.isAdoptionOpen ? "Looking for a forever home" : pet.healthStatus || ""),
+    tag: pet.description || (pet.isAdoptionOpen ? t("lookingForForeverHome") : pet.healthStatus || ""),
     tintColor: tintForIndex(index),
     badge: pet.isAdoptionOpen ? "ADOPT" : pet.isFosterOpen ? "FOSTER" : undefined,
     ownerId: pet.ownerId || pet.owner?.id,
@@ -60,10 +61,10 @@ function mapPetToCard(pet: any, index: number) {
   };
 }
 
-function mapOwnerToCard(owner: any, index: number) {
+function mapOwnerToCard(owner: any, index: number, t: (key: any) => string) {
   const petSummary = owner.pets?.length
     ? owner.pets.map((p: any) => p.name).slice(0, 2).join(", ")
-    : "No pets yet";
+    : t("noPetsYet");
   const speciesSummary = owner.pets?.length
     ? [...new Set(owner.pets.map((p: any) => p.species))].join(", ")
     : "";
@@ -72,7 +73,7 @@ function mapOwnerToCard(owner: any, index: number) {
     img: owner.avatar_url ? { uri: owner.avatar_url } : null,
     name: owner.name,
     meta: [owner.distanceLabel || owner.city, speciesSummary].filter(Boolean).join(" · "),
-    tag: owner.bio || `Has: ${petSummary}`,
+    tag: owner.bio || `${t("has")}: ${petSummary}`,
     tintColor: tintForIndex(index),
     badge: undefined,
     handle: owner.username,
@@ -80,6 +81,7 @@ function mapOwnerToCard(owner: any, index: number) {
 }
 
 export default function MatchScreen() {
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const tk = useTokens();
@@ -137,19 +139,19 @@ export default function MatchScreen() {
         const myPet = currentPets[0] || (await petApi.getMyPets().then((p: any[]) => { setMyPets(p); return p[0]; }));
         if (!myPet) { setLoading(false); return; }
         const data = await matchApi.getPlaydateCards(myPet.id, coords || undefined);
-        setCards(data.map(mapPetToCard));
+        setCards(data.map((pet: any, idx: number) => mapPetToCard(pet, idx, t)));
       } else if (m === "Adoption") {
         const data = await petApi.discoverPets(coords || undefined);
         const filtered = data.filter((pet: any) => (pet.ownerId || pet.owner?.id) !== user?.id);
-        setCards(filtered.map(mapPetToCard));
+        setCards(filtered.map((pet: any, idx: number) => mapPetToCard(pet, idx, t)));
       } else if (m === "Breed") {
         const breedPet = currentPets.find((p: any) => p.isBreedingOpen) || currentPets[0];
         if (!breedPet || !breedPet.isBreedingOpen) { setLoading(false); return; }
         const data = await matchApi.getBreedCards(breedPet.id, coords || undefined);
-        setCards(data.map(mapPetToCard));
+        setCards(data.map((pet: any, idx: number) => mapPetToCard(pet, idx, t)));
       } else if (m === "Owner") {
         const data = await matchApi.getOwnerCards(coords || undefined);
-        setCards(data.map(mapOwnerToCard));
+        setCards(data.map((owner: any, idx: number) => mapOwnerToCard(owner, idx, t)));
       }
     } catch {
       setLoadError(true);
@@ -380,10 +382,10 @@ export default function MatchScreen() {
     if (loadError) {
       return (
         <View style={styles.emptyState}>
-          <Text style={[styles.emptyTitle, { color: tk.text }]}>Something went wrong</Text>
-          <Text style={[styles.emptySubtitle, { color: tk.textMuted }]}>Couldn't load cards. Check your connection and try again.</Text>
+          <Text style={[styles.emptyTitle, { color: tk.text }]}>{t("somethingWentWrong")}</Text>
+          <Text style={[styles.emptySubtitle, { color: tk.textMuted }]}>{t("couldNotLoadCards")}</Text>
           <TouchableOpacity style={[styles.emptyBtn, { backgroundColor: colors.primary }]} onPress={() => loadCards(mode)}>
-            <Text style={styles.emptyBtnText}>Try Again</Text>
+            <Text style={styles.emptyBtnText}>{t("tryAgain")}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -391,28 +393,28 @@ export default function MatchScreen() {
     if (mode === "Breed" && !breedPet) {
       return (
         <View style={styles.emptyState}>
-          <Text style={[styles.emptyTitle, { color: tk.text }]}>Enable Breed Mode</Text>
-          <Text style={[styles.emptySubtitle, { color: tk.textMuted }]}>Go to your pet's profile and turn on breeding mode to find matches.</Text>
+          <Text style={[styles.emptyTitle, { color: tk.text }]}>{t("enableBreedMode")}</Text>
+          <Text style={[styles.emptySubtitle, { color: tk.textMuted }]}>{t("enableBreedModeDesc")}</Text>
         </View>
       );
     }
     if (mode === "Playdate" && !myPet) {
       return (
         <View style={styles.emptyState}>
-          <Text style={[styles.emptyTitle, { color: tk.text }]}>Add a Pet First</Text>
-          <Text style={[styles.emptySubtitle, { color: tk.textMuted }]}>Add your pet to start finding playdate partners nearby.</Text>
+          <Text style={[styles.emptyTitle, { color: tk.text }]}>{t("addPetFirst")}</Text>
+          <Text style={[styles.emptySubtitle, { color: tk.textMuted }]}>{t("addPetFirstDesc")}</Text>
           <TouchableOpacity style={[styles.emptyBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/add-pet")}>
-            <Text style={styles.emptyBtnText}>Add a Pet</Text>
+            <Text style={styles.emptyBtnText}>{t("addPet")}</Text>
           </TouchableOpacity>
         </View>
       );
     }
     return (
       <View style={styles.emptyState}>
-        <Text style={[styles.emptyTitle, { color: tk.text }]}>All caught up!</Text>
-        <Text style={[styles.emptySubtitle, { color: tk.textMuted }]}>No more cards right now. Check back later.</Text>
+        <Text style={[styles.emptyTitle, { color: tk.text }]}>{t("allCaughtUp")}</Text>
+        <Text style={[styles.emptySubtitle, { color: tk.textMuted }]}>{t("noMoreCards")}</Text>
         <TouchableOpacity style={[styles.emptyBtn, glassSurface(tk)]} onPress={() => loadCards(mode)}>
-          <Text style={[styles.emptyBtnText, { color: tk.text }]}>Refresh</Text>
+          <Text style={[styles.emptyBtnText, { color: tk.text }]}>{t("refresh")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -430,7 +432,7 @@ export default function MatchScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: tk.text, marginBottom: 20 }]}>Playdate</Text>
+        <Text style={[styles.title, { color: tk.text, marginBottom: 20 }]}>{t("playdateTitle")}</Text>
       </View>
 
       {/* Mode pills */}
@@ -499,10 +501,10 @@ export default function MatchScreen() {
               {isSwipeMode && (
                 <>
                   <Animated.View style={[styles.likeStamp, { opacity: likeOpacity }]}>
-                    <Text style={[styles.stampText, { color: colors.success, borderColor: colors.success }]}>LIKE</Text>
+                    <Text style={[styles.stampText, { color: colors.success, borderColor: colors.success }]}>{t("likeStamp")}</Text>
                   </Animated.View>
                   <Animated.View style={[styles.nopeStamp, { opacity: nopeOpacity }]}>
-                    <Text style={[styles.stampText, { color: colors.coral, borderColor: colors.coral }]}>NOPE</Text>
+                    <Text style={[styles.stampText, { color: colors.coral, borderColor: colors.coral }]}>{t("nopeStamp")}</Text>
                   </Animated.View>
                 </>
               )}
@@ -603,12 +605,12 @@ export default function MatchScreen() {
                   ) : (
                     <Text style={styles.adoptBtnText}>
                       {requestStatus === "approved"
-                        ? "Message Owner 💬"
+                        ? t("messageOwner")
                         : requestStatus === "pending"
-                          ? "Pending ⏳"
+                          ? t("pending")
                           : requestStatus === "rejected"
-                            ? "Declined ❌"
-                            : "I'm Interested 🐾"}
+                            ? t("declined")
+                            : t("imInterested")}
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -639,18 +641,18 @@ export default function MatchScreen() {
         <Animated.View style={[styles.matchOverlay, { opacity: matchModalAnim }]}>
           <Animated.View style={[styles.matchCard, { transform: [{ scale: matchModalAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }] }]}>
             <Text style={styles.matchEmoji}>🐾</Text>
-            <Text style={styles.matchTitle}>It's a Match!</Text>
+            <Text style={styles.matchTitle}>{t("itsAMatch")}</Text>
             <Text style={styles.matchSubtitle}>
-              You and {matchModal.matchName} both said yes!
+              {t("youAnd")} {matchModal.matchName} {t("bothSaidYes")}
             </Text>
             <TouchableOpacity
               style={styles.matchChatBtn}
               onPress={() => dismissMatchModal(matchModal.conversationId)}
             >
-              <Text style={styles.matchChatBtnText}>Start Chatting</Text>
+              <Text style={styles.matchChatBtnText}>{t("startChatting")}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => dismissMatchModal()}>
-              <Text style={styles.matchSkipText}>Keep Swiping</Text>
+              <Text style={styles.matchSkipText}>{t("keepSwiping")}</Text>
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
