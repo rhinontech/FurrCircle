@@ -16,6 +16,7 @@ import { petApi } from "../services/pet/petApi";
 import { useAuthStore } from "../src/lib/auth-store";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useLocationStore } from "../src/lib/location-store";
+import { useLanguage } from "../src/lib/language-context";
 
 const lostDoodle = require("../src/assets/doodle-lost.png");
 const tabs = ["Lost", "Spotted"] as const;
@@ -23,6 +24,7 @@ const { width: screenWidth } = Dimensions.get("window");
 const carouselImageWidth = screenWidth - 40;
 
 export default function LostScreen() {
+  const { t } = useLanguage();
   const tk = useTokens();
   const router = useRouter();
   const { user } = useAuthStore();
@@ -51,6 +53,12 @@ export default function LostScreen() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<any>(null);
+
+  const getTabLabel = (tabName: string) => {
+    if (tabName === "Lost") return t("lostTab");
+    if (tabName === "Spotted") return t("spottedTab");
+    return tabName;
+  };
 
   // Modal & Form State
   const [modalVisible, setModalVisible] = useState(false);
@@ -154,7 +162,7 @@ export default function LostScreen() {
     try {
       const { status: cameraStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (cameraStatus !== 'granted') {
-        Alert.alert("Permission Required", "Please allow access to photo library to upload a pet image.");
+        Alert.alert(t("permissionRequiredTitle"), t("photoLibraryPermissionMsg"));
         return;
       }
 
@@ -179,7 +187,7 @@ export default function LostScreen() {
     try {
       let { status: gpsStatus } = await Location.requestForegroundPermissionsAsync();
       if (gpsStatus !== 'granted') {
-        Alert.alert("Permission Denied", "We need location permission to pin your current location.");
+        Alert.alert(t("permissionDeniedTitle"), t("locationPermissionPinMsg"));
         return;
       }
       const loc = await Location.getCurrentPositionAsync({});
@@ -198,7 +206,7 @@ export default function LostScreen() {
       }
     } catch (e) {
       console.error(e);
-      Alert.alert("Error", "Could not fetch current location.");
+      Alert.alert(t("errorTitle"), t("couldNotFetchLocationMsg"));
     }
   };
 
@@ -232,11 +240,11 @@ export default function LostScreen() {
 
   const handleSubmit = async () => {
     if (images.length === 0) {
-      Alert.alert("Photo Required", "Please upload at least one photo.");
+      Alert.alert(t("photoRequiredTitle"), t("uploadAtLeastOnePhotoMsg"));
       return;
     }
     if (!address.trim()) {
-      Alert.alert("Address Required", "Please enter the location or area.");
+      Alert.alert(t("addressRequiredTitle"), t("enterLocationAreaMsg"));
       return;
     }
 
@@ -265,16 +273,16 @@ export default function LostScreen() {
 
       if (editingPost) {
         await lostPetApi.updateLostPet(editingPost.id, payload);
-        Alert.alert("Success", "Report updated successfully!");
+        Alert.alert(t("success"), t("reportUpdatedSuccess"));
       } else {
         await lostPetApi.createLostPet(payload);
-        Alert.alert("Success", "Report posted successfully!");
+        Alert.alert(t("success"), t("reportPostedSuccess"));
       }
 
       setModalVisible(false);
       fetchPosts();
     } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || err.message || "Failed to submit report.");
+      Alert.alert(t("errorTitle"), err?.response?.data?.message || err.message || t("failedToSubmitReport"));
     } finally {
       setSubmitting(false);
     }
@@ -288,26 +296,26 @@ export default function LostScreen() {
       setSelectedPost(null);
       router.push({ pathname: "/chat", params: { id: conv.id } });
     } catch (err: any) {
-      Alert.alert("Can't send message", err?.response?.data?.message || err?.message || "Failed to start chat.");
+      Alert.alert(t("cantSendMessageTitle"), err?.response?.data?.message || err?.message || t("failedToStartChat"));
     }
   };
 
   const handleDelete = (postId: string) => {
     Alert.alert(
-      "Delete Report",
-      "Are you sure you want to permanently delete this report?",
+      t("deleteReportTitle"),
+      t("deleteReportConfirmMsg"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("deleteAction"),
           style: "destructive",
           onPress: async () => {
             try {
               await lostPetApi.deleteLostPet(postId);
-              Alert.alert("Deleted", "Report deleted successfully.");
+              Alert.alert(t("deletedTitle"), t("reportDeletedSuccess"));
               fetchPosts();
             } catch (err: any) {
-              Alert.alert("Error", err?.response?.data?.message || err.message);
+              Alert.alert(t("errorTitle"), err?.response?.data?.message || err.message);
             }
           }
         }
@@ -322,7 +330,7 @@ export default function LostScreen() {
   return (
     <PageContainer>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Lost & Found" />
+        <ScreenHeader title={t("lostFound")} />
 
         <ScrollView contentContainerStyle={{ paddingBottom: 110, paddingTop: 4 }}>
           {/* Alert banner */}
@@ -331,9 +339,9 @@ export default function LostScreen() {
               <Image source={lostDoodle} style={styles.alertDoodle} resizeMode="contain" />
               <View style={{ maxWidth: "65%" }}>
                 <Siren size={20} color={colors.white} />
-                <Text style={styles.alertTitle}>{"Alert your local circle when a pet goes missing"}</Text>
+                <Text style={styles.alertTitle}>{t("alertMissingText")}</Text>
                 <TouchableOpacity style={styles.alertBtn} onPress={() => openCreateModal("lost")} activeOpacity={0.85}>
-                  <Text style={styles.alertBtnText}>Report a lost pet</Text>
+                  <Text style={styles.alertBtnText}>{t("reportLostPetBtn")}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -341,17 +349,17 @@ export default function LostScreen() {
 
           {/* Tab pills */}
           <View style={styles.tabRow}>
-            {tabs.map((t) => (
+            {tabs.map((tabItem) => (
               <TouchableOpacity
-                key={t}
-                onPress={() => setTab(t)}
-                style={[styles.tabPill, tab === t ? { backgroundColor: colors.foreground } : { backgroundColor: tk.card }]}
+                key={tabItem}
+                onPress={() => setTab(tabItem)}
+                style={[styles.tabPill, tab === tabItem ? { backgroundColor: colors.foreground } : { backgroundColor: tk.card }]}
                 activeOpacity={0.85}
               >
-                {t === "Lost"
-                  ? <Siren size={13} color={tab === t ? colors.white : tk.textMuted} />
-                  : <Eye size={13} color={tab === t ? colors.white : tk.textMuted} />}
-                <Text style={[styles.tabText, tab === t ? { color: colors.white } : { color: tk.textMuted }]}>{t}</Text>
+                {tabItem === "Lost"
+                  ? <Siren size={13} color={tab === tabItem ? colors.white : tk.textMuted} />
+                  : <Eye size={13} color={tab === tabItem ? colors.white : tk.textMuted} />}
+                <Text style={[styles.tabText, tab === tabItem ? { color: colors.white } : { color: tk.textMuted }]}>{getTabLabel(tabItem)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -363,13 +371,13 @@ export default function LostScreen() {
             ) : filteredList.length === 0 ? (
               <View style={[styles.emptyState, { backgroundColor: tk.card, borderColor: tk.border }]}>
                 <AlertCircle size={32} color={tk.textMuted} />
-                <Text style={[styles.emptyText, { color: tk.text }]}>No reports found</Text>
-                <Text style={[styles.emptySubText, { color: tk.textMuted }]}>Be the first to post a report.</Text>
+                <Text style={[styles.emptyText, { color: tk.text }]}>{t("noReportsFound")}</Text>
+                <Text style={[styles.emptySubText, { color: tk.textMuted }]}>{t("firstToPostReport")}</Text>
               </View>
             ) : (
               filteredList.map((p) => {
                 const isOwner = p.userId === currentUserId;
-                const authorName = p.author?.name || "Someone";
+                const authorName = p.author?.name || t("someoneFallback");
 
                 return (
                   <TouchableOpacity
@@ -399,7 +407,7 @@ export default function LostScreen() {
                       <View style={{ flex: 1 }}>
                         <View style={styles.badgeRow}>
                           <View style={[styles.statusBadge, { backgroundColor: p.status === "lost" ? colors.coral : colors.success }]}>
-                            <Text style={styles.statusBadgeText}>{p.status.toUpperCase()}</Text>
+                            <Text style={styles.statusBadgeText}>{getTabLabel(p.status === "lost" ? "Lost" : "Spotted").toUpperCase()}</Text>
                           </View>
 
                           {/* Owner controls */}
@@ -426,7 +434,7 @@ export default function LostScreen() {
                         {p.name ? (
                           <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
                         ) : (
-                          <Text style={[styles.petName, { color: tk.textMuted, fontStyle: 'italic' }]}>Unnamed Pet</Text>
+                          <Text style={[styles.petName, { color: tk.textMuted, fontStyle: 'italic' }]}>{t("unnamedPet")}</Text>
                         )}
 
                         <View style={styles.areaRow}>
@@ -442,7 +450,7 @@ export default function LostScreen() {
 
                         <View style={{ borderTopWidth: 1, borderTopColor: tk.border, marginTop: 8, paddingTop: 6, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: tk.textMuted }}>
-                            Posted by {authorName}
+                            {t("postedByAuthor")} {authorName}
                           </Text>
                           <Text style={{ fontSize: 10, fontFamily: "Inter_400Regular", color: tk.textMuted }}>
                             {new Date(p.createdAt).toLocaleDateString()}
@@ -465,7 +473,7 @@ export default function LostScreen() {
         >
           <Plus size={16} color={colors.white} strokeWidth={3} />
           <Text style={styles.fabText}>
-            {tab === "Lost" ? "I lost a pet" : "I spotted a pet"}
+            {tab === "Lost" ? t("iLostPetAction") : t("iSpottedPetAction")}
           </Text>
         </TouchableOpacity>
 
@@ -480,7 +488,7 @@ export default function LostScreen() {
             <View style={[styles.modalContent, { backgroundColor: tk.card, maxHeight: '85%', paddingBottom: 0 + insets.bottom }]}>
               {/* Header */}
               <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: tk.text }]}>Report Details</Text>
+                <Text style={[styles.modalTitle, { color: tk.text }]}>{t("reportDetailsTitle")}</Text>
                 <TouchableOpacity onPress={() => setSelectedPost(null)} style={styles.closeModalBtn}>
                   <X size={20} color={tk.text} />
                 </TouchableOpacity>
@@ -529,11 +537,11 @@ export default function LostScreen() {
                 })()}
 
                 <View style={[styles.detailStatusBadge, { backgroundColor: selectedPost?.status === "lost" ? colors.coral : colors.success }]}>
-                  <Text style={styles.detailStatusText}>{(selectedPost?.status || "").toUpperCase()}</Text>
+                  <Text style={styles.detailStatusText}>{getTabLabel(selectedPost?.status === "lost" ? "Lost" : "Spotted").toUpperCase()}</Text>
                 </View>
 
                 <Text style={[styles.detailPetName, { color: tk.text }]}>
-                  {selectedPost?.name || "Unnamed Pet"}
+                  {selectedPost?.name || t("unnamedPet")}
                 </Text>
 
                 <View style={[styles.detailLocationRow, { borderBottomColor: tk.border }]}>
@@ -545,7 +553,7 @@ export default function LostScreen() {
 
                 {selectedPost?.description ? (
                   <View style={{ marginTop: 16 }}>
-                    <Text style={[styles.detailLabel, { color: tk.textMuted }]}>Description</Text>
+                    <Text style={[styles.detailLabel, { color: tk.textMuted }]}>{t("descriptionLabel")}</Text>
                     <Text style={[styles.detailDescText, { color: tk.text }]}>{selectedPost.description}</Text>
                   </View>
                 ) : null}
@@ -553,7 +561,7 @@ export default function LostScreen() {
                 {/* Geolocation Map inside Detail view */}
                 {selectedPost?.latitude && selectedPost?.longitude ? (
                   <View style={{ marginTop: 16 }}>
-                    <Text style={[styles.detailLabel, { color: tk.textMuted }]}>Pinned Location</Text>
+                    <Text style={[styles.detailLabel, { color: tk.textMuted }]}>{t("pinnedLocationLabel")}</Text>
                     <View style={[styles.detailMapContainer, { borderColor: tk.border }]}>
                       {!isWeb ? (
                         <MapView
@@ -596,7 +604,7 @@ export default function LostScreen() {
                         }}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.openInMapsText}>Get Directions</Text>
+                        <Text style={styles.openInMapsText}>{t("getDirectionsBtn")}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -615,7 +623,7 @@ export default function LostScreen() {
                       </View>
                     )}
                     <View>
-                      <Text style={[styles.detailOwnerName, { color: tk.text }]}>{selectedPost?.author?.name || "Someone"}</Text>
+                      <Text style={[styles.detailOwnerName, { color: tk.text }]}>{selectedPost?.author?.name || t("someoneFallback")}</Text>
                       <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted }}>
                         @{selectedPost?.author?.username}
                       </Text>
@@ -634,14 +642,14 @@ export default function LostScreen() {
                           }
                         }}
                       >
-                        <Text style={[styles.detailActionBtnText, { color: colors.primary }]}>View Profile</Text>
+                        <Text style={[styles.detailActionBtnText, { color: colors.primary }]}>{t("viewProfileBtn")}</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
                         style={[styles.detailActionBtn, { backgroundColor: colors.primary }]}
                         onPress={handleMessageAuthor}
                       >
-                        <Text style={[styles.detailActionBtnText, { color: colors.white }]}>Send Message</Text>
+                        <Text style={[styles.detailActionBtnText, { color: colors.white }]}>{t("sendMessageBtn")}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -667,7 +675,7 @@ export default function LostScreen() {
                 {/* Header */}
                 <View style={styles.modalHeader}>
                   <Text style={[styles.modalTitle, { color: tk.text }]}>
-                    {editingPost ? "Edit Report" : `Report ${status === "lost" ? "Lost" : "Spotted"} Pet`}
+                    {editingPost ? t("editReportTitle") : (status === "lost" ? t("reportLostPetTitle") : t("reportSpottedPetTitle"))}
                   </Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeModalBtn}>
                     <X size={20} color={tk.text} />
@@ -676,26 +684,26 @@ export default function LostScreen() {
 
                 <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
                   {/* Status Toggle */}
-                  <Text style={[styles.label, { color: tk.textMuted }]}>Report Status</Text>
+                  <Text style={[styles.label, { color: tk.textMuted }]}>{t("reportStatusLabel")}</Text>
                   <View style={styles.statusToggleRow}>
                     <TouchableOpacity
                       onPress={() => setStatus("lost")}
                       style={[styles.toggleOption, status === "lost" ? { backgroundColor: colors.coral } : { backgroundColor: tk.inputBg }]}
                     >
-                      <Text style={[styles.toggleOptionText, status === "lost" && { color: colors.white }]}>Lost</Text>
+                      <Text style={[styles.toggleOptionText, status === "lost" && { color: colors.white }]}>{getTabLabel("Lost")}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => setStatus("spotted")}
                       style={[styles.toggleOption, status === "spotted" ? { backgroundColor: colors.success } : { backgroundColor: tk.inputBg }]}
                     >
-                      <Text style={[styles.toggleOptionText, status === "spotted" && { color: colors.white }]}>Spotted / Found</Text>
+                      <Text style={[styles.toggleOptionText, status === "spotted" && { color: colors.white }]}>{t("spottedFoundStatus")}</Text>
                     </TouchableOpacity>
                   </View>
 
                   {/* Select from My Pets */}
                   {!editingPost && status === "lost" && myPets.length > 0 && (
                     <View style={{ marginBottom: 12 }}>
-                      <Text style={[styles.label, { color: tk.textMuted }]}>Select from my pets</Text>
+                      <Text style={[styles.label, { color: tk.textMuted }]}>{t("selectFromMyPetsLabel")}</Text>
                       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingVertical: 4 }}>
                         {myPets.map((p) => (
                           <TouchableOpacity
@@ -716,7 +724,7 @@ export default function LostScreen() {
                   )}
 
                   {/* Multi-Photo Picker */}
-                  <Text style={[styles.label, { color: tk.textMuted }]}>Photos (Required, Max 4)</Text>
+                  <Text style={[styles.label, { color: tk.textMuted }]}>{t("photosRequiredLabel")}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 12 }}>
                     {images.map((uri, index) => (
                       <View key={index} style={styles.photoWrapper}>
@@ -733,13 +741,13 @@ export default function LostScreen() {
                     {images.length < 4 && (
                       <TouchableOpacity onPress={pickImage} style={[styles.photoZoneSmall, { backgroundColor: tk.inputBg, borderColor: tk.border }]}>
                         <Camera size={20} color={tk.textMuted} />
-                        <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: tk.textMuted, marginTop: 4 }}>Add Photo</Text>
+                        <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: tk.textMuted, marginTop: 4 }}>{t("addPhotoLabel")}</Text>
                       </TouchableOpacity>
                     )}
                   </ScrollView>
 
                   {/* Name */}
-                  <Text style={[styles.label, { color: tk.textMuted }]}>Pet Name (Optional)</Text>
+                  <Text style={[styles.label, { color: tk.textMuted }]}>{t("petNameOptionalLabel")}</Text>
                   <TextInput
                     value={name}
                     onChangeText={setName}
@@ -751,7 +759,7 @@ export default function LostScreen() {
                   {/* Location Pinning Option */}
                   {status === "spotted" && (
                     <>
-                      <Text style={[styles.label, { color: tk.textMuted }]}>Pin Geolocation (Optional)</Text>
+                      <Text style={[styles.label, { color: tk.textMuted }]}>{t("pinGeolocationLabel")}</Text>
                       <View style={{ flexDirection: 'row', gap: 10, marginBottom: 8, alignItems: 'center' }}>
                         <TouchableOpacity
                           onPress={() => setMapModalVisible(true)}
@@ -760,7 +768,7 @@ export default function LostScreen() {
                         >
                           <MapPin size={16} color={colors.primary} />
                           <Text style={[styles.mapBtnText, { color: tk.text }]}>
-                            {latitude && longitude ? "Change Pin Location" : "Select Pin on Map"}
+                            {latitude && longitude ? t("changePinLocationBtn") : t("selectPinOnMapBtn")}
                           </Text>
                         </TouchableOpacity>
                         {latitude && longitude && (
@@ -795,7 +803,7 @@ export default function LostScreen() {
                             </MapView>
                           ) : (
                             <View style={{ height: 110, alignItems: 'center', justifyContent: 'center', backgroundColor: tk.inputBg }}>
-                              <Text style={{ color: tk.textMuted, fontSize: 12 }}>Map Preview (Coordinates: {latitude.toFixed(4)}, {longitude.toFixed(4)})</Text>
+                              <Text style={{ color: tk.textMuted, fontSize: 12 }}>{t("mapPreviewLabel")} (Coordinates: {latitude.toFixed(4)}, {longitude.toFixed(4)})</Text>
                             </View>
                           )}
                         </View>
@@ -804,7 +812,7 @@ export default function LostScreen() {
                   )}
 
                   {/* Address */}
-                  <Text style={[styles.label, { color: tk.textMuted }]}>Location / Address (Required)</Text>
+                  <Text style={[styles.label, { color: tk.textMuted }]}>{t("locationAddressRequiredLabel")}</Text>
                   <TextInput
                     value={address}
                     onChangeText={setAddress}
@@ -814,7 +822,7 @@ export default function LostScreen() {
                   />
 
                   {/* Description */}
-                  <Text style={[styles.label, { color: tk.textMuted }]}>Description / Notes (Optional)</Text>
+                  <Text style={[styles.label, { color: tk.textMuted }]}>{t("descriptionNotesOptionalLabel")}</Text>
                   <TextInput
                     value={description}
                     onChangeText={setDescription}
@@ -834,7 +842,7 @@ export default function LostScreen() {
                     {submitting ? (
                       <ActivityIndicator size="small" color={colors.white} />
                     ) : (
-                      <Text style={styles.submitBtnText}>{editingPost ? "Save Changes" : "Post Report"}</Text>
+                      <Text style={styles.submitBtnText}>{editingPost ? t("saveChangesBtn") : t("postReportBtn")}</Text>
                     )}
                   </TouchableOpacity>
                 </ScrollView>
@@ -853,9 +861,9 @@ export default function LostScreen() {
                 <TouchableOpacity onPress={() => setMapModalVisible(false)} style={styles.mapHeaderBtn}>
                   <X size={20} color={tk.text} />
                 </TouchableOpacity>
-                <Text style={[styles.mapHeaderTitle, { color: tk.text }]}>Pin Location</Text>
+                <Text style={[styles.mapHeaderTitle, { color: tk.text }]}>{t("pinLocationTitle")}</Text>
                 <TouchableOpacity onPress={handleConfirmLocation} style={[styles.mapHeaderBtn, styles.mapConfirmBtn]}>
-                  <Text style={{ color: colors.white, fontFamily: 'Poppins_700Bold', fontSize: 13 }}>Confirm</Text>
+                  <Text style={{ color: colors.white, fontFamily: 'Poppins_700Bold', fontSize: 13 }}>{t("confirmBtn")}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -904,9 +912,9 @@ export default function LostScreen() {
                 </View>
               ) : (
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-                  <Text style={{ color: tk.text, textAlign: 'center', marginBottom: 20 }}>Map picker is not supported in the web environment.</Text>
+                  <Text style={{ color: tk.text, textAlign: 'center', marginBottom: 20 }}>{t("mapWebNotSupported")}</Text>
                   <TouchableOpacity onPress={() => setMapModalVisible(false)} style={[styles.submitBtn, { width: 200 }]}>
-                    <Text style={styles.submitBtnText}>Go Back</Text>
+                    <Text style={styles.submitBtnText}>{t("goBackBtn")}</Text>
                   </TouchableOpacity>
                 </View>
               )}

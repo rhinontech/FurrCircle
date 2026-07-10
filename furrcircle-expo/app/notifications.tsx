@@ -12,6 +12,7 @@ import { glassSurface } from "../src/components/ui/Glass";
 import { PageContainer } from "../src/components/PageContainer";
 import { useState, useCallback, useEffect } from "react";
 import { Inbox, MessageCircle, X } from "../src/components/ui/icons";
+import { useLanguage } from "../src/lib/language-context";
 import { adoptionApi, type AdoptionRequest } from "../services/adoption/adoptionApi";
 import { matchApi } from "../services/match/matchApi";
 import { chatApi } from "../services/chat/chatApi";
@@ -53,21 +54,22 @@ const getMeta = (type: string): NotifMeta =>
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const formatRelTime = (iso: string): string => {
+const formatRelTime = (iso: string, t: any): string => {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60_000);
-  if (m < 1) return "now";
+  if (m < 1) return t("timeNow");
   if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h`;
   const d = Math.floor(h / 24);
-  if (d === 1) return "yesterday";
+  if (d === 1) return t("timeYesterday");
   return `${d}d`;
 };
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function NotificationsScreen() {
+  const { t } = useLanguage();
   const tk = useTokens();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -129,7 +131,7 @@ export default function NotificationsScreen() {
         router.push({ pathname: "/chat", params: { id: updated.conversationId } });
       }
     } catch {
-      Alert.alert("Error", "Failed to update request. Please try again.");
+      Alert.alert(t("errorTitle"), t("failedToUpdateRequestMsg"));
     }
     setReviewingId(null);
   };
@@ -256,12 +258,12 @@ export default function NotificationsScreen() {
     <PageContainer>
       <View style={styles.container}>
         <ScreenHeader
-          title={showHistory ? "History" : "Notifications"}
+          title={showHistory ? t("historyTitle") : t("notificationsTitle")}
           onBack={showHistory ? () => setShowHistory(false) : undefined}
           right={showHistory ? null : (
             <TouchableOpacity onPress={openRequests} style={[styles.inboxBtn, glassSurface(tk)]} activeOpacity={0.75}>
               <Inbox size={20} color={tk.text} strokeWidth={2} />
-              <Text style={[styles.inboxBtnText, { color: tk.text }]}>Requests</Text>
+              <Text style={[styles.inboxBtnText, { color: tk.text }]}>{t("requestsBtn")}</Text>
             </TouchableOpacity>
           )}
         />
@@ -278,7 +280,7 @@ export default function NotificationsScreen() {
                 ? <ActivityIndicator size={14} color={colors.primary} />
                 : <Ionicons name="checkmark-done" size={14} color={colors.primary} />
               }
-              <Text style={[styles.markAllText, { color: colors.primary }]}>Mark all read</Text>
+              <Text style={[styles.markAllText, { color: colors.primary }]}>{t("markAllReadBtn")}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -298,7 +300,7 @@ export default function NotificationsScreen() {
                 {/* ── Follow Requests ─────────────────────────────────────────── */}
                 {pendingRequests.length > 0 && (
                   <>
-                    <Text style={[styles.sectionText, { color: tk.textMuted }]}>FOLLOW REQUESTS</Text>
+                    <Text style={[styles.sectionText, { color: tk.textMuted }]}>{t("followRequestsHeader")}</Text>
                     {pendingRequests.map(r => (
                       <View key={r.id} style={[styles.card, glassSurface(tk)]}>
                         <Avatar
@@ -308,15 +310,15 @@ export default function NotificationsScreen() {
                         />
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.cardBody, { color: tk.text }]}>
-                            <Text style={[styles.cardTitle, { color: tk.text }]}>{r.followerUser?.name || "Someone"} </Text>
-                            requested to follow you
+                            <Text style={[styles.cardTitle, { color: tk.text }]}>{r.followerUser?.name || t("someoneFallback")} </Text>
+                            {t("requestedToFollowYou")}
                           </Text>
                           <View style={styles.btnRow}>
                             <TouchableOpacity onPress={() => handleAccept(r.followerId)} style={[styles.btn, { backgroundColor: colors.primary }]}>
-                              <Text style={[styles.btnText, { color: "#fff" }]}>Accept</Text>
+                              <Text style={[styles.btnText, { color: "#fff" }]}>{t("acceptAction")}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={() => handleReject(r.followerId)} style={[styles.btn, { backgroundColor: tk.glassChip }]}>
-                              <Text style={[styles.btnText, { color: tk.text }]}>Reject</Text>
+                              <Text style={[styles.btnText, { color: tk.text }]}>{t("rejectAction")}</Text>
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -327,7 +329,7 @@ export default function NotificationsScreen() {
 
                 {/* ── Notifications List ───────────────────────────────────────── */}
                 {unseenNotifications.map(n => (
-                  <NotifCard key={n.id} n={n} tk={tk} onPress={() => handleTap(n)} />
+                  <NotifCard key={n.id} n={n} tk={tk} onPress={() => handleTap(n)} t={t} />
                 ))}
 
                 {/* ── Empty state ──────────────────────────────────────────────── */}
@@ -336,9 +338,9 @@ export default function NotificationsScreen() {
                     <View style={[styles.emptyIcon, { backgroundColor: tk.glassChip }]}>
                       <Ionicons name="notifications-outline" size={28} color={tk.textMuted} />
                     </View>
-                    <Text style={[styles.emptyTitle, { color: tk.text }]}>All caught up!</Text>
+                    <Text style={[styles.emptyTitle, { color: tk.text }]}>{t("allCaughtUpTitle")}</Text>
                     <Text style={[styles.emptyBody, { color: tk.textMuted }]}>
-                      No new notifications.
+                      {t("noNewNotifications")}
                     </Text>
                   </View>
                 )}
@@ -351,7 +353,7 @@ export default function NotificationsScreen() {
                     activeOpacity={0.8}
                   >
                     <MaterialCommunityIcons name="history" size={20} color={colors.primary} />
-                    <Text style={[styles.historyToggleText, { color: tk.text }]}>View History</Text>
+                    <Text style={[styles.historyToggleText, { color: tk.text }]}>{t("viewHistoryBtn")}</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -362,7 +364,7 @@ export default function NotificationsScreen() {
               <>
                 {/* ── Notifications List ───────────────────────────────────────── */}
                 {seenNotifications.map(n => (
-                  <NotifCard key={n.id} n={n} tk={tk} onPress={() => handleTap(n)} />
+                  <NotifCard key={n.id} n={n} tk={tk} onPress={() => handleTap(n)} t={t} />
                 ))}
 
                 {/* ── Empty state ──────────────────────────────────────────────── */}
@@ -371,9 +373,9 @@ export default function NotificationsScreen() {
                     <View style={[styles.emptyIcon, { backgroundColor: tk.glassChip }]}>
                       <MaterialCommunityIcons name="history" size={28} color={tk.textMuted} />
                     </View>
-                    <Text style={[styles.emptyTitle, { color: tk.text }]}>No history yet</Text>
+                    <Text style={[styles.emptyTitle, { color: tk.text }]}>{t("noHistoryTitle")}</Text>
                     <Text style={[styles.emptyBody, { color: tk.textMuted }]}>
-                      Your read notifications will appear here.
+                      {t("noHistoryBody")}
                     </Text>
                   </View>
                 )}
@@ -387,7 +389,7 @@ export default function NotificationsScreen() {
           <View style={[styles.reqModal, { backgroundColor: tk.bg, paddingTop: insets.top }]}>
             {/* Modal header */}
             <View style={styles.reqHeader}>
-              <Text style={[styles.reqTitle, { color: tk.text }]}>Inbox</Text>
+              <Text style={[styles.reqTitle, { color: tk.text }]}>{t("inboxTitle")}</Text>
               <TouchableOpacity onPress={() => setRequestsVisible(false)} style={[styles.reqCloseBtn, glassSurface(tk)]}>
                 <X size={18} color={tk.text} strokeWidth={2.5} />
               </TouchableOpacity>
@@ -395,21 +397,21 @@ export default function NotificationsScreen() {
 
             {/* Received / Sent / Matches tabs */}
             <View style={[styles.reqTabs, glassSurface(tk)]}>
-              {(["received", "sent", "matches"] as const).map((t) => {
+              {(["received", "sent", "matches"] as const).map((tabItem) => {
                 const pendingCount = receivedRequests.filter((r) => r.status === "pending").length;
-                const label = t === "received" ? "Received" : t === "sent" ? "Sent" : "Matches";
-                const badge = t === "received" && pendingCount > 0
+                const label = tabItem === "received" ? t("receivedTab") : tabItem === "sent" ? t("sentTab") : t("matchesTab");
+                const badge = tabItem === "received" && pendingCount > 0
                   ? ` (${pendingCount})`
-                  : t === "matches" && playdateMatches.length > 0
+                  : tabItem === "matches" && playdateMatches.length > 0
                     ? ` (${playdateMatches.length})`
                     : "";
                 return (
                   <TouchableOpacity
-                    key={t}
-                    onPress={() => setRequestsTab(t)}
-                    style={[styles.reqTab, requestsTab === t && { backgroundColor: tk.text }]}
+                    key={tabItem}
+                    onPress={() => setRequestsTab(tabItem)}
+                    style={[styles.reqTab, requestsTab === tabItem && { backgroundColor: tk.text }]}
                   >
-                    <Text style={[styles.reqTabText, { color: requestsTab === t ? tk.bg : tk.textMuted }]}>
+                    <Text style={[styles.reqTabText, { color: requestsTab === tabItem ? tk.bg : tk.textMuted }]}>
                       {label}{badge}
                     </Text>
                   </TouchableOpacity>
@@ -429,7 +431,7 @@ export default function NotificationsScreen() {
                 ListEmptyComponent={
                   <View style={styles.reqEmpty}>
                     <Text style={[styles.reqEmptyText, { color: tk.textMuted }]}>
-                      No matches yet. Swipe right to find a match!
+                      {t("noMatchesMessage")}
                     </Text>
                   </View>
                 }
@@ -452,11 +454,11 @@ export default function NotificationsScreen() {
                           <Text style={[styles.reqCardPetName, { color: tk.text }]}>{item.pet?.name || "Pet"}</Text>
                           <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
                             <View style={[styles.reqStatusBadge, { backgroundColor: colors.success + "22", borderColor: colors.success }]}>
-                              <Text style={[styles.reqStatusText, { color: colors.success }]}>Matched</Text>
+                              <Text style={[styles.reqStatusText, { color: colors.success }]}>{t("matchedStatus")}</Text>
                             </View>
                             <View style={[styles.reqStatusBadge, { backgroundColor: isBreed ? colors.primary + "22" : colors.sunshine + "22", borderColor: isBreed ? colors.primary : colors.sunshine }]}>
                               <Text style={[styles.reqStatusText, { color: isBreed ? colors.primary : colors.sunshine }]}>
-                                {isBreed ? "Breed" : "Playdate"}
+                                {isBreed ? t("breedStatus") : t("playdateStatus")}
                               </Text>
                             </View>
                           </View>
@@ -478,7 +480,7 @@ export default function NotificationsScreen() {
                           activeOpacity={0.85}
                         >
                           <MessageCircle size={15} color="#fff" strokeWidth={2.5} />
-                          <Text style={styles.reqOpenChatBtnText}>Open Chat</Text>
+                          <Text style={styles.reqOpenChatBtnText}>{t("openChatBtn")}</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -493,7 +495,7 @@ export default function NotificationsScreen() {
                 ListEmptyComponent={
                   <View style={styles.reqEmpty}>
                     <Text style={[styles.reqEmptyText, { color: tk.textMuted }]}>
-                      {requestsTab === "received" ? "No requests received yet." : "You haven't sent any requests yet."}
+                      {requestsTab === "received" ? t("noRequestsReceived") : t("noRequestsSent")}
                     </Text>
                   </View>
                 }
@@ -517,18 +519,31 @@ export default function NotificationsScreen() {
 
                       <View style={styles.reqCardBody}>
                         <View style={styles.reqCardTop}>
-                          <Text style={[styles.reqCardPetName, { color: tk.text }]}>{item.pet?.name || "Pet"}</Text>
+                          <Text style={[styles.reqCardPetName, { color: tk.text }]}>{item.pet?.name || t("petFallback")}</Text>
                           <View style={[styles.reqStatusBadge, { backgroundColor: statusColor + "22", borderColor: statusColor }]}>
                             <Text style={[styles.reqStatusText, { color: statusColor }]}>
-                              {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                              {item.status === "approved"
+                                ? t("approvedStatus")
+                                : item.status === "rejected"
+                                  ? t("rejectedStatus")
+                                  : item.status === "pending"
+                                    ? t("pendingStatus")
+                                    : (item.status as string).charAt(0).toUpperCase() + (item.status as string).slice(1)
+                              }
                             </Text>
                           </View>
                         </View>
 
                         <Text style={[styles.reqCardMeta, { color: tk.textMuted }]}>
-                          {item.type.charAt(0).toUpperCase() + item.type.slice(1)} · {isReceived
-                            ? `from ${item.applicant?.name || item.applicantName || "Someone"}`
-                            : `to ${item.pet?.owner?.name || "Owner"}`}
+                          {item.type === "adoption"
+                            ? t("adoptionLabel")
+                            : item.type === "foster"
+                              ? t("fosterLabel")
+                              : (item.type as string).charAt(0).toUpperCase() + (item.type as string).slice(1)
+                          } · {isReceived
+                            ? t("fromLabel").replace("{name}", item.applicant?.name || item.applicantName || t("someoneFallback"))
+                            : t("toLabel").replace("{name}", item.pet?.owner?.name || t("ownerFallback"))
+                          }
                         </Text>
 
                         {/* Applicant avatar row (received view) */}
@@ -552,7 +567,7 @@ export default function NotificationsScreen() {
                               {reviewingId === item.id ? (
                                 <ActivityIndicator size="small" color={colors.coral} />
                               ) : (
-                                <Text style={[styles.reqActionBtnText, { color: colors.coral }]}>Decline</Text>
+                                <Text style={[styles.reqActionBtnText, { color: colors.coral }]}>{t("declineAction")}</Text>
                               )}
                             </TouchableOpacity>
                             <TouchableOpacity
@@ -563,7 +578,7 @@ export default function NotificationsScreen() {
                               {reviewingId === item.id ? (
                                 <ActivityIndicator size="small" color="#fff" />
                               ) : (
-                                <Text style={[styles.reqActionBtnText, { color: "#fff" }]}>Accept & Chat</Text>
+                                <Text style={[styles.reqActionBtnText, { color: "#fff" }]}>{t("acceptAndChatAction")}</Text>
                               )}
                             </TouchableOpacity>
                           </View>
@@ -598,7 +613,7 @@ export default function NotificationsScreen() {
                             activeOpacity={0.85}
                           >
                             <MessageCircle size={15} color="#fff" strokeWidth={2.5} />
-                            <Text style={styles.reqOpenChatBtnText}>Open Chat</Text>
+                            <Text style={styles.reqOpenChatBtnText}>{t("openChatBtn")}</Text>
                           </TouchableOpacity>
                         )}
                       </View>
@@ -616,7 +631,7 @@ export default function NotificationsScreen() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function NotifCard({ n, tk, onPress }: { n: AppNotification; tk: any; onPress: () => void }) {
+function NotifCard({ n, tk, onPress, t }: { n: AppNotification; tk: any; onPress: () => void; t: any }) {
   const meta = getMeta(n.type);
 
   return (
@@ -642,7 +657,7 @@ function NotifCard({ n, tk, onPress }: { n: AppNotification; tk: any; onPress: (
           >
             {n.title}
           </Text>
-          <Text style={[styles.time, { color: tk.textMuted }]}>{formatRelTime(n.createdAt)}</Text>
+          <Text style={[styles.time, { color: tk.textMuted }]}>{formatRelTime(n.createdAt, t)}</Text>
         </View>
         {!!n.message && (
           <Text style={[styles.cardBody, { color: tk.textMuted }]} numberOfLines={2}>

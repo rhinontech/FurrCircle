@@ -5,6 +5,7 @@ import { useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
+import { useLanguage } from "../src/lib/language-context";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 import { petApi } from "../services/pet/petApi";
@@ -24,6 +25,7 @@ const gridTints = [
 ];
 
 export default function MemoryScreen() {
+  const { t } = useLanguage();
   const tk = useTokens();
   const { petId } = useLocalSearchParams<{ petId: string }>();
   
@@ -93,11 +95,11 @@ export default function MemoryScreen() {
         await petApi.addPetMemory(petId, {
           media_url: uploadRes.url,
           date: new Date().toISOString(),
-          title: "New Memory", // Can add a prompt later if user wants
+          title: t("newMemoryDefaultTitle"),
         });
         await loadMemories();
       } catch (err) {
-        Alert.alert("Upload Failed", "Could not upload the memory. Please try again.");
+        Alert.alert(t("uploadFailedTitle"), t("couldNotUploadMemoryMsg"));
       } finally {
         setUploading(false);
       }
@@ -107,7 +109,7 @@ export default function MemoryScreen() {
   return (
     <PageContainer>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Memory vault" />
+        <ScreenHeader title={t("memoryVaultHeader")} />
         
         {loading ? (
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -123,19 +125,19 @@ export default function MemoryScreen() {
                 <View style={{ maxWidth: "65%" }}>
                   <View style={styles.auraLabelRow}>
                     <Sparkles size={13} color={colors.white} />
-                    <Text style={styles.auraLabel}>Pet aura</Text>
+                    <Text style={styles.auraLabel}>{t("petAuraLabel")}</Text>
                   </View>
                   <Text style={styles.auraTitle}>{aura.zodiac} · {aura.mood}</Text>
                   <View style={styles.traitsRow}>
-                    {aura.traits.map((t: string) => (
-                      <View key={t} style={styles.traitChip}>
-                        <Text style={styles.traitText}>{t}</Text>
+                    {aura.traits.map((traitName: string) => (
+                      <View key={traitName} style={styles.traitChip}>
+                        <Text style={styles.traitText}>{traitName}</Text>
                       </View>
                     ))}
                   </View>
                   <Text style={styles.compatibility}>
                     <Text style={styles.compatibilityScore}>{aura.score}%</Text>
-                    {" "}compatibility with you
+                    {" "}{t("compatibilityLabel")}
                   </Text>
                 </View>
               </View>
@@ -147,7 +149,7 @@ export default function MemoryScreen() {
             {/* "Add to Vault" generic button at the top if there are no memories yet, or even if there are */}
             {yearsData.length === 0 && (
               <View style={{ alignItems: "center", marginVertical: 20 }}>
-                <Text style={{ color: tk.textMuted, marginBottom: 12, fontFamily: "Inter_400Regular" }}>No memories yet. Start the vault!</Text>
+                <Text style={{ color: tk.textMuted, marginBottom: 12, fontFamily: "Inter_400Regular" }}>{t("noMemoriesLabel")}</Text>
                 <TouchableOpacity onPress={handleAddPhoto} style={[styles.addPhotoBtn, { width: 100, height: 100, borderColor: tk.border }]}>
                   {uploading ? <ActivityIndicator color={colors.primary} /> : <Plus size={24} color={tk.textMuted} />}
                 </TouchableOpacity>
@@ -172,7 +174,7 @@ export default function MemoryScreen() {
                       {m.media_url ? (
                         <Image source={{ uri: m.media_url }} style={styles.photoImgFull} resizeMode="cover" />
                       ) : (
-                        <Text style={{ color: tk.textMuted, fontSize: 10 }}>No Photo</Text>
+                        <Text style={{ color: tk.textMuted, fontSize: 10 }}>{t("noPhotoLabel")}</Text>
                       )}
                     </TouchableOpacity>
                   ))}
