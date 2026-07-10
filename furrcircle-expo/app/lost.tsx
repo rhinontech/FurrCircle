@@ -7,7 +7,7 @@ import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 import { MapPin, Siren, Eye, Plus, Camera, Trash2, Edit2, X, AlertCircle } from "../src/components/ui/icons";
 import * as ImagePicker from "expo-image-picker";
-import MapView, { Marker } from "react-native-maps";
+import CustomMapView from "../src/components/CustomMapView";
 import * as Location from "expo-location";
 import { lostPetApi } from "../services/lost/lostPetApi";
 import { chatApi } from "../services/chat/chatApi";
@@ -79,7 +79,7 @@ export default function LostScreen() {
   const [tempLng, setTempLng] = useState<number | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  const mapRef = useRef<MapView | null>(null);
+  const mapRef = useRef<any>(null);
 
   const isWeb = Platform.OS === "web";
 
@@ -563,31 +563,22 @@ export default function LostScreen() {
                   <View style={{ marginTop: 16 }}>
                     <Text style={[styles.detailLabel, { color: tk.textMuted }]}>{t("pinnedLocationLabel")}</Text>
                     <View style={[styles.detailMapContainer, { borderColor: tk.border }]}>
-                      {!isWeb ? (
-                        <MapView
-                          style={{ width: '100%', height: 160 }}
-                          initialRegion={{
-                            latitude: parseFloat(selectedPost.latitude),
-                            longitude: parseFloat(selectedPost.longitude),
-                            latitudeDelta: 0.01,
-                            longitudeDelta: 0.01,
-                          }}
-                          scrollEnabled={true}
-                          zoomEnabled={true}
-                        >
-                          <Marker
-                            coordinate={{
-                              latitude: parseFloat(selectedPost.latitude),
-                              longitude: parseFloat(selectedPost.longitude),
-                            }}
-                            pinColor={colors.coral}
-                          />
-                        </MapView>
-                      ) : (
-                        <View style={{ height: 160, alignItems: 'center', justifyContent: 'center', backgroundColor: tk.inputBg }}>
-                          <Text style={{ color: tk.textMuted }}>Coordinates: {selectedPost.latitude}, {selectedPost.longitude}</Text>
-                        </View>
-                      )}
+                      <CustomMapView
+                        style={{ width: '100%', height: 160 }}
+                        initialRegion={{
+                          latitude: parseFloat(selectedPost.latitude),
+                          longitude: parseFloat(selectedPost.longitude),
+                          latitudeDelta: 0.01,
+                          longitudeDelta: 0.01,
+                        }}
+                        scrollEnabled={true}
+                        zoomEnabled={true}
+                        markerCoordinate={{
+                          latitude: parseFloat(selectedPost.latitude),
+                          longitude: parseFloat(selectedPost.longitude),
+                        }}
+                        markerPinColor={colors.coral}
+                      />
                       <TouchableOpacity
                         style={styles.openInMapsBtn}
                         onPress={() => {
@@ -785,8 +776,7 @@ export default function LostScreen() {
                       {/* Mini Preview of Pinned Location */}
                       {latitude && longitude && (
                         <View style={[styles.miniMapContainer, { borderColor: tk.border, borderRadius: 14, overflow: 'hidden', marginBottom: 12 }]}>
-                          {!isWeb ? (
-                            <MapView
+                            <CustomMapView
                               style={{ width: '100%', height: 110 }}
                               initialRegion={{
                                 latitude,
@@ -798,14 +788,9 @@ export default function LostScreen() {
                               zoomEnabled={false}
                               pitchEnabled={false}
                               rotateEnabled={false}
-                            >
-                              <Marker coordinate={{ latitude, longitude }} pinColor={colors.coral} />
-                            </MapView>
-                          ) : (
-                            <View style={{ height: 110, alignItems: 'center', justifyContent: 'center', backgroundColor: tk.inputBg }}>
-                              <Text style={{ color: tk.textMuted, fontSize: 12 }}>{t("mapPreviewLabel")} (Coordinates: {latitude.toFixed(4)}, {longitude.toFixed(4)})</Text>
-                            </View>
-                          )}
+                              markerCoordinate={{ latitude, longitude }}
+                              markerPinColor={colors.coral}
+                            />
                         </View>
                       )}
                     </>
@@ -869,7 +854,7 @@ export default function LostScreen() {
 
               {!isWeb ? (
                 <View style={{ flex: 1, position: 'relative' }}>
-                  <MapView
+                  <CustomMapView
                     ref={mapRef}
                     style={{ flex: 1 }}
                     initialRegion={{
@@ -891,15 +876,12 @@ export default function LostScreen() {
                         }, 500);
                       }
                     }}
-                  >
-                    <Marker
-                      coordinate={{
-                        latitude: tempLat || locationLat || 37.78825,
-                        longitude: tempLng || locationLng || -122.4324,
-                      }}
-                      pinColor={colors.coral}
-                    />
-                  </MapView>
+                    markerCoordinate={{
+                      latitude: tempLat || locationLat || 37.78825,
+                      longitude: tempLng || locationLng || -122.4324,
+                    }}
+                    markerPinColor={colors.coral}
+                  />
 
                   {/* Current Location Button */}
                   <TouchableOpacity

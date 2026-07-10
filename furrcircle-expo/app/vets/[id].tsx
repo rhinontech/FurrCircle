@@ -54,7 +54,7 @@ export default function VetProfileScreen() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title={t("vetDetailsHeaderTitle")} />
         <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>

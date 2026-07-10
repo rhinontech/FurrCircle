@@ -92,6 +92,7 @@ export default function OnboardingScreen() {
   // -------------------------------------------------------------
   const [isLocationModalVisible, setLocationModalVisible] = useState(false);
   const [notifPermissionStatus, setNotifPermissionStatus] = useState<string>("undetermined");
+  const isNotificationPassed = notifPermissionStatus === "granted" || notifPermissionStatus === "skipped";
 
   // -------------------------------------------------------------
   // Step 2: Add First Pet State
@@ -442,7 +443,7 @@ export default function OnboardingScreen() {
   const handleNextStep = () => {
     if (loading) return;
     if (stepIndex === 0) {
-      if (!locationStore.city || notifPermissionStatus !== "granted") {
+      if (!locationStore.city || !isNotificationPassed) {
         Alert.alert("Permissions Required", "Please allow both location and notifications to continue.");
         return;
       }
@@ -491,8 +492,8 @@ export default function OnboardingScreen() {
               <Text style={[styles.cardDesc, { color: tk.textMuted }]}>
                 Share location to locate neighborhood dog parks, vets, and dog playdates near you.
               </Text>
-              {!locationStore.city && (
-                <View style={styles.cardActions}>
+              {!locationStore.city ? (
+                <View style={[styles.cardActions, { flexDirection: "column", gap: 10 }]}>
                   <TouchableOpacity
                     style={[styles.primaryActionBtn, { backgroundColor: colors.primary, width: "100%" }]}
                     onPress={handleAutoLocate}
@@ -506,14 +507,31 @@ export default function OnboardingScreen() {
                       Allow Location
                     </Text>
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.primaryActionBtn, { backgroundColor: "transparent", borderWidth: 1.5, borderColor: tk.border, width: "100%" }]}
+                    onPress={() => setLocationModalVisible(true)}
+                  >
+                    <Text style={[styles.primaryActionBtnText, { color: tk.text }]}>
+                      Select Location Manually
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-              )}
-              {locationStore.city && (
-                <View style={styles.statusRow}>
-                  <CheckCircle2 size={18} color={colors.success} />
-                  <Text style={[styles.statusText, { color: tk.text }]}>
-                    Location set to: <Text style={styles.boldText}>{locationStore.city}</Text>
-                  </Text>
+              ) : (
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
+                  <View style={[styles.statusRow, { marginTop: 0 }]}>
+                    <CheckCircle2 size={18} color={colors.success} />
+                    <Text style={[styles.statusText, { color: tk.text }]}>
+                      Location set to: <Text style={styles.boldText}>{locationStore.city}</Text>
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setLocationModalVisible(true)}
+                    style={{ padding: 4 }}
+                  >
+                    <Text style={{ color: colors.primary, fontFamily: "Poppins_600SemiBold", fontSize: 13 }}>
+                      Change
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </GlassCard>
@@ -532,10 +550,10 @@ export default function OnboardingScreen() {
                   style={[
                     styles.primaryActionBtn,
                     { backgroundColor: colors.primary, width: "100%" },
-                    notifPermissionStatus === "granted" && { backgroundColor: colors.success }
+                    isNotificationPassed && { backgroundColor: colors.success }
                   ]}
                   onPress={handleRequestNotifications}
-                  disabled={notifPermissionStatus === "granted"}
+                  disabled={isNotificationPassed}
                 >
                   <Text
                     numberOfLines={1}
@@ -543,7 +561,11 @@ export default function OnboardingScreen() {
                     minimumFontScale={0.8}
                     style={styles.primaryActionBtnText}
                   >
-                    {notifPermissionStatus === "granted" ? "Notifications Enabled ✓" : "Enable Notifications"}
+                    {notifPermissionStatus === "granted"
+                      ? "Notifications Enabled ✓"
+                      : notifPermissionStatus === "skipped"
+                      ? "Notifications Skipped ✓"
+                      : "Enable Notifications"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -850,11 +872,11 @@ export default function OnboardingScreen() {
 
             <TouchableOpacity
               onPress={handleNextStep}
-              disabled={loading || (stepIndex === 0 && (!locationStore.city || notifPermissionStatus !== "granted"))}
+              disabled={loading || (stepIndex === 0 && (!locationStore.city || !isNotificationPassed))}
               style={[
                 styles.nextBtn,
                 { backgroundColor: colors.primary },
-                (stepIndex === 0 && (!locationStore.city || notifPermissionStatus !== "granted")) && { opacity: 0.5 }
+                (stepIndex === 0 && (!locationStore.city || !isNotificationPassed)) && { opacity: 0.5 }
               ]}
               activeOpacity={0.85}
             >

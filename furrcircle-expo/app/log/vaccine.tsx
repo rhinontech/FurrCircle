@@ -72,7 +72,7 @@ export default function LogVaccineScreen() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
       <ScreenHeader title={editId ? t("editVaccineHeaderTitle") : t("logVaccineHeaderTitle")} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>

@@ -189,7 +189,7 @@ export default function ComposeScreen() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

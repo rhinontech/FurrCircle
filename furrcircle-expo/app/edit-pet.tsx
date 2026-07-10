@@ -235,7 +235,7 @@ export default function EditPetScreen() {
 
   if (loading) {
     return (
-      <PageContainer>
+      <PageContainer fullWidth={true}>
         <View style={[styles.container, { backgroundColor: tk.bg, justifyContent: "center", alignItems: "center" }]}>
           <Text style={{ color: tk.text }}>{t("loading")}</Text>
         </View>
@@ -244,7 +244,7 @@ export default function EditPetScreen() {
   }
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
         style={{ flex: 1 }}

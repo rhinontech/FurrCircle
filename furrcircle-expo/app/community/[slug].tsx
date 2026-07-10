@@ -198,7 +198,7 @@ export default function CommunityDetail() {
 
   if (loading) {
     return (
-      <PageContainer>
+      <PageContainer fullWidth={true}>
         <View style={{ flex: 1, backgroundColor: tk.bg }}>
           <ScreenHeader title={t("circleHeaderTitle")} />
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -211,7 +211,7 @@ export default function CommunityDetail() {
 
   if (!circle) {
     return (
-      <PageContainer>
+      <PageContainer fullWidth={true}>
         <View style={{ flex: 1, backgroundColor: tk.bg }}>
           <ScreenHeader title={t("circleHeaderTitle")} />
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -225,7 +225,7 @@ export default function CommunityDetail() {
   const coverBg = CATEGORY_COLORS[circle.category] || "rgba(37,99,235,0.1)";
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
           title={circle.name}

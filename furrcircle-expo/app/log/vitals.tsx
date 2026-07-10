@@ -193,7 +193,7 @@ export default function LogVitalsScreen() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
       <ScreenHeader title={editId ? t("editVitalsHeaderTitle") : t("logVitalsHeaderTitle")} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>

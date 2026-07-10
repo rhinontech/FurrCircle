@@ -101,7 +101,7 @@ export default function AddCircleScreen() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
         style={{ flex: 1 }}

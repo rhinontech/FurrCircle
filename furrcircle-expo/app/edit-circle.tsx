@@ -128,7 +128,7 @@ export default function EditCircle() {
 
   if (fetching) {
     return (
-      <PageContainer>
+      <PageContainer fullWidth={true}>
         <View style={{ flex: 1, backgroundColor: tk.bg }}>
           <ScreenHeader title={t("editCircle")} />
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>

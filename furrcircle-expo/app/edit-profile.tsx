@@ -292,7 +292,7 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}

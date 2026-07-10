@@ -177,7 +177,7 @@ export default function UserProfileScreen() {
   const gridData = tab === "Posts" ? posts : tab === "Saved" ? saved : [];
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
           title={userProfile?.username ? `@${userProfile.username}` : (isUUID ? t("profile") : `@${handle}`)}

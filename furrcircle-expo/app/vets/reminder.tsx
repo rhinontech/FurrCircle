@@ -25,12 +25,12 @@ export default function SetReminderScreen() {
   const [title, setTitle] = useState("");
   const [type, setType] = useState<string>("appointment");
   const [notes, setNotes] = useState("");
-  
+
   const [date, setDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [time, setTime] = useState<Date>(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
-  
+
   const [loadingVet, setLoadingVet] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showPetDropdown, setShowPetDropdown] = useState(false);
@@ -58,7 +58,7 @@ export default function SetReminderScreen() {
             const dParts = rem.date.split('-'); // [YYYY, MM, DD]
             const parsedDate = new Date(Number(dParts[0]), Number(dParts[1]) - 1, Number(dParts[2]));
             setDate(parsedDate);
-            
+
             if (rem.time) {
               const tParts = rem.time.split(':'); // [HH, MM]
               const parsedTime = new Date(
@@ -143,7 +143,7 @@ export default function SetReminderScreen() {
         await reminderApi.createReminder(payload);
         Alert.alert(t("successTitle"), t("reminderSetSuccess"));
       }
-      
+
       router.back();
     } catch (err: any) {
       Alert.alert(t("errorSavingReminder"), err?.response?.data?.message || err.message);
@@ -160,27 +160,27 @@ export default function SetReminderScreen() {
   ], [t]);
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
           <ScreenHeader title={id ? t("editReminderHeaderTitle") : t("setReminderHeaderTitle")} />
-          
+
           {loadingVet ? (
             <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
           ) : (
             <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 20 }} keyboardShouldPersistTaps="handled">
-              
+
               {/* Select Pet */}
               <Text style={[styles.label, { color: tk.textMuted }]}>{t("selectPet")}</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => {
                   setShowPetDropdown(!showPetDropdown);
                   setShowTypeDropdown(false);
-                }} 
-                style={[styles.dropdownHeader, { backgroundColor: tk.inputBg, borderColor: tk.border }]} 
+                }}
+                style={[styles.dropdownHeader, { backgroundColor: tk.inputBg, borderColor: tk.border }]}
                 activeOpacity={0.8}
               >
                 <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.text }}>
@@ -192,9 +192,9 @@ export default function SetReminderScreen() {
               {showPetDropdown && (
                 <View style={[styles.dropdownMenu, { backgroundColor: tk.card, borderColor: tk.border }]}>
                   {pets.map((p) => (
-                    <TouchableOpacity 
-                      key={p.id} 
-                      style={[styles.dropdownItem, { borderBottomColor: tk.border }]} 
+                    <TouchableOpacity
+                      key={p.id}
+                      style={[styles.dropdownItem, { borderBottomColor: tk.border }]}
                       onPress={() => { setSelectedPet(p.id); setShowPetDropdown(false); }}
                     >
                       <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: selectedPet === p.id ? colors.primary : tk.text }}>
@@ -212,22 +212,22 @@ export default function SetReminderScreen() {
 
               {/* Reminder Title */}
               <Text style={[styles.label, { color: tk.textMuted }]}>{t("reminderTitleLabel")}</Text>
-              <TextInput 
-                value={title} 
-                onChangeText={setTitle} 
-                placeholder={t("reminderTitlePlaceholder")} 
-                placeholderTextColor={tk.textMuted} 
-                style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} 
+              <TextInput
+                value={title}
+                onChangeText={setTitle}
+                placeholder={t("reminderTitlePlaceholder")}
+                placeholderTextColor={tk.textMuted}
+                style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]}
               />
 
               {/* Reminder Type */}
               <Text style={[styles.label, { color: tk.textMuted }]}>{t("reminderTypeLabel")}</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => {
                   setShowTypeDropdown(!showTypeDropdown);
                   setShowPetDropdown(false);
-                }} 
-                style={[styles.dropdownHeader, { backgroundColor: tk.inputBg, borderColor: tk.border }]} 
+                }}
+                style={[styles.dropdownHeader, { backgroundColor: tk.inputBg, borderColor: tk.border }]}
                 activeOpacity={0.8}
               >
                 <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.text }}>
@@ -239,9 +239,9 @@ export default function SetReminderScreen() {
               {showTypeDropdown && (
                 <View style={[styles.dropdownMenu, { backgroundColor: tk.card, borderColor: tk.border }]}>
                   {reminderTypes.map((t) => (
-                    <TouchableOpacity 
-                      key={t.value} 
-                      style={[styles.dropdownItem, { borderBottomColor: tk.border }]} 
+                    <TouchableOpacity
+                      key={t.value}
+                      style={[styles.dropdownItem, { borderBottomColor: tk.border }]}
                       onPress={() => { setType(t.value); setShowTypeDropdown(false); }}
                     >
                       <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: type === t.value ? colors.primary : tk.text }}>
@@ -316,20 +316,20 @@ export default function SetReminderScreen() {
 
               {/* Notes */}
               <Text style={[styles.label, { color: tk.textMuted }]}>{t("notesReasonLabel")}</Text>
-              <TextInput 
-                value={notes} 
-                onChangeText={setNotes} 
-                placeholder={t("notesReasonPlaceholder")} 
-                placeholderTextColor={tk.textMuted} 
-                style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border, minHeight: 80 }]} 
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                placeholder={t("notesReasonPlaceholder")}
+                placeholderTextColor={tk.textMuted}
+                style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border, minHeight: 80 }]}
                 multiline
               />
 
               {/* Save Button */}
-              <TouchableOpacity 
-                onPress={save} 
-                disabled={saving || !selectedPet} 
-                style={[styles.saveBtn, (!selectedPet || saving) && { opacity: 0.6 }]} 
+              <TouchableOpacity
+                onPress={save}
+                disabled={saving || !selectedPet}
+                style={[styles.saveBtn, (!selectedPet || saving) && { opacity: 0.6 }]}
                 activeOpacity={0.85}
               >
                 <Text style={styles.saveBtnText}>{saving ? t("savingChangesProgress") : (id ? t("saveChangesBtn") : t("setReminderHeaderTitle"))}</Text>

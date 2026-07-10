@@ -79,7 +79,7 @@ export default function LogMedsScreen() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
       <ScreenHeader title={editId ? t("editMedicationHeaderTitle") : t("logMedicationHeaderTitle")} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>

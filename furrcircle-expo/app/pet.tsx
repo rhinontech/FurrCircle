@@ -92,7 +92,7 @@ export default function PetScreen() {
   const petAge = pet?.age ? String(pet.age) : "?";
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title={t("petProfileTitle")}
           right={

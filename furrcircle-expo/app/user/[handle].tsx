@@ -46,7 +46,7 @@ export default function PublicUserProfileScreen() {
   const [following, setFollowing] = useState(false);
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
           title={`@${handle}`}

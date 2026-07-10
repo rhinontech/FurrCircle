@@ -28,7 +28,7 @@ export default function FollowersScreen() {
   }, [userId, type]);
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <View style={{ flex: 1, backgroundColor: tk.bg }}>
         <ScreenHeader title={title || (type === "following" ? t("followingLabel") : t("followersLabel"))} />
 

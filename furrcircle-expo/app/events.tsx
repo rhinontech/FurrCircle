@@ -124,7 +124,7 @@ export default function EventsScreen() {
     : events.filter((e) => (e.category || "").toLowerCase() === active.toLowerCase());
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title={t("localEventsHeader")} />
 

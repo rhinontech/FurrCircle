@@ -107,7 +107,7 @@ export default function RemindersScreen() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title={t("remindersHeaderTitle")} />
 

@@ -147,7 +147,7 @@ export default function TodayScreen() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader 
           title={t("todayHeaderTitle")} 

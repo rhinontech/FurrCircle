@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, Modal, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Modal, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import { useTokens } from '../lib/theme-store';
 import { MapPin, X, Search, LocateFixed } from './ui/icons';
+import { useBreakpoint } from '../lib/breakpoints';
 
 export interface LocationResult {
   address: string;
@@ -19,6 +20,7 @@ interface LocationPickerModalProps {
 
 export function LocationPickerModal({ visible, onClose, onSelectLocation }: LocationPickerModalProps) {
   const tk = useTokens();
+  const { isTablet } = useBreakpoint();
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<LocationResult[]>([]);
@@ -100,9 +102,9 @@ export function LocationPickerModal({ visible, onClose, onSelectLocation }: Loca
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={[styles.container, { backgroundColor: tk.bg }]}>
+    <Modal visible={visible} animationType={isTablet ? "fade" : "slide"} transparent>
+      <View style={[styles.overlay, isTablet && styles.overlayTablet]}>
+        <View style={[styles.container, { backgroundColor: tk.bg }, isTablet && styles.containerTablet]}>
           <View style={[styles.header, { borderBottomColor: tk.border }]}>
             <Text style={[styles.title, { color: tk.text }]}>Search Location</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -178,11 +180,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
+  overlayTablet: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     height: '80%',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 8,
+  },
+  containerTablet: {
+    width: 500,
+    height: 600,
+    borderRadius: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
   header: {
     flexDirection: 'row',
@@ -228,6 +241,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontFamily: 'Inter_400Regular',
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      } as any,
+    }),
   },
   list: {
     paddingHorizontal: 16,

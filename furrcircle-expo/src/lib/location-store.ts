@@ -41,11 +41,40 @@ export const useLocationStore = create<LocationState>()(
 
           const { latitude, longitude } = location.coords;
 
-          const geocode = await Location.reverseGeocodeAsync({ latitude, longitude });
-          let city = null;
-          if (geocode && geocode.length > 0) {
-            // Some regions put city in subregion or region if city is null
-            city = geocode[0].city || geocode[0].subregion || geocode[0].region || null;
+          let city: string | null = null;
+
+          // Try Expo's native reverse geocoding first
+          try {
+            const geocode = await Location.reverseGeocodeAsync({ latitude, longitude });
+            if (geocode && geocode.length > 0) {
+              // Some regions put city in subregion or region if city is null
+              city = geocode[0].city || geocode[0].subregion || geocode[0].region || null;
+            }
+          } catch (e) {
+            console.warn("Location.reverseGeocodeAsync failed, trying OSM Nominatim fallback:", e);
+          }
+
+          // Fallback to OSM Nominatim API if city is still null
+          if (!city) {
+            try {
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+                {
+                  headers: { 'User-Agent': 'FurrCircleApp/1.0' }
+                }
+              );
+              const data = await response.json();
+              if (data && data.address) {
+                city = data.address.city || data.address.town || data.address.village || data.address.county || null;
+              }
+            } catch (osmErr) {
+              console.warn("OSM Nominatim fallback reverse geocoding failed:", osmErr);
+            }
+          }
+
+          // If still no city, use coordinates to avoid blocking onboarding
+          if (!city) {
+            city = `Location (${latitude.toFixed(2)}, ${longitude.toFixed(2)})`;
           }
 
           set({ city, latitude, longitude, useGPS: true });

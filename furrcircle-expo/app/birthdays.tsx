@@ -121,7 +121,7 @@ export default function BirthdaysScreen() {
   );
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title={t("petBirthdaysHeaderTitle")} />
 
