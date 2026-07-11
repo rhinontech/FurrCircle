@@ -362,19 +362,45 @@ export default function RootLayout() {
   // Auth guard: redirect based on login state once both fonts + auth are ready
   useEffect(() => {
     if (!fontsLoaded || authLoading) return;
-    const inAuthGroup = ["login", "signup", "otp-verify", "forgot-password"].includes(segments[0] || "");
-    const isOnboarding = segments[0] === "onboarding";
+    const firstSegment = (segments[0] || "") as string;
+    const inAuthGroup = ["login", "signup", "otp-verify", "forgot-password"].includes(firstSegment);
+    const isOnboarding = firstSegment === "onboarding";
 
-    if (!user && !inAuthGroup) {
-      router.replace("/login");
-    } else if (user) {
-      if (user.hasCompletedOnboarding === false) {
-        if (!isOnboarding) {
-          router.replace("/onboarding");
+    if (Platform.OS === 'web') {
+      const isWebLandingRoute = firstSegment === "web";
+      if (!user) {
+        if (!isWebLandingRoute && !inAuthGroup) {
+          router.replace("/web" as any);
         }
       } else {
-        if (inAuthGroup || isOnboarding) {
-          router.replace("/(tabs)");
+        if (isWebLandingRoute || inAuthGroup || isOnboarding || firstSegment === "") {
+          if (user.hasCompletedOnboarding === false) {
+            router.replace("/onboarding");
+          } else {
+            router.replace("/(tabs)");
+          }
+        }
+      }
+    } else {
+      // Mobile flow
+      const isWebLandingRoute = firstSegment === "web";
+      if (isWebLandingRoute) {
+        if (user) {
+          router.replace(user.hasCompletedOnboarding === false ? "/onboarding" : "/(tabs)");
+        } else {
+          router.replace("/login");
+        }
+      } else if (!user && !inAuthGroup) {
+        router.replace("/login");
+      } else if (user) {
+        if (user.hasCompletedOnboarding === false) {
+          if (!isOnboarding) {
+            router.replace("/onboarding");
+          }
+        } else {
+          if (inAuthGroup || isOnboarding) {
+            router.replace("/(tabs)");
+          }
         }
       }
     }
