@@ -21,6 +21,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.furrcircle.app",
       "buildNumber": "22",
+      "associatedDomains": [
+        "applinks:furrcircle.com",
+        "applinks:*.furrcircle.com"
+      ],
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "CFBundleURLTypes": [
@@ -47,6 +51,28 @@
       "package": "com.furrcircle.app",
       "versionCode": 22,
       "googleServicesFile": "./google-services.json",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "categories": [
+            "DEFAULT",
+            "BROWSABLE"
+          ],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "furrcircle.com",
+              "pathPrefix": "/circle"
+            },
+            {
+              "scheme": "https",
+              "host": "*.furrcircle.com",
+              "pathPrefix": "/circle"
+            }
+          ]
+        }
+      ],
       "config": {
         "googleMaps": {
           "apiKey": ""
