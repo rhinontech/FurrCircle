@@ -122,16 +122,16 @@ export default function LogVitalsScreen() {
 
   const handleSave = async () => {
     if (!weight.trim() && !temp.trim() && !heartRate.trim()) {
-        Alert.alert(t("error"), t("pleaseEnterAtLeastOneVital"));
-        return;
+      Alert.alert(t("error"), t("pleaseEnterAtLeastOneVital"));
+      return;
     }
     if (!petId) {
-        Alert.alert(t("error"), t("noPetSelected"));
-        return;
+      Alert.alert(t("error"), t("noPetSelected"));
+      return;
     }
     if (fetchingPet) {
-        Alert.alert(t("pleaseWait"), t("stillLoadingPetInfo"));
-        return;
+      Alert.alert(t("pleaseWait"), t("stillLoadingPetInfo"));
+      return;
     }
 
     if (matchingVital) {
@@ -165,61 +165,61 @@ export default function LogVitalsScreen() {
 
     setLoading(true);
     try {
-        if (editId) {
-            await healthApi.updateVital(petId, editId, {
-                weight: weight ? Number(weight) : null,
-                temperature: temp ? Number(temp) : null,
-                heartRate: heartRate ? parseInt(heartRate, 10) : null,
-                notes: notes.trim() || null,
-            });
-            Alert.alert(t("success"), t("vitalsUpdatedSuccessfully"));
-        } else {
-            await healthApi.addVital(petId, {
-                weight: weight ? Number(weight) : undefined,
-                temperature: temp ? Number(temp) : undefined,
-                heartRate: heartRate ? parseInt(heartRate, 10) : undefined,
-                notes: notes.trim() || undefined,
-                timestamp: new Date().toISOString()
-            });
-            Alert.alert(t("success"), t("vitalsLoggedSuccessfully"));
-        }
-        router.back();
+      if (editId) {
+        await healthApi.updateVital(petId, editId, {
+          weight: weight ? Number(weight) : null,
+          temperature: temp ? Number(temp) : null,
+          heartRate: heartRate ? parseInt(heartRate, 10) : null,
+          notes: notes.trim() || null,
+        });
+        Alert.alert(t("success"), t("vitalsUpdatedSuccessfully"));
+      } else {
+        await healthApi.addVital(petId, {
+          weight: weight ? Number(weight) : undefined,
+          temperature: temp ? Number(temp) : undefined,
+          heartRate: heartRate ? parseInt(heartRate, 10) : undefined,
+          notes: notes.trim() || undefined,
+          timestamp: new Date().toISOString()
+        });
+        Alert.alert(t("success"), t("vitalsLoggedSuccessfully"));
+      }
+      router.back();
     } catch (err) {
-        console.error("Failed to save vitals:", err);
-        Alert.alert(t("error"), t("failedToSaveVitals"));
+      console.error("Failed to save vitals:", err);
+      Alert.alert(t("error"), t("failedToSaveVitals"));
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <PageContainer fullWidth={true}>
-    <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title={editId ? t("editVitalsHeaderTitle") : t("logVitalsHeaderTitle")} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
-        <Text style={[styles.label, { color: tk.textMuted }]}>{t("weightLabel")}</Text>
-        <TextInput value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder={t("weightPlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        <Text style={[styles.label, { color: tk.textMuted }]}>{t("temperatureLabel")}</Text>
-        <TextInput value={temp} onChangeText={setTemp} keyboardType="decimal-pad" placeholder={t("temperaturePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        {matchingVital && (
-          <Text style={[styles.rangeHint, { color: tk.textMuted }]}>
-            {t("normalRange")} {matchingVital.minBodyTemp.toFixed(1)}°C - {matchingVital.maxBodyTemp.toFixed(1)}°C
-          </Text>
-        )}
-        <Text style={[styles.label, { color: tk.textMuted }]}>{t("heartRateLabel")}</Text>
-        <TextInput value={heartRate} onChangeText={setHeartRate} keyboardType="number-pad" placeholder={t("heartRatePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        {matchingVital && (
-          <Text style={[styles.rangeHint, { color: tk.textMuted }]}>
-            {t("normalRange")} {matchingVital.minHeartRate} - {matchingVital.maxHeartRate} bpm
-          </Text>
-        )}
-        <Text style={[styles.label, { color: tk.textMuted }]}>{t("vitalsNotesLabel")}</Text>
-        <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={4} placeholder={t("vitalsNotesPlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+    <PageContainer noAmbient={true}>
+      <View style={[styles.container, { backgroundColor: tk.bg }]}>
+        <ScreenHeader title={editId ? t("editVitalsHeaderTitle") : t("logVitalsHeaderTitle")} />
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("weightLabel")}</Text>
+          <TextInput value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder={t("weightPlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("temperatureLabel")}</Text>
+          <TextInput value={temp} onChangeText={setTemp} keyboardType="decimal-pad" placeholder={t("temperaturePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+          {matchingVital && (
+            <Text style={[styles.rangeHint, { color: tk.textMuted }]}>
+              {t("normalRange")} {matchingVital.minBodyTemp.toFixed(1)}°C - {matchingVital.maxBodyTemp.toFixed(1)}°C
+            </Text>
+          )}
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("heartRateLabel")}</Text>
+          <TextInput value={heartRate} onChangeText={setHeartRate} keyboardType="number-pad" placeholder={t("heartRatePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+          {matchingVital && (
+            <Text style={[styles.rangeHint, { color: tk.textMuted }]}>
+              {t("normalRange")} {matchingVital.minHeartRate} - {matchingVital.maxHeartRate} bpm
+            </Text>
+          )}
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("vitalsNotesLabel")}</Text>
+          <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={4} placeholder={t("vitalsNotesPlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+          <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
     </PageContainer>
   );
 }

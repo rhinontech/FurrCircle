@@ -13,15 +13,16 @@ interface Props {
   children: ReactNode;
   style?: ViewStyle;
   fullWidth?: boolean;
+  noAmbient?: boolean;
 }
 
-export function PageContainer({ children, style, fullWidth = false }: Props) {
+export function PageContainer({ children, style, fullWidth = false, noAmbient = false }: Props) {
   const tk = useTokens();
   const { isTablet } = useBreakpoint();
 
   return (
     <View style={[styles.root, { backgroundColor: tk.bg }, style]}>
-      <AmbientBackground />
+      {!noAmbient && <AmbientBackground />}
       <View style={[styles.inner, isTablet && !fullWidth && styles.innerTablet]}>
         {children}
       </View>

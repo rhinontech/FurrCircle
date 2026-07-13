@@ -134,9 +134,7 @@ export default function RootLayout() {
   const justSignedUp = useAuthStore((s) => s.justSignedUp);
   const router = useRouter();
   const segments = useSegments();
-  const { isTablet } = useBreakpoint();
-
-  const { isWide } = useBreakpoint();
+  const { isTablet, isDesktop, isWide } = useBreakpoint();
   const AUTH_SCREENS = ["login", "signup", "otp-verify", "forgot-password", "onboarding"];
   const isAuthScreen = AUTH_SCREENS.includes(segments[0] || "");
   const showSideNav = isTablet && !!user && !isAuthScreen;
@@ -468,14 +466,14 @@ export default function RootLayout() {
 
                   }}
                 >
-                  <View style={{ paddingLeft: showRightRail ? 60 : 0, backgroundColor:'white' }}>
+                  <View style={{ backgroundColor:'white' }}>
                     <SideNav />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     {stackScreens}
                   </View>
                   {showRightRail && (
-                    <View style={{ width: 400, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: tokens.border, paddingRight: 60 }}>
+                    <View style={{ width: 320, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: tokens.border }}>
                       <RightRail />
                     </View>
                   )}

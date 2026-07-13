@@ -1,6 +1,6 @@
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, RefreshControl, Modal, Alert, FlatList, Image,
+  ActivityIndicator, RefreshControl, Modal, Alert, FlatList, Image, Platform,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -293,6 +293,7 @@ export default function NotificationsScreen() {
           <ScrollView
             contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 60 }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+            showsVerticalScrollIndicator={false}
           >
             {/* ── Unseen Notification View ───────────────────────────────── */}
             {!showHistory && (
@@ -384,9 +385,9 @@ export default function NotificationsScreen() {
           </ScrollView>
         )}
 
-        {/* Adoption Requests Modal */}
-        <Modal visible={requestsVisible} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setRequestsVisible(false)}>
-          <View style={[styles.reqModal, { backgroundColor: tk.bg, paddingTop: insets.top }]}>
+        <Modal visible={requestsVisible} animationType="slide" transparent={true} presentationStyle="overFullScreen" onRequestClose={() => setRequestsVisible(false)}>
+          <View style={styles.reqModalOverlay}>
+            <View style={[styles.reqModal, { backgroundColor: tk.bg, paddingTop: Platform.OS === 'web' ? 20 : insets.top }]}>
             {/* Modal header */}
             <View style={styles.reqHeader}>
               <Text style={[styles.reqTitle, { color: tk.text }]}>{t("inboxTitle")}</Text>
@@ -623,6 +624,7 @@ export default function NotificationsScreen() {
               />
             )}
           </View>
+          </View>
         </Modal>
       </View>
     </PageContainer>
@@ -721,7 +723,34 @@ const styles = StyleSheet.create({
   inboxBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
 
   // Requests Modal
-  reqModal: { flex: 1, paddingTop: 20 },
+  reqModalOverlay: {
+    flex: 1,
+    ...Platform.select({
+      web: {
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }
+    })
+  },
+  reqModal: { 
+    flex: 1, 
+    paddingTop: 20,
+    width: '100%',
+    ...Platform.select({
+      web: {
+        maxWidth: 680,
+        maxHeight: '90%',
+        borderRadius: 24,
+        overflow: 'hidden',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
+      }
+    })
+  },
   reqHeader: {
     flexDirection: "row",
     alignItems: "center",

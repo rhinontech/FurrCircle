@@ -19,8 +19,6 @@ import { blockApi } from "../../services/user/blockApi";
 import { Video, ResizeMode } from "expo-av";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBreakpoint } from "../../src/lib/breakpoints";
-
-const GRID_SIZE = (Dimensions.get("window").width - 12) / 3;
 const puppy = require("../../src/assets/doodle-puppy.png");
 const tabs = ["Posts", "Pets", "Saved"] as const;
 const tabIcons = { Posts: Grid3x3, Pets: Bone, Saved: Bookmark };
@@ -177,7 +175,7 @@ export default function UserProfileScreen() {
   const gridData = tab === "Posts" ? posts : tab === "Saved" ? saved : [];
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
           title={userProfile?.username ? `@${userProfile.username}` : (isUUID ? t("profile") : `@${handle}`)}
@@ -233,7 +231,7 @@ export default function UserProfileScreen() {
             )}
           </View>
         ) : (
-          <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
+          <ScrollView contentContainerStyle={{ paddingVertical: 20 }} showsVerticalScrollIndicator={false}>
             {/* Profile card */}
             <View style={styles.px5}>
               <View style={[styles.profileCard, { backgroundColor: tk.card }]}>
@@ -541,8 +539,8 @@ const styles = StyleSheet.create({
   tabText: { fontFamily: "Poppins_700Bold", fontSize: 12 },
   tabActiveBar: { position: "absolute", bottom: 0, left: 0, right: 0, height: 2, backgroundColor: colors.primary },
   // Photo grid
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 2, paddingTop: 2 },
-  gridItem: { width: GRID_SIZE, height: GRID_SIZE, overflow: "hidden" },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 5, paddingTop: 4 },
+  gridItem: { width: "32.5%", aspectRatio: 1, overflow: "hidden" },
   videoBadge: { position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0, 0, 0, 0.45)", borderRadius: 12, padding: 5, alignItems: "center", justifyContent: "center" },
   // Pets grid
   petsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, padding: 20 },

@@ -40,7 +40,7 @@ export default function AboutAccountScreen() {
 
   const displayName = profile?.name || prefilledName || username;
   const avatarUrl = profile?.avatar_url || prefilledAvatar;
-  
+
   const getJoinedDate = () => {
     if (profile?.memberSince) return profile.memberSince;
     if (profile?.createdAt) {
@@ -61,10 +61,10 @@ export default function AboutAccountScreen() {
   };
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title={t("aboutAccountHeaderTitle")} />
-        
+
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.avatarSection}>
             <View style={[styles.avatarOutline, { borderColor: tk.border }]}>
@@ -77,7 +77,7 @@ export default function AboutAccountScreen() {
             <Text style={[styles.usernameText, { color: tk.text }]}>
               {username || profile?.username || "username"}
             </Text>
-            
+
             <Text style={[styles.introText, { color: tk.textMuted }]}>
               {t("aboutAccountIntroText")}
             </Text>

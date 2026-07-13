@@ -21,7 +21,7 @@ import { useLanguage } from "../src/lib/language-context";
 const lostDoodle = require("../src/assets/doodle-lost.png");
 const tabs = ["Lost", "Spotted"] as const;
 const { width: screenWidth } = Dimensions.get("window");
-const carouselImageWidth = screenWidth - 40;
+const carouselImageWidth = Platform.OS === 'web' ? Math.min(610, screenWidth - 40) : screenWidth - 40;
 
 export default function LostScreen() {
   const { t } = useLanguage();
@@ -328,11 +328,11 @@ export default function LostScreen() {
   );
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title={t("lostFound")} />
 
-        <ScrollView contentContainerStyle={{ paddingBottom: 110, paddingTop: 4 }}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110, paddingTop: 4 }}>
           {/* Alert banner */}
           <View style={styles.px5}>
             <View style={styles.alertBanner}>
@@ -940,8 +940,31 @@ const styles = StyleSheet.create({
   emptySubText: { fontFamily: "Inter_400Regular", fontSize: 13, marginTop: 4 },
 
   // Modal Styles
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  modalContent: { borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 20, paddingTop: 20, maxHeight: "90%" },
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: "rgba(0,0,0,0.5)", 
+    justifyContent: "flex-end",
+    ...Platform.select({
+      web: {
+        justifyContent: "center",
+        alignItems: "center",
+      },
+    }),
+  },
+  modalContent: { 
+    borderTopLeftRadius: 30, 
+    borderTopRightRadius: 30, 
+    paddingHorizontal: 20, 
+    paddingTop: 20, 
+    maxHeight: "90%",
+    width: "100%",
+    ...Platform.select({
+      web: {
+        maxWidth: 650,
+        borderRadius: 30,
+      },
+    }),
+  },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   modalTitle: { fontFamily: "Poppins_700Bold", fontSize: 18 },
   closeModalBtn: { padding: 4 },

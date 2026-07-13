@@ -36,83 +36,83 @@ export default function LogMedsScreen() {
 
   const handleSave = async () => {
     if (!med.trim()) {
-        Alert.alert(t("error"), t("pleaseEnterMedicationName"));
-        return;
+      Alert.alert(t("error"), t("pleaseEnterMedicationName"));
+      return;
     }
     if (!petId) {
-        Alert.alert(t("error"), t("noPetSelected"));
-        return;
+      Alert.alert(t("error"), t("noPetSelected"));
+      return;
     }
     setLoading(true);
     try {
-        let uploadedImageUrl = photo;
-        if (photo?.startsWith('file://')) {
-          const result = await uploadImage(photo, 'medications');
-          uploadedImageUrl = result?.url ?? result;
-        }
+      let uploadedImageUrl = photo;
+      if (photo?.startsWith('file://')) {
+        const result = await uploadImage(photo, 'medications');
+        uploadedImageUrl = result?.url ?? result;
+      }
 
-        if (editId) {
-            await healthApi.updateMedication(petId, editId, {
-                name: med.trim(),
-                dosage: dose.trim() || null,
-                notes: notes.trim() || null,
-                imageUrl: uploadedImageUrl || null,
-            });
-            Alert.alert(t("success"), t("medicationUpdatedSuccessfully"));
-        } else {
-            await healthApi.addMedication(petId, {
-                name: med.trim(),
-                dosage: dose.trim() || undefined,
-                notes: notes.trim() || undefined,
-                imageUrl: uploadedImageUrl,
-                startDate: new Date().toISOString().slice(0, 10),
-            });
-            Alert.alert(t("success"), t("medicationLoggedSuccessfully"));
-        }
-        router.back();
+      if (editId) {
+        await healthApi.updateMedication(petId, editId, {
+          name: med.trim(),
+          dosage: dose.trim() || null,
+          notes: notes.trim() || null,
+          imageUrl: uploadedImageUrl || null,
+        });
+        Alert.alert(t("success"), t("medicationUpdatedSuccessfully"));
+      } else {
+        await healthApi.addMedication(petId, {
+          name: med.trim(),
+          dosage: dose.trim() || undefined,
+          notes: notes.trim() || undefined,
+          imageUrl: uploadedImageUrl,
+          startDate: new Date().toISOString().slice(0, 10),
+        });
+        Alert.alert(t("success"), t("medicationLoggedSuccessfully"));
+      }
+      router.back();
     } catch (err) {
-        console.error("Failed to save medication:", err);
-        Alert.alert(t("error"), t("failedToSaveMedication"));
+      console.error("Failed to save medication:", err);
+      Alert.alert(t("error"), t("failedToSaveMedication"));
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <PageContainer fullWidth={true}>
-    <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title={editId ? t("editMedicationHeaderTitle") : t("logMedicationHeaderTitle")} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
-        <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationNameLabel")}</Text>
-        <TextInput value={med} onChangeText={setMed} placeholder={t("medicationNamePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationDoseLabel")}</Text>
-        <TextInput value={dose} onChangeText={setDose} placeholder={t("medicationDosePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationNotesLabel")}</Text>
-        <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={4} placeholder={t("medicationNotesPlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+    <PageContainer noAmbient={true}>
+      <View style={[styles.container, { backgroundColor: tk.bg }]}>
+        <ScreenHeader title={editId ? t("editMedicationHeaderTitle") : t("logMedicationHeaderTitle")} />
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationNameLabel")}</Text>
+          <TextInput value={med} onChangeText={setMed} placeholder={t("medicationNamePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationDoseLabel")}</Text>
+          <TextInput value={dose} onChangeText={setDose} placeholder={t("medicationDosePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationNotesLabel")}</Text>
+          <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={4} placeholder={t("medicationNotesPlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationPhotoLabel")}</Text>
-        <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { borderColor: tk.border, backgroundColor: tk.card }]} activeOpacity={0.8}>
-          {photo ? (
-            <>
-              <Image source={{ uri: photo }} style={styles.photoPreview} />
-              <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", gap: 8 }]}>
-                <Camera size={32} color="#FFFFFF" />
-                <Text style={[styles.photoBtnText, { color: "#FFFFFF" }]}>{t("changePhoto")}</Text>
-              </View>
-            </>
-          ) : (
-            <>
-              <Camera size={32} color={tk.textMuted} />
-              <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>{t("addPhoto")}</Text>
-            </>
-          )}
-        </TouchableOpacity>
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationPhotoLabel")}</Text>
+          <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { borderColor: tk.border, backgroundColor: tk.card }]} activeOpacity={0.8}>
+            {photo ? (
+              <>
+                <Image source={{ uri: photo }} style={styles.photoPreview} />
+                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", gap: 8 }]}>
+                  <Camera size={32} color="#FFFFFF" />
+                  <Text style={[styles.photoBtnText, { color: "#FFFFFF" }]}>{t("changePhoto")}</Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <Camera size={32} color={tk.textMuted} />
+                <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>{t("addPhoto")}</Text>
+              </>
+            )}
+          </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+          <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
     </PageContainer>
   );
 }

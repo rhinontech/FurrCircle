@@ -28,14 +28,30 @@ const CustomMapView = React.forwardRef<any, CustomMapViewProps>((props, ref) => 
     }
   }));
 
-  const { style, markerCoordinate } = props;
+  const { style, markerCoordinate, initialRegion } = props;
+  const lat = markerCoordinate?.latitude ?? initialRegion?.latitude;
+  const lng = markerCoordinate?.longitude ?? initialRegion?.longitude;
+
+  if (lat && lng) {
+    const mapUrl = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+    return (
+      <View style={style}>
+        <iframe
+          src={mapUrl}
+          width="100%"
+          height="100%"
+          style={{ border: 0 }}
+          allowFullScreen
+          loading="lazy"
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={[{ alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f4f6' }, style]}>
       <Text style={{ color: '#4b5563', fontSize: 13, fontFamily: 'System' }}>
-        {markerCoordinate 
-          ? `Coordinates: ${markerCoordinate.latitude.toFixed(4)}, ${markerCoordinate.longitude.toFixed(4)}` 
-          : 'Map View'}
+        Map View
       </Text>
     </View>
   );

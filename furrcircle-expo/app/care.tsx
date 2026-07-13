@@ -65,10 +65,10 @@ export default function CareScreen() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
     <View style={[styles.container, { backgroundColor: tk.bg }]}>
       <ScreenHeader title={t("careAndHealthHeaderTitle")} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
         {/* Hero reminder banner */}
         <View style={styles.heroBanner}>
           <View style={styles.heroContent}>

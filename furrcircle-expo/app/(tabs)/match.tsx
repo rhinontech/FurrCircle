@@ -31,6 +31,7 @@ import { useLocationStore } from "../../src/lib/location-store";
 import { glassSurface } from "../../src/components/ui/Glass";
 import { tabBarClearance } from "../../src/lib/tabbar";
 import { useLanguage } from "../../src/lib/language-context";
+import { PageContainer } from "../../src/components/PageContainer";
 
 const { width, height } = Dimensions.get("window");
 const CARD_WIDTH = width - 40;
@@ -421,7 +422,8 @@ export default function MatchScreen() {
   };
 
   return (
-    <ScrollView
+    <PageContainer>
+      <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top, paddingBottom: tabBarClearance(insets.bottom, 8) }}
       scrollEnabled={!topCard || loading}
@@ -657,7 +659,8 @@ export default function MatchScreen() {
           </Animated.View>
         </Animated.View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </PageContainer>
   );
 }
 

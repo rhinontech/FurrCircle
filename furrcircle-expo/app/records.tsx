@@ -241,7 +241,7 @@ export default function RecordsScreen() {
   };
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
           title={t("healthRecordsTitle")}
@@ -251,7 +251,7 @@ export default function RecordsScreen() {
             </TouchableOpacity>
           }
         />
-        <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 16 }}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 16 }}>
           <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("vaccinationHistoryTitle")}</Text>
           {data.vaccines.length === 0 && <Text style={{ color: tk.textMuted, fontSize: 13 }}>{t("noVaccinesRecorded")}</Text>}
           {data.vaccines.map((v) => (
@@ -369,19 +369,19 @@ export default function RecordsScreen() {
               {editAllergyId
                 ? t("editAllergyTitle")
                 : selectedType
-                ? t("addTypeTitle").replace(
+                  ? t("addTypeTitle").replace(
                     "{type}",
                     selectedType === "vaccine"
                       ? t("vaccineLabel")
                       : selectedType === "medication"
-                      ? t("medicationLabel")
-                      : selectedType === "vital"
-                      ? t("vitalLabel")
-                      : selectedType === "allergy"
-                      ? t("allergyLabel")
-                      : selectedType
+                        ? t("medicationLabel")
+                        : selectedType === "vital"
+                          ? t("vitalLabel")
+                          : selectedType === "allergy"
+                            ? t("allergyLabel")
+                            : selectedType
                   )
-                : t("addRecordTitle")}
+                  : t("addRecordTitle")}
             </Text>
             <TouchableOpacity onPress={handleClose}>
               <X size={20} color={tk.textMuted} />
@@ -418,12 +418,12 @@ export default function RecordsScreen() {
                     {key === "vaccine"
                       ? t("vaccineLabel")
                       : key === "medication"
-                      ? t("medicationLabel")
-                      : key === "vital"
-                      ? t("vitalLabel")
-                      : key === "allergy"
-                      ? t("allergyLabel")
-                      : label}
+                        ? t("medicationLabel")
+                        : key === "vital"
+                          ? t("vitalLabel")
+                          : key === "allergy"
+                            ? t("allergyLabel")
+                            : label}
                   </Text>
                 </TouchableOpacity>
               ))}

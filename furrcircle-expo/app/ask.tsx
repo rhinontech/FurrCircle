@@ -55,7 +55,7 @@ export default function AskScreen() {
   };
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -70,7 +70,7 @@ export default function AskScreen() {
           }
           showBack={false}
         />
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
           {/* Circle selector */}
           <Text style={[styles.label, { color: tk.textMuted }]}>{t("circleOptionalLabel")}</Text>
           {loadingCircles ? (

@@ -35,154 +35,154 @@ export default function LogVaccineScreen() {
 
   const handleSave = async () => {
     if (!vaccine.trim()) {
-        Alert.alert(t("error"), t("pleaseEnterVaccineName"));
-        return;
+      Alert.alert(t("error"), t("pleaseEnterVaccineName"));
+      return;
     }
     if (!petId) {
-        Alert.alert(t("error"), t("noPetSelected"));
-        return;
+      Alert.alert(t("error"), t("noPetSelected"));
+      return;
     }
     setLoading(true);
     try {
-        if (editId) {
-            await healthApi.updateVaccine(petId, editId, {
-                name: vaccine,
-                dateAdministered: dateGiven.toISOString().slice(0, 10),
-                nextDueDate: nextDate ? nextDate.toISOString().slice(0, 10) : null,
-                status: nextDate ? "due" : "done",
-            });
-            Alert.alert(t("success"), t("vaccineUpdatedSuccessfully"));
-        } else {
-            await healthApi.addVaccine(petId, {
-                name: vaccine,
-                dateAdministered: dateGiven.toISOString().slice(0, 10),
-                nextDueDate: nextDate ? nextDate.toISOString().slice(0, 10) : undefined,
-                status: "done",
-                setReminder: nextDate ? setReminder : false
-            });
-            Alert.alert(t("success"), t("vaccineLoggedSuccessfully"));
-        }
-        router.back();
+      if (editId) {
+        await healthApi.updateVaccine(petId, editId, {
+          name: vaccine,
+          dateAdministered: dateGiven.toISOString().slice(0, 10),
+          nextDueDate: nextDate ? nextDate.toISOString().slice(0, 10) : null,
+          status: nextDate ? "due" : "done",
+        });
+        Alert.alert(t("success"), t("vaccineUpdatedSuccessfully"));
+      } else {
+        await healthApi.addVaccine(petId, {
+          name: vaccine,
+          dateAdministered: dateGiven.toISOString().slice(0, 10),
+          nextDueDate: nextDate ? nextDate.toISOString().slice(0, 10) : undefined,
+          status: "done",
+          setReminder: nextDate ? setReminder : false
+        });
+        Alert.alert(t("success"), t("vaccineLoggedSuccessfully"));
+      }
+      router.back();
     } catch (err) {
-        console.error("Failed to save vaccine:", err);
-        Alert.alert(t("error"), t("failedToSaveVaccine"));
+      console.error("Failed to save vaccine:", err);
+      Alert.alert(t("error"), t("failedToSaveVaccine"));
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <PageContainer fullWidth={true}>
-    <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title={editId ? t("editVaccineHeaderTitle") : t("logVaccineHeaderTitle")} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
-        <Text style={[styles.label, { color: tk.textMuted }]}>{t("vaccineNameLabel")}</Text>
-        <TextInput value={vaccine} onChangeText={setVaccine} placeholder={t("vaccineNamePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        
-        <Text style={[styles.label, { color: tk.textMuted }]}>{t("vaccineDateGivenLabel")}</Text>
-        {Platform.OS === 'ios' ? (
-          <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
-            <DateTimePicker
-              value={dateGiven}
-              mode="date"
-              display="default"
-              maximumDate={new Date()}
-              themeVariant={dark ? "dark" : "light"}
-              onChange={(e, date) => {
-                if (date) setDateGiven(date);
-              }}
-            />
-          </View>
-        ) : (
-          <>
-            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.input, { backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, justifyContent: 'center' }]} activeOpacity={0.8}>
-              <Text style={{ color: tk.text, fontFamily: "Inter_400Regular" }}>{dateGiven.toLocaleDateString()}</Text>
-            </TouchableOpacity>
-            {showDatePicker && (
+    <PageContainer noAmbient={true}>
+      <View style={[styles.container, { backgroundColor: tk.bg }]}>
+        <ScreenHeader title={editId ? t("editVaccineHeaderTitle") : t("logVaccineHeaderTitle")} />
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("vaccineNameLabel")}</Text>
+          <TextInput value={vaccine} onChangeText={setVaccine} placeholder={t("vaccineNamePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("vaccineDateGivenLabel")}</Text>
+          {Platform.OS === 'ios' ? (
+            <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
               <DateTimePicker
                 value={dateGiven}
                 mode="date"
                 display="default"
                 maximumDate={new Date()}
+                themeVariant={dark ? "dark" : "light"}
                 onChange={(e, date) => {
-                  setShowDatePicker(false);
                   if (date) setDateGiven(date);
                 }}
               />
-            )}
-          </>
-        )}
-
-        <Text style={[styles.label, { color: tk.textMuted }]}>{t("vaccineNextDueDateLabel")}</Text>
-        {Platform.OS === 'ios' ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-            <DateTimePicker
-              value={nextDate || tomorrow}
-              mode="date"
-              display="default"
-              minimumDate={tomorrow}
-              themeVariant={dark ? "dark" : "light"}
-              onChange={(e, date) => {
-                if (date) setNextDate(date);
-              }}
-            />
-            {nextDate && (
-              <TouchableOpacity onPress={() => setNextDate(null)} style={styles.clearBtn} activeOpacity={0.7}>
-                <Text style={{ color: colors.coral, fontFamily: "Poppins_600SemiBold", fontSize: 13 }}>{t("clear")}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          <>
-            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-              <TouchableOpacity 
-                onPress={() => setShowNextDatePicker(true)} 
-                style={[styles.input, { flex: 1, backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, justifyContent: 'center' }]} 
-                activeOpacity={0.8}
-              >
-                <Text style={{ color: nextDate ? tk.text : tk.textMuted, fontFamily: "Inter_400Regular" }}>
-                  {nextDate ? nextDate.toLocaleDateString() : t("selectDateOptional")}
-                </Text>
-              </TouchableOpacity>
-              {nextDate && (
-                <TouchableOpacity onPress={() => setNextDate(null)} style={[styles.input, { backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }]} activeOpacity={0.7}>
-                  <Text style={{ color: colors.coral, fontFamily: "Poppins_600SemiBold", fontSize: 13 }}>{t("clear")}</Text>
-                </TouchableOpacity>
-              )}
             </View>
-            {showNextDatePicker && (
+          ) : (
+            <>
+              <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.input, { backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, justifyContent: 'center' }]} activeOpacity={0.8}>
+                <Text style={{ color: tk.text, fontFamily: "Inter_400Regular" }}>{dateGiven.toLocaleDateString()}</Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={dateGiven}
+                  mode="date"
+                  display="default"
+                  maximumDate={new Date()}
+                  onChange={(e, date) => {
+                    setShowDatePicker(false);
+                    if (date) setDateGiven(date);
+                  }}
+                />
+              )}
+            </>
+          )}
+
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("vaccineNextDueDateLabel")}</Text>
+          {Platform.OS === 'ios' ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 }}>
               <DateTimePicker
                 value={nextDate || tomorrow}
                 mode="date"
                 display="default"
                 minimumDate={tomorrow}
+                themeVariant={dark ? "dark" : "light"}
                 onChange={(e, date) => {
-                  setShowNextDatePicker(false);
                   if (date) setNextDate(date);
                 }}
               />
-            )}
-          </>
-        )}
+              {nextDate && (
+                <TouchableOpacity onPress={() => setNextDate(null)} style={styles.clearBtn} activeOpacity={0.7}>
+                  <Text style={{ color: colors.coral, fontFamily: "Poppins_600SemiBold", fontSize: 13 }}>{t("clear")}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <>
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <TouchableOpacity
+                  onPress={() => setShowNextDatePicker(true)}
+                  style={[styles.input, { flex: 1, backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, justifyContent: 'center' }]}
+                  activeOpacity={0.8}
+                >
+                  <Text style={{ color: nextDate ? tk.text : tk.textMuted, fontFamily: "Inter_400Regular" }}>
+                    {nextDate ? nextDate.toLocaleDateString() : t("selectDateOptional")}
+                  </Text>
+                </TouchableOpacity>
+                {nextDate && (
+                  <TouchableOpacity onPress={() => setNextDate(null)} style={[styles.input, { backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }]} activeOpacity={0.7}>
+                    <Text style={{ color: colors.coral, fontFamily: "Poppins_600SemiBold", fontSize: 13 }}>{t("clear")}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              {showNextDatePicker && (
+                <DateTimePicker
+                  value={nextDate || tomorrow}
+                  mode="date"
+                  display="default"
+                  minimumDate={tomorrow}
+                  onChange={(e, date) => {
+                    setShowNextDatePicker(false);
+                    if (date) setNextDate(date);
+                  }}
+                />
+              )}
+            </>
+          )}
 
-        {nextDate && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, paddingHorizontal: 4 }}>
-            <Text style={{ fontFamily: "Poppins_600SemiBold", fontSize: 14, color: tk.text }}>{t("setReminderNextDueDate")}</Text>
-            <Switch
-              value={setReminder}
-              onValueChange={setSetReminder}
-              trackColor={{ false: tk.border, true: colors.primary }}
-              thumbColor="#fff"
-              ios_backgroundColor={tk.border}
-            />
-          </View>
-        )}
+          {nextDate && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, paddingHorizontal: 4 }}>
+              <Text style={{ fontFamily: "Poppins_600SemiBold", fontSize: 14, color: tk.text }}>{t("setReminderNextDueDate")}</Text>
+              <Switch
+                value={setReminder}
+                onValueChange={setSetReminder}
+                trackColor={{ false: tk.border, true: colors.primary }}
+                thumbColor="#fff"
+                ios_backgroundColor={tk.border}
+              />
+            </View>
+          )}
 
-        <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+          <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
     </PageContainer>
   );
 }

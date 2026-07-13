@@ -9,7 +9,8 @@ import { useLanguage } from "../../src/lib/language-context";
 import { Stethoscope, MapPin, Star, Clock, Phone, Globe } from "../../src/components/ui/icons";
 import { useEffect, useState } from "react";
 import { placesApi } from "../../services/places/placesApi";
-import { ActivityIndicator, Linking, Alert } from "react-native";
+import { ActivityIndicator, Linking, Alert, Platform } from "react-native";
+import { useBreakpoint } from "../../src/lib/breakpoints";
 import { VetHeaderBackground } from "../../src/components/ui/VetHeaderBackground";
 
 export default function VetProfileScreen() {
@@ -18,6 +19,7 @@ export default function VetProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const tk = useTokens();
+  const { isTablet } = useBreakpoint();
 
   const [vet, setVet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -54,12 +56,12 @@ export default function VetProfileScreen() {
   };
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title={t("vetDetailsHeaderTitle")} />
-        <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
           <VetHeaderBackground />
-          
+
           {loading ? (
             <View style={{ paddingTop: 100, alignItems: "center" }}>
               <ActivityIndicator size="large" color={colors.primary} />
@@ -138,9 +140,16 @@ export default function VetProfileScreen() {
           )}
         </ScrollView>
 
-        <View style={[styles.footer, { backgroundColor: tk.card, paddingBottom: 10, borderTopColor: tk.border }]}>
-          <TouchableOpacity 
-            style={styles.bookBtn} 
+        <View style={[
+          styles.footer,
+          {
+            backgroundColor: Platform.OS === "web" && isTablet ? "transparent" : tk.card,
+            paddingBottom: 10,
+            borderTopColor: Platform.OS === "web" && isTablet ? "transparent" : tk.border,
+          }
+        ]}>
+          <TouchableOpacity
+            style={styles.bookBtn}
             activeOpacity={0.8}
             onPress={() => router.push(`/vets/reminder?vetId=${id}`)}
           >

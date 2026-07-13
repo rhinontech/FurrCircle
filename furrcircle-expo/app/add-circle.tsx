@@ -22,7 +22,7 @@ export default function AddCircleScreen() {
   const tk = useTokens();
   const insets = useSafeAreaInsets();
   const dark = useThemeStore((s) => s.dark);
-  
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("general");
@@ -101,7 +101,7 @@ export default function AddCircleScreen() {
   };
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
         style={{ flex: 1 }}
@@ -115,6 +115,7 @@ export default function AddCircleScreen() {
               paddingHorizontal: 20,
             }}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
             <Pressable onPress={Keyboard.dismiss}>
               {/* Cover image picker */}

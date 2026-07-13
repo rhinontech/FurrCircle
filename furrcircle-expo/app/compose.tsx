@@ -189,7 +189,7 @@ export default function ComposeScreen() {
   };
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -218,7 +218,7 @@ export default function ComposeScreen() {
             {/* Photo */}
             <TouchableOpacity onPress={pickPhoto} style={[styles.photoZone, { backgroundColor: tk.card, borderColor: tk.border }]} activeOpacity={0.8}>
               {imageUri ? (
-                <View style={{ position: "relative", width: "100%", aspectRatio: aspectRatio || 4/3 }}>
+                <View style={{ position: "relative", width: "100%", aspectRatio: aspectRatio || 4 / 3 }}>
                   {mediaType === "video" ? (
                     <Video
                       source={{ uri: imageUri }}

@@ -86,7 +86,7 @@ export default function PetPublicProfile() {
 
   if (loading) {
     return (
-      <PageContainer>
+      <PageContainer noAmbient={true}>
         <View style={[styles.container, { backgroundColor: tk.bg, justifyContent: "center", alignItems: "center" }]}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -96,7 +96,7 @@ export default function PetPublicProfile() {
 
   if (!pet) {
     return (
-      <PageContainer>
+      <PageContainer noAmbient={true}>
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
           <ScreenHeader title={t("petProfileHeaderTitle")} />
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -124,7 +124,7 @@ export default function PetPublicProfile() {
   const traits = Array.isArray(pet.personality) ? pet.personality : [];
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
           title={t("petProfileHeaderTitle")}
@@ -148,7 +148,7 @@ export default function PetPublicProfile() {
           }
         />
 
-        <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
+        <ScrollView contentContainerStyle={{ paddingVertical: 20 }} showsVerticalScrollIndicator={false}>
           {/* Hero card */}
           <View style={styles.px5}>
             <View style={[styles.heroCard, { backgroundColor: tintColor }]}>

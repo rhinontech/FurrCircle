@@ -102,21 +102,21 @@ export default function AddPetScreen() {
       if (!location) {
         location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       }
-      
+
       if (!location) {
         Alert.alert(t('errorTitle'), t('failedToFetchLocation'));
         setLocating(false);
         return;
       }
-      
+
       const lat = location.coords.latitude;
       const lon = location.coords.longitude;
-      
+
       const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
         headers: { 'User-Agent': 'FurrCircleApp/1.0' }
       });
       const data = await response.json();
-      
+
       if (data && data.address) {
         const foundCity = data.address.city || data.address.town || data.address.village || data.address.county || "Unknown City";
         setCity(foundCity);
@@ -175,14 +175,14 @@ export default function AddPetScreen() {
   };
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" :  (keyboardVisible ? "height" : undefined)}
+        behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
         style={{ flex: 1 }}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
           <ScreenHeader title={t("addPetHeaderTitle")} />
-          <ScrollView contentContainerStyle={{ paddingBottom: 60 + (insets.bottom > 0 ? insets.bottom : 0), paddingHorizontal: 20 }}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 + (insets.bottom > 0 ? insets.bottom : 0), paddingHorizontal: 20 }}>
             <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { borderColor: tk.border, backgroundColor: tk.card }]} activeOpacity={0.8}>
               {photo ? (
                 <>

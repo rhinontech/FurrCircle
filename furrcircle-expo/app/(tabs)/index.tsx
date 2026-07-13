@@ -39,6 +39,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { GlassCard, GlassBlur, glassSurface } from "../../src/components/ui/Glass";
 import { tabBarClearance } from "../../src/lib/tabbar";
 import { useLanguage } from "../../src/lib/language-context";
+import { PageContainer } from "@/components/PageContainer";
 
 const FEED_PAGE_SIZE = 15;
 // Height of the header content below the status bar — feed content is padded by
@@ -101,6 +102,7 @@ export default function FeedScreen() {
   const router = useRouter();
   const { refresh } = useLocalSearchParams<{ refresh?: string }>();
   const insets = useSafeAreaInsets();
+  const { isTablet } = useBreakpoint();
   const [composeOpen, setComposeOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [sharingPostId, setSharingPostId] = useState<string | null>(null);
@@ -535,95 +537,97 @@ export default function FeedScreen() {
   }, [feedPosts, feedLoading, feedHasMore, showSuggested, suggestedPosts]);
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={feedRows}
-        keyExtractor={(item) => (item.kind === "post" ? item.post.id : item.kind)}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        progressViewOffset={insets.top + HEADER_CONTENT_HEIGHT}
-        renderItem={({ item }) => {
-          if (item.kind === "boundary") {
+    <View style={[styles.container]}>
+      <PageContainer>
+        <FlatList
+          data={feedRows}
+          keyExtractor={(item) => (item.kind === "post" ? item.post.id : item.kind)}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          progressViewOffset={insets.top + HEADER_CONTENT_HEIGHT}
+          renderItem={({ item }) => {
+            if (item.kind === "boundary") {
+              return (
+                <CaughtUpBoundary
+                  empty={feedPosts.length === 0}
+                  loading={suggestedLoading}
+                  onReveal={revealSuggested}
+                  tk={tk}
+                />
+              );
+            }
+            if (item.kind === "suggestedHeader") {
+              return <SuggestedDivider tk={tk} />;
+            }
+            const p = item.post;
             return (
-              <CaughtUpBoundary
-                empty={feedPosts.length === 0}
-                loading={suggestedLoading}
-                onReveal={revealSuggested}
-                tk={tk}
-              />
+              <View style={{ paddingHorizontal: 0 }}>
+                <PostCard
+                  post={p}
+                  isLiked={likedIds.has(p.id)}
+                  isSaved={savedIds.has(p.id)}
+                  onLike={() => handleLike(p.id)}
+                  onSave={() => handleSave(p.id)}
+                  onShare={(id) => {
+                    setSharingPostId(id);
+                    setShareOpen(true);
+                  }}
+                  isMuted={feedVideoMuted}
+                  onToggleMute={() => setFeedVideoMuted(prev => !prev)}
+                  isActive={activePostId === p.id}
+                  onDelete={() => {
+                    setFeedPosts(prev => prev.filter(x => x.id !== p.id));
+                    setSuggestedPosts(prev => prev.filter(x => x.id !== p.id));
+                  }}
+                  onUpdate={(updatedPost) => {
+                    setFeedPosts(prev => prev.map(x => x.id === p.id ? { ...x, ...updatedPost } : x));
+                    setSuggestedPosts(prev => prev.map(x => x.id === p.id ? { ...x, ...updatedPost } : x));
+                  }}
+                />
+              </View>
             );
+          }}
+          ListHeaderComponent={
+            <StoryRail
+              myStories={myStories}
+              storyGroups={mappedOtherGroups}
+              onPressStory={handlePressStory}
+              onAddStory={handleAddStory}
+            />
           }
-          if (item.kind === "suggestedHeader") {
-            return <SuggestedDivider tk={tk} />;
+          ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
+          ListEmptyComponent={
+            !feedLoading ? (
+              <View style={[styles.emptyState, { paddingHorizontal: 16 }]}>
+                <Image source={require("../../src/assets/doodle-puppy.png")} style={styles.emptyImage} resizeMode="contain" />
+                <Text style={[styles.emptyTitle, { color: tk.text }]}>{t("noPostsYet")}</Text>
+                <Text style={[styles.emptyText, { color: tk.textMuted }]}>{t("shareFirstMoment")}</Text>
+              </View>
+            ) : (
+              <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+            )
           }
-          const p = item.post;
-          return (
-            <View style={{ paddingHorizontal: 0 }}>
-              <PostCard
-                post={p}
-                isLiked={likedIds.has(p.id)}
-                isSaved={savedIds.has(p.id)}
-                onLike={() => handleLike(p.id)}
-                onSave={() => handleSave(p.id)}
-                onShare={(id) => {
-                  setSharingPostId(id);
-                  setShareOpen(true);
-                }}
-                isMuted={feedVideoMuted}
-                onToggleMute={() => setFeedVideoMuted(prev => !prev)}
-                isActive={activePostId === p.id}
-                onDelete={() => {
-                  setFeedPosts(prev => prev.filter(x => x.id !== p.id));
-                  setSuggestedPosts(prev => prev.filter(x => x.id !== p.id));
-                }}
-                onUpdate={(updatedPost) => {
-                  setFeedPosts(prev => prev.map(x => x.id === p.id ? { ...x, ...updatedPost } : x));
-                  setSuggestedPosts(prev => prev.map(x => x.id === p.id ? { ...x, ...updatedPost } : x));
-                }}
-              />
-            </View>
-          );
-        }}
-        ListHeaderComponent={
-          <StoryRail
-            myStories={myStories}
-            storyGroups={mappedOtherGroups}
-            onPressStory={handlePressStory}
-            onAddStory={handleAddStory}
-          />
-        }
-        ItemSeparatorComponent={() => <View style={{ height: 20 }} />}
-        ListEmptyComponent={
-          !feedLoading ? (
-            <View style={[styles.emptyState, { paddingHorizontal: 16 }]}>
-              <Image source={require("../../src/assets/doodle-puppy.png")} style={styles.emptyImage} resizeMode="contain" />
-              <Text style={[styles.emptyTitle, { color: tk.text }]}>{t("noPostsYet")}</Text>
-              <Text style={[styles.emptyText, { color: tk.textMuted }]}>{t("shareFirstMoment")}</Text>
-            </View>
-          ) : (
-            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
-          )
-        }
-        ListFooterComponent={
-          (feedLoadingMore || suggestedLoadingMore) ? (
-            <ActivityIndicator color={colors.primary} style={{ marginVertical: 24 }} />
-          ) : null
-        }
-        onEndReached={handleEndReached}
-        onEndReachedThreshold={0.5}
-        showsVerticalScrollIndicator={false}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 140, paddingTop: insets.top + HEADER_CONTENT_HEIGHT }}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-      />
-
-      {/* Glass header overlay — feed content scrolls under it (frosted, no hard cut) */}
-      <FeedHeader />
-
-      <TouchableOpacity
+          ListFooterComponent={
+            (feedLoadingMore || suggestedLoadingMore) ? (
+              <ActivityIndicator color={colors.primary} style={{ marginVertical: 24 }} />
+            ) : null
+          }
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
+          showsVerticalScrollIndicator={false}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 140, paddingTop: insets.top + HEADER_CONTENT_HEIGHT }}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+        />
+        <TouchableOpacity
         onPress={() => setComposeOpen(true)}
-        style={[styles.fab, { bottom: tabBarClearance(insets.bottom) }]}
+        style={[
+          styles.fab,
+          Platform.OS === 'web' && isTablet
+            ? { bottom: 10, right: 0 }
+            : { bottom: tabBarClearance(insets.bottom) }
+        ]}
         activeOpacity={0.85}
       >
         <LinearGradient
@@ -634,6 +638,12 @@ export default function FeedScreen() {
         />
         <Plus size={28} color="#fff" strokeWidth={2.4} />
       </TouchableOpacity>
+      </PageContainer>
+
+      {/* Glass header overlay — feed content scrolls under it (frosted, no hard cut) */}
+      <FeedHeader />
+
+      
 
       <ComposeSheet open={composeOpen} onClose={() => setComposeOpen(false)} onPublished={loadFeed} />
       <ShareSheet
@@ -1038,7 +1048,7 @@ function PostCard({ post, isLiked, isSaved, onLike, onSave, onShare, isMuted, on
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
   const { isTablet } = useBreakpoint();
-  
+
   const lastTap = useRef<number>(0);
   const tapTimeout = useRef<any>(null);
   const heartScale = useRef(new Animated.Value(0)).current;
@@ -1961,7 +1971,7 @@ const styles = StyleSheet.create({
   petOwner: { fontSize: 11, fontFamily: "Inter_400Regular" },
   typeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   typeBadgeText: { fontFamily: "Poppins_700Bold", fontSize: 10, color: "#fff" },
-  imageWrapper: { width: "100%", alignSelf: "stretch", marginTop: 12, marginBottom: 4, borderRadius: 0, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  imageWrapper: { width: "100%", alignSelf: "stretch", marginTop: 12, marginBottom: 4, borderRadius: Platform.OS === 'web' ? 10 : 0, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   postImage: { width: "100%", height: "100%" },
   actions: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, gap: 16 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },

@@ -85,7 +85,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png",
+      "favicon": "./src/assets/furrcircle_icon.png",
       "bundler": "metro"
     },
     "extra": {

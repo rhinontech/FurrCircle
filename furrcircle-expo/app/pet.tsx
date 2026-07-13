@@ -78,7 +78,7 @@ export default function PetScreen() {
 
   if (loading) {
     return (
-      <PageContainer>
+      <PageContainer noAmbient={true}>
         <View style={[styles.container, { backgroundColor: tk.bg, justifyContent: "center", alignItems: "center" }]}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -92,18 +92,18 @@ export default function PetScreen() {
   const petAge = pet?.age ? String(pet.age) : "?";
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title={t("petProfileTitle")}
           right={
             <View style={{ flexDirection: "row", gap: 8 }}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => router.replace(`/p/${pet?.id || id}`)}
                 style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
               >
                 <Eye size={20} color={tk.text} />
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShareOpen(true)}
                 style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
               >
@@ -111,8 +111,8 @@ export default function PetScreen() {
               </TouchableOpacity>
             </View>
           }
-         />
-        <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
+        />
+        <ScrollView contentContainerStyle={{ paddingVertical: 20 }} showsVerticalScrollIndicator={false}>
           {/* Hero card */}
           <View style={styles.px5}>
             <View style={styles.heroCard}>
@@ -192,7 +192,7 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
         .catch(err => console.log("Failed to load memories", err));
     }
   }, [pet?.id]);
-  
+
   const toggleAdoption = async () => {
     const newVal = !adoption;
     setAdoption(newVal);
@@ -307,8 +307,8 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
         ) : (
           <View style={styles.galleryGrid}>
             {memories.slice(0, 6).map((m, i) => (
-              <TouchableOpacity 
-                key={m.id || i} 
+              <TouchableOpacity
+                key={m.id || i}
                 style={[styles.galleryItem, { backgroundColor: galleryTints[i % 6], overflow: "hidden" }]}
                 onPress={() => { if (m.media_url) setSelectedImage(m.media_url); }}
                 activeOpacity={0.8}
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: "row", gap: 10 },
   statCard: { flex: 1, borderRadius: 16, padding: 12, alignItems: "center" },
   statValue: { fontFamily: "Poppins_700Bold", fontSize: 12, marginTop: 4 },
-  statLabel: { fontSize: 11,  fontFamily: "Inter_400Regular" },
+  statLabel: { fontSize: 11, fontFamily: "Inter_400Regular" },
   sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, marginBottom: 6 },
   sectionSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 10 },
   availList: { borderRadius: 18, overflow: "hidden" },

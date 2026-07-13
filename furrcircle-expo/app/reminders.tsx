@@ -107,7 +107,7 @@ export default function RemindersScreen() {
   };
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title={t("remindersHeaderTitle")} />
 
@@ -151,15 +151,15 @@ export default function RemindersScreen() {
                   r.type === "appointment"
                     ? Stethoscope
                     : (r.type === "vaccination" || r.type === "vaccine")
-                    ? Syringe
-                    : r.type === "medication"
-                    ? Pill
-                    : Bell;
+                      ? Syringe
+                      : r.type === "medication"
+                        ? Pill
+                        : Bell;
 
                 let dateText = t("noDateLabel");
                 let timeText = t("noTimeLabel");
                 if (r.date) {
-                   const dt = new Date(`${r.date}T${r.time || "00:00"}`);
+                  const dt = new Date(`${r.date}T${r.time || "00:00"}`);
                   dateText = dt.toLocaleDateString(undefined, {
                     month: "short",
                     day: "numeric",
@@ -240,12 +240,12 @@ export default function RemindersScreen() {
                           {(r.type === "appointment"
                             ? t("reminderTypeAppointment")
                             : (r.type === "vaccination" || r.type === "vaccine")
-                            ? t("reminderTypeVaccination")
-                            : r.type === "medication"
-                            ? t("reminderTypeMedication")
-                            : r.type === "grooming"
-                            ? t("reminderTypeGrooming")
-                            : t("reminderTypeOther")).toUpperCase()}
+                              ? t("reminderTypeVaccination")
+                              : r.type === "medication"
+                                ? t("reminderTypeMedication")
+                                : r.type === "grooming"
+                                  ? t("reminderTypeGrooming")
+                                  : t("reminderTypeOther")).toUpperCase()}
                         </Text>
                       </View>
 

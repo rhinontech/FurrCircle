@@ -45,7 +45,7 @@ export default function TodayScreen() {
       setIsLoading(true);
       const fetchedPets = await petApi.getMyPets();
       setPets(fetchedPets || []);
-      
+
       if (fetchedPets && fetchedPets.length > 0) {
         let selected = fetchedPets[0];
         if (paramPetId) {
@@ -116,17 +116,17 @@ export default function TodayScreen() {
   // Calculate percentage and mood text
   const getLogStats = (log: any) => {
     if (!log) return { statusText: t("noData"), percentage: 0, statusColor: "pinky" as const };
-    
+
     const appetiteVal = log.appetite === "good" ? 2 : log.appetite === "normal" ? 1 : 0;
     const waterVal = log.waterIntake === "good" ? 2 : log.waterIntake === "normal" ? 1 : 0;
     const moodVal = log.mood === "good" ? 2 : log.mood === "normal" ? 1 : 0;
-    
+
     const sum = appetiteVal + waterVal + moodVal;
     const pct = Math.round((sum / 6) * 100);
-    
+
     let statusText = t("normalLabel");
     let statusColor: "success" | "sunshine" | "pinky" = "sunshine";
-    
+
     if (pct >= 70) {
       statusText = t("goodLabel");
       statusColor = "success";
@@ -134,7 +134,7 @@ export default function TodayScreen() {
       statusText = t("badLabel");
       statusColor = "pinky";
     }
-    
+
     return { statusText, percentage: pct, statusColor };
   };
 
@@ -147,10 +147,10 @@ export default function TodayScreen() {
   };
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader 
-          title={t("todayHeaderTitle")} 
+        <ScreenHeader
+          title={t("todayHeaderTitle")}
           right={
             activePet ? (
               <TouchableOpacity onPress={openLogModal} style={[styles.headerPlusBtn, { backgroundColor: tk.card, borderColor: tk.glassBorder }]}>
@@ -159,17 +159,17 @@ export default function TodayScreen() {
             ) : undefined
           }
         />
-        
+
         {isLoading ? (
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
-          <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
             {/* Greeting */}
             <View style={styles.greetingWrap}>
               <Text style={[styles.greetingSub, { color: tk.textMuted }]}>{t("hiGreeting").replace("{name}", greetingName)}</Text>
-              
+
               {pets.length > 0 ? (
                 <TouchableOpacity onPress={() => setIsPetPickerOpen(true)} activeOpacity={0.7} style={styles.greetingTitleRow}>
                   <Text style={[styles.greetingTitle, { color: tk.text }]}>
@@ -199,33 +199,33 @@ export default function TodayScreen() {
                       <View style={styles.statusCardInner}>
                         {/* Status rows */}
                         <View style={styles.statusList}>
-                          <StatusRow 
-                            color={dailyLog ? valueColorMap[dailyLog.appetite as "good" | "normal" | "bad"] : "sunshine"} 
-                            label={t("appetiteLabel")} 
-                            meta={dailyLog ? (dailyLog.appetite === "good" ? t("goodLabel") : dailyLog.appetite === "normal" ? t("normalLabel") : t("badLabel")) : t("notLogged")} 
-                            tk={tk} 
+                          <StatusRow
+                            color={dailyLog ? valueColorMap[dailyLog.appetite as "good" | "normal" | "bad"] : "sunshine"}
+                            label={t("appetiteLabel")}
+                            meta={dailyLog ? (dailyLog.appetite === "good" ? t("goodLabel") : dailyLog.appetite === "normal" ? t("normalLabel") : t("badLabel")) : t("notLogged")}
+                            tk={tk}
                           />
-                          <StatusRow 
-                            color={dailyLog ? valueColorMap[dailyLog.waterIntake as "good" | "normal" | "bad"] : "sunshine"} 
-                            label={t("waterIntakeLabel")} 
-                            meta={dailyLog ? (dailyLog.waterIntake === "good" ? t("goodLabel") : dailyLog.waterIntake === "normal" ? t("normalLabel") : t("badLabel")) : t("notLogged")} 
-                            tk={tk} 
+                          <StatusRow
+                            color={dailyLog ? valueColorMap[dailyLog.waterIntake as "good" | "normal" | "bad"] : "sunshine"}
+                            label={t("waterIntakeLabel")}
+                            meta={dailyLog ? (dailyLog.waterIntake === "good" ? t("goodLabel") : dailyLog.waterIntake === "normal" ? t("normalLabel") : t("badLabel")) : t("notLogged")}
+                            tk={tk}
                           />
-                          <StatusRow 
-                            color={dailyLog ? valueColorMap[dailyLog.mood as "good" | "normal" | "bad"] : "sunshine"} 
-                            label={t("moodLabel")} 
-                            meta={dailyLog ? (dailyLog.mood === "good" ? t("goodLabel") : dailyLog.mood === "normal" ? t("normalLabel") : t("badLabel")) : t("notLogged")} 
-                            tk={tk} 
+                          <StatusRow
+                            color={dailyLog ? valueColorMap[dailyLog.mood as "good" | "normal" | "bad"] : "sunshine"}
+                            label={t("moodLabel")}
+                            meta={dailyLog ? (dailyLog.mood === "good" ? t("goodLabel") : dailyLog.mood === "normal" ? t("normalLabel") : t("badLabel")) : t("notLogged")}
+                            tk={tk}
                           />
-                          
+
                           <View style={[styles.divider, { backgroundColor: tk.border }]} />
-                          
-                          <StatusRow 
-                            color={statusColor} 
-                            label={statusText} 
-                            meta={dailyLog ? `${percentage}%` : "--%"} 
-                            icon="heart" 
-                            tk={tk} 
+
+                          <StatusRow
+                            color={statusColor}
+                            label={statusText}
+                            meta={dailyLog ? `${percentage}%` : "--%"}
+                            icon="heart"
+                            tk={tk}
                           />
                         </View>
                         {/* Dog image */}
@@ -364,7 +364,7 @@ function PetPickerModal({ open, onClose, pets, activePetId, onSelect, tk }: any)
                 onClose();
               }}
               style={[
-                styles.petRow, 
+                styles.petRow,
                 { borderBottomColor: tk.border },
                 pet.id === activePetId && { backgroundColor: tk.border, borderRadius: 12 }
               ]}
@@ -467,13 +467,13 @@ const styles = StyleSheet.create({
   eventIconImgLg: { width: 52, height: 52 },
   eventCardText: { fontFamily: "Poppins_600SemiBold", fontSize: 18, lineHeight: 24 },
   eventCardSubText: { fontFamily: "Inter_500Medium", fontSize: 13, lineHeight: 18, marginTop: 2 },
-  
+
   loadingWrap: { flex: 1, justifyContent: "center", alignItems: "center" },
   cardLoadingWrap: { padding: 40, justifyContent: "center", alignItems: "center", width: "100%" },
   headerPlusBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   logBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 14, marginTop: 12 },
   logBtnText: { color: colors.white, fontFamily: "Poppins_700Bold", fontSize: 14 },
-  
+
   modalTitle: { fontFamily: "Poppins_700Bold", fontSize: 20 },
   modalSubtitle: { fontFamily: "Inter_500Medium", fontSize: 13, marginTop: 2 },
   petListScroll: { maxHeight: 300, marginTop: 12 },
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
   petNameText: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },
   petBreedText: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
   activeIndicator: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center" },
-  
+
   selectorSection: { marginVertical: 4 },
   sectionLabel: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
   optionGroup: { flexDirection: "row", justifyContent: "space-between", gap: 10, marginTop: 8, marginBottom: 14 },

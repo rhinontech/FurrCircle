@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, Modal, Pressable } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, Modal, Pressable, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Settings, ChevronRight, Bell, MessageCircle, MapPin, Award, Sun, CalendarDays, Siren, Stethoscope, Share2, Plus, LogOut, Clock, Trash2, Syringe, Pill, FolderHeart, FileText, Globe } from "../../src/components/ui/icons";
@@ -14,6 +14,7 @@ import { reminderApi } from "../../services/reminder/reminderApi";
 import { AdaptiveSheet } from "../../src/components/AdaptiveSheet";
 import { glassSurface } from "../../src/components/ui/Glass";
 import { useLanguage } from "../../src/lib/language-context";
+import { PageContainer } from "../../src/components/PageContainer";
 
 const TINT_COLORS = ["rgba(255,107,107,0.15)", "rgba(37,99,235,0.1)", "rgba(255,217,61,0.3)", "rgba(255,111,207,0.15)", "rgba(76,175,80,0.15)"];
 
@@ -69,26 +70,36 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      "Log Out",
-      "Are you sure you want to log out of your account?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Log Out",
-          style: "destructive",
-          onPress: async () => {
-            await logout();
-            router.replace("/login");
+    const performLogout = async () => {
+      await logout();
+      router.replace("/login");
+    };
+
+    if (Platform.OS === "web") {
+      const confirmLogout = window.confirm("Are you sure you want to log out of your account?");
+      if (confirmLogout) {
+        performLogout();
+      }
+    } else {
+      Alert.alert(
+        "Log Out",
+        "Are you sure you want to log out of your account?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Log Out",
+            style: "destructive",
+            onPress: performLogout,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }}>
-      <ScrollView style={styles.container}
+    <PageContainer>
+      <View style={{ flex: 1, paddingTop: insets.top }}>
+        <ScrollView style={styles.container}
         showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
 
         <View style={styles.header}>
@@ -277,8 +288,9 @@ export default function ProfileScreen() {
           }}
           tk={tk}
         />
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </View>
+    </PageContainer>
   );
 }
 

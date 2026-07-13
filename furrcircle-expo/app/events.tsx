@@ -20,11 +20,11 @@ const filters = ["All", "Adoption", "Playdate", "Training", "Meetup"] as const;
 // Tint palette per category — mirrors the lovable demo
 // (success/15, sunshine/30, primary/10, pinky/15 on the brand palette)
 const TINTS: Record<string, { bg: string; badge: string; text: string }> = {
-  adoption:  { bg: "rgba(76,175,80,0.15)",  badge: "#22c55e", text: "#15803d" },
-  playdate:  { bg: "rgba(255,217,61,0.30)", badge: "#F59E0B", text: "#92400e" },
-  training:  { bg: "rgba(37,99,235,0.10)",  badge: "#2563EB", text: "#1d4ed8" },
-  meetup:    { bg: "rgba(255,111,207,0.15)", badge: "#ec4899", text: "#9d174d" },
-  social:    { bg: "rgba(37,99,235,0.10)",  badge: "#2563EB", text: "#1d4ed8" },
+  adoption: { bg: "rgba(76,175,80,0.15)", badge: "#22c55e", text: "#15803d" },
+  playdate: { bg: "rgba(255,217,61,0.30)", badge: "#F59E0B", text: "#92400e" },
+  training: { bg: "rgba(37,99,235,0.10)", badge: "#2563EB", text: "#1d4ed8" },
+  meetup: { bg: "rgba(255,111,207,0.15)", badge: "#ec4899", text: "#9d174d" },
+  social: { bg: "rgba(37,99,235,0.10)", badge: "#2563EB", text: "#1d4ed8" },
 };
 const DEFAULT_TINT = { bg: "rgba(99,102,241,0.12)", badge: "#6366f1", text: "#4338ca" };
 
@@ -124,7 +124,7 @@ export default function EventsScreen() {
     : events.filter((e) => (e.category || "").toLowerCase() === active.toLowerCase());
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title={t("localEventsHeader")} />
 
@@ -134,6 +134,7 @@ export default function EventsScreen() {
           showsHorizontalScrollIndicator={false}
           style={styles.filterScroll}
           contentContainerStyle={styles.filterContent}
+          showsVerticalScrollIndicator={false}
         >
           {filters.map((f) => (
             <TouchableOpacity

@@ -5,6 +5,8 @@ export type Language = "en" | "hi" | "te";
 
 export const translations = {
   en: {
+    feed: "Feed",
+    match: "Match",
     profile: "Profile",
     myPets: "My pets",
     upcomingReminders: "Upcoming Reminders",
@@ -881,6 +883,8 @@ export const translations = {
     saveLogBtn: "Save Log",
   },
   hi: {
+    feed: "फ़ीड",
+    match: "मैच",
     profile: "प्रोफ़ाइल",
     myPets: "मेरे पालतू जानवर",
     upcomingReminders: "आगामी अनुस्मारक",
@@ -1759,6 +1763,8 @@ export const translations = {
     saveLogBtn: "लॉग सहेजें",
   },
   te: {
+    feed: "ఫీడ్",
+    match: "మ్యాచ్",
     profile: "ప్రొఫైల్",
     myPets: "నా పెంపుడు జంతువులు",
     upcomingReminders: "రాబోయే రిమైండర్‌లు",

@@ -22,6 +22,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { glassSurface } from "../../src/components/ui/Glass";
 import { tabBarClearance } from "../../src/lib/tabbar";
 import { useLanguage } from "../../src/lib/language-context";
+import { useBreakpoint } from "../../src/lib/breakpoints";
 
 type FilterType = "all" | "people" | "pets" | "posts" | "circles" | "questions" | "tags";
 const FILTERS: { key: FilterType; label: string }[] = [
@@ -51,6 +52,7 @@ export default function CommunityScreen() {
   const tk = useTokens();
   const searchInputRef = useRef<TextInput>(null);
   const { user } = useAuthStore();
+  const { isTablet } = useBreakpoint();
 
   const [myCircles, setMyCircles] = useState<any[]>([]);
   const [allCircles, setAllCircles] = useState<any[]>([]);
@@ -513,7 +515,12 @@ export default function CommunityScreen() {
         {!isSearchActive && (
           <TouchableOpacity
             onPress={() => router.push("/add-circle")}
-            style={[styles.fab, { bottom: tabBarClearance(insets.bottom) }]}
+            style={[
+              styles.fab,
+              Platform.OS === 'web' && isTablet
+                ? { bottom: 10, right: 0 }
+                : { bottom: tabBarClearance(insets.bottom) }
+            ]}
             activeOpacity={0.85}
           >
             <LinearGradient

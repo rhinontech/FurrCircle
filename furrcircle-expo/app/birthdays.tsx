@@ -121,7 +121,7 @@ export default function BirthdaysScreen() {
   );
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader title={t("petBirthdaysHeaderTitle")} />
 
@@ -157,7 +157,7 @@ export default function BirthdaysScreen() {
             ) : (
               pets.map((pet, i) => {
                 const tintBg = TINT_COLORS[i % TINT_COLORS.length];
-                
+
                 let countdownText = "";
                 if (pet.daysRemaining === 0 || pet.daysRemaining === 365) {
                   countdownText = t("todayCelebration");

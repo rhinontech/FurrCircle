@@ -46,7 +46,7 @@ export default function PublicUserProfileScreen() {
   const [following, setFollowing] = useState(false);
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
           title={`@${handle}`}
@@ -90,8 +90,8 @@ export default function PublicUserProfileScreen() {
                     {following ? t("following") : t("follow")}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={() => router.push("/chat")} 
+                <TouchableOpacity
+                  onPress={() => router.push("/chat")}
                   style={[styles.messageBtn, { backgroundColor: tk.text + "10" }]}
                 >
                   <MessageCircle size={16} color={tk.text} />

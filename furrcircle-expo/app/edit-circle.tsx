@@ -128,7 +128,7 @@ export default function EditCircle() {
 
   if (fetching) {
     return (
-      <PageContainer fullWidth={true}>
+      <PageContainer noAmbient={true}>
         <View style={{ flex: 1, backgroundColor: tk.bg }}>
           <ScreenHeader title={t("editCircle")} />
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -140,7 +140,7 @@ export default function EditCircle() {
   }
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={{ flex: 1, backgroundColor: tk.bg }}>
         <ScreenHeader title={t("editCircle")} />
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)} style={{ flex: 1 }}>

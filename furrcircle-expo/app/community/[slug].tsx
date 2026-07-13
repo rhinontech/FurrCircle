@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Share, Modal, Pressable } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Share, Modal, Pressable, Platform } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Users, Plus, ThumbsUp, MessageCircle, ChevronRight, Share2, MoreVertical, UserPlus, LogOut, Trash2, Edit2 } from "../../src/components/ui/icons";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
@@ -12,6 +12,7 @@ import { circleApi } from "../../services/community/circleApi";
 import { questionApi } from "../../services/community/questionApi";
 import { socketService } from "../../services/socket/socketService";
 import { useState, useCallback, useEffect } from "react";
+import { useBreakpoint } from "../../src/lib/breakpoints";
 
 const CATEGORY_COLORS: Record<string, string> = {
   dogs: "rgba(255,107,107,0.15)",
@@ -28,6 +29,7 @@ export default function CommunityDetail() {
   const router = useRouter();
   const tk = useTokens();
   const { user } = useAuthStore();
+  const { isTablet } = useBreakpoint();
 
   const [circle, setCircle] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
@@ -198,7 +200,7 @@ export default function CommunityDetail() {
 
   if (loading) {
     return (
-      <PageContainer fullWidth={true}>
+      <PageContainer noAmbient={true}>
         <View style={{ flex: 1, backgroundColor: tk.bg }}>
           <ScreenHeader title={t("circleHeaderTitle")} />
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -211,7 +213,7 @@ export default function CommunityDetail() {
 
   if (!circle) {
     return (
-      <PageContainer fullWidth={true}>
+      <PageContainer noAmbient={true}>
         <View style={{ flex: 1, backgroundColor: tk.bg }}>
           <ScreenHeader title={t("circleHeaderTitle")} />
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -225,7 +227,7 @@ export default function CommunityDetail() {
   const coverBg = CATEGORY_COLORS[circle.category] || "rgba(37,99,235,0.1)";
 
   return (
-    <PageContainer fullWidth={true}>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
           title={circle.name}
@@ -235,7 +237,7 @@ export default function CommunityDetail() {
             </TouchableOpacity>
           }
         />
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
           {/* Cover */}
           <View style={[styles.cover, { backgroundColor: coverBg }]}>
             {circle.coverImage ? (
@@ -273,11 +275,11 @@ export default function CommunityDetail() {
               {joining
                 ? <ActivityIndicator size="small" color={circle.isJoined ? colors.primary : colors.white} />
                 : <View style={styles.joinBtnInner}>
-                    {circle.isJoined && <UserPlus size={18} color={colors.primary} />}
-                    <Text style={[styles.joinBtnText, circle.isJoined && { color: colors.primary }]}>
-                      {circle.isJoined ? t("inviteMembers") : t("joinCircle")}
-                    </Text>
-                  </View>
+                  {circle.isJoined && <UserPlus size={18} color={colors.primary} />}
+                  <Text style={[styles.joinBtnText, circle.isJoined && { color: colors.primary }]}>
+                    {circle.isJoined ? t("inviteMembers") : t("joinCircle")}
+                  </Text>
+                </View>
               }
             </TouchableOpacity>
           </View>
@@ -351,51 +353,64 @@ export default function CommunityDetail() {
         onClose={() => setShareOpen(false)}
         circleId={slug}
       />
-
       {/* 3-dot dropdown menu */}
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-        <Pressable style={styles.menuOverlay} onPress={() => setMenuOpen(false)}>
-          <View style={[styles.menuCard, { backgroundColor: tk.card, borderColor: tk.border }]}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => { setMenuOpen(false); setShareOpen(true); }}
-              activeOpacity={0.7}
-            >
-              <Share2 size={18} color={tk.text} />
-              <Text style={[styles.menuItemText, { color: tk.text }]}>{t("sendToFriend")}</Text>
-            </TouchableOpacity>
-
-            {circle.isAdmin ? (
-              <>
-                <TouchableOpacity
-                  style={styles.menuItem}
-                  onPress={() => { setMenuOpen(false); router.push({ pathname: "/edit-circle", params: { id: circle.id } }); }}
-                  activeOpacity={0.7}
-                >
-                  <Edit2 size={18} color={tk.text} />
-                  <Text style={[styles.menuItemText, { color: tk.text }]}>{t("editCircle")}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem} onPress={handleDelete} activeOpacity={0.7}>
-                  <Trash2 size={18} color={colors.coral} />
-                  <Text style={[styles.menuItemText, { color: colors.coral }]}>{t("deleteCircle")}</Text>
-                </TouchableOpacity>
-              </>
-            ) : circle.isJoined ? (
-              <TouchableOpacity style={styles.menuItem} onPress={handleLeave} activeOpacity={0.7}>
-                <LogOut size={18} color={colors.coral} />
-                <Text style={[styles.menuItemText, { color: colors.coral }]}>{t("leaveCircle")}</Text>
+        <Pressable style={[styles.menuOverlay, isTablet && styles.menuOverlayTablet]} onPress={() => setMenuOpen(false)}>
+          <Pressable style={isTablet ? styles.menuContainerTablet : styles.menuContainerMobile} onPress={(e) => e.stopPropagation()}>
+            <View style={[styles.menuCard, { backgroundColor: tk.card, borderColor: tk.border }]}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => { setMenuOpen(false); setShareOpen(true); }}
+                activeOpacity={0.7}
+              >
+                <Share2 size={18} color={tk.text} />
+                <Text style={[styles.menuItemText, { color: tk.text }]}>{t("sendToFriend")}</Text>
               </TouchableOpacity>
-            ) : null}
-          </View>
+
+              {circle.isAdmin ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => { setMenuOpen(false); router.push({ pathname: "/edit-circle", params: { id: circle.id } }); }}
+                    activeOpacity={0.7}
+                  >
+                    <Edit2 size={18} color={tk.text} />
+                    <Text style={[styles.menuItemText, { color: tk.text }]}>{t("editCircle")}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.menuItem} onPress={handleDelete} activeOpacity={0.7}>
+                    <Trash2 size={18} color={colors.coral} />
+                    <Text style={[styles.menuItemText, { color: colors.coral }]}>{t("deleteCircle")}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : circle.isJoined ? (
+                <TouchableOpacity style={styles.menuItem} onPress={handleLeave} activeOpacity={0.7}>
+                  <LogOut size={18} color={colors.coral} />
+                  <Text style={[styles.menuItemText, { color: colors.coral }]}>{t("leaveCircle")}</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </Pressable>
         </Pressable>
       </Modal>
+
+      
     </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  cover: { width: "100%", aspectRatio: 16 / 9, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  cover: { 
+    width: "100%", 
+    aspectRatio: 16 / 9, 
+    alignItems: "center", 
+    justifyContent: "center", 
+    overflow: "hidden",
+    ...Platform.select({
+      web: { borderRadius: 10 },
+      default: {},
+    }),
+  },
   info: { borderRadius: 24, margin: 16, padding: 20 },
   circleName: { fontFamily: "Poppins_700Bold", fontSize: 22 },
   categoryBadge: { alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3, marginTop: 6 },
@@ -408,6 +423,21 @@ const styles = StyleSheet.create({
   joinBtnInner: { flexDirection: "row", alignItems: "center", gap: 8 },
   joinBtnText: { fontFamily: "Poppins_700Bold", fontSize: 15, color: colors.white },
   menuOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.15)", paddingTop: 96, paddingRight: 16, alignItems: "flex-end" },
+  menuOverlayTablet: {
+    alignItems: "center",
+    paddingRight: 0,
+  },
+  menuContainerTablet: {
+    width: "100%",
+    maxWidth: 680,
+    alignItems: "flex-end",
+    paddingRight: 16,
+  },
+  menuContainerMobile: {
+    width: "100%",
+    alignItems: "flex-end",
+    paddingRight: 16,
+  },
   menuCard: { borderRadius: 14, borderWidth: 1, paddingVertical: 6, minWidth: 200, shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
   menuItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
   menuItemText: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
