@@ -35,8 +35,43 @@ export const addMedication = async (petId: string, payload: Record<string, unkno
     return response.data;
 };
 
+export const updateMedication = async (petId: string, medId: string, payload: Record<string, unknown>) => {
+    const response = await PrivateAxios.put(`/health/meds/${petId}/${medId}`, payload);
+    return response.data;
+};
+
 export const deleteMedication = async (petId: string, medId: string) => {
     const response = await PrivateAxios.delete(`/health/meds/${petId}/${medId}`);
+    return response.data;
+};
+
+export const deleteVaccine = async (petId: string, vaccineId: string) => {
+    const response = await PrivateAxios.delete(`/health/vaccines/${petId}/${vaccineId}`);
+    return response.data;
+};
+
+export const updateVaccine = async (petId: string, vaccineId: string, payload: Record<string, unknown>) => {
+    const response = await PrivateAxios.put(`/health/vaccines/${petId}/${vaccineId}`, payload);
+    return response.data;
+};
+
+export const deleteVital = async (petId: string, vitalId: string) => {
+    const response = await PrivateAxios.delete(`/health/vitals/${petId}/${vitalId}`);
+    return response.data;
+};
+
+export const updateVital = async (petId: string, vitalId: string, payload: Record<string, unknown>) => {
+    const response = await PrivateAxios.put(`/health/vitals/${petId}/${vitalId}`, payload);
+    return response.data;
+};
+
+export const deleteAllergy = async (petId: string, allergyId: string) => {
+    const response = await PrivateAxios.delete(`/health/allergies/${petId}/${allergyId}`);
+    return response.data;
+};
+
+export const updateAllergy = async (petId: string, allergyId: string, payload: Record<string, unknown>) => {
+    const response = await PrivateAxios.put(`/health/allergies/${petId}/${allergyId}`, payload);
     return response.data;
 };
 
@@ -80,15 +115,22 @@ export const getRecordsData = async (petId: string) => {
 export const healthApi = {
     listVitals,
     addVital,
+    updateVital,
+    deleteVital,
     listVaccines,
     addVaccine,
+    updateVaccine,
+    deleteVaccine,
     generateVaccineCertificate,
     listMedications,
     addMedication,
+    updateMedication,
     deleteMedication,
     listRecords,
     addRecord,
     listAllergies,
     addAllergy,
+    updateAllergy,
+    deleteAllergy,
     getRecordsData,
 };

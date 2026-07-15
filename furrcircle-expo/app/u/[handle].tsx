@@ -11,6 +11,7 @@ import { ShareSheet } from "../../src/components/ShareSheet";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { useAuthStore } from "../../src/lib/auth-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { userApi } from "../../services/user/userApi";
 import { feedApi } from "../../services/community/feedApi";
 import { chatApi } from "../../services/chat/chatApi";
@@ -18,8 +19,6 @@ import { blockApi } from "../../services/user/blockApi";
 import { Video, ResizeMode } from "expo-av";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBreakpoint } from "../../src/lib/breakpoints";
-
-const GRID_SIZE = (Dimensions.get("window").width - 12) / 3;
 const puppy = require("../../src/assets/doodle-puppy.png");
 const tabs = ["Posts", "Pets", "Saved"] as const;
 const tabIcons = { Posts: Grid3x3, Pets: Bone, Saved: Bookmark };
@@ -34,6 +33,7 @@ function StatItem({ n, l, tk, onPress }: { n: string; l: string; tk: any; onPres
 }
 
 export default function UserProfileScreen() {
+  const { t } = useLanguage();
   const { handle } = useLocalSearchParams<{ handle: string }>();
   const router = useRouter();
   const tk = useTokens();
@@ -87,12 +87,12 @@ export default function UserProfileScreen() {
     setMenuOpen(false);
     const userDisplay = userProfile?.username || handle;
     Alert.alert(
-      `Block @${userDisplay}?`,
-      `They won't be able to see your profile or contact you. They won't be notified that you blocked them.`,
+      t("blockUserTitle").replace("{username}", userDisplay),
+      t("blockUserDesc"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Block",
+          text: t("blockAction"),
           style: "destructive",
           onPress: async () => {
             setIsBlocking(true);
@@ -101,7 +101,7 @@ export default function UserProfileScreen() {
               // Update local state to show blocked screen
               setUserProfile({ ...userProfile, isBlocked: true, canViewContent: false, avatar_url: null });
             } catch (err: any) {
-              Alert.alert("Error", err.message || "Failed to block user");
+              Alert.alert(t("error"), err.message || t("failedToBlockUser"));
             } finally {
               setIsBlocking(false);
             }
@@ -119,7 +119,7 @@ export default function UserProfileScreen() {
 
   const handleSelectReason = async (reason: string) => {
     if (!userProfile?.id) {
-      Alert.alert("Error", "Could not identify the user to report.");
+      Alert.alert(t("error"), t("couldNotIdentifyUserReport"));
       return;
     }
 
@@ -127,7 +127,7 @@ export default function UserProfileScreen() {
       await feedApi.reportUser(userProfile.id, reason);
       setReportStep(2);
     } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || "Failed to submit report.");
+      Alert.alert(t("error"), err?.response?.data?.message || t("failedToSubmitReport"));
     }
   };
 
@@ -138,7 +138,7 @@ export default function UserProfileScreen() {
       const data = await userApi.getUserProfile(handle as string);
       setUserProfile(data);
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to unblock user");
+      Alert.alert(t("error"), err.message || t("failedToUnblockUser"));
     }
   };
 
@@ -175,10 +175,10 @@ export default function UserProfileScreen() {
   const gridData = tab === "Posts" ? posts : tab === "Saved" ? saved : [];
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
-          title={userProfile?.username ? `@${userProfile.username}` : (isUUID ? "Profile" : `@${handle}`)}
+          title={userProfile?.username ? `@${userProfile.username}` : (isUUID ? t("profile") : `@${handle}`)}
           right={
             <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
               <TouchableOpacity
@@ -210,28 +210,28 @@ export default function UserProfileScreen() {
               <ShieldOff size={36} color="#EF4444" />
             </View>
             <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 20, color: tk.text, marginBottom: 8 }}>
-              This account is not available
+              {t("accountNotAvailable")}
             </Text>
             {userProfile.iBlockedThem ? (
               <>
                 <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, textAlign: "center", lineHeight: 22 }}>
-                  {`You've blocked @${handle}. Unblock to see their profile.`}
+                  {t("blockedUserMessage").replace("{username}", handle || "")}
                 </Text>
                 <TouchableOpacity
                   onPress={handleUnblockUser}
                   style={{ marginTop: 24, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 24, borderWidth: 1.5, borderColor: "#EF4444" }}
                 >
-                  <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 14, color: "#EF4444" }}>Unblock</Text>
+                  <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 14, color: "#EF4444" }}>{t("unblockAction")}</Text>
                 </TouchableOpacity>
               </>
             ) : (
               <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, textAlign: "center", lineHeight: 22 }}>
-                {`You can't view this profile.`}
+                {t("cantViewProfile")}
               </Text>
             )}
           </View>
         ) : (
-          <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
+          <ScrollView contentContainerStyle={{ paddingVertical: 20 }} showsVerticalScrollIndicator={false}>
             {/* Profile card */}
             <View style={styles.px5}>
               <View style={[styles.profileCard, { backgroundColor: tk.card }]}>
@@ -245,9 +245,9 @@ export default function UserProfileScreen() {
                     />
                   </View>
                   <View style={styles.statsRow}>
-                    <StatItem n={(posts.length || userProfile?.postCount || 0).toString()} l="Posts" tk={tk} />
-                    <StatItem n={(userProfile?.followersCount || 0).toString()} l="Followers" tk={tk} onPress={() => userProfile?.id && router.push({ pathname: "/user/followers", params: { userId: userProfile.id, type: "followers", title: "Followers" } })} />
-                    <StatItem n={(userProfile?.followingCount || 0).toString()} l="Following" tk={tk} onPress={() => userProfile?.id && router.push({ pathname: "/user/followers", params: { userId: userProfile.id, type: "following", title: "Following" } })} />
+                    <StatItem n={(posts.length || userProfile?.postCount || 0).toString()} l={t("postsLabel")} tk={tk} />
+                    <StatItem n={(userProfile?.followersCount || 0).toString()} l={t("followersLabel")} tk={tk} onPress={() => userProfile?.id && router.push({ pathname: "/user/followers", params: { userId: userProfile.id, type: "followers", title: t("followersLabel") } })} />
+                    <StatItem n={(userProfile?.followingCount || 0).toString()} l={t("followingLabel")} tk={tk} onPress={() => userProfile?.id && router.push({ pathname: "/user/followers", params: { userId: userProfile.id, type: "following", title: t("followingLabel") } })} />
                   </View>
                 </View>
 
@@ -256,33 +256,33 @@ export default function UserProfileScreen() {
                 {userProfile?.bio && <Text style={[styles.bio, { color: tk.textMuted }]}>{userProfile.bio}</Text>}
                 <View style={styles.locationRow}>
                   <MapPin size={12} color={tk.textMuted} />
-                  <Text style={[styles.locationText, { color: tk.textMuted }]}>{userProfile?.city || "Location unknown"}</Text>
+                  <Text style={[styles.locationText, { color: tk.textMuted }]}>{userProfile?.city || t("unknownLocation")}</Text>
                 </View>
 
                 {/* Action buttons */}
                 <View style={styles.actionRow}>
                   {userProfile?.followStatus === "self" && (
                     <TouchableOpacity onPress={() => router.push("/edit-profile")} style={[styles.editProfileBtn, { backgroundColor: tk.text + "15" }]}>
-                      <Text style={[styles.editProfileBtnText, { color: tk.text }]}>Edit profile</Text>
+                      <Text style={[styles.editProfileBtnText, { color: tk.text }]}>{t("editProfile")}</Text>
                     </TouchableOpacity>
                   )}
                   {userProfile?.followStatus === "none" && (
                     <TouchableOpacity onPress={handleFollowToggle} style={[styles.editProfileBtn, { backgroundColor: colors.primary }]}>
-                      <Text style={[styles.editProfileBtnText, { color: colors.white }]}>Follow</Text>
+                      <Text style={[styles.editProfileBtnText, { color: colors.white }]}>{t("follow")}</Text>
                     </TouchableOpacity>
                   )}
                   {userProfile?.followStatus === "pending" && (
                     <TouchableOpacity onPress={handleFollowToggle} style={[styles.editProfileBtn, { backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border }]}>
-                      <Text style={[styles.editProfileBtnText, { color: tk.text }]}>Requested</Text>
+                      <Text style={[styles.editProfileBtnText, { color: tk.text }]}>{t("requested")}</Text>
                     </TouchableOpacity>
                   )}
                   {userProfile?.followStatus === "accepted" && (
                     <>
                       <TouchableOpacity onPress={handleFollowToggle} style={[styles.editProfileBtn, { backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border }]}>
-                        <Text style={[styles.editProfileBtnText, { color: tk.text }]}>Following</Text>
+                        <Text style={[styles.editProfileBtnText, { color: tk.text }]}>{t("following")}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity onPress={handleMessage} style={[styles.editProfileBtn, { backgroundColor: tk.card, borderWidth: 1, borderColor: tk.border }]}>
-                        <Text style={[styles.editProfileBtnText, { color: tk.text }]}>Message</Text>
+                        <Text style={[styles.editProfileBtnText, { color: tk.text }]}>{t("messageLabel")}</Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -296,8 +296,8 @@ export default function UserProfileScreen() {
                 <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.foreground + "0A", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
                   <Bookmark size={32} color={tk.textMuted} />
                 </View>
-                <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 18, color: tk.text }}>This account is private</Text>
-                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, marginTop: 4, textAlign: "center" }}>Follow this account to see their posts.</Text>
+                <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 18, color: tk.text }}>{t("accountIsPrivate")}</Text>
+                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, marginTop: 4, textAlign: "center" }}>{t("followToSeePosts")}</Text>
               </View>
             ) : (
               <>
@@ -320,14 +320,16 @@ export default function UserProfileScreen() {
                 {/* Tabs — only show Saved for own profile */}
                 <View style={[styles.tabsRow, { borderBottomColor: tk.border }]}>
                   {tabs
-                    .filter(t => t !== "Saved" || isOwnProfile)
-                    .map((t) => {
-                      const Icon = tabIcons[t];
-                      const active = tab === t;
+                    .filter(tItem => tItem !== "Saved" || isOwnProfile)
+                    .map((tItem) => {
+                      const Icon = tabIcons[tItem];
+                      const active = tab === tItem;
                       return (
-                        <TouchableOpacity key={t} onPress={() => setTab(t)} style={styles.tabItem}>
+                        <TouchableOpacity key={tItem} onPress={() => setTab(tItem)} style={styles.tabItem}>
                           <Icon size={16} color={active ? colors.primary : tk.textMuted} />
-                          <Text style={[styles.tabText, { color: active ? colors.primary : tk.textMuted }]}>{t}</Text>
+                          <Text style={[styles.tabText, { color: active ? colors.primary : tk.textMuted }]}>
+                            {tItem === "Posts" ? t("postsLabel") : (tItem === "Pets" ? t("pets") : t("saved"))}
+                          </Text>
                           {active && <View style={styles.tabActiveBar} />}
                         </TouchableOpacity>
                       );
@@ -357,7 +359,7 @@ export default function UserProfileScreen() {
                 ) : gridData.length === 0 ? (
                   <View style={{ paddingVertical: 48, alignItems: "center", paddingHorizontal: 40 }}>
                     <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, textAlign: "center", lineHeight: 22 }}>
-                      {tab === "Posts" ? "No posts yet." : "No saved posts yet."}
+                      {tab === "Posts" ? t("noPostsYet") : t("noSavedPostsYet")}
                     </Text>
                   </View>
                 ) : (
@@ -413,18 +415,18 @@ export default function UserProfileScreen() {
               disabled={isBlocking}
             >
               <ShieldOff size={22} color="#EF4444" />
-              <Text style={[styles.menuItemText, { color: "#EF4444" }]}>Block @{userProfile?.username || handle}</Text>
+              <Text style={[styles.menuItemText, { color: "#EF4444" }]}>{t("blockUserLabel").replace("{username}", userProfile?.username || handle)}</Text>
             </TouchableOpacity>
             <View style={[styles.menuDivider, { backgroundColor: tk.border }]} />
             <TouchableOpacity style={styles.menuItem} onPress={handleReportUser}>
               <Flag size={22} color={tk.textMuted} />
-              <Text style={[styles.menuItemText, { color: tk.text }]}>Report</Text>
+              <Text style={[styles.menuItemText, { color: tk.text }]}>{t("report")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.menuCancelBtn, { backgroundColor: tk.bg }]}
               onPress={() => setMenuOpen(false)}
             >
-              <Text style={[styles.menuCancelText, { color: tk.text }]}>Cancel</Text>
+              <Text style={[styles.menuCancelText, { color: tk.text }]}>{t("cancel")}</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -436,7 +438,7 @@ export default function UserProfileScreen() {
           {/* Header */}
           <View style={[styles.reportHeader, { borderBottomColor: tk.border }]}>
             <View style={{ width: 40 }} />
-            <Text style={[styles.reportHeaderTitle, { color: tk.text }]}>Report</Text>
+            <Text style={[styles.reportHeaderTitle, { color: tk.text }]}>{t("report")}</Text>
             <TouchableOpacity onPress={() => setReportModalOpen(false)} style={styles.reportCloseBtn}>
               <X size={24} color={tk.text} />
             </TouchableOpacity>
@@ -444,22 +446,22 @@ export default function UserProfileScreen() {
 
           {reportStep === 1 ? (
             <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.reportContent} showsVerticalScrollIndicator={false}>
-              <Text style={[styles.reportTitle, { color: tk.text }]}>Why are you reporting this user?</Text>
+              <Text style={[styles.reportTitle, { color: tk.text }]}>{t("whyReportingUser")}</Text>
               <Text style={[styles.reportSubtitle, { color: tk.textMuted }]}>
-                Your report is anonymous. If someone is in immediate danger, call the local emergency services - don't wait.
+                {t("reportDisclaimer")}
               </Text>
 
               <View style={{ marginTop: 24 }}>
                 {[
-                  "I just don't like it",
-                  "Bullying or unwanted contact",
-                  "Suicide, self-injury or eating disorders",
-                  "Violence, hate or exploitation",
-                  "Selling or promoting restricted items",
-                  "Nudity or sexual activity",
-                  "Scam, fraud or spam",
-                  "False information",
-                  "Intellectual property"
+                  t("reasonDontLikeIt"),
+                  t("reasonBullying"),
+                  t("reasonSuicideSelfInjury"),
+                  t("reasonViolenceHate"),
+                  t("reasonRestrictedItems"),
+                  t("reasonNudity"),
+                  t("reasonScamSpam"),
+                  t("reasonFalseInfo"),
+                  t("reasonIntellectualProperty")
                 ].map((reason, idx) => (
                   <TouchableOpacity
                     key={idx}
@@ -478,9 +480,9 @@ export default function UserProfileScreen() {
                 <View style={[styles.checkCircle, { backgroundColor: tk.border }]}>
                   <Check size={40} color={colors.primary} strokeWidth={3} />
                 </View>
-                <Text style={[styles.successTitle, { color: tk.text }]}>Thanks for your feedback</Text>
+                <Text style={[styles.successTitle, { color: tk.text }]}>{t("thanksFeedback")}</Text>
                 <Text style={[styles.successSubtitle, { color: tk.textMuted }]}>
-                  We use these reports to show you less of this kind of content in the future.
+                  {t("reportFeedbackDetail")}
                 </Text>
               </View>
               
@@ -489,7 +491,7 @@ export default function UserProfileScreen() {
                   style={[styles.doneBtn, { backgroundColor: colors.primary }]}
                   onPress={() => setReportModalOpen(false)}
                 >
-                  <Text style={styles.doneBtnText}>Done</Text>
+                  <Text style={styles.doneBtnText}>{t("done")}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -537,8 +539,8 @@ const styles = StyleSheet.create({
   tabText: { fontFamily: "Poppins_700Bold", fontSize: 12 },
   tabActiveBar: { position: "absolute", bottom: 0, left: 0, right: 0, height: 2, backgroundColor: colors.primary },
   // Photo grid
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 2, paddingTop: 2 },
-  gridItem: { width: GRID_SIZE, height: GRID_SIZE, overflow: "hidden" },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 5, paddingTop: 4 },
+  gridItem: { width: "32.5%", aspectRatio: 1, overflow: "hidden" },
   videoBadge: { position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0, 0, 0, 0.45)", borderRadius: 12, padding: 5, alignItems: "center", justifyContent: "center" },
   // Pets grid
   petsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, padding: 20 },

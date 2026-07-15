@@ -6,10 +6,12 @@ import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
+import { useLanguage } from "../src/lib/language-context";
 import { userApi } from "../services/user/userApi";
 import { Avatar } from "../src/components/Avatar";
 
 export default function AboutAccountScreen() {
+  const { t, language } = useLanguage();
   const router = useRouter();
   const tk = useTokens();
   const { username, prefilledName, prefilledAvatar } = useLocalSearchParams<{
@@ -38,28 +40,31 @@ export default function AboutAccountScreen() {
 
   const displayName = profile?.name || prefilledName || username;
   const avatarUrl = profile?.avatar_url || prefilledAvatar;
-  
+
   const getJoinedDate = () => {
     if (profile?.memberSince) return profile.memberSince;
     if (profile?.createdAt) {
       const date = new Date(profile.createdAt);
       if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+        return date.toLocaleDateString(
+          language === "hi" ? "hi-IN" : language === "te" ? "te-IN" : "en-US",
+          { month: "long", year: "numeric" }
+        );
       }
     }
-    return "July 2015";
+    return t("july2015Fallback");
   };
 
   const getCountry = () => {
     if (profile?.city) return profile.city;
-    return "India";
+    return t("indiaFallback");
   };
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="About this account" />
-        
+        <ScreenHeader title={t("aboutAccountHeaderTitle")} />
+
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.avatarSection}>
             <View style={[styles.avatarOutline, { borderColor: tk.border }]}>
@@ -72,10 +77,9 @@ export default function AboutAccountScreen() {
             <Text style={[styles.usernameText, { color: tk.text }]}>
               {username || profile?.username || "username"}
             </Text>
-            
+
             <Text style={[styles.introText, { color: tk.textMuted }]}>
-              To help keep our community authentic, we're showing information about profiles on FurrCircle.{" "}
-              {/* <Text style={styles.linkText}>See why this information is important.</Text> */}
+              {t("aboutAccountIntroText")}
             </Text>
           </View>
 
@@ -86,7 +90,7 @@ export default function AboutAccountScreen() {
                 <Calendar size={24} color={tk.text} />
               </View>
               <View style={styles.infoTextContainer}>
-                <Text style={[styles.infoLabel, { color: tk.text }]}>Date joined</Text>
+                <Text style={[styles.infoLabel, { color: tk.text }]}>{t("dateJoinedLabel")}</Text>
                 {loading && !profile ? (
                   <ActivityIndicator size="small" color={colors.primary} style={styles.loader} />
                 ) : (
@@ -101,7 +105,7 @@ export default function AboutAccountScreen() {
                 <MapPin size={24} color={tk.text} />
               </View>
               <View style={styles.infoTextContainer}>
-                <Text style={[styles.infoLabel, { color: tk.text }]}>Account based in</Text>
+                <Text style={[styles.infoLabel, { color: tk.text }]}>{t("accountBasedInLabel")}</Text>
                 {loading && !profile ? (
                   <ActivityIndicator size="small" color={colors.primary} style={styles.loader} />
                 ) : (

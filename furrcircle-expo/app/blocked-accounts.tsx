@@ -4,12 +4,15 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
+import { useLanguage } from "../src/lib/language-context";
 import { blockApi } from "../services/user/blockApi";
 import { ShieldOff } from "../src/components/ui/icons";
+import { PageContainer } from "@/components/PageContainer";
 
 const puppy = require("../src/assets/doodle-puppy.png");
 
 export default function BlockedAccountsScreen() {
+  const { t } = useLanguage();
   const tk = useTokens();
   const router = useRouter();
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
@@ -28,19 +31,19 @@ export default function BlockedAccountsScreen() {
 
   const handleUnblock = (user: any) => {
     Alert.alert(
-      `Unblock @${user.username}?`,
-      `They will be able to see your profile and contact you again.`,
+      t("unblockUserTitle").replace("{username}", user.username),
+      t("unblockUserSub"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Unblock",
+          text: t("unblockActionBtn"),
           onPress: async () => {
             setUnblockingId(user.id);
             try {
               await blockApi.unblockUser(user.id);
               setBlockedUsers(prev => prev.filter(u => u.id !== user.id));
             } catch (err: any) {
-              Alert.alert("Error", err.message || "Failed to unblock user");
+              Alert.alert(t("errorTitle"), err.message || t("failedToUnblockMsg"));
             } finally {
               setUnblockingId(null);
             }
@@ -51,70 +54,72 @@ export default function BlockedAccountsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title="Blocked Accounts" />
+    <PageContainer noAmbient={true}>
+      <View style={[styles.container, { backgroundColor: tk.bg }]}>
+        <ScreenHeader title={t("blockedAccountsHeaderTitle")} />
 
-      {loading ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : blockedUsers.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 40 }}>
-          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "rgba(239,68,68,0.1)", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-            <ShieldOff size={36} color="#EF4444" />
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
-          <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 18, color: tk.text, marginBottom: 8 }}>
-            No blocked accounts
-          </Text>
-          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, textAlign: "center" }}>
-            Users you block will appear here. You can unblock them at any time.
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={blockedUsers}
-          keyExtractor={item => item.id}
-          contentContainerStyle={{ padding: 16, gap: 10 }}
-          ListHeaderComponent={
-            <Text style={[styles.subtitle, { color: tk.textMuted }]}>
-              {blockedUsers.length} blocked {blockedUsers.length === 1 ? "account" : "accounts"}
-            </Text>
-          }
-          renderItem={({ item }) => (
-            <View style={[styles.row, { backgroundColor: tk.card }]}>
-              <TouchableOpacity
-                onPress={() => router.push(`/u/${item.username}`)}
-                style={styles.userInfo}
-                activeOpacity={0.7}
-              >
-                <Image
-                  source={item.avatar_url ? { uri: item.avatar_url } : puppy}
-                  style={styles.avatar}
-                  resizeMode="cover"
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.name, { color: tk.text }]} numberOfLines={1}>{item.name}</Text>
-                  <Text style={[styles.username, { color: tk.textMuted }]} numberOfLines={1}>@{item.username}</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => handleUnblock(item)}
-                disabled={unblockingId === item.id}
-                style={[styles.unblockBtn, { borderColor: tk.border }]}
-                activeOpacity={0.7}
-              >
-                {unblockingId === item.id ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <Text style={[styles.unblockText, { color: tk.text }]}>Unblock</Text>
-                )}
-              </TouchableOpacity>
+        ) : blockedUsers.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 40 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "rgba(239,68,68,0.1)", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+              <ShieldOff size={36} color="#EF4444" />
             </View>
-          )}
-        />
-      )}
-    </View>
+            <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 18, color: tk.text, marginBottom: 8 }}>
+              {t("noBlockedAccountsTitle")}
+            </Text>
+            <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, textAlign: "center" }}>
+              {t("noBlockedAccountsSub")}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={blockedUsers}
+            keyExtractor={item => item.id}
+            contentContainerStyle={{ padding: 16, gap: 10 }}
+            ListHeaderComponent={
+              <Text style={[styles.subtitle, { color: tk.textMuted }]}>
+                {blockedUsers.length === 1 ? t("blockedAccountsCountSingle").replace("{count}", String(blockedUsers.length)) : t("blockedAccountsCountPlural").replace("{count}", String(blockedUsers.length))}
+              </Text>
+            }
+            renderItem={({ item }) => (
+              <View style={[styles.row, { backgroundColor: tk.card }]}>
+                <TouchableOpacity
+                  onPress={() => router.push(`/u/${item.username}`)}
+                  style={styles.userInfo}
+                  activeOpacity={0.7}
+                >
+                  <Image
+                    source={item.avatar_url ? { uri: item.avatar_url } : puppy}
+                    style={styles.avatar}
+                    resizeMode="cover"
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.name, { color: tk.text }]} numberOfLines={1}>{item.name}</Text>
+                    <Text style={[styles.username, { color: tk.textMuted }]} numberOfLines={1}>@{item.username}</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => handleUnblock(item)}
+                  disabled={unblockingId === item.id}
+                  style={[styles.unblockBtn, { borderColor: tk.border }]}
+                  activeOpacity={0.7}
+                >
+                  {unblockingId === item.id ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Text style={[styles.unblockText, { color: tk.text }]}>{t("unblockBtnLabel")}</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+        )}
+      </View>
+    </PageContainer>
   );
 }
 

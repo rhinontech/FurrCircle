@@ -3,7 +3,7 @@ import {
   Platform, Image, KeyboardAvoidingView, ActivityIndicator, Keyboard, Pressable
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Camera } from "../src/components/ui/icons";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
@@ -12,24 +12,17 @@ import { circleApi } from "../services/community/circleApi";
 import { userApi } from "../services/user/userApi";
 import { colors } from "../src/lib/theme";
 import { useTokens, useThemeStore } from "../src/lib/theme-store";
+import { useLanguage } from "../src/lib/language-context";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ImageCropper } from "../src/components/ImageCropper";
 
-const CATEGORY_PRESETS = [
-  { id: "dogs", label: "Dogs" },
-  { id: "cats", label: "Cats" },
-  { id: "rescue", label: "Rescue" },
-  { id: "health", label: "Health" },
-  { id: "training", label: "Training" },
-  { id: "general", label: "General" },
-];
-
 export default function AddCircleScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const tk = useTokens();
   const insets = useSafeAreaInsets();
   const dark = useThemeStore((s) => s.dark);
-  
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("general");
@@ -37,6 +30,15 @@ export default function AddCircleScreen() {
   const [cropSource, setCropSource] = useState<{ uri: string; width: number; height: number } | null>(null);
   const [saving, setSaving] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  const localizedCategories = useMemo(() => [
+    { id: "dogs", label: t("categoryDogs") },
+    { id: "cats", label: t("categoryCats") },
+    { id: "rescue", label: t("categoryRescue") },
+    { id: "health", label: t("categoryHealth") },
+    { id: "training", label: t("categoryTraining") },
+    { id: "general", label: t("generalCategory") },
+  ], [t]);
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
@@ -55,7 +57,7 @@ export default function AddCircleScreen() {
   const pickCover = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Gallery access is required to upload a cover image.");
+      Alert.alert(t("permissionRequiredTitle"), t("galleryPermissionDesc"));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -74,7 +76,7 @@ export default function AddCircleScreen() {
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      Alert.alert("Required", "Please enter a circle name.");
+      Alert.alert(t("requiredTitle"), t("pleaseEnterCircleName"));
       return;
     }
     setSaving(true);
@@ -92,20 +94,20 @@ export default function AddCircleScreen() {
       });
       router.back();
     } catch (err: any) {
-      Alert.alert("Error creating circle", err?.response?.data?.message || err.message || "Failed to create circle.");
+      Alert.alert(t("errorCreatingCircleTitle"), err?.response?.data?.message || err.message || t("failedToCreateCircleMsg"));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
         style={{ flex: 1 }}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
-          <ScreenHeader title="Create a Circle" />
+          <ScreenHeader title={t("createCircleHeaderTitle")} />
           <ScrollView
             style={{ flex: 1 }}
             contentContainerStyle={{
@@ -113,10 +115,11 @@ export default function AddCircleScreen() {
               paddingHorizontal: 20,
             }}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
             <Pressable onPress={Keyboard.dismiss}>
               {/* Cover image picker */}
-              <Text style={[styles.label, { color: tk.textMuted }]}>Cover Image</Text>
+              <Text style={[styles.label, { color: tk.textMuted }]}>{t("coverImageLabel")}</Text>
               <TouchableOpacity
                 onPress={pickCover}
                 style={[styles.photoBtn, { borderColor: tk.border, backgroundColor: tk.card }]}
@@ -127,33 +130,33 @@ export default function AddCircleScreen() {
                     <Image source={{ uri: coverUri }} style={styles.photoPreview} resizeMode="cover" />
                     <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", gap: 8 }]}>
                       <Camera size={32} color="#FFFFFF" />
-                      <Text style={[styles.photoBtnText, { color: "#FFFFFF" }]}>Change Cover Photo</Text>
+                      <Text style={[styles.photoBtnText, { color: "#FFFFFF" }]}>{t("changeCoverPhotoBtn")}</Text>
                     </View>
                   </>
                 ) : (
                   <>
                     <Camera size={32} color={tk.textMuted} />
-                    <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>Tap to add cover photo (optional)</Text>
+                    <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>{t("tapToAddCoverPhotoPlaceholder")}</Text>
                   </>
                 )}
               </TouchableOpacity>
 
               {/* Circle Name */}
-              <Text style={[styles.label, { color: tk.textMuted }]}>Name</Text>
+              <Text style={[styles.label, { color: tk.textMuted }]}>{t("nameLabel")}</Text>
               <TextInput
                 value={name}
                 onChangeText={setName}
-                placeholder="e.g. Beagle Buddies"
+                placeholder={t("circleNamePlaceholder")}
                 placeholderTextColor={tk.textMuted}
                 style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]}
               />
 
               {/* Description */}
-              <Text style={[styles.label, { color: tk.textMuted }]}>Description</Text>
+              <Text style={[styles.label, { color: tk.textMuted }]}>{t("descriptionLabel")}</Text>
               <TextInput
                 value={description}
                 onChangeText={setDescription}
-                placeholder="What is this circle about?"
+                placeholder={t("circleDescPlaceholder")}
                 placeholderTextColor={tk.textMuted}
                 multiline
                 numberOfLines={3}
@@ -161,9 +164,9 @@ export default function AddCircleScreen() {
               />
 
               {/* Category selector */}
-              <Text style={[styles.label, { color: tk.textMuted }]}>Category</Text>
+              <Text style={[styles.label, { color: tk.textMuted }]}>{t("categoryLabel")}</Text>
               <View style={styles.tagRow}>
-                {CATEGORY_PRESETS.map((cat) => {
+                {localizedCategories.map((cat) => {
                   const isActive = category === cat.id;
                   return (
                     <TouchableOpacity
@@ -190,7 +193,7 @@ export default function AddCircleScreen() {
                 {saving ? (
                   <ActivityIndicator color={colors.white} />
                 ) : (
-                  <Text style={styles.saveBtnText}>Create Circle</Text>
+                  <Text style={styles.saveBtnText}>{t("createCircleBtn")}</Text>
                 )}
               </TouchableOpacity>
             </Pressable>

@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { PublicAxios, PrivateAxios } from '../../helpers/PrivateAxios';
 
 export const getUserProfile = async (handle: string) => {
@@ -71,11 +72,26 @@ export const uploadImage = async (uri: string, folder: string = 'profiles') => {
         : `image/${ext === 'png' ? 'png' : ext === 'gif' ? 'gif' : 'jpeg'}`;
 
     const formData = new FormData();
-    formData.append('image', {
-        uri: uploadUri,
-        name: filename,
-        type,
-    } as any);
+    if (Platform.OS === 'web') {
+        try {
+            const response = await fetch(uploadUri);
+            const blob = await response.blob();
+            formData.append('image', blob, filename);
+        } catch (error) {
+            console.error("Failed to convert URI to blob on web:", error);
+            formData.append('image', {
+                uri: uploadUri,
+                name: filename,
+                type,
+            } as any);
+        }
+    } else {
+        formData.append('image', {
+            uri: uploadUri,
+            name: filename,
+            type,
+        } as any);
+    }
 
     const endpoint = folder === 'stories' ? '/upload/stories' : `/upload/${folder}`;
 

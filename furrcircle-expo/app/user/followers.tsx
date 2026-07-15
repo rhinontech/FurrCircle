@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { useTokens } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { colors } from "../../src/lib/theme";
 import { userApi } from "../../services/user/userApi";
 import { MapPin } from "../../src/components/ui/icons";
@@ -11,6 +12,7 @@ import { MapPin } from "../../src/components/ui/icons";
 const puppy = require("../../src/assets/doodle-puppy.png");
 
 export default function FollowersScreen() {
+  const { t } = useLanguage();
   const { userId, type, title } = useLocalSearchParams<{ userId: string; type: "followers" | "following"; title: string }>();
   const router = useRouter();
   const tk = useTokens();
@@ -26,9 +28,9 @@ export default function FollowersScreen() {
   }, [userId, type]);
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={{ flex: 1, backgroundColor: tk.bg }}>
-        <ScreenHeader title={title || (type === "following" ? "Following" : "Followers")} />
+        <ScreenHeader title={title || (type === "following" ? t("followingLabel") : t("followersLabel"))} />
 
         {loading ? (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -38,7 +40,7 @@ export default function FollowersScreen() {
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 8 }}>
             <Image source={puppy} style={{ width: 80, height: 80, opacity: 0.4 }} resizeMode="contain" />
             <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted }}>
-              {type === "following" ? "Not following anyone yet" : "No followers yet"}
+              {type === "following" ? t("notFollowingAnyoneYet") : t("noFollowersYet")}
             </Text>
           </View>
         ) : (

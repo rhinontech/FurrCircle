@@ -8,6 +8,7 @@ import { PageContainer } from "../src/components/PageContainer";
 import { petApi } from "../services/pet/petApi";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
+import { useLanguage } from "../src/lib/language-context";
 
 const tabs = ["About", "Timeline", "Passport"] as const;
 
@@ -31,6 +32,7 @@ const galleryTints = [
 export default function PetScreen() {
   const router = useRouter();
   const tk = useTokens();
+  const { t } = useLanguage();
   const { id, tab: tabParam } = useLocalSearchParams<{ id: string; tab?: string }>();
   const initialTab = tabs.includes(tabParam as any) ? (tabParam as (typeof tabs)[number]) : "About";
   const [tab, setTab] = useState<(typeof tabs)[number]>(initialTab);
@@ -51,22 +53,22 @@ export default function PetScreen() {
   const handleDelete = () => {
     if (!pet?.id) return;
     Alert.alert(
-      "Delete Pet",
-      `Are you sure you want to delete ${pet.name}? This action cannot be undone.`,
+      t("deletePetTitle"),
+      t("deletePetConfirm").replace("{name}", pet.name),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("deleteAction"),
           style: "destructive",
           onPress: async () => {
             try {
               setLoading(true);
               await petApi.deletePet(pet.id);
-              Alert.alert("Success", "Pet deleted successfully.");
+              Alert.alert(t("successTitle"), t("petDeletedSuccess"));
               router.replace("/(tabs)/profile");
             } catch (err: any) {
               setLoading(false);
-              Alert.alert("Error", err?.response?.data?.message || "Failed to delete pet.");
+              Alert.alert(t("errorTitle"), err?.response?.data?.message || t("failedToDeletePet"));
             }
           }
         }
@@ -76,7 +78,7 @@ export default function PetScreen() {
 
   if (loading) {
     return (
-      <PageContainer>
+      <PageContainer noAmbient={true}>
         <View style={[styles.container, { backgroundColor: tk.bg, justifyContent: "center", alignItems: "center" }]}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -84,24 +86,24 @@ export default function PetScreen() {
     );
   }
 
-  const petName = pet?.name || "Unknown";
-  const petBreed = pet?.breed || pet?.species || "Unknown breed";
+  const petName = pet?.name || t("unknownLabel");
+  const petBreed = pet?.breed || pet?.species || t("unknownBreed");
   const petGender = pet?.gender === "male" ? "♂" : pet?.gender === "female" ? "♀" : "";
   const petAge = pet?.age ? String(pet.age) : "?";
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Pet Profile"
+        <ScreenHeader title={t("petProfileTitle")}
           right={
             <View style={{ flexDirection: "row", gap: 8 }}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => router.replace(`/p/${pet?.id || id}`)}
                 style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
               >
                 <Eye size={20} color={tk.text} />
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShareOpen(true)}
                 style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: tk.card }}
               >
@@ -109,8 +111,8 @@ export default function PetScreen() {
               </TouchableOpacity>
             </View>
           }
-         />
-        <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
+        />
+        <ScrollView contentContainerStyle={{ paddingVertical: 20 }} showsVerticalScrollIndicator={false}>
           {/* Hero card */}
           <View style={styles.px5}>
             <View style={styles.heroCard}>
@@ -137,23 +139,26 @@ export default function PetScreen() {
             <View>
               <Text style={[styles.petName, { color: tk.text }]}>{petName}</Text>
               <Text style={[styles.petBreed, { color: tk.textMuted }]}>
-                {petBreed} · {petGender} · {petAge.includes("y") || petAge.includes("m") || petAge.includes("d") ? petAge : `${petAge} years`}
+                {petBreed} · {petGender} · {petAge.includes("y") || petAge.includes("m") || petAge.includes("d") || petAge === "?" ? petAge : t("yearsSuffix").replace("{count}", petAge)}
               </Text>
             </View>
             <View style={styles.verifiedBadge}>
               <ShieldCheck size={12} color={colors.white} />
-              <Text style={styles.verifiedText}>Verified</Text>
+              <Text style={styles.verifiedText}>{t("verifiedStatus")}</Text>
             </View>
           </View>
 
           {/* Tabs */}
           <View style={styles.tabRow}>
-            {tabs.map((t) => (
-              <TouchableOpacity key={t} onPress={() => setTab(t)}
-                style={[styles.tabPill, tab === t ? styles.tabPillActive : { backgroundColor: colors.white }]}>
-                <Text style={[styles.tabText, tab === t ? { color: colors.white } : { color: colors.foreground + "AA" }]}>{t}</Text>
-              </TouchableOpacity>
-            ))}
+            {tabs.map((tItem) => {
+              const label = tItem === "About" ? t("aboutTab") : tItem === "Timeline" ? t("timelineTab") : tItem === "Passport" ? t("passportTab") : tItem;
+              return (
+                <TouchableOpacity key={tItem} onPress={() => setTab(tItem)}
+                  style={[styles.tabPill, tab === tItem ? styles.tabPillActive : { backgroundColor: colors.white }]}>
+                  <Text style={[styles.tabText, tab === tItem ? { color: colors.white } : { color: colors.foreground + "AA" }]}>{label}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <View style={styles.px5}>
@@ -171,12 +176,13 @@ export default function PetScreen() {
 
 function AboutTab({ router, pet }: { router: any, pet: any }) {
   const tk = useTokens();
+  const { t } = useLanguage();
   const [adoption, setAdoption] = useState(pet?.isAdoptionOpen || false);
   const [foster, setFoster] = useState(pet?.isFosterOpen || false);
   const [breed, setBreed] = useState(pet?.isBreedingOpen || false);
   const [memories, setMemories] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const petName = pet?.name || "this pet";
+  const petName = pet?.name || t("someoneFallback");
   const petAge = pet?.age ? String(pet.age) : "?";
 
   useEffect(() => {
@@ -186,7 +192,7 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
         .catch(err => console.log("Failed to load memories", err));
     }
   }, [pet?.id]);
-  
+
   const toggleAdoption = async () => {
     const newVal = !adoption;
     setAdoption(newVal);
@@ -195,7 +201,7 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
       await petApi.updateListing(pet.id, { isAdoptionOpen: newVal });
     } catch (err: any) {
       setAdoption(!newVal);
-      Alert.alert("Error", "Could not update adoption status");
+      Alert.alert(t("errorTitle"), t("failedToUpdateAdoption"));
     }
   };
 
@@ -207,7 +213,7 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
       await petApi.updateListing(pet.id, { isFosterOpen: newVal });
     } catch (err: any) {
       setFoster(!newVal);
-      Alert.alert("Error", "Could not update foster status");
+      Alert.alert(t("errorTitle"), t("failedToUpdateFoster"));
     }
   };
 
@@ -219,7 +225,7 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
       await petApi.updateListing(pet.id, { isBreedingOpen: newVal });
     } catch (err: any) {
       setBreed(!newVal);
-      Alert.alert("Error", "Could not update breeding status");
+      Alert.alert(t("errorTitle"), "Could not update breeding status");
     }
   };
 
@@ -230,19 +236,19 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
     <View style={{ gap: 20 }}>
       {/* Stats */}
       <View style={styles.statsGrid}>
-        <StatCard icon={Cake} label="Age" value={petAge} />
-        <StatCard icon={Ruler} label="Weight" value={pet?.weight ? `${pet.weight} kg` : "?"} />
-        <StatCard icon={MapPin} label="City" value={pet?.owner?.city || "?"} />
+        <StatCard icon={Cake} label={t("ageLabel")} value={petAge} />
+        <StatCard icon={Ruler} label={t("weightLabel")} value={pet?.weight ? `${pet.weight} kg` : "?"} />
+        <StatCard icon={MapPin} label={t("cityLabel")} value={pet?.owner?.city || "?"} />
       </View>
 
       {/* Availability */}
       <View>
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Availability</Text>
-        <Text style={[styles.sectionSub, { color: tk.textMuted }]}>Show {petName} on Discover for matching families.</Text>
+        <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("availabilityTitle")}</Text>
+        <Text style={[styles.sectionSub, { color: tk.textMuted }]}>{t("availabilitySubtitle").replace("{name}", petName)}</Text>
         <View style={[styles.availList, { backgroundColor: tk.card }]}>
           {[
-            { icon: <Home size={18} color={colors.success} />, label: "Open for Adoption", sub: "Listed in Discover & Match", active: adoption, color: colors.success, onToggle: toggleAdoption },
-            { icon: <HandHeart size={18} color={colors.coral} />, label: "Open for Foster", sub: "Listed in Discover & Match", active: foster, color: colors.coral, onToggle: toggleFoster },
+            { icon: <Home size={18} color={colors.success} />, label: t("openForAdoption"), sub: t("listedInDiscoverMatch"), active: adoption, color: colors.success, onToggle: toggleAdoption },
+            { icon: <HandHeart size={18} color={colors.coral} />, label: t("openForFoster"), sub: t("listedInDiscoverMatch"), active: foster, color: colors.coral, onToggle: toggleFoster },
             // { icon: <PawPrint size={18} color={colors.sunshine} />, label: "Open for Breeding", sub: "Listed in Breed Match", active: breed, color: colors.sunshine, onToggle: toggleBreed },
           ].slice(0, 2).map((item, i, arr) => (
             <View key={item.label}>
@@ -271,12 +277,12 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
 
       {/* Personality */}
       <View>
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Personality</Text>
+        <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("personalityTitle")}</Text>
         <View style={styles.traitRow}>
-          {traits.length === 0 && <Text style={{ color: tk.textMuted }}>No personality traits added.</Text>}
-          {traits.map((t: string, i: number) => (
-            <View key={t} style={[styles.traitChip, { backgroundColor: traitColors[i % 5].bg }]}>
-              <Text style={[styles.traitText, { color: traitColors[i % 5].text }]}>{t}</Text>
+          {traits.length === 0 && <Text style={{ color: tk.textMuted }}>{t("noPersonalityTraits")}</Text>}
+          {traits.map((tItem: string, i: number) => (
+            <View key={tItem} style={[styles.traitChip, { backgroundColor: traitColors[i % 5].bg }]}>
+              <Text style={[styles.traitText, { color: traitColors[i % 5].text }]}>{tItem}</Text>
             </View>
           ))}
         </View>
@@ -288,21 +294,21 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
           <Sparkles size={24} color={colors.white} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.memoryTitle}>Memory vault</Text>
-          <Text style={styles.memorySub}>{memories.length > 0 ? `${memories.length} memories · ` : ""}pet aura unlocked</Text>
+          <Text style={styles.memoryTitle}>{t("memoryVaultTitle")}</Text>
+          <Text style={styles.memorySub}>{memories.length > 0 ? `${t("memoriesCountSuffix").replace("{count}", String(memories.length))} · ` : ""}{t("petAuraUnlocked")}</Text>
         </View>
       </TouchableOpacity>
 
       {/* Gallery */}
       <View>
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Gallery</Text>
+        <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("galleryTitle")}</Text>
         {memories.length === 0 ? (
-          <Text style={{ color: tk.textMuted, fontSize: 13, fontFamily: "Inter_400Regular" }}>No memory</Text>
+          <Text style={{ color: tk.textMuted, fontSize: 13, fontFamily: "Inter_400Regular" }}>{t("noMemory")}</Text>
         ) : (
           <View style={styles.galleryGrid}>
             {memories.slice(0, 6).map((m, i) => (
-              <TouchableOpacity 
-                key={m.id || i} 
+              <TouchableOpacity
+                key={m.id || i}
                 style={[styles.galleryItem, { backgroundColor: galleryTints[i % 6], overflow: "hidden" }]}
                 onPress={() => { if (m.media_url) setSelectedImage(m.media_url); }}
                 activeOpacity={0.8}
@@ -310,7 +316,7 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
                 {m.media_url ? (
                   <Image source={{ uri: m.media_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
                 ) : (
-                  <Text style={{ color: tk.textMuted, fontSize: 10, alignSelf: "center", marginTop: 20 }}>No Photo</Text>
+                  <Text style={{ color: tk.textMuted, fontSize: 10, alignSelf: "center", marginTop: 20 }}>{t("noPhoto")}</Text>
                 )}
               </TouchableOpacity>
             ))}
@@ -335,17 +341,18 @@ function AboutTab({ router, pet }: { router: any, pet: any }) {
 
 function TimelineTab({ tk, pet }: { tk: any, pet: any }) {
   const timeline = pet?.Appointments || [];
+  const { t } = useLanguage();
 
   return (
     <View style={styles.timelineWrap}>
       <View style={styles.timelineLine} />
-      {timeline.length === 0 && <Text style={{ color: tk.textMuted, marginTop: 20 }}>No timeline events found.</Text>}
+      {timeline.length === 0 && <Text style={{ color: tk.textMuted, marginTop: 20 }}>{t("noTimelineEvents")}</Text>}
       {timeline.map((m: any, i: number) => (
         <View key={m.id || i} style={styles.timelineItem}>
           <View style={[styles.timelineDot, { backgroundColor: traitColors[i % 5].bg }]} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.timelineDate, { color: tk.textMuted }]}>{m.date} {m.time}</Text>
-            <Text style={[styles.timelineTitle, { color: tk.text }]}>{m.reason || "Appointment"}</Text>
+            <Text style={[styles.timelineTitle, { color: tk.text }]}>{m.reason || t("appointmentFallback")}</Text>
             <Text style={[styles.timelineBody, { color: tk.text + "BB" }]}>{m.status}</Text>
           </View>
         </View>
@@ -361,6 +368,7 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
   const vitals = (pet?.vitals || []).slice(0, 1);
   const microchip = pet?.microchip_id;
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const { t } = useLanguage();
 
   return (
     <View style={{ gap: 16 }}>
@@ -369,7 +377,7 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
         <View style={[styles.passportCard, { backgroundColor: colors.white }]}>
           <View style={styles.passportCardHeader}>
             <BadgeCheck size={16} color={colors.success} />
-            <Text style={styles.passportCardLabel}>MICROCHIP</Text>
+            <Text style={styles.passportCardLabel}>{t("microchipLabel")}</Text>
           </View>
           <Text style={[styles.passportCardValue, { color: tk.text }]}>{microchip}</Text>
         </View>
@@ -377,9 +385,9 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
 
       {/* Vaccines */}
       <View>
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Vaccines</Text>
+        <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("vaccinesTitle")}</Text>
         <View style={{ gap: 8 }}>
-          {vaccines.length === 0 && <Text style={{ color: tk.textMuted }}>No vaccines recorded.</Text>}
+          {vaccines.length === 0 && <Text style={{ color: tk.textMuted }}>{t("noVaccinesRecorded")}</Text>}
           {vaccines.map((v: any, i: number) => (
             <View key={v.id ? String(v.id) : String(i)} style={[styles.vaccineRow, { backgroundColor: tk.card }]}>
               <View style={[styles.vaccineIcon, { backgroundColor: v.status === "completed" ? "rgba(76,175,80,0.15)" : "rgba(255,217,61,0.4)" }]}>
@@ -387,10 +395,10 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.vaccineName, { color: tk.text }]}>{v.name}</Text>
-                <Text style={[styles.vaccineDate, { color: tk.textMuted }]}>Given {v.dateAdministered || '-'} · Next {v.nextDueDate || '-'}</Text>
+                <Text style={[styles.vaccineDate, { color: tk.textMuted }]}>{t("givenPrefix")} {v.dateAdministered || '-'} · {t("nextPrefix")} {v.nextDueDate || '-'}</Text>
               </View>
               <View style={[styles.vaccineBadge, { backgroundColor: v.status === "completed" ? colors.success : colors.sunshine }]}>
-                <Text style={[styles.vaccineBadgeText, { color: v.status === "completed" ? colors.white : colors.foreground }]}>{v.status === "completed" ? "OK" : "Due"}</Text>
+                <Text style={[styles.vaccineBadgeText, { color: v.status === "completed" ? colors.white : colors.foreground }]}>{v.status === "completed" ? t("statusOk") : t("statusDue")}</Text>
               </View>
             </View>
           ))}
@@ -399,9 +407,9 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
 
       {/* Allergies */}
       <View>
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Allergies</Text>
+        <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("allergiesTitle")}</Text>
         <View style={styles.traitRow}>
-          {allergies.length === 0 && <Text style={{ color: tk.textMuted }}>No allergies known.</Text>}
+          {allergies.length === 0 && <Text style={{ color: tk.textMuted }}>{t("noAllergiesKnown")}</Text>}
           {allergies.map((a: string, i: number) => (
             <View key={a || String(i)} style={[styles.traitChip, { backgroundColor: "rgba(255,107,107,0.15)" }]}>
               <Text style={[styles.traitText, { color: colors.coral }]}>{a}</Text>
@@ -412,9 +420,9 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
 
       {/* Medications */}
       <View>
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Medications</Text>
+        <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("medicationsTitle")}</Text>
         <View style={{ gap: 8 }}>
-          {meds.length === 0 && <Text style={{ color: tk.textMuted }}>No active medications.</Text>}
+          {meds.length === 0 && <Text style={{ color: tk.textMuted }}>{t("noActiveMedications")}</Text>}
           {meds.map((m: any, i: number) => (
             <View key={m.id ? String(m.id) : String(i)} style={[styles.vaccineRow, { backgroundColor: tk.card }]}>
               {m.imageUrl ? (
@@ -429,8 +437,8 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
               <View style={{ flex: 1 }}>
                 <Text style={[styles.vaccineName, { color: tk.text }]}>{m.name}</Text>
                 <Text style={[styles.vaccineDate, { color: tk.textMuted }]}>
-                  {m.dosage ? `Dose: ${m.dosage} ` : ""}
-                  {m.startDate ? `· Started: ${m.startDate}` : ""}
+                  {m.dosage ? `${t("dosageLabel").replace("{dosage}", m.dosage)} ` : ""}
+                  {m.startDate ? `· ${t("startedLabel").replace("{date}", m.startDate)}` : ""}
                 </Text>
               </View>
             </View>
@@ -440,9 +448,9 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
 
       {/* Vitals */}
       <View>
-        <Text style={[styles.sectionTitle, { color: tk.text }]}>Vitals</Text>
+        <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("vitalsTitle")}</Text>
         <View style={{ gap: 8 }}>
-          {vitals.length === 0 && <Text style={{ color: tk.textMuted }}>No vitals recorded.</Text>}
+          {vitals.length === 0 && <Text style={{ color: tk.textMuted }}>{t("noVitalsRecorded")}</Text>}
           {vitals.map((v: any, i: number) => (
             <View key={v.id ? String(v.id) : String(i)} style={[styles.vaccineRow, { backgroundColor: tk.card }]}>
               <View style={[styles.vaccineIcon, { backgroundColor: "rgba(255,107,107,0.15)" }]}>
@@ -450,10 +458,10 @@ function PassportTab({ tk, pet }: { tk: any, pet: any }) {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.vaccineName, { color: tk.text }]}>
-                  {v.weight ? `Weight: ${v.weight}kg ` : ""}
-                  {v.temperature ? `Temp: ${v.temperature}°C ` : ""}
-                  {v.heartRate ? `HR: ${v.heartRate} bpm ` : ""}
-                  {!v.weight && !v.temperature && !v.heartRate ? "Vitals Logged" : ""}
+                  {v.weight ? `${t("weightLabel")}: ${v.weight}kg ` : ""}
+                  {v.temperature ? `${t("tempLabel").replace("{temp}", String(v.temperature))} ` : ""}
+                  {v.heartRate ? `${t("hrLabel").replace("{hr}", String(v.heartRate))} ` : ""}
+                  {!v.weight && !v.temperature && !v.heartRate ? t("vitalsLogged") : ""}
                 </Text>
                 <Text style={[styles.vaccineDate, { color: tk.textMuted }]}>
                   {v.timestamp ? new Date(v.timestamp).toLocaleDateString() : ""} {v.notes ? `· ${v.notes}` : ""}
@@ -509,7 +517,7 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: "row", gap: 10 },
   statCard: { flex: 1, borderRadius: 16, padding: 12, alignItems: "center" },
   statValue: { fontFamily: "Poppins_700Bold", fontSize: 12, marginTop: 4 },
-  statLabel: { fontSize: 11,  fontFamily: "Inter_400Regular" },
+  statLabel: { fontSize: 11, fontFamily: "Inter_400Regular" },
   sectionTitle: { fontFamily: "Poppins_700Bold", fontSize: 16, marginBottom: 6 },
   sectionSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 10 },
   availList: { borderRadius: 18, overflow: "hidden" },

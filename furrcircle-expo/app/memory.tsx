@@ -5,6 +5,7 @@ import { useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
+import { useLanguage } from "../src/lib/language-context";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 import { petApi } from "../services/pet/petApi";
@@ -24,9 +25,10 @@ const gridTints = [
 ];
 
 export default function MemoryScreen() {
+  const { t } = useLanguage();
   const tk = useTokens();
   const { petId } = useLocalSearchParams<{ petId: string }>();
-  
+
   const [aura, setAura] = useState<any>(null);
   const [yearsData, setYearsData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ export default function MemoryScreen() {
     try {
       const res = await petApi.getPetMemories(petId);
       setAura(res.aura);
-      
+
       const memories = res.memories || [];
       const grouped = memories.reduce((acc: any, memory: any) => {
         const year = new Date(memory.date).getFullYear().toString();
@@ -57,14 +59,14 @@ export default function MemoryScreen() {
         acc[year].push(memory);
         return acc;
       }, {});
-      
+
       const yearsList = Object.keys(grouped)
         .sort((a, b) => b.localeCompare(a))
         .map(year => ({
           year,
           grid: grouped[year]
         }));
-        
+
       setYearsData(yearsList);
     } catch (err) {
       console.error("Failed to load memories", err);
@@ -79,7 +81,7 @@ export default function MemoryScreen() {
 
   const handleAddPhoto = async () => {
     if (!petId) return;
-    
+
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
@@ -93,11 +95,11 @@ export default function MemoryScreen() {
         await petApi.addPetMemory(petId, {
           media_url: uploadRes.url,
           date: new Date().toISOString(),
-          title: "New Memory", // Can add a prompt later if user wants
+          title: t("newMemoryDefaultTitle"),
         });
         await loadMemories();
       } catch (err) {
-        Alert.alert("Upload Failed", "Could not upload the memory. Please try again.");
+        Alert.alert(t("uploadFailedTitle"), t("couldNotUploadMemoryMsg"));
       } finally {
         setUploading(false);
       }
@@ -105,88 +107,88 @@ export default function MemoryScreen() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Memory vault" />
-        
+        <ScreenHeader title={t("memoryVaultHeader")} />
+
         {loading ? (
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
-          <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-          {/* Aura banner */}
-          {aura && (
-            <View style={styles.px5}>
-              <View style={styles.auraBanner}>
-                <Image source={trophy} style={styles.trophyImg} resizeMode="contain" />
-                <View style={{ maxWidth: "65%" }}>
-                  <View style={styles.auraLabelRow}>
-                    <Sparkles size={13} color={colors.white} />
-                    <Text style={styles.auraLabel}>Pet aura</Text>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+            {/* Aura banner */}
+            {aura && (
+              <View style={styles.px5}>
+                <View style={styles.auraBanner}>
+                  <Image source={trophy} style={styles.trophyImg} resizeMode="contain" />
+                  <View style={{ maxWidth: "65%" }}>
+                    <View style={styles.auraLabelRow}>
+                      <Sparkles size={13} color={colors.white} />
+                      <Text style={styles.auraLabel}>{t("petAuraLabel")}</Text>
+                    </View>
+                    <Text style={styles.auraTitle}>{aura.zodiac} · {aura.mood}</Text>
+                    <View style={styles.traitsRow}>
+                      {aura.traits.map((traitName: string) => (
+                        <View key={traitName} style={styles.traitChip}>
+                          <Text style={styles.traitText}>{traitName}</Text>
+                        </View>
+                      ))}
+                    </View>
+                    <Text style={styles.compatibility}>
+                      <Text style={styles.compatibilityScore}>{aura.score}%</Text>
+                      {" "}{t("compatibilityLabel")}
+                    </Text>
                   </View>
-                  <Text style={styles.auraTitle}>{aura.zodiac} · {aura.mood}</Text>
-                  <View style={styles.traitsRow}>
-                    {aura.traits.map((t: string) => (
-                      <View key={t} style={styles.traitChip}>
-                        <Text style={styles.traitText}>{t}</Text>
-                      </View>
-                    ))}
-                  </View>
-                  <Text style={styles.compatibility}>
-                    <Text style={styles.compatibilityScore}>{aura.score}%</Text>
-                    {" "}compatibility with you
-                  </Text>
                 </View>
-              </View>
-            </View>
-          )}
-
-          {/* Year sections */}
-          <View style={styles.yearsWrap}>
-            {/* "Add to Vault" generic button at the top if there are no memories yet, or even if there are */}
-            {yearsData.length === 0 && (
-              <View style={{ alignItems: "center", marginVertical: 20 }}>
-                <Text style={{ color: tk.textMuted, marginBottom: 12, fontFamily: "Inter_400Regular" }}>No memories yet. Start the vault!</Text>
-                <TouchableOpacity onPress={handleAddPhoto} style={[styles.addPhotoBtn, { width: 100, height: 100, borderColor: tk.border }]}>
-                  {uploading ? <ActivityIndicator color={colors.primary} /> : <Plus size={24} color={tk.textMuted} />}
-                </TouchableOpacity>
               </View>
             )}
 
-            {yearsData.map((y, yIndex) => (
-              <View key={y.year} style={styles.yearSection}>
-                <Text style={[styles.yearLabel, { color: tk.text }]}>{y.year}</Text>
-                <View style={styles.photoGrid}>
-                  {y.grid.map((m: any, i: number) => (
-                    <TouchableOpacity
-                      key={m.id || i}
-                      style={[styles.photoItem, { backgroundColor: gridTints[i % 6] }]}
-                      onPress={() => {
-                        if (!m.media_url) return;
-                        const idx = allImages.indexOf(m.media_url);
-                        if (idx >= 0) setViewerIndex(idx);
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      {m.media_url ? (
-                        <Image source={{ uri: m.media_url }} style={styles.photoImgFull} resizeMode="cover" />
-                      ) : (
-                        <Text style={{ color: tk.textMuted, fontSize: 10 }}>No Photo</Text>
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                  {/* Allow adding more photos to the current/most recent year easily */}
-                  {yIndex === 0 && (
-                    <TouchableOpacity style={[styles.addPhotoBtn, { borderColor: tk.border }]} onPress={handleAddPhoto}>
-                      {uploading ? <ActivityIndicator color={colors.primary} /> : <Plus size={20} color={tk.textMuted} />}
-                    </TouchableOpacity>
-                  )}
+            {/* Year sections */}
+            <View style={styles.yearsWrap}>
+              {/* "Add to Vault" generic button at the top if there are no memories yet, or even if there are */}
+              {yearsData.length === 0 && (
+                <View style={{ alignItems: "center", marginVertical: 20 }}>
+                  <Text style={{ color: tk.textMuted, marginBottom: 12, fontFamily: "Inter_400Regular" }}>{t("noMemoriesLabel")}</Text>
+                  <TouchableOpacity onPress={handleAddPhoto} style={[styles.addPhotoBtn, { width: 100, height: 100, borderColor: tk.border }]}>
+                    {uploading ? <ActivityIndicator color={colors.primary} /> : <Plus size={24} color={tk.textMuted} />}
+                  </TouchableOpacity>
                 </View>
-              </View>
-            ))}
-          </View>
-        </ScrollView>
+              )}
+
+              {yearsData.map((y, yIndex) => (
+                <View key={y.year} style={styles.yearSection}>
+                  <Text style={[styles.yearLabel, { color: tk.text }]}>{y.year}</Text>
+                  <View style={styles.photoGrid}>
+                    {y.grid.map((m: any, i: number) => (
+                      <TouchableOpacity
+                        key={m.id || i}
+                        style={[styles.photoItem, { backgroundColor: gridTints[i % 6] }]}
+                        onPress={() => {
+                          if (!m.media_url) return;
+                          const idx = allImages.indexOf(m.media_url);
+                          if (idx >= 0) setViewerIndex(idx);
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        {m.media_url ? (
+                          <Image source={{ uri: m.media_url }} style={styles.photoImgFull} resizeMode="cover" />
+                        ) : (
+                          <Text style={{ color: tk.textMuted, fontSize: 10 }}>{t("noPhotoLabel")}</Text>
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                    {/* Allow adding more photos to the current/most recent year easily */}
+                    {yIndex === 0 && (
+                      <TouchableOpacity style={[styles.addPhotoBtn, { borderColor: tk.border }]} onPress={handleAddPhoto}>
+                        {uploading ? <ActivityIndicator color={colors.primary} /> : <Plus size={20} color={tk.textMuted} />}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
         )}
       </View>
 

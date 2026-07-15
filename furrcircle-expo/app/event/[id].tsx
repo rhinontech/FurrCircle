@@ -8,6 +8,7 @@ import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { MapPin, Users, Calendar, Clock, CalendarDays } from "../../src/components/ui/icons";
 import { eventApi } from "../../services/community/eventApi";
 
@@ -24,6 +25,7 @@ const getTint = (category?: string) =>
   TINTS[(category || "").toLowerCase()] ?? DEFAULT_TINT;
 
 export default function EventDetailScreen() {
+  const { t } = useLanguage();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -46,7 +48,7 @@ export default function EventDetailScreen() {
       setEvent(data);
     } catch (err) {
       console.error("Failed to load event details", err);
-      Alert.alert("Error", "Could not load event details.");
+      Alert.alert(t("error"), t("couldNotLoadEventDetails"));
     } finally {
       setLoading(false);
     }
@@ -57,10 +59,10 @@ export default function EventDetailScreen() {
     try {
       setBookingInProgress(true);
       await eventApi.bookEvent(event.id);
-      Alert.alert("You're in! 🎉", "Your spot has been reserved for this event.");
+      Alert.alert(t("bookingSuccessTitle"), t("bookingSuccessMsg"));
       setEvent((prev: any) => prev ? { ...prev, isBooked: true, attendeeCount: (prev.attendeeCount || 0) + 1 } : null);
     } catch (err: any) {
-      Alert.alert("Booking Failed", err?.response?.data?.message || "Something went wrong.");
+      Alert.alert(t("bookingFailedTitle"), err?.response?.data?.message || t("somethingWentWrong"));
     } finally {
       setBookingInProgress(false);
     }
@@ -69,7 +71,7 @@ export default function EventDetailScreen() {
   if (loading) {
     return (
       <PageContainer>
-        <ScreenHeader title="Event Details" />
+        <ScreenHeader title={t("eventDetailsHeaderTitle")} />
         <View style={[styles.centered, { backgroundColor: tk.bg }]}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -80,9 +82,9 @@ export default function EventDetailScreen() {
   if (!event) {
     return (
       <PageContainer>
-        <ScreenHeader title="Event Details" />
+        <ScreenHeader title={t("eventDetailsHeaderTitle")} />
         <View style={[styles.centered, { backgroundColor: tk.bg }]}>
-          <Text style={{ color: tk.textMuted }}>Event not found</Text>
+          <Text style={{ color: tk.textMuted }}>{t("eventNotFound")}</Text>
         </View>
       </PageContainer>
     );
@@ -93,7 +95,7 @@ export default function EventDetailScreen() {
   return (
     <PageContainer>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Event Details" />
+        <ScreenHeader title={t("eventDetailsHeaderTitle")} />
         
         <ScrollView
           style={styles.scrollArea}
@@ -126,7 +128,7 @@ export default function EventDetailScreen() {
               </View>
               {event.isBooked && (
                 <View style={[styles.typeBadge, { backgroundColor: colors.success + "20" }]}>
-                  <Text style={[styles.typeBadgeText, { color: colors.success }]}>✓ GOING</Text>
+                  <Text style={[styles.typeBadgeText, { color: colors.success }]}>{t("goingBadge")}</Text>
                 </View>
               )}
             </View>
@@ -137,10 +139,10 @@ export default function EventDetailScreen() {
             {/* Info Grid */}
             <View style={[styles.infoGrid, { borderColor: tk.border }]}>
               {[
-                { icon: <Calendar size={16} color={colors.primary} />, label: "Date", value: event.date },
-                { icon: <Clock size={16} color={colors.primary} />, label: "Time", value: event.time || "TBA" },
-                { icon: <MapPin size={16} color={colors.primary} />, label: "Location", value: event.location || event.venue || "TBA" },
-                { icon: <Users size={16} color={colors.primary} />, label: "Attending", value: `${event.attendeeCount || 0} people going` },
+                { icon: <Calendar size={16} color={colors.primary} />, label: t("eventDateLabel"), value: event.date },
+                { icon: <Clock size={16} color={colors.primary} />, label: t("eventTimeLabel"), value: event.time || t("tba") },
+                { icon: <MapPin size={16} color={colors.primary} />, label: t("eventLocationLabel"), value: event.location || event.venue || t("tba") },
+                { icon: <Users size={16} color={colors.primary} />, label: t("eventAttendingLabel"), value: `${event.attendeeCount || 0} ${t("peopleGoing")}` },
               ].map(({ icon, label, value }, i) => (
                 <View
                   key={i}
@@ -158,7 +160,7 @@ export default function EventDetailScreen() {
             {/* Description */}
             {event.description ? (
               <View style={styles.descSection}>
-                <Text style={[styles.sectionLabel, { color: tk.textMuted }]}>About</Text>
+                <Text style={[styles.sectionLabel, { color: tk.textMuted }]}>{t("aboutEvent")}</Text>
                 <Text style={[styles.descText, { color: tk.text }]}>{event.description}</Text>
               </View>
             ) : null}
@@ -178,7 +180,7 @@ export default function EventDetailScreen() {
                 <ActivityIndicator size="small" color={tk.bg} />
               ) : (
                 <Text style={[styles.rsvpBtnText, { color: event.isBooked ? tk.textMuted : tk.bg }]}>
-                  {event.isBooked ? "You're Going! 🎉" : "Book / RSVP"}
+                  {event.isBooked ? t("goingBtn") : t("bookRsvpBtn")}
                 </Text>
               )}
             </TouchableOpacity>

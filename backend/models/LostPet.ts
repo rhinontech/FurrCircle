@@ -36,6 +36,19 @@ export default (sequelize: Sequelize) => {
                 allowNull: false,
                 defaultValue: "lost",
             },
+            latitude: {
+                type: DataTypes.DECIMAL(10, 8),
+                allowNull: true,
+            },
+            longitude: {
+                type: DataTypes.DECIMAL(11, 8),
+                allowNull: true,
+            },
+            images: {
+                type: DataTypes.JSON,
+                allowNull: true,
+                defaultValue: [],
+            },
         },
         {
             tableName: "lost_pets",

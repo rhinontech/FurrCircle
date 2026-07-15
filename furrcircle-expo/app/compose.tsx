@@ -9,6 +9,7 @@ import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
+import { useLanguage } from "../src/lib/language-context";
 import { feedApi } from "../services/community/feedApi";
 import { userApi } from "../services/user/userApi";
 import { useCameraStore } from "../src/lib/camera-store";
@@ -16,6 +17,7 @@ import { useCameraStore } from "../src/lib/camera-store";
 const CATEGORIES = ["General", "Health", "Adoption", "Training", "Nutrition", "Lost & Found"] as const;
 
 export default function ComposeScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const tk = useTokens();
   const insets = useSafeAreaInsets();
@@ -40,6 +42,18 @@ export default function ComposeScreen() {
 
   const { capturedUri, capturedType, setCapturedMedia } = useCameraStore();
 
+  const getCategoryLabel = (cat: typeof CATEGORIES[number]) => {
+    switch (cat) {
+      case "General": return t("categoryGeneral");
+      case "Health": return t("categoryHealth");
+      case "Adoption": return t("categoryAdoption");
+      case "Training": return t("categoryTraining");
+      case "Nutrition": return t("categoryNutrition");
+      case "Lost & Found": return t("categoryLostFound");
+      default: return cat;
+    }
+  };
+
   useEffect(() => {
     if (capturedUri) {
       setImageUri(capturedUri);
@@ -62,11 +76,11 @@ export default function ComposeScreen() {
 
   const pickPhoto = () => {
     Alert.alert(
-      "Add Photo or Video",
-      "Choose a media source for your post",
+      t("addPhotoOrVideo"),
+      t("chooseMediaSourcePost"),
       [
         {
-          text: "Open Camera",
+          text: t("openCamera"),
           onPress: () => {
             router.push({
               pathname: "/camera",
@@ -75,11 +89,11 @@ export default function ComposeScreen() {
           },
         },
         {
-          text: "Choose from Gallery",
+          text: t("chooseFromGallery"),
           onPress: () => handlePickPhotoSource("gallery"),
         },
         {
-          text: "Cancel",
+          text: t("cancel"),
           style: "cancel",
         },
       ]
@@ -90,13 +104,13 @@ export default function ComposeScreen() {
     if (source === "gallery") {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permission required", "Please allow gallery access.");
+        Alert.alert(t("permissionRequired"), t("allowGalleryAccessPost"));
         return;
       }
     } else {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permission required", "Please allow camera access.");
+        Alert.alert(t("permissionRequired"), t("allowCameraAccessPost"));
         return;
       }
     }
@@ -120,7 +134,7 @@ export default function ComposeScreen() {
           const duration = asset.duration || 0;
           const durationInSeconds = duration > 1000 ? duration / 1000 : duration;
           if (durationInSeconds > 60) {
-            Alert.alert("Video too long", "Please select a video shorter than 60 seconds.");
+            Alert.alert(t("videoTooLong"), t("videoTooLongPost"));
             return;
           }
         }
@@ -140,7 +154,7 @@ export default function ComposeScreen() {
   };
 
   const handleShare = async () => {
-    if (!caption.trim()) { Alert.alert("Required", "Please write something before posting."); return; }
+    if (!caption.trim()) { Alert.alert(t("requiredTitle"), t("pleaseWriteSomething")); return; }
     setLoading(true);
     try {
       let imageUrl: string | undefined = imageUri || undefined;
@@ -155,7 +169,7 @@ export default function ComposeScreen() {
           imageUrl: imageUrl || null,
           category: category !== "General" ? category : "General",
         });
-        Alert.alert("Success", "Post updated successfully.");
+        Alert.alert(t("success"), t("postUpdatedSuccess"));
       } else {
         await feedApi.createPost({
           content: caption.trim(),
@@ -168,14 +182,14 @@ export default function ComposeScreen() {
         params: { refresh: String(Date.now()) },
       });
     } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || err?.message || "Failed to post.");
+      Alert.alert(t("error"), err?.response?.data?.message || err?.message || t("failedToPost"));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -185,9 +199,9 @@ export default function ComposeScreen() {
             <TouchableOpacity onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: tk.card }]}>
               <X size={20} color={tk.text} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: tk.text }]}>{editPostId ? "Edit post" : "New post"}</Text>
+            <Text style={[styles.headerTitle, { color: tk.text }]}>{editPostId ? t("editPost") : t("newPost")}</Text>
             <TouchableOpacity onPress={handleShare} disabled={loading} style={[styles.shareBtn, loading && { opacity: 0.6 }]}>
-              {loading ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.shareBtnText}>{editPostId ? "Update" : "Share"}</Text>}
+              {loading ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.shareBtnText}>{editPostId ? t("updateBtn") : t("shareBtn")}</Text>}
             </TouchableOpacity>
           </View>
 
@@ -196,7 +210,7 @@ export default function ComposeScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chipsContent}>
               {CATEGORIES.map((c) => (
                 <TouchableOpacity key={c} onPress={() => setCategory(c)} style={[styles.chip, category === c ? styles.chipActive : { backgroundColor: tk.card }]}>
-                  <Text style={[styles.chipText, category === c ? { color: colors.white } : { color: tk.textMuted }]}>{c}</Text>
+                  <Text style={[styles.chipText, category === c ? { color: colors.white } : { color: tk.textMuted }]}>{getCategoryLabel(c)}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -204,7 +218,7 @@ export default function ComposeScreen() {
             {/* Photo */}
             <TouchableOpacity onPress={pickPhoto} style={[styles.photoZone, { backgroundColor: tk.card, borderColor: tk.border }]} activeOpacity={0.8}>
               {imageUri ? (
-                <View style={{ position: "relative", width: "100%", aspectRatio: aspectRatio || 4/3 }}>
+                <View style={{ position: "relative", width: "100%", aspectRatio: aspectRatio || 4 / 3 }}>
                   {mediaType === "video" ? (
                     <Video
                       source={{ uri: imageUri }}
@@ -229,7 +243,7 @@ export default function ComposeScreen() {
               ) : (
                 <View style={{ alignItems: "center", gap: 8 }}>
                   <ImageIcon size={32} color={tk.textMuted} />
-                  <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.textMuted }}>Tap to add a photo or video</Text>
+                  <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: tk.textMuted }}>{t("tapToAddPhotoVideo")}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -240,7 +254,7 @@ export default function ComposeScreen() {
               onChangeText={setCaption}
               multiline
               numberOfLines={5}
-              placeholder="Write your caption…"
+              placeholder={t("writeCaptionPlaceholder")}
               placeholderTextColor={tk.textMuted}
               style={[styles.captionInput, { backgroundColor: tk.card, color: tk.text, borderColor: tk.border }]}
             />
@@ -251,7 +265,7 @@ export default function ComposeScreen() {
               <TextInput
                 value={tags}
                 onChangeText={setTags}
-                placeholder="Add tags (comma-separated)"
+                placeholder={t("addTagsPlaceholder")}
                 placeholderTextColor={tk.textMuted}
                 style={{ flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: tk.text, paddingVertical: 8 }}
                 autoCapitalize="none"

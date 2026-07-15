@@ -14,6 +14,7 @@ import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Avatar } from "../../src/components/Avatar";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { ShareSheet } from "../../src/components/ShareSheet";
 import { feedApi } from "../../services/community/feedApi";
 import { useAuthStore } from "../../src/lib/auth-store";
@@ -27,6 +28,7 @@ import { useBreakpoint } from "../../src/lib/breakpoints";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export default function PostDetail() {
+  const { t } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -217,7 +219,7 @@ export default function PostDetail() {
         setIsLiked((data.likes || []).some((l: any) => l.userId === user?.id));
         setIsSaved((data.savedPosts || []).some((s: any) => s.userId === user?.id));
       })
-      .catch(err => { console.error(err); Alert.alert("Error", "Failed to load post."); })
+      .catch(err => { console.error(err); Alert.alert(t("error"), t("failedToLoadPost")); })
       .finally(() => setLoading(false));
   }, [id, user?.id]));
 
@@ -252,27 +254,27 @@ export default function PostDetail() {
   const handleDeletePost = () => {
     setMenuOpen(false);
     Alert.alert(
-      "Delete Post",
-      "Are you sure you want to delete this post?",
+      t("deletePost"),
+      t("confirmDeletePost"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("delete"),
           style: "destructive",
           onPress: async () => {
             try {
               setDeleting(true);
               await feedApi.deletePost(post.id);
-              Alert.alert("Success", "Post deleted successfully.", [
+              Alert.alert(t("success"), t("postDeletedSuccessfully"), [
                 {
-                  text: "OK",
+                  text: t("ok"),
                   onPress: () => {
                     router.back();
                   }
                 }
               ]);
             } catch (err: any) {
-              Alert.alert("Error", err?.response?.data?.message || "Could not delete post.");
+              Alert.alert(t("error"), err?.response?.data?.message || t("couldNotDeletePost"));
             } finally {
               setDeleting(false);
             }
@@ -291,7 +293,7 @@ export default function PostDetail() {
   const handleSelectReason = async (reason: string) => {
     const reportedUserId = post?.userId || post?.author?.id;
     if (!reportedUserId) {
-      Alert.alert("Error", "Could not identify the user to report.");
+      Alert.alert(t("error"), t("couldNotIdentifyUser"));
       return;
     }
 
@@ -299,7 +301,7 @@ export default function PostDetail() {
       await feedApi.reportUser(reportedUserId, reason);
       setReportStep(2);
     } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || "Failed to submit report.");
+      Alert.alert(t("error"), err?.response?.data?.message || t("failedToSubmitReport"));
     }
   };
 
@@ -329,14 +331,14 @@ export default function PostDetail() {
         return [...prev, res.comment];
       });
       setCommentText("");
-    } catch { Alert.alert("Error", "Could not post comment."); }
+    } catch { Alert.alert(t("error"), t("couldNotPostComment")); }
     finally { setSubmitting(false); }
   };
 
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Post" />
+        <ScreenHeader title={t("postHeaderTitle")} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -347,9 +349,9 @@ export default function PostDetail() {
   if (!post) {
     return (
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Post" />
+        <ScreenHeader title={t("postHeaderTitle")} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ fontFamily: "Inter_400Regular", color: tk.textMuted }}>Post not found.</Text>
+          <Text style={{ fontFamily: "Inter_400Regular", color: tk.textMuted }}>{t("postNotFound")}</Text>
         </View>
       </View>
     );
@@ -362,7 +364,7 @@ export default function PostDetail() {
     username: post.owner?.toLowerCase().replace(/[^a-z0-9]/g, ""),
   } : (post.author || {});
 
-  const displayName = author.name || "Pet parent";
+  const displayName = author.name || t("petParent");
   const avatarSource = post.avatar || (author.avatar_url ? { uri: author.avatar_url } : null);
   const tintColor = TINT[(post.category || "").toLowerCase()] || "#FF6B6B22";
   const initiallyLiked = (post.likes || []).some((l: any) => l.userId === user?.id);
@@ -404,7 +406,7 @@ export default function PostDetail() {
             <View style={{ flex: 1 }}>
               <TouchableOpacity onPress={() => author.username && router.push(isDummy ? `/user/${author.username}` : `/u/${author.username}`)}>
                 <Text style={[styles.authorName, { color: tk.text }]}>
-                  {author.username || "parent"}
+                  {author.username || t("parent")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -555,9 +557,9 @@ export default function PostDetail() {
           ) : null}
 
           {/* Comments */}
-          <Text style={[styles.commentsTitle, { color: tk.text }]}>Comments</Text>
+          <Text style={[styles.commentsTitle, { color: tk.text }]}>{t("comments")}</Text>
           {comments.length === 0 ? (
-            <Text style={{ paddingHorizontal: 16, color: tk.textMuted, fontFamily: "Inter_400Regular", fontSize: 13 }}>No comments yet. Be first!</Text>
+            <Text style={{ paddingHorizontal: 16, color: tk.textMuted, fontFamily: "Inter_400Regular", fontSize: 13 }}>{t("noCommentsBeFirst")}</Text>
           ) : (
             [...comments].reverse().map((c: any, i) => (
               <View key={c.id || i} style={styles.comment}>
@@ -571,10 +573,10 @@ export default function PostDetail() {
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
                     <Text style={[styles.commentAuthor, { color: tk.text }]}>
-                      {c.author?.username || c.author?.name || "parent"}
+                      {c.author?.username || c.author?.name || t("parent")}
                     </Text>
                     <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: tk.textMuted }}>
-                      {c.createdAt ? getCommentTimeLabel(c.createdAt) : "now"}
+                      {c.createdAt ? getCommentTimeLabel(c.createdAt, t) : t("justNow")}
                     </Text>
                   </View>
                   <Text style={[styles.commentBody, { color: tk.textMuted }]}>{c.text}</Text>
@@ -587,7 +589,7 @@ export default function PostDetail() {
         {/* Reply bar */}
         <View style={[styles.replyBar, { backgroundColor: tk.card, borderTopColor: tk.border }]}>
           <TextInput
-            placeholder="Add a comment…"
+            placeholder={t("addCommentPlaceholder")}
             placeholderTextColor={tk.textMuted}
             value={commentText}
             onChangeText={setCommentText}
@@ -614,7 +616,7 @@ export default function PostDetail() {
           <Pressable style={[styles.overlay, isTablet && styles.overlayCenter]} onPress={() => setMenuOpen(false)}>
             <View style={[isTablet ? styles.dialog : [styles.sheet, { paddingBottom: 10 + insets.bottom }], { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true} onTouchEnd={(e) => e.stopPropagation()}>
               {!isTablet && <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />}
-              <Text style={[styles.sheetTitle, { color: tk.text }]}>Options</Text>
+              <Text style={[styles.sheetTitle, { color: tk.text }]}>{t("options")}</Text>
 
               {/* Save Option */}
               <TouchableOpacity
@@ -624,7 +626,7 @@ export default function PostDetail() {
               >
                 <Bookmark size={20} color={isSaved ? colors.primary : tk.text} fill={isSaved ? colors.primary : "none"} />
                 <Text style={[styles.sheetRowTitle, { color: tk.text }]}>
-                  {isSaved ? "Remove from Saved" : "Save Post"}
+                  {isSaved ? t("removeFromSaved") : t("savePost")}
                 </Text>
               </TouchableOpacity>
 
@@ -648,7 +650,7 @@ export default function PostDetail() {
                     activeOpacity={0.8}
                   >
                     <Edit2 size={20} color={tk.text} />
-                    <Text style={[styles.sheetRowTitle, { color: tk.text }]}>Edit Post</Text>
+                    <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{t("editPost")}</Text>
                   </TouchableOpacity>
 
                   {/* Delete Post Option */}
@@ -658,7 +660,7 @@ export default function PostDetail() {
                     activeOpacity={0.8}
                   >
                     <Trash2 size={20} color={colors.coral} />
-                    <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Delete Post</Text>
+                    <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>{t("deletePost")}</Text>
                   </TouchableOpacity>
                 </>
               ) : (
@@ -680,7 +682,7 @@ export default function PostDetail() {
                     activeOpacity={0.8}
                   >
                     <Info size={20} color={tk.text} />
-                    <Text style={[styles.sheetRowTitle, { color: tk.text }]}>About this Account</Text>
+                    <Text style={[styles.sheetRowTitle, { color: tk.text }]}>{t("aboutThisAccount")}</Text>
                   </TouchableOpacity>
 
                   {/* Report Option */}
@@ -690,7 +692,7 @@ export default function PostDetail() {
                     activeOpacity={0.8}
                   >
                     <Flag size={20} color={colors.coral} />
-                    <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>Report</Text>
+                    <Text style={[styles.sheetRowTitle, { color: colors.coral }]}>{t("report")}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -701,7 +703,7 @@ export default function PostDetail() {
                 style={[styles.sheetRow, { backgroundColor: tk.bg, marginTop: 12, justifyContent: "center", alignItems: "center" }]}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.sheetRowTitle, { color: tk.textMuted }]}>Cancel</Text>
+                <Text style={[styles.sheetRowTitle, { color: tk.textMuted }]}>{t("cancel")}</Text>
               </TouchableOpacity>
             </View>
           </Pressable>
@@ -713,7 +715,7 @@ export default function PostDetail() {
             {/* Header */}
             <View style={[styles.reportHeader, { borderBottomColor: tk.border }]}>
               <View style={{ width: 40 }} />
-              <Text style={[styles.reportHeaderTitle, { color: tk.text }]}>Report</Text>
+              <Text style={[styles.reportHeaderTitle, { color: tk.text }]}>{t("report")}</Text>
               <TouchableOpacity onPress={() => setReportModalOpen(false)} style={styles.reportCloseBtn}>
                 <X size={24} color={tk.text} />
               </TouchableOpacity>
@@ -721,22 +723,22 @@ export default function PostDetail() {
 
             {reportStep === 1 ? (
               <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.reportContent} showsVerticalScrollIndicator={false}>
-                <Text style={[styles.reportTitle, { color: tk.text }]}>Why are you reporting this post?</Text>
+                <Text style={[styles.reportTitle, { color: tk.text }]}>{t("whyReportingPost")}</Text>
                 <Text style={[styles.reportSubtitle, { color: tk.textMuted }]}>
-                  Your report is anonymous. If someone is in immediate danger, call the local emergency services - don't wait.
+                  {t("reportDisclaimer")}
                 </Text>
 
                 <View style={{ marginTop: 24 }}>
                   {[
-                    "I just don't like it",
-                    "Bullying or unwanted contact",
-                    "Suicide, self-injury or eating disorders",
-                    "Violence, hate or exploitation",
-                    "Selling or promoting restricted items",
-                    "Nudity or sexual activity",
-                    "Scam, fraud or spam",
-                    "False information",
-                    "Intellectual property"
+                    t("reasonDontLikeIt"),
+                    t("reasonBullying"),
+                    t("reasonSuicideSelfInjury"),
+                    t("reasonViolenceHate"),
+                    t("reasonRestrictedItems"),
+                    t("reasonNudity"),
+                    t("reasonScamSpam"),
+                    t("reasonFalseInfo"),
+                    t("reasonIntellectualProperty")
                   ].map((reason, idx) => (
                     <TouchableOpacity
                       key={idx}
@@ -755,9 +757,9 @@ export default function PostDetail() {
                   <View style={[styles.checkCircle, { backgroundColor: tk.border }]}>
                     <Check size={40} color={colors.primary} strokeWidth={3} />
                   </View>
-                  <Text style={[styles.successTitle, { color: tk.text }]}>Thanks for your feedback</Text>
+                  <Text style={[styles.successTitle, { color: tk.text }]}>{t("thanksFeedback")}</Text>
                   <Text style={[styles.successSubtitle, { color: tk.textMuted }]}>
-                    We use these reports to show you less of this kind of content in the future.
+                    {t("reportFeedbackDetail")}
                   </Text>
                 </View>
 
@@ -766,7 +768,7 @@ export default function PostDetail() {
                     style={[styles.doneBtn, { backgroundColor: colors.primary }]}
                     onPress={() => setReportModalOpen(false)}
                   >
-                    <Text style={styles.doneBtnText}>Done</Text>
+                    <Text style={styles.doneBtnText}>{t("done")}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -779,19 +781,19 @@ export default function PostDetail() {
   );
 }
 
-const getCommentTimeLabel = (createdAt?: string) => {
-  if (!createdAt) return "now";
+const getCommentTimeLabel = (createdAt?: string, t?: any) => {
+  if (!createdAt) return t ? t("justNow") : "now";
   const time = new Date(createdAt).getTime();
-  if (isNaN(time)) return "now";
+  if (isNaN(time)) return t ? t("justNow") : "now";
   const diff = Date.now() - time;
   const sec = Math.floor(diff / 1000);
-  if (sec < 60) return "now";
+  if (sec < 60) return t ? t("justNow") : "now";
   const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m`;
+  if (min < 60) return `${min}${t ? t("minShort") : "m"}`;
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h`;
+  if (hr < 24) return `${hr}${t ? t("hourShort") : "h"}`;
   const dy = Math.floor(hr / 24);
-  return `${dy}d`;
+  return `${dy}${t ? t("dayShort") : "d"}`;
 };
 
 const styles = StyleSheet.create({

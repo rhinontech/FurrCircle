@@ -4,6 +4,7 @@ import { Text } from "react-native";
 import { useRouter } from "expo-router";
 import { ChevronLeft, Search, Stethoscope, MapPin, Star, ChevronRight, Check, Phone } from "../../src/components/ui/icons";
 import { useTokens } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { placesApi } from "../../services/places/placesApi";
 import { colors } from "../../src/lib/theme";
@@ -22,6 +23,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 ];
 
 export default function AllVetsScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const tk = useTokens();
   const user = useAuthStore(s => s.user);
@@ -36,6 +38,14 @@ export default function AllVetsScreen() {
   // Fall back to the user's profile city when no live location is set.
   const cityLabel = String(locationCity || user?.city || "").trim();
   
+  const localizedSortOptions = useMemo(() => [
+    { key: "default" as SortKey, label: t("sortDefault") },
+    { key: "alpha_asc" as SortKey, label: t("sortAlphaAsc") },
+    { key: "alpha_desc" as SortKey, label: t("sortAlphaDesc") },
+    { key: "rating" as SortKey, label: t("sortRating") },
+    { key: "distance" as SortKey, label: t("sortDistance") },
+  ], [t]);
+
   useEffect(() => {
     if (!cityLabel) {
       setLoading(false);
@@ -67,7 +77,7 @@ export default function AllVetsScreen() {
       let distanceLabel = null;
       if (locationLat != null && locationLng != null && v.latitude != null && v.longitude != null) {
         distance = getDistance(locationLat, locationLng, Number(v.latitude), Number(v.longitude));
-        distanceLabel = `${distance.toFixed(1)} km away`;
+        distanceLabel = t("kmAway").replace("{distance}", distance.toFixed(1));
       }
       return { ...v, distance, distanceLabel };
     });
@@ -94,14 +104,14 @@ export default function AllVetsScreen() {
       default:
         return filtered;
     }
-  }, [vets, search, sortKey, locationLat, locationLng]);
+  }, [vets, search, sortKey, locationLat, locationLng, t]);
 
-  const activeSortLabel = SORT_OPTIONS.find(o => o.key === sortKey)?.label ?? "Sort";
+  const activeSortLabel = localizedSortOptions.find(o => o.key === sortKey)?.label ?? t("sortLabel");
 
   return (
     <PageContainer>
     <View style={{ flex: 1, backgroundColor: tk.bg }}>
-      <ScreenHeader title="Nearby Vets" />
+      <ScreenHeader title={t("nearbyVetsHeaderTitle")} />
 
       {/* Sort dropdown trigger */}
       <View style={{ paddingHorizontal: 20, marginVertical: 12, alignItems: 'flex-end' }}>
@@ -119,11 +129,11 @@ export default function AllVetsScreen() {
       {/* Sort dropdown */}
       {sortOpen && (
         <View style={{ marginHorizontal: 20, marginBottom: 8, backgroundColor: tk.card, borderRadius: 16, borderWidth: 1, borderColor: tk.border, overflow: "hidden", zIndex: 10 }}>
-          {SORT_OPTIONS.map((opt, i) => (
+          {localizedSortOptions.map((opt, i) => (
             <TouchableOpacity
               key={opt.key}
               onPress={() => { setSortKey(opt.key); setSortOpen(false); }}
-              style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingVertical: 14, borderBottomWidth: i < SORT_OPTIONS.length - 1 ? 1 : 0, borderBottomColor: tk.border, backgroundColor: sortKey === opt.key ? colors.primary + "10" : "transparent" }}
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingVertical: 14, borderBottomWidth: i < localizedSortOptions.length - 1 ? 1 : 0, borderBottomColor: tk.border, backgroundColor: sortKey === opt.key ? colors.primary + "10" : "transparent" }}
             >
               <Text style={{ fontSize: 14, fontFamily: sortKey === opt.key ? "Inter_700Bold" : "Inter_500Medium", color: sortKey === opt.key ? colors.primary : tk.text }}>{opt.label}</Text>
               {sortKey === opt.key && <Check size={16} color={colors.primary} />}
@@ -136,7 +146,7 @@ export default function AllVetsScreen() {
       <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: tk.card, borderRadius: 12, paddingHorizontal: 12, marginHorizontal: 20, marginBottom: 16 }}>
         <Search size={16} color={tk.textMuted} />
         <TextInput
-          placeholder="Search clinics or city..."
+          placeholder={t("searchClinicsPlaceholder")}
           placeholderTextColor={tk.textMuted}
           value={search}
           onChangeText={setSearch}
@@ -153,19 +163,19 @@ export default function AllVetsScreen() {
           {!cityLabel ? (
             <View style={{ alignItems: "center", paddingTop: 60, gap: 12 }}>
               <MapPin size={40} color={tk.textMuted} />
-              <Text style={{ fontSize: 16, fontFamily: "Inter_600SemiBold", color: tk.text }}>Location not set</Text>
+              <Text style={{ fontSize: 16, fontFamily: "Inter_600SemiBold", color: tk.text }}>{t("locationNotSetTitle")}</Text>
               <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: tk.textMuted, textAlign: "center", marginBottom: 12 }}>
-                Please set your home city to see nearby vets.
+                {t("locationNotSetDesc")}
               </Text>
               <TouchableOpacity onPress={() => router.push("/settings")} style={{ backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 }}>
-                <Text style={{ color: colors.white, fontFamily: "Inter_600SemiBold", fontSize: 14 }}>Add Location</Text>
+                <Text style={{ color: colors.white, fontFamily: "Inter_600SemiBold", fontSize: 14 }}>{t("addLocationBtn")}</Text>
               </TouchableOpacity>
             </View>
           ) : sorted.length === 0 ? (
             <View style={{ alignItems: "center", paddingTop: 60, gap: 12 }}>
               <Stethoscope size={40} color={tk.textMuted} />
-              <Text style={{ fontSize: 16, fontFamily: "Inter_600SemiBold", color: tk.text }}>No vets found</Text>
-              <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: tk.textMuted }}>Try a different search or sort</Text>
+              <Text style={{ fontSize: 16, fontFamily: "Inter_600SemiBold", color: tk.text }}>{t("noVetsFound")}</Text>
+              <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: tk.textMuted }}>{t("noVetsFoundDesc")}</Text>
             </View>
           ) : sorted.map((vet) => (
             <TouchableOpacity
@@ -183,7 +193,7 @@ export default function AllVetsScreen() {
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
                   <Stethoscope size={12} color={tk.textMuted} />
                   <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: tk.textMuted, flex: 1 }} numberOfLines={1}>
-                    {vet.address ? vet.address.split(',')[0] : "General"}
+                    {vet.address ? vet.address.split(',')[0] : t("generalCategory")}
                   </Text>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>

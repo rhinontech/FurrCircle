@@ -11,6 +11,7 @@ import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
 import { useAuthStore } from "../src/lib/auth-store";
+import { useLanguage } from "../src/lib/language-context";
 import { authApi } from "../services/auth/authApi";
 import { LocationPickerModal, LocationResult } from "../src/components/LocationPickerModal";
 import * as Location from "expo-location";
@@ -18,6 +19,7 @@ import * as Location from "expo-location";
 const boyDog = require("../src/assets/doodle-boy-dog.png");
 
 export default function EditProfileScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const tk = useTokens();
   const { user } = useAuthStore();
@@ -57,7 +59,7 @@ export default function EditProfileScreen() {
   }, []);
 
   // Check if anything has actually changed
-  const hasChanges = 
+  const hasChanges =
     username.trim() !== (user?.username || "") ||
     name.trim() !== (user?.name || "") ||
     email.trim() !== (user?.email || "") ||
@@ -69,9 +71,9 @@ export default function EditProfileScreen() {
     photo !== (user?.avatar_url || undefined);
 
   // Disable save button if no changes, saving is true, or username check failed (if username has changed)
-  const isSaveDisabled = 
-    !hasChanges || 
-    saving || 
+  const isSaveDisabled =
+    !hasChanges ||
+    saving ||
     (usernameCheck !== 'available' && username.trim().toLowerCase() !== user?.username?.trim()?.toLowerCase());
 
   // Debounced live username checking
@@ -96,14 +98,14 @@ export default function EditProfileScreen() {
 
     if (trimmedUsername.length < 3) {
       setUsernameCheck('invalid');
-      setUsernameError("Must be at least 3 characters");
+      setUsernameError(t("usernameMinLengthError"));
       return;
     }
 
     const usernameRegex = /^[a-zA-Z0-9._]+$/;
     if (!usernameRegex.test(trimmedUsername)) {
       setUsernameCheck('invalid');
-      setUsernameError("Letters, numbers, underscores, and periods only");
+      setUsernameError(t("usernameInvalidCharsError"));
       return;
     }
 
@@ -117,11 +119,11 @@ export default function EditProfileScreen() {
           setUsernameCheck('available');
         } else {
           setUsernameCheck('taken');
-          setUsernameError("This username is already taken");
+          setUsernameError(t("usernameTakenError"));
         }
       } catch (err: any) {
         setUsernameCheck('invalid');
-        setUsernameError(err.message || "Failed to check username");
+        setUsernameError(err.message || t("failedToCheckUsername"));
       }
     }, 500);
 
@@ -134,7 +136,7 @@ export default function EditProfileScreen() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert("Permission Denied", "We need media library permissions to change your profile picture.");
+        Alert.alert(t("permissionDeniedTitle"), t("mediaLibraryPermissionDeniedMsg"));
         return;
       }
 
@@ -150,29 +152,29 @@ export default function EditProfileScreen() {
       }
     } catch (error) {
       console.error("Image pick error:", error);
-      Alert.alert("Error", "Failed to select image");
+      Alert.alert(t("errorTitle"), t("failedToSelectImage"));
     }
   };
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert("Missing field", "Please enter your name");
+      Alert.alert(t("missingFieldTitle"), t("pleaseEnterName"));
       return;
     }
     if (!username.trim()) {
-      Alert.alert("Missing field", "Please enter a username");
+      Alert.alert(t("missingFieldTitle"), t("pleaseEnterUsername"));
       return;
     }
     if (usernameCheck !== 'available' && username.trim().toLowerCase() !== user?.username?.trim()?.toLowerCase()) {
-      Alert.alert("Invalid username", usernameError || "Please choose an available username.");
+      Alert.alert(t("invalidUsernameTitle"), usernameError || t("pleaseChooseAvailableUsername"));
       return;
     }
     if (email.trim() && !/\S+@\S+\.\S+/.test(email.trim())) {
-      Alert.alert("Invalid email", "Please enter a valid email address");
+      Alert.alert(t("invalidEmailTitle"), t("pleaseEnterValidEmail"));
       return;
     }
     if (phone.trim() && phone.trim().length !== 10) {
-      Alert.alert("Invalid phone number", "Phone number must be exactly 10 digits.");
+      Alert.alert(t("invalidPhoneNumberTitle"), t("phoneLengthError"));
       return;
     }
 
@@ -180,7 +182,7 @@ export default function EditProfileScreen() {
     try {
       const { userApi } = require('../services/user/userApi');
       const authStore = useAuthStore.getState();
-      
+
       let newAvatarUrl = user?.avatar_url;
       if (photo && photo !== user?.avatar_url) {
         const uploadRes = await userApi.uploadImage(photo, 'profiles');
@@ -200,16 +202,16 @@ export default function EditProfileScreen() {
         longitude,
         avatar_url: newAvatarUrl
       });
-      
+
       if (res.success && res.user) {
-         await authStore.setSession({ ...user, ...res.user });
-         Alert.alert("Success", "Profile updated successfully!", [
-           { text: "OK", onPress: () => router.back() }
-         ]);
+        await authStore.setSession({ ...user, ...res.user });
+        Alert.alert(t("success"), t("profileUpdatedSuccess"), [
+          { text: t("ok"), onPress: () => router.back() }
+        ]);
       }
     } catch (err: any) {
       console.error(err);
-      Alert.alert("Error", err.response?.data?.message || err.message || "Failed to update profile.");
+      Alert.alert(t("errorTitle"), err.response?.data?.message || err.message || t("failedToUpdateProfile"));
     } finally {
       setSaving(false);
     }
@@ -223,7 +225,7 @@ export default function EditProfileScreen() {
         return (
           <View style={styles.statusRow}>
             <Check size={14} color="#10B981" />
-            <Text style={[styles.statusAvailable, { color: "#10B981" }]}>Available</Text>
+            <Text style={[styles.statusAvailable, { color: "#10B981" }]}>{t("usernameAvailable")}</Text>
           </View>
         );
       case 'taken':
@@ -252,28 +254,28 @@ export default function EditProfileScreen() {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Allow location access in device settings.');
+        Alert.alert(t("permissionDeniedTitle"), t("allowLocationAccessSettings"));
         return;
       }
       let location = await Location.getLastKnownPositionAsync();
       if (!location) {
         location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       }
-      
+
       if (!location) {
-        Alert.alert('Error', 'Failed to fetch location.');
+        Alert.alert(t("errorTitle"), t("failedToFetchLocation"));
         setLocating(false);
         return;
       }
-      
+
       const lat = location.coords.latitude;
       const lon = location.coords.longitude;
-      
+
       const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
         headers: { 'User-Agent': 'FurrCircleApp/1.0' }
       });
       const data = await response.json();
-      
+
       if (data && data.address) {
         const foundCity = data.address.city || data.address.town || data.address.village || data.address.county || "Unknown City";
         setCity(foundCity);
@@ -283,179 +285,179 @@ export default function EditProfileScreen() {
       }
     } catch (err) {
       console.error(err);
-      Alert.alert('Error', 'Failed to fetch current location.');
+      Alert.alert(t("errorTitle"), t("failedToFetchCurrentLocation"));
     } finally {
       setLocating(false);
     }
   };
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
-          <ScreenHeader title="Edit Profile" />
-          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          
-          {/* Avatar Section */}
-          <View style={styles.avatarSection}>
-            <TouchableOpacity onPress={pickPhoto} activeOpacity={0.8} style={[styles.avatarWrap, { borderColor: tk.border, backgroundColor: tk.card }]}>
-              <Image 
-                source={photo ? { uri: photo } : boyDog} 
-                style={styles.avatarImg} 
-                resizeMode="cover" 
-              />
-              <View style={styles.cameraOverlay}>
-                <Camera size={18} color="#FFFFFF" />
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={pickPhoto} activeOpacity={0.7}>
-              <Text style={[styles.avatarLabel, { color: tk.textMuted }]}>Change Profile Picture</Text>
-            </TouchableOpacity>
-          </View>
+          <ScreenHeader title={t("editProfile")} />
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
-          {/* Form */}
-          <View style={styles.form}>
-            
-            {/* Username Field */}
-            <View style={styles.field}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.label, { color: tk.text }]}>Username</Text>
-                {renderUsernameStatus()}
-              </View>
-              <View style={[
-                styles.inputWrapper, 
-                { backgroundColor: tk.inputBg, borderColor: tk.border },
-                usernameCheck === 'available' && { borderColor: "#10B981" },
-                (usernameCheck === 'taken' || usernameCheck === 'invalid') && { borderColor: "#EF4444" }
-              ]}>
-                <TextInput
-                  style={[styles.input, { color: tk.text }]}
-                  placeholder="Username"
-                  placeholderTextColor={tk.textMuted}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  value={username}
-                  onChangeText={setUsername}
+            {/* Avatar Section */}
+            <View style={styles.avatarSection}>
+              <TouchableOpacity onPress={pickPhoto} activeOpacity={0.8} style={[styles.avatarWrap, { borderColor: tk.border, backgroundColor: tk.card }]}>
+                <Image
+                  source={photo ? { uri: photo } : boyDog}
+                  style={styles.avatarImg}
+                  resizeMode="cover"
                 />
-              </View>
+                <View style={styles.cameraOverlay}>
+                  <Camera size={18} color="#FFFFFF" />
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={pickPhoto} activeOpacity={0.7}>
+                <Text style={[styles.avatarLabel, { color: tk.textMuted }]}>{t("changeProfilePicture")}</Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Name Field */}
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: tk.text }]}>Full Name</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: tk.inputBg, borderColor: tk.border }]}>
-                <TextInput
-                  style={[styles.input, { color: tk.text }]}
-                  placeholder="Full Name"
-                  placeholderTextColor={tk.textMuted}
-                  autoCapitalize="words"
-                  value={name}
-                  onChangeText={setName}
-                />
+            {/* Form */}
+            <View style={styles.form}>
+
+              {/* Username Field */}
+              <View style={styles.field}>
+                <View style={styles.labelRow}>
+                  <Text style={[styles.label, { color: tk.text }]}>{t("usernameLabel")}</Text>
+                  {renderUsernameStatus()}
+                </View>
+                <View style={[
+                  styles.inputWrapper,
+                  { backgroundColor: tk.inputBg, borderColor: tk.border },
+                  usernameCheck === 'available' && { borderColor: "#10B981" },
+                  (usernameCheck === 'taken' || usernameCheck === 'invalid') && { borderColor: "#EF4444" }
+                ]}>
+                  <TextInput
+                    style={[styles.input, { color: tk.text }]}
+                    placeholder={t("usernameLabel")}
+                    placeholderTextColor={tk.textMuted}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={username}
+                    onChangeText={setUsername}
+                  />
+                </View>
               </View>
-            </View>
 
-            {/* Email Field */}
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: tk.text }]}>Email Address</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: tk.inputBg, borderColor: tk.border }]}>
-                <TextInput
-                  style={[styles.input, { color: tk.text }]}
-                  placeholder="Email Address"
-                  placeholderTextColor={tk.textMuted}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                />
+              {/* Name Field */}
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: tk.text }]}>{t("fullNameLabel")}</Text>
+                <View style={[styles.inputWrapper, { backgroundColor: tk.inputBg, borderColor: tk.border }]}>
+                  <TextInput
+                    style={[styles.input, { color: tk.text }]}
+                    placeholder={t("fullNameLabel")}
+                    placeholderTextColor={tk.textMuted}
+                    autoCapitalize="words"
+                    value={name}
+                    onChangeText={setName}
+                  />
+                </View>
               </View>
-            </View>
 
-             {/* Phone Field */}
-             <View style={styles.field}>
-               <Text style={[styles.label, { color: tk.text }]}>Phone Number</Text>
-               <View style={[styles.inputWrapper, { flexDirection: "row", alignItems: "center", backgroundColor: tk.inputBg, borderColor: tk.border, paddingLeft: 16 }]}>
-                 <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 15, color: tk.text, marginRight: 8, borderRightWidth: 1.5, borderRightColor: tk.border, paddingRight: 10 }}>+91</Text>
-                 <TextInput
-                   style={[styles.input, { flex: 1, color: tk.text, height: "100%", paddingHorizontal: 0 }]}
-                   placeholder="9876543210"
-                   placeholderTextColor={tk.textMuted}
-                   keyboardType="phone-pad"
-                   autoCapitalize="none"
-                   autoCorrect={false}
-                   maxLength={10}
-                   value={phone}
-                   onChangeText={(text) => {
-                     const filtered = text.replace(/[^0-9]/g, "");
-                     setPhone(filtered);
-                   }}
-                 />
-               </View>
-             </View>
-
-            {/* City Field */}
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: tk.text }]}>City</Text>
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                <TouchableOpacity
-                  style={[styles.inputWrapper, { flex: 1, backgroundColor: tk.inputBg, borderColor: tk.border, justifyContent: 'center' }]}
-                  onPress={() => setLocationModalVisible(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={{ color: city ? tk.text : tk.textMuted, fontFamily: "Inter_400Regular", fontSize: 15 }}>
-                    {city || "Select your city"}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleAutoLocate} disabled={locating} style={[styles.inputWrapper, { width: 52, paddingHorizontal: 0, alignItems: "center", backgroundColor: tk.card, borderColor: tk.border }]}>
-                  {locating ? <ActivityIndicator size="small" color={colors.primary} /> : <LocateFixed size={20} color={colors.primary} />}
-                </TouchableOpacity>
+              {/* Email Field */}
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: tk.text }]}>{t("emailAddressLabel")}</Text>
+                <View style={[styles.inputWrapper, { backgroundColor: tk.inputBg, borderColor: tk.border }]}>
+                  <TextInput
+                    style={[styles.input, { color: tk.text }]}
+                    placeholder={t("emailAddressLabel")}
+                    placeholderTextColor={tk.textMuted}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    value={email}
+                    onChangeText={setEmail}
+                  />
+                </View>
               </View>
-            </View>
 
-            {/* Address Field */}
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: tk.text }]}>Address</Text>
-              <View style={[
-                styles.inputWrapper, 
-                styles.textAreaWrapper, 
-                { backgroundColor: tk.inputBg, borderColor: tk.border }
-              ]}>
-                <TextInput
-                  style={[styles.input, styles.textArea, { color: tk.text }]}
-                  placeholder="Enter your street address"
-                  placeholderTextColor={tk.textMuted}
-                  multiline
-                  numberOfLines={3}
-                  value={address}
-                  onChangeText={setAddress}
-                />
+              {/* Phone Field */}
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: tk.text }]}>{t("phoneNumberLabel")}</Text>
+                <View style={[styles.inputWrapper, { flexDirection: "row", alignItems: "center", backgroundColor: tk.inputBg, borderColor: tk.border, paddingLeft: 16 }]}>
+                  <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 15, color: tk.text, marginRight: 8, borderRightWidth: 1.5, borderRightColor: tk.border, paddingRight: 10 }}>+91</Text>
+                  <TextInput
+                    style={[styles.input, { flex: 1, color: tk.text, height: "100%", paddingHorizontal: 0 }]}
+                    placeholder="9876543210"
+                    placeholderTextColor={tk.textMuted}
+                    keyboardType="phone-pad"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    maxLength={10}
+                    value={phone}
+                    onChangeText={(text) => {
+                      const filtered = text.replace(/[^0-9]/g, "");
+                      setPhone(filtered);
+                    }}
+                  />
+                </View>
               </View>
+
+              {/* City Field */}
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: tk.text }]}>{t("cityLabel")}</Text>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <TouchableOpacity
+                    style={[styles.inputWrapper, { flex: 1, backgroundColor: tk.inputBg, borderColor: tk.border, justifyContent: 'center' }]}
+                    onPress={() => setLocationModalVisible(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ color: city ? tk.text : tk.textMuted, fontFamily: "Inter_400Regular", fontSize: 15 }}>
+                      {city || t("selectCityPlaceholder")}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleAutoLocate} disabled={locating} style={[styles.inputWrapper, { width: 52, paddingHorizontal: 0, alignItems: "center", backgroundColor: tk.card, borderColor: tk.border }]}>
+                    {locating ? <ActivityIndicator size="small" color={colors.primary} /> : <LocateFixed size={20} color={colors.primary} />}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Address Field */}
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: tk.text }]}>{t("addressLabel")}</Text>
+                <View style={[
+                  styles.inputWrapper,
+                  styles.textAreaWrapper,
+                  { backgroundColor: tk.inputBg, borderColor: tk.border }
+                ]}>
+                  <TextInput
+                    style={[styles.input, styles.textArea, { color: tk.text }]}
+                    placeholder={t("enterStreetAddressPlaceholder")}
+                    placeholderTextColor={tk.textMuted}
+                    multiline
+                    numberOfLines={3}
+                    value={address}
+                    onChangeText={setAddress}
+                  />
+                </View>
+              </View>
+
+              {/* Save Button */}
+              <TouchableOpacity
+                style={[
+                  styles.saveBtn,
+                  (isSaveDisabled || saving) && { backgroundColor: tk.border }
+                ]}
+                onPress={handleSave}
+                disabled={isSaveDisabled || saving}
+                activeOpacity={0.8}
+              >
+                {saving ? (
+                  <ActivityIndicator color={tk.textMuted} />
+                ) : (
+                  <Text style={[styles.saveBtnText, (isSaveDisabled || saving) && { color: tk.textMuted }]}>{t("saveChangesBtn")}</Text>
+                )}
+              </TouchableOpacity>
+
             </View>
-
-            {/* Save Button */}
-            <TouchableOpacity 
-              style={[
-                styles.saveBtn, 
-                (isSaveDisabled || saving) && { backgroundColor: tk.border }
-              ]} 
-              onPress={handleSave}
-              disabled={isSaveDisabled || saving}
-              activeOpacity={0.8}
-            >
-              {saving ? (
-                <ActivityIndicator color={tk.textMuted} />
-              ) : (
-                <Text style={[styles.saveBtnText, (isSaveDisabled || saving) && { color: tk.textMuted }]}>Save Changes</Text>
-              )}
-            </TouchableOpacity>
-
-          </View>
-        </ScrollView>
-      </View>
-    </KeyboardAvoidingView>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
 
       <LocationPickerModal
         visible={isLocationModalVisible}
@@ -470,11 +472,11 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40 },
   avatarSection: { alignItems: "center", marginBottom: 28 },
-  avatarWrap: { 
-    width: 90, 
-    height: 90, 
-    borderRadius: 45, 
-    borderWidth: 3, 
+  avatarWrap: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 3,
     position: "relative",
   },
   avatarImg: { width: "100%", height: "100%", borderRadius: 42 },

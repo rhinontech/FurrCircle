@@ -26,6 +26,7 @@ import { ToastHost } from "../src/components/ToastHost";
 import { toast } from "../src/lib/toast-store";
 import { navigateForNotification } from "../src/lib/notification-nav";
 import { usePostEngagementStore } from "../src/lib/post-engagement-store";
+import { LanguageProvider } from "../src/lib/language-context";
 
 // Safe dynamic import for Firebase messaging
 const getMessaging = () => {
@@ -133,9 +134,7 @@ export default function RootLayout() {
   const justSignedUp = useAuthStore((s) => s.justSignedUp);
   const router = useRouter();
   const segments = useSegments();
-  const { isTablet } = useBreakpoint();
-
-  const { isWide } = useBreakpoint();
+  const { isTablet, isDesktop, isWide } = useBreakpoint();
   const AUTH_SCREENS = ["login", "signup", "otp-verify", "forgot-password", "onboarding"];
   const isAuthScreen = AUTH_SCREENS.includes(segments[0] || "");
   const showSideNav = isTablet && !!user && !isAuthScreen;
@@ -361,19 +360,45 @@ export default function RootLayout() {
   // Auth guard: redirect based on login state once both fonts + auth are ready
   useEffect(() => {
     if (!fontsLoaded || authLoading) return;
-    const inAuthGroup = ["login", "signup", "otp-verify", "forgot-password"].includes(segments[0] || "");
-    const isOnboarding = segments[0] === "onboarding";
+    const firstSegment = (segments[0] || "") as string;
+    const inAuthGroup = ["login", "signup", "otp-verify", "forgot-password"].includes(firstSegment);
+    const isOnboarding = firstSegment === "onboarding";
 
-    if (!user && !inAuthGroup) {
-      router.replace("/login");
-    } else if (user) {
-      if (user.hasCompletedOnboarding === false) {
-        if (!isOnboarding) {
-          router.replace("/onboarding");
+    if (Platform.OS === 'web') {
+      const isWebLandingRoute = firstSegment === "web";
+      if (!user) {
+        if (!isWebLandingRoute && !inAuthGroup) {
+          router.replace("/web" as any);
         }
       } else {
-        if (inAuthGroup || isOnboarding) {
-          router.replace("/(tabs)");
+        if (isWebLandingRoute || inAuthGroup || isOnboarding || firstSegment === "") {
+          if (user.hasCompletedOnboarding === false) {
+            router.replace("/onboarding");
+          } else {
+            router.replace("/(tabs)");
+          }
+        }
+      }
+    } else {
+      // Mobile flow
+      const isWebLandingRoute = firstSegment === "web";
+      if (isWebLandingRoute) {
+        if (user) {
+          router.replace(user.hasCompletedOnboarding === false ? "/onboarding" : "/(tabs)");
+        } else {
+          router.replace("/login");
+        }
+      } else if (!user && !inAuthGroup) {
+        router.replace("/login");
+      } else if (user) {
+        if (user.hasCompletedOnboarding === false) {
+          if (!isOnboarding) {
+            router.replace("/onboarding");
+          }
+        } else {
+          if (inAuthGroup || isOnboarding) {
+            router.replace("/(tabs)");
+          }
         }
       }
     }
@@ -421,44 +446,46 @@ export default function RootLayout() {
   );
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: tokens.bg }}>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style={dark ? "light" : "dark"} />
-        <LocationSync />
-        {showSideNav ? (
-          // Desktop / tablet: ambient backdrop + a centred 3-column cluster so the
-          // sidebar sits flush against the feed (no left gap) with balanced margins.
-          <View style={{ flex: 1, backgroundColor: tokens.bg }}>
-            <AmbientBackground />
-            <View style={{ flex: 1 }}>
-              <View
-                style={{
-                  flex: 1,
-                  width: "100%",
-                  maxWidth: showRightRail ? '100%' : '100%',
-                  flexDirection: "row",
+    <LanguageProvider>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: tokens.bg }}>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style={dark ? "light" : "dark"} />
+          <LocationSync />
+          {showSideNav ? (
+            // Desktop / tablet: ambient backdrop + a centred 3-column cluster so the
+            // sidebar sits flush against the feed (no left gap) with balanced margins.
+            <View style={{ flex: 1, backgroundColor: tokens.bg }}>
+              <AmbientBackground />
+              <View style={{ flex: 1 }}>
+                <View
+                  style={{
+                    flex: 1,
+                    width: "100%",
+                    maxWidth: showRightRail ? '100%' : '100%',
+                    flexDirection: "row",
 
-                }}
-              >
-                <View style={{ paddingLeft: showRightRail ? 60 : 0, backgroundColor:'white' }}>
-                  <SideNav />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  {stackScreens}
-                </View>
-                {showRightRail && (
-                  <View style={{ width: 400, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: tokens.border, paddingRight: 60 }}>
-                    <RightRail />
+                  }}
+                >
+                  <View style={{ backgroundColor:'white' }}>
+                    <SideNav />
                   </View>
-                )}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    {stackScreens}
+                  </View>
+                  {showRightRail && (
+                    <View style={{ width: 320, flexShrink: 0, borderLeftWidth: 1, borderLeftColor: tokens.border }}>
+                      <RightRail />
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
-        ) : (
-          stackScreens
-        )}
-        <ToastHost />
-      </QueryClientProvider>
-    </GestureHandlerRootView>
+          ) : (
+            stackScreens
+          )}
+          <ToastHost />
+        </QueryClientProvider>
+      </GestureHandlerRootView>
+    </LanguageProvider>
   );
 }

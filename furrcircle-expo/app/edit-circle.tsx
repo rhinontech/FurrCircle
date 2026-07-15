@@ -11,6 +11,7 @@ import { PageContainer } from "../src/components/PageContainer";
 import { ImageCropper } from "../src/components/ImageCropper";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
+import { useLanguage } from "../src/lib/language-context";
 import { circleApi } from "../services/community/circleApi";
 import { userApi } from "../services/user/userApi";
 import * as ImagePicker from "expo-image-picker";
@@ -25,6 +26,7 @@ const CATEGORY_PRESETS = [
 ];
 
 export default function EditCircle() {
+  const { t } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const tk = useTokens();
@@ -40,12 +42,24 @@ export default function EditCircle() {
   const [newLocalCover, setNewLocalCover] = useState<string | null>(null);
   const [cropSource, setCropSource] = useState<{ uri: string; width: number; height: number } | null>(null);
 
+  const getCategoryLabel = (catId: string) => {
+    switch (catId) {
+      case "dogs": return t("categoryDogs");
+      case "cats": return t("categoryCats");
+      case "rescue": return t("categoryRescue");
+      case "health": return t("categoryHealth");
+      case "training": return t("categoryTraining");
+      case "general": return t("generalCategory");
+      default: return catId;
+    }
+  };
+
   const load = useCallback(async () => {
     try {
       setFetching(true);
       const circle = await circleApi.getCircleById(id);
       if (!circle.isAdmin) {
-        Alert.alert("Not allowed", "Only the circle creator can edit this circle.");
+        Alert.alert(t("notAllowedTitle"), t("onlyCreatorCanEditCircle"));
         router.back();
         return;
       }
@@ -54,12 +68,12 @@ export default function EditCircle() {
       setCategory(circle.category || "general");
       setCoverUri(circle.coverImage || null);
     } catch {
-      Alert.alert("Error", "Failed to load circle.");
+      Alert.alert(t("errorTitle"), t("failedToLoadCircle"));
       router.back();
     } finally {
       setFetching(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -81,7 +95,7 @@ export default function EditCircle() {
 
   const pickCover = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") { Alert.alert("Permission", "Gallery access required."); return; }
+    if (status !== "granted") { Alert.alert(t("permissionTitle"), t("galleryAccessRequired")); return; }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images", quality: 1 });
     const asset = result.assets?.[0];
     if (!result.canceled && asset?.uri) {
@@ -90,7 +104,7 @@ export default function EditCircle() {
   };
 
   const handleSave = async () => {
-    if (!name.trim()) { Alert.alert("Required", "Please enter a circle name."); return; }
+    if (!name.trim()) { Alert.alert(t("requiredTitle"), t("pleaseEnterCircleName")); return; }
     setSaving(true);
     try {
       const payload: { name: string; description: string; category: string; coverImage?: string } = {
@@ -106,7 +120,7 @@ export default function EditCircle() {
       await circleApi.updateCircle(id, payload);
       router.back();
     } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || "Failed to save changes.");
+      Alert.alert(t("errorTitle"), err?.response?.data?.message || t("failedToSaveChanges"));
     } finally {
       setSaving(false);
     }
@@ -114,9 +128,9 @@ export default function EditCircle() {
 
   if (fetching) {
     return (
-      <PageContainer>
+      <PageContainer noAmbient={true}>
         <View style={{ flex: 1, backgroundColor: tk.bg }}>
-          <ScreenHeader title="Edit Circle" />
+          <ScreenHeader title={t("editCircle")} />
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
@@ -126,40 +140,40 @@ export default function EditCircle() {
   }
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={{ flex: 1, backgroundColor: tk.bg }}>
-        <ScreenHeader title="Edit Circle" />
+        <ScreenHeader title={t("editCircle")} />
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 + insets.bottom }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <Text style={[styles.label, { color: tk.textMuted }]}>Cover Image</Text>
+            <Text style={[styles.label, { color: tk.textMuted }]}>{t("coverImageLabel")}</Text>
             <TouchableOpacity onPress={pickCover} style={[styles.coverPicker, { backgroundColor: tk.inputBg, borderColor: tk.border }]} activeOpacity={0.8}>
               {coverUri ? (
                 <Image source={{ uri: coverUri }} style={{ width: "100%", height: "100%", borderRadius: 12 }} resizeMode="cover" />
               ) : (
                 <View style={{ alignItems: "center", gap: 6 }}>
                   <Camera size={24} color={tk.textMuted} />
-                  <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: tk.textMuted }}>Tap to change cover photo</Text>
+                  <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: tk.textMuted }}>{t("tapToChangeCoverPhoto")}</Text>
                 </View>
               )}
             </TouchableOpacity>
 
-            <Text style={[styles.label, { color: tk.textMuted }]}>Name</Text>
-            <TextInput value={name} onChangeText={setName} placeholder="e.g. Beagle Buddies" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border }]} />
+            <Text style={[styles.label, { color: tk.textMuted }]}>{t("nameLabel")}</Text>
+            <TextInput value={name} onChangeText={setName} placeholder={t("circleNamePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border }]} />
 
-            <Text style={[styles.label, { color: tk.textMuted }]}>Description</Text>
-            <TextInput value={description} onChangeText={setDescription} placeholder="What is this circle about?" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, height: 80, textAlignVertical: "top" }]} multiline />
+            <Text style={[styles.label, { color: tk.textMuted }]}>{t("descriptionLabel")}</Text>
+            <TextInput value={description} onChangeText={setDescription} placeholder={t("circleDescPlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, height: 80, textAlignVertical: "top" }]} multiline />
 
-            <Text style={[styles.label, { color: tk.textMuted }]}>Category</Text>
+            <Text style={[styles.label, { color: tk.textMuted }]}>{t("categoryLabel")}</Text>
             <View style={styles.categoryRow}>
               {CATEGORY_PRESETS.map((cat) => (
                 <TouchableOpacity key={cat.id} onPress={() => setCategory(cat.id)} style={[styles.categoryBtn, { backgroundColor: category === cat.id ? tk.text : tk.glassChip }]} activeOpacity={0.8}>
-                  <Text style={[styles.categoryBtnText, { color: category === cat.id ? tk.bg : tk.textMuted }]}>{cat.label}</Text>
+                  <Text style={[styles.categoryBtnText, { color: category === cat.id ? tk.bg : tk.textMuted }]}>{getCategoryLabel(cat.id)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             <TouchableOpacity onPress={handleSave} disabled={saving} style={[styles.saveBtn, saving && { opacity: 0.6 }]} activeOpacity={0.85}>
-              {saving ? <ActivityIndicator color={colors.white} /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
+              {saving ? <ActivityIndicator color={colors.white} /> : <Text style={styles.saveBtnText}>{t("saveChangesBtn")}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>

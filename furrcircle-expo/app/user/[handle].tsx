@@ -6,6 +6,7 @@ import { PageContainer } from "../../src/components/PageContainer";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { Video, ResizeMode } from "expo-av";
 
 const boyDog = require("../../src/assets/doodle-boy-dog.png");
@@ -37,6 +38,7 @@ const pets = [
 ];
 
 export default function PublicUserProfileScreen() {
+  const { t } = useLanguage();
   const { handle } = useLocalSearchParams<{ handle: string }>();
   const router = useRouter();
   const tk = useTokens();
@@ -44,7 +46,7 @@ export default function PublicUserProfileScreen() {
   const [following, setFollowing] = useState(false);
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
           title={`@${handle}`}
@@ -65,9 +67,9 @@ export default function PublicUserProfileScreen() {
                   <Image source={boyDog} style={styles.avatarImg} resizeMode="cover" />
                 </View>
                 <View style={styles.statsRow}>
-                  <StatItem n="48" l="Posts" tk={tk} />
-                  <StatItem n="1.2k" l="Followers" tk={tk} />
-                  <StatItem n="312" l="Following" tk={tk} />
+                  <StatItem n="48" l={t("postsLabel")} tk={tk} />
+                  <StatItem n="1.2k" l={t("followersLabel")} tk={tk} />
+                  <StatItem n="312" l={t("followingLabel")} tk={tk} />
                 </View>
               </View>
               {/* Name + bio */}
@@ -85,15 +87,15 @@ export default function PublicUserProfileScreen() {
                 >
                   <UserPlus size={16} color={following ? tk.text : "#FFFFFF"} />
                   <Text style={[styles.followBtnText, { color: following ? tk.text : "#FFFFFF" }]}>
-                    {following ? "Following" : "Follow"}
+                    {following ? t("following") : t("follow")}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={() => router.push("/chat")} 
+                <TouchableOpacity
+                  onPress={() => router.push("/chat")}
                   style={[styles.messageBtn, { backgroundColor: tk.text + "10" }]}
                 >
                   <MessageCircle size={16} color={tk.text} />
-                  <Text style={[styles.messageBtnText, { color: tk.text }]}>Message</Text>
+                  <Text style={[styles.messageBtnText, { color: tk.text }]}>{t("messageLabel")}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -117,13 +119,15 @@ export default function PublicUserProfileScreen() {
 
           {/* Tabs */}
           <View style={[styles.tabsRow, { borderBottomColor: tk.border }]}>
-            {tabs.map((t) => {
-              const Icon = tabIcons[t];
-              const active = tab === t;
+            {tabs.map((tabVal) => {
+              const Icon = tabIcons[tabVal];
+              const active = tab === tabVal;
               return (
-                <TouchableOpacity key={t} onPress={() => setTab(t)} style={styles.tabItem}>
+                <TouchableOpacity key={tabVal} onPress={() => setTab(tabVal)} style={styles.tabItem}>
                   <Icon size={16} color={active ? colors.coral : tk.textMuted} />
-                  <Text style={[styles.tabText, { color: active ? colors.coral : tk.textMuted }]}>{t}</Text>
+                  <Text style={[styles.tabText, { color: active ? colors.coral : tk.textMuted }]}>
+                    {tabVal === "Posts" ? t("postsLabel") : (tabVal === "Pets" ? t("pets") : t("saved"))}
+                  </Text>
                   {active && <View style={styles.tabActiveBar} />}
                 </TouchableOpacity>
               );

@@ -18,12 +18,14 @@ import { socketService } from "../services/socket/socketService";
 import { useNotificationStore } from "../src/lib/notification-store";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { feedApi } from "../services/community/feedApi";
+import { useBreakpoint } from "../src/lib/breakpoints";
 import { Video, ResizeMode } from "expo-av";
 import { useTokens } from "@/lib/theme-store";
 import * as ImagePicker from "expo-image-picker";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import { useCameraStore } from "../src/lib/camera-store";
 import { Camera, Image as ImageIcon, X as XIcon } from "lucide-react-native";
+import { PageContainer } from "@/components/PageContainer";
 
 // --- Helpers ---
 const formatTime = (dateStr: string) => {
@@ -625,6 +627,7 @@ function SharedPetCard({ petId, isMe, tk, router }: { petId: string; isMe: boole
 
 // --- Main Component ---
 export default function ChatScreen() {
+  const { isTablet } = useBreakpoint();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
   const [selectedChat, setSelectedChat] = useState<string | null>(params.id || null);
@@ -1231,7 +1234,7 @@ export default function ChatScreen() {
               </View>
             )}
             <View style={[styles.inputBar, { backgroundColor: tk.card, borderTopColor: tk.border }]}>
-              
+
 
               <TextInput
                 value={msgInput}
@@ -1279,11 +1282,11 @@ export default function ChatScreen() {
           </KeyboardAvoidingView>
         </View>
         {/* Full Screen Swipeable Image Viewer */}
-      <ImageViewer
-        images={viewerImages}
-        index={viewerIndex}
-        onClose={() => setViewerIndex(null)}
-      />
+        <ImageViewer
+          images={viewerImages}
+          index={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+        />
       </KeyboardAvoidingView>
     );
   }
@@ -1292,166 +1295,168 @@ export default function ChatScreen() {
 
   // --- Render List View ---
   return (
-    <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader
-        title="Messages"
-      // right={
-      //   <TouchableOpacity
-      //     style={[styles.headerIconBtn, { backgroundColor: tk.card }]}
-      //     onPress={() => setIsNewChatOpen(true)}
-      //   >
-      //     <Plus size={22} color={tk.text} />
-      //   </TouchableOpacity>
-      // }
-      />
-
-      {/* Search pill */}
-      <View style={[styles.searchPill, { backgroundColor: tk.card }]}>
-        <Search size={18} color={tk.textMuted} />
-        <TextInput
-          value={listSearchQuery}
-          onChangeText={setListSearchQuery}
-          placeholder="Search chats"
-          placeholderTextColor={tk.textMuted}
-          style={[styles.searchPillInput, { color: tk.text }]}
+    <PageContainer noAmbient={true}>
+      <View style={[styles.container, { backgroundColor: tk.bg }]}>
+        <ScreenHeader
+          title="Messages"
+        // right={
+        //   <TouchableOpacity
+        //     style={[styles.headerIconBtn, { backgroundColor: tk.card }]}
+        //     onPress={() => setIsNewChatOpen(true)}
+        //   >
+        //     <Plus size={22} color={tk.text} />
+        //   </TouchableOpacity>
+        // }
         />
-      </View>
 
-      {loading ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        {/* Search pill */}
+        <View style={[styles.searchPill, { backgroundColor: tk.card }]}>
+          <Search size={18} color={tk.textMuted} />
+          <TextInput
+            value={listSearchQuery}
+            onChangeText={setListSearchQuery}
+            placeholder="Search chats"
+            placeholderTextColor={tk.textMuted}
+            style={[styles.searchPillInput, { color: tk.text }]}
+          />
         </View>
-      ) : displayConversations.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 40 }}>
-          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: tk.card, justifyContent: "center", alignItems: "center", marginBottom: 16 }}>
-            <MessageCircle size={40} color={tk.textMuted} />
+
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
-          <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 18, color: tk.text, textAlign: "center" }}>
-            {listSearchQuery ? "No results found" : "No messages yet"}
-          </Text>
-          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, textAlign: "center", marginTop: 8 }}>
-            {listSearchQuery ? "Try a different name" : "Start a conversation with a friend or a vet!"}
-          </Text>
-          {!listSearchQuery && (
-            <TouchableOpacity
-              style={[styles.startChatBtn, { backgroundColor: colors.primary }]}
-              onPress={() => setIsNewChatOpen(true)}
-            >
-              <Text style={{ fontFamily: "Poppins_600SemiBold", color: "#fff" }}>New Chat</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      ) : (
-        <FlatList
-          data={displayConversations}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 100 }}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={({ item: c, index }) => {
-            const otherUser = getOtherParticipant(c);
-            if (!otherUser) return null;
-
-            const hasUnread = c.unreadCount > 0 || (c.lastMessage && !c.lastMessage.isRead && !c.lastMessage.readAt && !c.lastMessage.seen && c.lastMessage.sender?.id !== user?.id);
-            const unreadCount = c.unreadCount || 0;
-            const tintBg = AVATAR_TINTS[index % AVATAR_TINTS.length];
-
-            return (
-              <TouchableOpacity
-                onPress={() => setSelectedChat(c.id)}
-                style={[styles.chatCard, { backgroundColor: tk.card }]}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.avatarTintWrap, { backgroundColor: tintBg }]}>
-                  <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={52} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.chatName, { color: tk.text, fontFamily: hasUnread ? "Poppins_700Bold" : "Poppins_600SemiBold" }]}>{otherUser.name}</Text>
-                  <Text style={[styles.chatLastMsg, { color: hasUnread ? tk.text : tk.textMuted, fontFamily: hasUnread ? "Inter_600SemiBold" : "Inter_400Regular" }]} numberOfLines={1}>
-                    {c.lastMessage?.text || "Started a conversation"}
-                  </Text>
-                </View>
-                <View style={{ alignItems: "flex-end", gap: 6 }}>
-                  <Text style={[styles.chatTime, { color: hasUnread ? colors.coral : tk.textMuted }]}>
-                    {formatRelativeTime(c.lastMessage?.createdAt || c.updatedAt)}
-                  </Text>
-                  {hasUnread && (
-                    <View style={styles.unreadBadge}>
-                      <Text style={styles.unreadBadgeText}>{unreadCount > 99 ? "99+" : unreadCount > 0 ? String(unreadCount) : "•"}</Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          }}
-        />
-      )}
-
-      {/* FAB */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => setIsNewChatOpen(true)}
-        activeOpacity={0.85}
-      >
-        <Plus size={26} color="#fff" strokeWidth={2.5} />
-      </TouchableOpacity>
-
-      {/* New Chat Modal */}
-      <Modal visible={isNewChatOpen} animationType="slide" transparent onRequestClose={() => setIsNewChatOpen(false)}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
-          style={{ flex: 1 }}
-        >
-          <Pressable style={styles.modalOverlay} onPress={() => { Keyboard.dismiss(); setIsNewChatOpen(false); }}>
-            <View style={[styles.modalContent, { backgroundColor: tk.card }]} onStartShouldSetResponder={() => true}>
-              <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
-              <Text style={[styles.modalTitle, { color: tk.text }]}>New Chat</Text>
-
-              <View style={[styles.searchBar, { backgroundColor: tk.bg, borderColor: tk.border }]}>
-                <Search size={16} color={tk.textMuted} />
-                <TextInput
-                  placeholder="Search people..."
-                  placeholderTextColor={tk.textMuted}
-                  value={searchQuery}
-                  onChangeText={handleSearch}
-                  style={[styles.searchInput, { color: tk.text }]}
-                  autoFocus
-                />
-              </View>
-
-              {searchLoading ? (
-                <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} />
-              ) : (
-                <FlatList
-                  data={searchResults}
-                  keyExtractor={(item) => item.id}
-                  contentContainerStyle={{ paddingBottom: 40 }}
-                  ListEmptyComponent={
-                    <Text style={[styles.emptyText, { color: tk.textMuted }]}>
-                      {searchQuery.trim() ? "No users found" : "No followers yet"}
-                    </Text>
-                  }
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={styles.searchRow}
-                      onPress={() => handleStartNewChat(item.id)}
-                    >
-                      <Avatar source={item.avatar_url ? { uri: item.avatar_url } : require("../src/assets/doodle-puppy.png")} name={item.name} size={40} />
-                      <View style={{ marginLeft: 12 }}>
-                        <Text style={[styles.searchName, { color: tk.text }]}>{item.name}</Text>
-                        <Text style={[styles.searchHandle, { color: tk.textMuted }]}>@{item.username}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  )}
-                />
-              )}
+        ) : displayConversations.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 40 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: tk.card, justifyContent: "center", alignItems: "center", marginBottom: 16 }}>
+              <MessageCircle size={40} color={tk.textMuted} />
             </View>
-          </Pressable>
-        </KeyboardAvoidingView>
+            <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 18, color: tk.text, textAlign: "center" }}>
+              {listSearchQuery ? "No results found" : "No messages yet"}
+            </Text>
+            <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted, textAlign: "center", marginTop: 8 }}>
+              {listSearchQuery ? "Try a different name" : "Start a conversation with a friend or a vet!"}
+            </Text>
+            {!listSearchQuery && (
+              <TouchableOpacity
+                style={[styles.startChatBtn, { backgroundColor: colors.primary }]}
+                onPress={() => setIsNewChatOpen(true)}
+              >
+                <Text style={{ fontFamily: "Poppins_600SemiBold", color: "#fff" }}>New Chat</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <FlatList
+            data={displayConversations}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 100 }}
+            ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+            renderItem={({ item: c, index }) => {
+              const otherUser = getOtherParticipant(c);
+              if (!otherUser) return null;
 
-      </Modal>
+              const hasUnread = c.unreadCount > 0 || (c.lastMessage && !c.lastMessage.isRead && !c.lastMessage.readAt && !c.lastMessage.seen && c.lastMessage.sender?.id !== user?.id);
+              const unreadCount = c.unreadCount || 0;
+              const tintBg = AVATAR_TINTS[index % AVATAR_TINTS.length];
 
-      
-    </View>
+              return (
+                <TouchableOpacity
+                  onPress={() => setSelectedChat(c.id)}
+                  style={[styles.chatCard, { backgroundColor: tk.card }]}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.avatarTintWrap, { backgroundColor: tintBg }]}>
+                    <Avatar source={otherUser.avatar_url ? { uri: otherUser.avatar_url } : require("../src/assets/doodle-puppy.png")} name={otherUser.name} size={52} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.chatName, { color: tk.text, fontFamily: hasUnread ? "Poppins_700Bold" : "Poppins_600SemiBold" }]}>{otherUser.name}</Text>
+                    <Text style={[styles.chatLastMsg, { color: hasUnread ? tk.text : tk.textMuted, fontFamily: hasUnread ? "Inter_600SemiBold" : "Inter_400Regular" }]} numberOfLines={1}>
+                      {c.lastMessage?.text || "Started a conversation"}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: "flex-end", gap: 6 }}>
+                    <Text style={[styles.chatTime, { color: hasUnread ? colors.coral : tk.textMuted }]}>
+                      {formatRelativeTime(c.lastMessage?.createdAt || c.updatedAt)}
+                    </Text>
+                    {hasUnread && (
+                      <View style={styles.unreadBadge}>
+                        <Text style={styles.unreadBadgeText}>{unreadCount > 99 ? "99+" : unreadCount > 0 ? String(unreadCount) : "•"}</Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+          />
+        )}
+
+        {/* FAB */}
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setIsNewChatOpen(true)}
+          activeOpacity={0.85}
+        >
+          <Plus size={26} color="#fff" strokeWidth={2.5} />
+        </TouchableOpacity>
+
+        {/* New Chat Modal */}
+        <Modal visible={isNewChatOpen} animationType={isTablet ? "fade" : "slide"} transparent onRequestClose={() => setIsNewChatOpen(false)}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
+            style={{ flex: 1 }}
+          >
+            <Pressable style={[styles.modalOverlay, isTablet && styles.overlayTablet]} onPress={() => { Keyboard.dismiss(); setIsNewChatOpen(false); }}>
+              <View style={[styles.modalContent, { backgroundColor: tk.card }, isTablet && styles.sheetTablet]} onStartShouldSetResponder={() => true}>
+                <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
+                <Text style={[styles.modalTitle, { color: tk.text }]}>New Chat</Text>
+
+                <View style={[styles.searchBar, { backgroundColor: tk.bg, borderColor: tk.border }]}>
+                  <Search size={16} color={tk.textMuted} />
+                  <TextInput
+                    placeholder="Search people..."
+                    placeholderTextColor={tk.textMuted}
+                    value={searchQuery}
+                    onChangeText={handleSearch}
+                    style={[styles.searchInput, { color: tk.text }]}
+                    autoFocus
+                  />
+                </View>
+
+                {searchLoading ? (
+                  <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} />
+                ) : (
+                  <FlatList
+                    data={searchResults}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={{ paddingBottom: 40 }}
+                    ListEmptyComponent={
+                      <Text style={[styles.emptyText, { color: tk.textMuted }]}>
+                        {searchQuery.trim() ? "No users found" : "No followers yet"}
+                      </Text>
+                    }
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.searchRow}
+                        onPress={() => handleStartNewChat(item.id)}
+                      >
+                        <Avatar source={item.avatar_url ? { uri: item.avatar_url } : require("../src/assets/doodle-puppy.png")} name={item.name} size={40} />
+                        <View style={{ marginLeft: 12 }}>
+                          <Text style={[styles.searchName, { color: tk.text }]}>{item.name}</Text>
+                          <Text style={[styles.searchHandle, { color: tk.textMuted }]}>@{item.username}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                  />
+                )}
+              </View>
+            </Pressable>
+          </KeyboardAvoidingView>
+
+        </Modal>
+
+
+      </View>
+    </PageContainer>
   );
 }
 
@@ -1473,7 +1478,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 13,
   },
-  searchPillInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular", paddingVertical: 0 },
+  searchPillInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    paddingVertical: 0,
+    ...Platform.select({
+      web: {
+        outlineStyle: "none",
+      } as any,
+    }),
+  },
 
   // List view — card rows
   chatCard: {
@@ -1531,16 +1546,49 @@ const styles = StyleSheet.create({
   bubbleText: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
   timeText: { fontSize: 10, fontFamily: "Inter_400Regular", marginTop: 4 },
   inputBar: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1 },
-  msgInput: { flex: 1, borderRadius: 24, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, minHeight: 44, maxHeight: 100, fontSize: 14, fontFamily: "Inter_400Regular" },
+  msgInput: {
+    flex: 1,
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    minHeight: 44,
+    maxHeight: 100,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    ...Platform.select({
+      web: {
+        outlineStyle: "none",
+      } as any,
+    }),
+  },
   sendBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  overlayTablet: { justifyContent: "center", alignItems: "center" },
   modalContent: { height: "70%", borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 20 },
+  sheetTablet: {
+    width: 500,
+    height: 600,
+    borderRadius: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
   sheetHandle: { width: 48, height: 6, borderRadius: 3, alignSelf: "center", marginBottom: 16, opacity: 0.2 },
   modalTitle: { fontFamily: "Poppins_700Bold", fontSize: 20, marginBottom: 16 },
   searchBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, height: 44, borderRadius: 12, borderWidth: 1, gap: 8, marginBottom: 16 },
-  searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", paddingVertical: 0 },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    paddingVertical: 0,
+    ...Platform.select({
+      web: {
+        outlineStyle: "none",
+      } as any,
+    }),
+  },
   searchRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.05)" },
   searchName: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
   searchHandle: { fontSize: 12, fontFamily: "Inter_400Regular" },

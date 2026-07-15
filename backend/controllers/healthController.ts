@@ -377,3 +377,136 @@ export const addAllergy = async (req: any, res: Response): Promise<void> => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const deleteVaccine = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { vaccines: Vaccine } = db as any;
+    if (!(await canAccessPet(req.params.petId, req.user.id, req.userType || "user"))) {
+      res.status(403).json({ message: "Not authorized for this pet" });
+      return;
+    }
+    const vaccine = await Vaccine.findOne({ where: { id: req.params.vaccineId, petId: req.params.petId } });
+    if (!vaccine) {
+      res.status(404).json({ message: "Vaccine not found" });
+      return;
+    }
+    await vaccine.destroy();
+    res.json({ message: "Vaccine deleted" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateVaccine = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { vaccines: Vaccine } = db as any;
+    if (!(await canAccessPet(req.params.petId, req.user.id, req.userType || "user"))) {
+      res.status(403).json({ message: "Not authorized for this pet" });
+      return;
+    }
+    const vaccine = await Vaccine.findOne({ where: { id: req.params.vaccineId, petId: req.params.petId } });
+    if (!vaccine) {
+      res.status(404).json({ message: "Vaccine not found" });
+      return;
+    }
+    await vaccine.update(req.body);
+    res.json(vaccine);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteVital = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { vitals: Vital } = db as any;
+    if (!(await canAccessPet(req.params.petId, req.user.id, req.userType || "user"))) {
+      res.status(403).json({ message: "Not authorized for this pet" });
+      return;
+    }
+    const vital = await Vital.findOne({ where: { id: req.params.vitalId, petId: req.params.petId } });
+    if (!vital) {
+      res.status(404).json({ message: "Vital not found" });
+      return;
+    }
+    await vital.destroy();
+    res.json({ message: "Vital deleted" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateVital = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { vitals: Vital } = db as any;
+    if (!(await canAccessPet(req.params.petId, req.user.id, req.userType || "user"))) {
+      res.status(403).json({ message: "Not authorized for this pet" });
+      return;
+    }
+    const vital = await Vital.findOne({ where: { id: req.params.vitalId, petId: req.params.petId } });
+    if (!vital) {
+      res.status(404).json({ message: "Vital not found" });
+      return;
+    }
+    await vital.update(parseVitalPayload(req.body || {}));
+    res.json(vital);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateMedication = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { medications: Medication } = db as any;
+    if (!(await canAccessPet(req.params.petId, req.user.id, req.userType || "user"))) {
+      res.status(403).json({ message: "Not authorized for this pet" });
+      return;
+    }
+    const med = await Medication.findOne({ where: { id: req.params.medId, petId: req.params.petId } });
+    if (!med) {
+      res.status(404).json({ message: "Medication not found" });
+      return;
+    }
+    await med.update(req.body);
+    res.json(med);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteAllergy = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { allergies: Allergy } = db as any;
+    if (!(await canAccessPet(req.params.petId, req.user.id, req.userType || "user"))) {
+      res.status(403).json({ message: "Not authorized for this pet" });
+      return;
+    }
+    const allergy = await Allergy.findOne({ where: { id: req.params.allergyId, petId: req.params.petId } });
+    if (!allergy) {
+      res.status(404).json({ message: "Allergy not found" });
+      return;
+    }
+    await allergy.destroy();
+    res.json({ message: "Allergy deleted" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateAllergy = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { allergies: Allergy } = db as any;
+    if (!(await canAccessPet(req.params.petId, req.user.id, req.userType || "user"))) {
+      res.status(403).json({ message: "Not authorized for this pet" });
+      return;
+    }
+    const allergy = await Allergy.findOne({ where: { id: req.params.allergyId, petId: req.params.petId } });
+    if (!allergy) {
+      res.status(404).json({ message: "Allergy not found" });
+      return;
+    }
+    await allergy.update(req.body);
+    res.json(allergy);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};

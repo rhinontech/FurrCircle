@@ -13,17 +13,18 @@ import { eventApi } from "../services/community/eventApi";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router";
 import { AdaptiveSheet } from "../src/components/AdaptiveSheet";
+import { useLanguage } from "../src/lib/language-context";
 
 const filters = ["All", "Adoption", "Playdate", "Training", "Meetup"] as const;
 
 // Tint palette per category — mirrors the lovable demo
 // (success/15, sunshine/30, primary/10, pinky/15 on the brand palette)
 const TINTS: Record<string, { bg: string; badge: string; text: string }> = {
-  adoption:  { bg: "rgba(76,175,80,0.15)",  badge: "#22c55e", text: "#15803d" },
-  playdate:  { bg: "rgba(255,217,61,0.30)", badge: "#F59E0B", text: "#92400e" },
-  training:  { bg: "rgba(37,99,235,0.10)",  badge: "#2563EB", text: "#1d4ed8" },
-  meetup:    { bg: "rgba(255,111,207,0.15)", badge: "#ec4899", text: "#9d174d" },
-  social:    { bg: "rgba(37,99,235,0.10)",  badge: "#2563EB", text: "#1d4ed8" },
+  adoption: { bg: "rgba(76,175,80,0.15)", badge: "#22c55e", text: "#15803d" },
+  playdate: { bg: "rgba(255,217,61,0.30)", badge: "#F59E0B", text: "#92400e" },
+  training: { bg: "rgba(37,99,235,0.10)", badge: "#2563EB", text: "#1d4ed8" },
+  meetup: { bg: "rgba(255,111,207,0.15)", badge: "#ec4899", text: "#9d174d" },
+  social: { bg: "rgba(37,99,235,0.10)", badge: "#2563EB", text: "#1d4ed8" },
 };
 const DEFAULT_TINT = { bg: "rgba(99,102,241,0.12)", badge: "#6366f1", text: "#4338ca" };
 
@@ -52,6 +53,7 @@ const parseEventDate = (dateStr?: string) => {
 };
 
 export default function EventsScreen() {
+  const { t } = useLanguage();
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
   const router = useRouter();
@@ -61,6 +63,26 @@ export default function EventsScreen() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookingInProgress, setBookingInProgress] = useState(false);
+
+  const getFilterLabel = (f: string) => {
+    switch (f) {
+      case "All": return t("filterAll");
+      case "Adoption": return t("filterAdoption");
+      case "Playdate": return t("filterPlaydate");
+      case "Training": return t("filterTraining");
+      case "Meetup": return t("filterMeetup");
+      default: return f;
+    }
+  };
+
+  const getCategoryLabel = (category?: string) => {
+    const cat = (category || "").toLowerCase();
+    if (cat === "adoption") return t("filterAdoption");
+    if (cat === "playdate") return t("filterPlaydate");
+    if (cat === "training") return t("filterTraining");
+    if (cat === "meetup") return t("filterMeetup");
+    return t("categoryGeneral");
+  };
 
   useEffect(() => {
     if (eventId) {
@@ -86,12 +108,12 @@ export default function EventsScreen() {
     try {
       setBookingInProgress(true);
       await eventApi.bookEvent(id);
-      Alert.alert("You're in! 🎉", "Your spot has been reserved for this event.");
+      Alert.alert(t("rsvpSuccessTitle"), t("rsvpSuccessMsg"));
       setEvents((prev) => prev.map((e) =>
         e.id === id ? { ...e, isBooked: true, attendeeCount: (e.attendeeCount || 0) + 1 } : e
       ));
     } catch (err: any) {
-      Alert.alert("Booking Failed", err?.response?.data?.message || "Something went wrong.");
+      Alert.alert(t("bookingFailedTitle"), err?.response?.data?.message || t("somethingWentWrong"));
     } finally {
       setBookingInProgress(false);
     }
@@ -102,9 +124,9 @@ export default function EventsScreen() {
     : events.filter((e) => (e.category || "").toLowerCase() === active.toLowerCase());
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Local events" />
+        <ScreenHeader title={t("localEventsHeader")} />
 
         {/* Filter chips */}
         <ScrollView
@@ -112,6 +134,7 @@ export default function EventsScreen() {
           showsHorizontalScrollIndicator={false}
           style={styles.filterScroll}
           contentContainerStyle={styles.filterContent}
+          showsVerticalScrollIndicator={false}
         >
           {filters.map((f) => (
             <TouchableOpacity
@@ -122,7 +145,7 @@ export default function EventsScreen() {
                 active === f ? { backgroundColor: tk.text } : glassSurface(tk),
               ]}
             >
-              <Text style={[styles.chipText, { color: active === f ? tk.bg : tk.textMuted }]}>{f}</Text>
+              <Text style={[styles.chipText, { color: active === f ? tk.bg : tk.textMuted }]}>{getFilterLabel(f)}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -137,9 +160,9 @@ export default function EventsScreen() {
           ) : filtered.length === 0 ? (
             <View style={[styles.emptyState, { backgroundColor: tk.card, borderColor: tk.border }]}>
               <CalendarDays size={40} color={tk.textMuted} style={{ marginBottom: 12 }} />
-              <Text style={[styles.emptyText, { color: tk.text }]}>No events found</Text>
+              <Text style={[styles.emptyText, { color: tk.text }]}>{t("noEventsFound")}</Text>
               <Text style={[styles.emptySubText, { color: tk.textMuted }]}>
-                Check back later for new events in your area.
+                {t("checkBackLaterEvents")}
               </Text>
             </View>
           ) : (
@@ -181,12 +204,12 @@ export default function EventsScreen() {
                         <View style={styles.badgeRow}>
                           <View style={[styles.typeBadge, { backgroundColor: pillBg }]}>
                             <Text style={[styles.typeBadgeText, { color: tk.text }]}>
-                              {(e.category || "General").toUpperCase()}
+                              {getCategoryLabel(e.category).toUpperCase()}
                             </Text>
                           </View>
                           {e.isBooked && (
                             <View style={[styles.typeBadge, { backgroundColor: pillBg }]}>
-                              <Text style={[styles.typeBadgeText, { color: colors.success }]}>✓ GOING</Text>
+                              <Text style={[styles.typeBadgeText, { color: colors.success }]}>{t("goingBadge")}</Text>
                             </View>
                           )}
                         </View>
@@ -210,14 +233,14 @@ export default function EventsScreen() {
                           <View style={styles.metaRow}>
                             <Users size={13} color={tk.textMuted} />
                             <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: tk.textMuted }}>
-                              {e.attendeeCount || 0} going
+                              {e.attendeeCount || 0} {t("goingCountText")}
                             </Text>
                           </View>
                           <TouchableOpacity
                             onPress={(ev) => {
                               ev.stopPropagation();
                               if (e.isBooked) {
-                                Alert.alert("Already Booked", "You're already going to this event!");
+                                Alert.alert(t("alreadyBookedTitle"), t("alreadyBookedMsg"));
                               } else {
                                 handleBookEvent(e.id);
                               }
@@ -228,7 +251,7 @@ export default function EventsScreen() {
                             ]}
                           >
                             <Text style={[styles.rsvpText, { color: e.isBooked ? tk.textMuted : tk.bg }]}>
-                              {e.isBooked ? "Booked" : "RSVP"}
+                              {e.isBooked ? t("bookedStatus") : t("rsvpAction")}
                             </Text>
                           </TouchableOpacity>
                         </View>

@@ -17,6 +17,7 @@ import { Avatar } from "../src/components/Avatar";
 import { petApi } from "../services/pet/petApi";
 import { colors } from "../src/lib/theme";
 import { useTokens, useThemeStore } from "../src/lib/theme-store";
+import { useLanguage } from "../src/lib/language-context";
 
 const { width } = Dimensions.get("window");
 
@@ -41,6 +42,7 @@ interface BirthdayPet {
 }
 
 export default function BirthdaysScreen() {
+  const { t, language } = useLanguage();
   const router = useRouter();
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
@@ -77,7 +79,8 @@ export default function BirthdaysScreen() {
       const nextAge = nextBday.getFullYear() - dob.getFullYear();
 
       // Format date
-      const formattedDate = nextBday.toLocaleDateString(undefined, {
+      const localeCode = language === 'hi' ? 'hi-IN' : (language === 'te' ? 'te-IN' : 'en-US');
+      const formattedDate = nextBday.toLocaleDateString(localeCode, {
         month: "long",
         day: "numeric",
       });
@@ -118,9 +121,9 @@ export default function BirthdaysScreen() {
   );
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Pet Birthdays" />
+        <ScreenHeader title={t("petBirthdaysHeaderTitle")} />
 
         {loading ? (
           <View style={styles.center}>
@@ -134,10 +137,10 @@ export default function BirthdaysScreen() {
             <View style={styles.headerSection}>
               <Cake size={36} color={colors.primary} style={styles.cakeIcon} />
               <Text style={[styles.titleText, { color: tk.text }]}>
-                Upcoming Celebrations
+                {t("upcomingCelebrationsTitle")}
               </Text>
               <Text style={[styles.subText, { color: tk.textMuted }]}>
-                Track and prepare for your furry friends' special days!
+                {t("upcomingCelebrationsSub")}
               </Text>
             </View>
 
@@ -145,23 +148,23 @@ export default function BirthdaysScreen() {
               <View style={[styles.emptyCard, { backgroundColor: tk.card, borderColor: tk.border }]}>
                 <Gift size={40} color={tk.textMuted} style={{ marginBottom: 12 }} />
                 <Text style={[styles.emptyText, { color: tk.text }]}>
-                  No birthdays found
+                  {t("noBirthdaysFoundTitle")}
                 </Text>
                 <Text style={[styles.emptySub, { color: tk.textMuted }]}>
-                  Make sure you have added your pets and set their Date of Birth! You can edit your pet profiles to add their birthdays.
+                  {t("noBirthdaysFoundSub")}
                 </Text>
               </View>
             ) : (
               pets.map((pet, i) => {
                 const tintBg = TINT_COLORS[i % TINT_COLORS.length];
-                
+
                 let countdownText = "";
                 if (pet.daysRemaining === 0 || pet.daysRemaining === 365) {
-                  countdownText = "Today! 🎉";
+                  countdownText = t("todayCelebration");
                 } else if (pet.daysRemaining === 1) {
-                  countdownText = "Tomorrow!";
+                  countdownText = t("tomorrowCelebration");
                 } else {
-                  countdownText = `In ${pet.daysRemaining} days`;
+                  countdownText = t("inDaysCelebration").replace("{days}", String(pet.daysRemaining));
                 }
 
                 return (
@@ -197,7 +200,7 @@ export default function BirthdaysScreen() {
                           {pet.breed || pet.species}
                         </Text>
                         <Text style={[styles.turningText, { color: colors.primary }]}>
-                          Turning {pet.nextAge} {pet.nextAge === 1 ? "year" : "years"} old
+                          {pet.nextAge === 1 ? t("turningYearOld").replace("{age}", String(pet.nextAge)) : t("turningYearsOld").replace("{age}", String(pet.nextAge))}
                         </Text>
                       </View>
                     </View>

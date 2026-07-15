@@ -10,6 +10,7 @@ import { petApi } from "../services/pet/petApi";
 import { uploadImage } from "../services/user/userApi";
 import { colors } from "../src/lib/theme";
 import { useTokens, useThemeStore } from "../src/lib/theme-store";
+import { useLanguage } from "../src/lib/language-context";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LocationPickerModal, LocationResult } from "../src/components/LocationPickerModal";
@@ -19,6 +20,7 @@ const PERSONALITY_TAGS = ["Friendly", "Playful", "Calm", "Active", "Independent"
 const SPECIES_OPTIONS = ["dog", "cat", "rabbit", "horse", "pigeon", "goat", "cow", "other"];
 
 export default function EditPetScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const tk = useTokens();
@@ -43,21 +45,49 @@ export default function EditPetScreen() {
   const [locating, setLocating] = useState(false);
   const [isLocationModalVisible, setLocationModalVisible] = useState(false);
 
-   const [keyboardVisible, setKeyboardVisible] = useState(false);
-    
-      useEffect(() => {
-        const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
-          setKeyboardVisible(true);
-        });
-        const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
-          setKeyboardVisible(false);
-        });
-    
-        return () => {
-          showSubscription.remove();
-          hideSubscription.remove();
-        };
-      }, []);
+  const getPersonalityLabel = (tag: string) => {
+    switch (tag) {
+      case "Friendly": return t("personalityFriendly");
+      case "Playful": return t("personalityPlayful");
+      case "Calm": return t("personalityCalm");
+      case "Active": return t("personalityActive");
+      case "Independent": return t("personalityIndependent");
+      case "Cuddly": return t("personalityCuddly");
+      case "Protective": return t("personalityProtective");
+      case "Curious": return t("personalityCurious");
+      default: return tag;
+    }
+  };
+
+  const getSpeciesLabel = (opt: string) => {
+    switch (opt) {
+      case "dog": return t("speciesDog");
+      case "cat": return t("speciesCat");
+      case "rabbit": return t("speciesRabbit");
+      case "horse": return t("speciesHorse");
+      case "pigeon": return t("speciesPigeon");
+      case "goat": return t("speciesGoat");
+      case "cow": return t("speciesCow");
+      case "other": return t("speciesOther");
+      default: return opt;
+    }
+  };
+
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (id) {
@@ -123,35 +153,35 @@ export default function EditPetScreen() {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Allow location access in device settings.');
+        Alert.alert(t("permissionDeniedTitle"), t("allowLocationAccessSettings"));
         return;
       }
       let location = await Location.getLastKnownPositionAsync();
       if (!location) {
         location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       }
-      
+
       if (!location) {
-        Alert.alert('Error', 'Failed to fetch location.');
+        Alert.alert(t("errorTitle"), t("failedToFetchLocation"));
         setLocating(false);
         return;
       }
-      
+
       const lat = location.coords.latitude;
       const lon = location.coords.longitude;
-      
+
       const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
         headers: { 'User-Agent': 'FurrCircleApp/1.0' }
       });
       const data = await response.json();
-      
+
       if (data && data.address) {
         const foundCity = data.address.city || data.address.town || data.address.village || data.address.county || "Unknown City";
         setCity(foundCity);
       }
     } catch (err) {
       console.error(err);
-      Alert.alert('Error', 'Failed to fetch current location.');
+      Alert.alert(t("errorTitle"), t("failedToFetchCurrentLocation"));
     } finally {
       setLocating(false);
     }
@@ -161,13 +191,13 @@ export default function EditPetScreen() {
     setPersonality((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
 
   const save = async () => {
-    if (!name.trim()) { Alert.alert("Required", "Please enter your pet's name."); return; }
-    if (!species.trim()) { Alert.alert("Required", "Please select or enter your pet's species."); return; }
-    if (!breed.trim()) { Alert.alert("Required", "Please enter your pet's breed."); return; }
-    if (!birthDate) { Alert.alert("Required", "Please select your pet's Date of Birth."); return; }
+    if (!name.trim()) { Alert.alert(t("requiredTitle"), t("pleaseEnterPetName")); return; }
+    if (!species.trim()) { Alert.alert(t("requiredTitle"), t("pleaseSelectPetSpecies")); return; }
+    if (!breed.trim()) { Alert.alert(t("requiredTitle"), t("pleaseEnterPetBreed")); return; }
+    if (!birthDate) { Alert.alert(t("requiredTitle"), t("pleaseSelectPetDOB")); return; }
     if (!id) return;
     setSaving(true);
-    
+
     const today = new Date();
     let years = today.getFullYear() - birthDate.getFullYear();
     let months = today.getMonth() - birthDate.getMonth();
@@ -175,7 +205,7 @@ export default function EditPetScreen() {
       years--;
       months += 12;
     }
-    const calculatedAge = years > 0 ? `${years}` : (months > 0 ? `${months} mo` : '< 1 mo');
+    const calculatedAge = years > 0 ? `${years}` : (months > 0 ? t("monthsShort").replace("{months}", String(months)) : t("lessThanOneMonth"));
 
     try {
       let avatarUrl = photo;
@@ -198,88 +228,89 @@ export default function EditPetScreen() {
       });
       router.back();
     } catch (err: any) {
-      Alert.alert("Error updating pet", err?.response?.data?.message || err.message);
+      Alert.alert(t("errorUpdatingPet"), err?.response?.data?.message || err.message);
       setSaving(false);
     }
   };
 
   if (loading) {
     return (
-      <PageContainer>
+      <PageContainer noAmbient={true}>
         <View style={[styles.container, { backgroundColor: tk.bg, justifyContent: "center", alignItems: "center" }]}>
-          <Text style={{ color: tk.text }}>Loading...</Text>
+          <Text style={{ color: tk.text }}>{t("loading")}</Text>
         </View>
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
         style={{ flex: 1 }}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
-          <ScreenHeader title="Edit pet" />
+          <ScreenHeader title={t("editPetHeaderTitle")} />
           <ScrollView
+          showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ paddingBottom: 60 + (insets.bottom > 0 ? insets.bottom : 0), paddingHorizontal: 20 }}
           >
-        <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { borderColor: tk.border, backgroundColor: tk.card }]} activeOpacity={0.8}>
-          {photo ? (
-            <>
-              <Image source={{ uri: photo }} style={styles.photoPreview} />
-              <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", gap: 8 }]}>
-                <Camera size={32} color="#FFFFFF" />
-                <Text style={[styles.photoBtnText, { color: "#FFFFFF" }]}>Change photo</Text>
+            <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { borderColor: tk.border, backgroundColor: tk.card }]} activeOpacity={0.8}>
+              {photo ? (
+                <>
+                  <Image source={{ uri: photo }} style={styles.photoPreview} />
+                  <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", gap: 8 }]}>
+                    <Camera size={32} color="#FFFFFF" />
+                    <Text style={[styles.photoBtnText, { color: "#FFFFFF" }]}>{t("changePhotoBtn")}</Text>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <Camera size={32} color={tk.textMuted} />
+                  <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>{t("addPhotoBtn")}</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <Text style={[styles.label, { color: tk.textMuted }]}>{t("nameLabel")}</Text>
+            <TextInput value={name} onChangeText={setName} placeholder={t("petNamePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+
+            <Text style={[styles.label, { color: tk.textMuted }]}>{t("speciesLabel")}</Text>
+            <TouchableOpacity
+              onPress={() => setShowSpeciesSheet(true)}
+              style={[styles.input, { backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: selectedOption ? tk.text : tk.textMuted, fontFamily: "Inter_400Regular" }}>
+                {selectedOption ? getSpeciesLabel(selectedOption) : t("selectSpeciesPlaceholder")}
+              </Text>
+              <ChevronDown size={20} color={tk.textMuted} />
+            </TouchableOpacity>
+
+            {selectedOption === "other" && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={[styles.label, { color: tk.textMuted, marginTop: 4 }]}>{t("customSpeciesLabel")}</Text>
+                <TextInput
+                  value={otherSpecies}
+                  onChangeText={(val) => {
+                    setOtherSpecies(val);
+                    setSpecies(val.trim());
+                  }}
+                  placeholder={t("customSpeciesPlaceholder")}
+                  placeholderTextColor={tk.textMuted}
+                  style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]}
+                />
               </View>
-            </>
-          ) : (
-            <>
-              <Camera size={32} color={tk.textMuted} />
-              <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>Add photo</Text>
-            </>
-          )}
-        </TouchableOpacity>
+            )}
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>Name</Text>
-        <TextInput value={name} onChangeText={setName} placeholder="e.g. Moona" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+            <Text style={[styles.label, { color: tk.textMuted }]}>{t("breedLabel")}</Text>
+            <TextInput value={breed} onChangeText={setBreed} placeholder={t("breedPlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>Species</Text>
-        <TouchableOpacity
-          onPress={() => setShowSpeciesSheet(true)}
-          style={[styles.input, { backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}
-          activeOpacity={0.7}
-        >
-          <Text style={{ color: selectedOption ? tk.text : tk.textMuted, fontFamily: "Inter_400Regular" }}>
-            {selectedOption ? (selectedOption.charAt(0).toUpperCase() + selectedOption.slice(1)) : "Select Species"}
-          </Text>
-          <ChevronDown size={20} color={tk.textMuted} />
-        </TouchableOpacity>
+            <Text style={[styles.label, { color: tk.textMuted }]}>{t("weightStatLabel")}</Text>
+            <TextInput value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder="e.g. 12" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
 
-        {selectedOption === "other" && (
-          <View style={{ marginTop: 12 }}>
-            <Text style={[styles.label, { color: tk.textMuted, marginTop: 4 }]}>Custom Species</Text>
-            <TextInput
-              value={otherSpecies}
-              onChangeText={(val) => {
-                setOtherSpecies(val);
-                setSpecies(val.trim());
-              }}
-              placeholder="Enter species type"
-              placeholderTextColor={tk.textMuted}
-              style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]}
-            />
-          </View>
-        )}
-
-        <Text style={[styles.label, { color: tk.textMuted }]}>Breed</Text>
-        <TextInput value={breed} onChangeText={setBreed} placeholder="e.g. Border Collie" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-
-        <Text style={[styles.label, { color: tk.textMuted }]}>Weight</Text>
-        <TextInput value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder="e.g. 12" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-
-        {/* <Text style={[styles.label, { color: tk.textMuted }]}>City</Text>
+            {/* <Text style={[styles.label, { color: tk.textMuted }]}>City</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TouchableOpacity
             style={[styles.input, { flex: 1, backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, justifyContent: 'center' }]}
@@ -295,72 +326,72 @@ export default function EditPetScreen() {
           </TouchableOpacity>
         </View> */}
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>Gender</Text>
-        <View style={styles.toggle}>
-          {(["female", "male"] as const).map((g) => {
-            const isActive = gender === g;
-            return (
-              <TouchableOpacity key={g} onPress={() => setGender(g)} style={[styles.toggleBtn, { backgroundColor: isActive ? tk.text : tk.card }]}>
-                <Text style={[styles.toggleText, { color: isActive ? tk.bg : tk.textMuted }]}>{g === "female" ? "♀ Female" : "♂ Male"}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+            <Text style={[styles.label, { color: tk.textMuted }]}>{t("genderLabel")}</Text>
+            <View style={styles.toggle}>
+              {(["female", "male"] as const).map((g) => {
+                const isActive = gender === g;
+                return (
+                  <TouchableOpacity key={g} onPress={() => setGender(g)} style={[styles.toggleBtn, { backgroundColor: isActive ? tk.text : tk.card }]}>
+                    <Text style={[styles.toggleText, { color: isActive ? tk.bg : tk.textMuted }]}>{g === "female" ? t("femaleGenderOption") : t("maleGenderOption")}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>Date of Birth</Text>
-        {Platform.OS === 'ios' ? (
-          <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
-            <DateTimePicker
-              value={birthDate || new Date()}
-              mode="date"
-              display="default"
-              maximumDate={new Date()}
-              themeVariant={dark ? "dark" : "light"}
-              onChange={(e, date) => {
-                if (date) setBirthDate(date);
-              }}
-            />
-          </View>
-        ) : (
-          <>
-            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.input, { backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, justifyContent: 'center' }]} activeOpacity={0.8}>
-              <Text style={{ color: birthDate ? tk.text : tk.textMuted, fontFamily: "Inter_400Regular" }}>
-                {birthDate ? birthDate.toLocaleDateString() : "Select Date of Birth"}
-              </Text>
-            </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                value={birthDate || new Date()}
-                mode="date"
-                display="default"
-                maximumDate={new Date()}
-                onChange={(e, date) => {
-                  setShowDatePicker(false);
-                  if (date) setBirthDate(date);
-                }}
-              />
+            <Text style={[styles.label, { color: tk.textMuted }]}>{t("dateOfBirthLabel")}</Text>
+            {Platform.OS === 'ios' ? (
+              <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
+                <DateTimePicker
+                  value={birthDate || new Date()}
+                  mode="date"
+                  display="default"
+                  maximumDate={new Date()}
+                  themeVariant={dark ? "dark" : "light"}
+                  onChange={(e, date) => {
+                    if (date) setBirthDate(date);
+                  }}
+                />
+              </View>
+            ) : (
+              <>
+                <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.input, { backgroundColor: tk.inputBg, borderWidth: 1, borderColor: tk.border, justifyContent: 'center' }]} activeOpacity={0.8}>
+                  <Text style={{ color: birthDate ? tk.text : tk.textMuted, fontFamily: "Inter_400Regular" }}>
+                    {birthDate ? birthDate.toLocaleDateString() : t("selectDateOfBirthPlaceholder")}
+                  </Text>
+                </TouchableOpacity>
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={birthDate || new Date()}
+                    mode="date"
+                    display="default"
+                    maximumDate={new Date()}
+                    onChange={(e, date) => {
+                      setShowDatePicker(false);
+                      if (date) setBirthDate(date);
+                    }}
+                  />
+                )}
+              </>
             )}
-          </>
-        )}
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>Microchip ID</Text>
-        <TextInput value={microchipId} onChangeText={setMicrochipId} placeholder="e.g. 981020000345119" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+            <Text style={[styles.label, { color: tk.textMuted }]}>{t("microchipIdLabel")}</Text>
+            <TextInput value={microchipId} onChangeText={setMicrochipId} placeholder={t("microchipIdPlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>Personality</Text>
-        <View style={styles.tagRow}>
-          {PERSONALITY_TAGS.map((t) => {
-            const isActive = personality.includes(t);
-            return (
-              <TouchableOpacity key={t} onPress={() => toggleTag(t)} style={[styles.tag, { backgroundColor: isActive ? "rgba(37,99,235,0.12)" : tk.card }]}>
-                <Text style={[styles.tagText, { color: isActive ? colors.primary : tk.textMuted }]}>{t}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+            <Text style={[styles.label, { color: tk.textMuted }]}>{t("personalityLabel")}</Text>
+            <View style={styles.tagRow}>
+              {PERSONALITY_TAGS.map((tagItem) => {
+                const isActive = personality.includes(tagItem);
+                return (
+                  <TouchableOpacity key={tagItem} onPress={() => toggleTag(tagItem)} style={[styles.tag, { backgroundColor: isActive ? "rgba(37,99,235,0.12)" : tk.card }]}>
+                    <Text style={[styles.tagText, { color: isActive ? colors.primary : tk.textMuted }]}>{getPersonalityLabel(tagItem)}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
-        <TouchableOpacity onPress={save} disabled={saving} style={styles.saveBtn} activeOpacity={0.85}>
-          <Text style={styles.saveBtnText}>{saving ? "Saving…" : "Save changes"}</Text>
-        </TouchableOpacity>
+            <TouchableOpacity onPress={save} disabled={saving} style={styles.saveBtn} activeOpacity={0.85}>
+              <Text style={styles.saveBtnText}>{saving ? t("savingProgress") : t("saveChangesBtn")}</Text>
+            </TouchableOpacity>
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -374,7 +405,7 @@ export default function EditPetScreen() {
       <AdaptiveSheet visible={showSpeciesSheet} onClose={() => setShowSpeciesSheet(false)}>
         <View style={{ padding: 24, backgroundColor: tk.card }}>
           <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 18, color: tk.text, marginBottom: 16 }}>
-            Select Species
+            {t("selectSpeciesPlaceholder")}
           </Text>
           <ScrollView style={{ maxHeight: 300 }} keyboardShouldPersistTaps="handled">
             {SPECIES_OPTIONS.map((opt) => (
@@ -403,7 +434,7 @@ export default function EditPetScreen() {
                   fontSize: 16,
                   color: selectedOption === opt ? colors.primary : tk.text
                 }}>
-                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                  {getSpeciesLabel(opt)}
                 </Text>
               </TouchableOpacity>
             ))}

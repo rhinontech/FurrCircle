@@ -29,6 +29,7 @@ import { petApi } from "../services/pet/petApi";
 import { reminderApi } from "../services/reminder/reminderApi";
 import { colors } from "../src/lib/theme";
 import { useTokens, useThemeStore } from "../src/lib/theme-store";
+import { useLanguage } from "../src/lib/language-context";
 
 const TINT_COLORS = [
   "rgba(255,107,107,0.12)",
@@ -42,6 +43,7 @@ export default function RemindersScreen() {
   const router = useRouter();
   const tk = useTokens();
   const dark = useThemeStore((s) => s.dark);
+  const { t } = useLanguage();
 
   const [reminders, setReminders] = useState<any[]>([]);
   const [pets, setPets] = useState<any[]>([]);
@@ -77,18 +79,18 @@ export default function RemindersScreen() {
       );
     } catch (err) {
       console.error("Error toggling reminder:", err);
-      Alert.alert("Error", "Failed to update reminder status.");
+      Alert.alert(t("errorTitle"), t("failedToUpdateReminderStatus"));
     }
   };
 
   const handleDelete = (id: string) => {
     Alert.alert(
-      "Delete Reminder",
-      "Are you sure you want to delete this reminder?",
+      t("deleteReminderTitle"),
+      t("deleteReminderConfirm"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("deleteAction"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -96,7 +98,7 @@ export default function RemindersScreen() {
               setReminders((prev) => prev.filter((r) => r.id !== id));
             } catch (err) {
               console.error("Error deleting reminder:", err);
-              Alert.alert("Error", "Failed to delete reminder.");
+              Alert.alert(t("errorTitle"), t("failedToDeleteReminder"));
             }
           },
         },
@@ -105,9 +107,9 @@ export default function RemindersScreen() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
-        <ScreenHeader title="Reminders" />
+        <ScreenHeader title={t("remindersHeaderTitle")} />
 
         {loading ? (
           <View style={styles.center}>
@@ -120,7 +122,7 @@ export default function RemindersScreen() {
           >
             <View style={styles.headerRow}>
               <Text style={[styles.sectionTitle, { color: tk.text }]}>
-                All Reminders
+                {t("allRemindersSectionTitle")}
               </Text>
               <TouchableOpacity
                 onPress={() => router.push("/vets/reminder")}
@@ -128,7 +130,7 @@ export default function RemindersScreen() {
                 activeOpacity={0.8}
               >
                 <Plus size={16} color={colors.white} />
-                <Text style={styles.addBtnText}>Add New</Text>
+                <Text style={styles.addBtnText}>{t("addNewBtn")}</Text>
               </TouchableOpacity>
             </View>
 
@@ -136,10 +138,10 @@ export default function RemindersScreen() {
               <View style={[styles.emptyCard, { backgroundColor: tk.card, borderColor: tk.border }]}>
                 <Bell size={40} color={tk.textMuted} style={{ marginBottom: 12 }} />
                 <Text style={[styles.emptyText, { color: tk.text }]}>
-                  No reminders scheduled.
+                  {t("noRemindersScheduled")}
                 </Text>
                 <Text style={[styles.emptySub, { color: tk.textMuted }]}>
-                  Set reminders for appointments, vaccinations, medications, and more to keep your pets healthy!
+                  {t("noRemindersDescription")}
                 </Text>
               </View>
             ) : (
@@ -149,13 +151,13 @@ export default function RemindersScreen() {
                   r.type === "appointment"
                     ? Stethoscope
                     : (r.type === "vaccination" || r.type === "vaccine")
-                    ? Syringe
-                    : r.type === "medication"
-                    ? Pill
-                    : Bell;
+                      ? Syringe
+                      : r.type === "medication"
+                        ? Pill
+                        : Bell;
 
-                let dateText = "No date";
-                let timeText = "No time";
+                let dateText = t("noDateLabel");
+                let timeText = t("noTimeLabel");
                 if (r.date) {
                   const dt = new Date(`${r.date}T${r.time || "00:00"}`);
                   dateText = dt.toLocaleDateString(undefined, {
@@ -203,7 +205,7 @@ export default function RemindersScreen() {
                             {r.title}
                           </Text>
                           <Text style={[styles.petName, { color: colors.primary }]}>
-                            {pet?.name || "All Pets"}
+                            {pet?.name || t("allPetsFallback")}
                           </Text>
                         </View>
                       </TouchableOpacity>
@@ -235,7 +237,15 @@ export default function RemindersScreen() {
                       <View style={[styles.badge, { backgroundColor: tintBg }]}>
                         <IconComponent size={14} color={tk.text} style={{ marginRight: 6 }} />
                         <Text style={[styles.badgeText, { color: tk.text }]}>
-                          {r.type.toUpperCase()}
+                          {(r.type === "appointment"
+                            ? t("reminderTypeAppointment")
+                            : (r.type === "vaccination" || r.type === "vaccine")
+                              ? t("reminderTypeVaccination")
+                              : r.type === "medication"
+                                ? t("reminderTypeMedication")
+                                : r.type === "grooming"
+                                  ? t("reminderTypeGrooming")
+                                  : t("reminderTypeOther")).toUpperCase()}
                         </Text>
                       </View>
 

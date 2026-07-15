@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Share, Modal, Pressable } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert, Share, Modal, Pressable, Platform } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Users, Plus, ThumbsUp, MessageCircle, ChevronRight, Share2, MoreVertical, UserPlus, LogOut, Trash2, Edit2 } from "../../src/components/ui/icons";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
@@ -6,11 +6,13 @@ import { PageContainer } from "../../src/components/PageContainer";
 import { ShareSheet } from "../../src/components/ShareSheet";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { useAuthStore } from "../../src/lib/auth-store";
 import { circleApi } from "../../services/community/circleApi";
 import { questionApi } from "../../services/community/questionApi";
 import { socketService } from "../../services/socket/socketService";
 import { useState, useCallback, useEffect } from "react";
+import { useBreakpoint } from "../../src/lib/breakpoints";
 
 const CATEGORY_COLORS: Record<string, string> = {
   dogs: "rgba(255,107,107,0.15)",
@@ -22,10 +24,12 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function CommunityDetail() {
+  const { t } = useLanguage();
   const { slug, refresh } = useLocalSearchParams<{ slug: string; refresh?: string }>();
   const router = useRouter();
   const tk = useTokens();
   const { user } = useAuthStore();
+  const { isTablet } = useBreakpoint();
 
   const [circle, setCircle] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
@@ -109,7 +113,7 @@ export default function CommunityDetail() {
       await circleApi.joinCircle(circle.id);
       setCircle((prev: any) => ({ ...prev, isJoined: true, memberCount: prev.memberCount + 1 }));
     } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || "Action failed.");
+      Alert.alert(t("error"), err?.response?.data?.message || t("actionFailed"));
     } finally {
       setJoining(false);
     }
@@ -120,9 +124,9 @@ export default function CommunityDetail() {
     if (!circle) return;
     try {
       await Share.share({
-        message: `Join "${circle.name}" on FurrCircle! https://furrcircle.com/circle/${circle.id}`,
+        message: `${t("joinInviteMsg")} "${circle.name}" ${t("joinInviteMsg2")} https://furrcircle.com/circle/${circle.id}`,
         url: `https://furrcircle.com/circle/${circle.id}`,
-        title: `Join "${circle.name}" on FurrCircle!`,
+        title: `${t("joinInviteMsg")} "${circle.name}" ${t("joinInviteMsg2")}`,
       });
     } catch { /* user dismissed the share sheet */ }
   };
@@ -130,17 +134,17 @@ export default function CommunityDetail() {
   const handleLeave = () => {
     if (!circle) return;
     setMenuOpen(false);
-    Alert.alert("Leave Circle", `Leave "${circle.name}"?`, [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("leaveCircleAlertTitle"), `${t("leaveCircleAlertMsg")} "${circle.name}"?`, [
+      { text: t("cancel"), style: "cancel" },
       {
-        text: "Leave",
+        text: t("leave"),
         style: "destructive",
         onPress: async () => {
           try {
             await circleApi.leaveCircle(circle.id);
             setCircle((prev: any) => ({ ...prev, isJoined: false, memberCount: Math.max(0, prev.memberCount - 1) }));
           } catch (err: any) {
-            Alert.alert("Error", err?.response?.data?.message || "Failed to leave circle.");
+            Alert.alert(t("error"), err?.response?.data?.message || t("failedToLeaveCircle"));
           }
         },
       },
@@ -151,19 +155,19 @@ export default function CommunityDetail() {
     if (!circle) return;
     setMenuOpen(false);
     Alert.alert(
-      "Delete Circle",
-      `Permanently delete "${circle.name}"? This removes all its discussions and cannot be undone.`,
+      t("deleteCircleAlertTitle"),
+      `${t("deleteCircleAlertMsg")} "${circle.name}"? ${t("deleteCircleAlertMsg2")}`,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("delete"),
           style: "destructive",
           onPress: async () => {
             try {
               await circleApi.deleteCircle(circle.id);
               router.back();
             } catch (err: any) {
-              Alert.alert("Error", err?.response?.data?.message || "Failed to delete circle.");
+              Alert.alert(t("error"), err?.response?.data?.message || t("failedToDeleteCircle"));
             }
           },
         },
@@ -196,9 +200,9 @@ export default function CommunityDetail() {
 
   if (loading) {
     return (
-      <PageContainer>
+      <PageContainer noAmbient={true}>
         <View style={{ flex: 1, backgroundColor: tk.bg }}>
-          <ScreenHeader title="Circle" />
+          <ScreenHeader title={t("circleHeaderTitle")} />
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
@@ -209,11 +213,11 @@ export default function CommunityDetail() {
 
   if (!circle) {
     return (
-      <PageContainer>
+      <PageContainer noAmbient={true}>
         <View style={{ flex: 1, backgroundColor: tk.bg }}>
-          <ScreenHeader title="Circle" />
+          <ScreenHeader title={t("circleHeaderTitle")} />
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
-            <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 16, color: tk.text }}>Circle not found</Text>
+            <Text style={{ fontFamily: "Poppins_700Bold", fontSize: 16, color: tk.text }}>{t("circleNotFound")}</Text>
           </View>
         </View>
       </PageContainer>
@@ -223,7 +227,7 @@ export default function CommunityDetail() {
   const coverBg = CATEGORY_COLORS[circle.category] || "rgba(37,99,235,0.1)";
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
           title={circle.name}
@@ -233,7 +237,7 @@ export default function CommunityDetail() {
             </TouchableOpacity>
           }
         />
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
           {/* Cover */}
           <View style={[styles.cover, { backgroundColor: coverBg }]}>
             {circle.coverImage ? (
@@ -256,7 +260,7 @@ export default function CommunityDetail() {
             <View style={styles.membersRow}>
               <Users size={14} color={tk.textMuted} />
               <Text style={[styles.membersText, { color: tk.textMuted }]}>
-                {circle.memberCount >= 1000 ? `${(circle.memberCount / 1000).toFixed(1)}k` : circle.memberCount} members
+                {circle.memberCount >= 1000 ? `${(circle.memberCount / 1000).toFixed(1)}k` : circle.memberCount} {t("members")}
               </Text>
             </View>
             {circle.description ? (
@@ -271,30 +275,30 @@ export default function CommunityDetail() {
               {joining
                 ? <ActivityIndicator size="small" color={circle.isJoined ? colors.primary : colors.white} />
                 : <View style={styles.joinBtnInner}>
-                    {circle.isJoined && <UserPlus size={18} color={colors.primary} />}
-                    <Text style={[styles.joinBtnText, circle.isJoined && { color: colors.primary }]}>
-                      {circle.isJoined ? "Invite members" : "Join Circle"}
-                    </Text>
-                  </View>
+                  {circle.isJoined && <UserPlus size={18} color={colors.primary} />}
+                  <Text style={[styles.joinBtnText, circle.isJoined && { color: colors.primary }]}>
+                    {circle.isJoined ? t("inviteMembers") : t("joinCircle")}
+                  </Text>
+                </View>
               }
             </TouchableOpacity>
           </View>
 
           {/* Discussions */}
           <View style={styles.sectionRow}>
-            <Text style={[styles.sectionTitle, { color: tk.text }]}>Discussions</Text>
+            <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("discussions")}</Text>
             <TouchableOpacity
               onPress={() => router.push({ pathname: "/ask", params: { circleId: circle.id, circleName: circle.name } })}
               style={styles.askBtn}
             >
               <Plus size={14} color={colors.primary} />
-              <Text style={styles.askBtnText}>Ask</Text>
+              <Text style={styles.askBtnText}>{t("ask")}</Text>
             </TouchableOpacity>
           </View>
 
           {questions.length === 0 ? (
             <View style={{ paddingHorizontal: 16, paddingVertical: 24, alignItems: "center" }}>
-              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted }}>No discussions yet. Be the first to ask!</Text>
+              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: tk.textMuted }}>{t("noDiscussionsYet")}</Text>
             </View>
           ) : (
             questions.map((q: any) => (
@@ -309,7 +313,7 @@ export default function CommunityDetail() {
                     title: q.title,
                     body: q.body || "",
                     tags: q.tags?.[0] || "",
-                    askerName: q.author?.name || "Someone",
+                    askerName: q.author?.name || t("petParent"),
                     time: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : "",
                     upvotes: q.upvotes || 0,
                     hasVoted: q.hasVoted ? "1" : "0",
@@ -327,14 +331,14 @@ export default function CommunityDetail() {
                 <View style={styles.threadFooter}>
                   <TouchableOpacity onPress={(e) => { (e as any).stopPropagation?.(); handleUpvote(q.id); }} style={styles.threadAction}>
                     <ThumbsUp size={13} color={q.hasVoted ? colors.primary : tk.textMuted} fill={q.hasVoted ? colors.primary : "none"} />
-                    <Text style={[styles.threadMeta, { color: q.hasVoted ? colors.primary : tk.textMuted, fontFamily: q.hasVoted ? "Poppins_600SemiBold" : "Inter_400Regular" }]}>{q.upvotes} upvotes</Text>
+                    <Text style={[styles.threadMeta, { color: q.hasVoted ? colors.primary : tk.textMuted, fontFamily: q.hasVoted ? "Poppins_600SemiBold" : "Inter_400Regular" }]}>{q.upvotes} {t("upvotes")}</Text>
                   </TouchableOpacity>
                   <View style={styles.threadAction}>
                     <MessageCircle size={13} color={tk.textMuted} />
-                    <Text style={[styles.threadMeta, { color: tk.textMuted }]}>{q.answerCount || 0} replies</Text>
+                    <Text style={[styles.threadMeta, { color: tk.textMuted }]}>{q.answerCount || 0} {t("replies")}</Text>
                   </View>
                   {q.author?.name && (
-                    <Text style={[styles.threadMeta, { color: tk.textMuted, marginLeft: "auto" }]}>by {q.author.name.split(" ")[0]}</Text>
+                    <Text style={[styles.threadMeta, { color: tk.textMuted, marginLeft: "auto" }]}>{t("byAuthor")} {q.author.name.split(" ")[0]}</Text>
                   )}
                 </View>
               </TouchableOpacity>
@@ -349,51 +353,64 @@ export default function CommunityDetail() {
         onClose={() => setShareOpen(false)}
         circleId={slug}
       />
-
       {/* 3-dot dropdown menu */}
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-        <Pressable style={styles.menuOverlay} onPress={() => setMenuOpen(false)}>
-          <View style={[styles.menuCard, { backgroundColor: tk.card, borderColor: tk.border }]}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => { setMenuOpen(false); setShareOpen(true); }}
-              activeOpacity={0.7}
-            >
-              <Share2 size={18} color={tk.text} />
-              <Text style={[styles.menuItemText, { color: tk.text }]}>Send to a friend</Text>
-            </TouchableOpacity>
-
-            {circle.isAdmin ? (
-              <>
-                <TouchableOpacity
-                  style={styles.menuItem}
-                  onPress={() => { setMenuOpen(false); router.push({ pathname: "/edit-circle", params: { id: circle.id } }); }}
-                  activeOpacity={0.7}
-                >
-                  <Edit2 size={18} color={tk.text} />
-                  <Text style={[styles.menuItemText, { color: tk.text }]}>Edit Circle</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem} onPress={handleDelete} activeOpacity={0.7}>
-                  <Trash2 size={18} color={colors.coral} />
-                  <Text style={[styles.menuItemText, { color: colors.coral }]}>Delete Circle</Text>
-                </TouchableOpacity>
-              </>
-            ) : circle.isJoined ? (
-              <TouchableOpacity style={styles.menuItem} onPress={handleLeave} activeOpacity={0.7}>
-                <LogOut size={18} color={colors.coral} />
-                <Text style={[styles.menuItemText, { color: colors.coral }]}>Leave Circle</Text>
+        <Pressable style={[styles.menuOverlay, isTablet && styles.menuOverlayTablet]} onPress={() => setMenuOpen(false)}>
+          <Pressable style={isTablet ? styles.menuContainerTablet : styles.menuContainerMobile} onPress={(e) => e.stopPropagation()}>
+            <View style={[styles.menuCard, { backgroundColor: tk.card, borderColor: tk.border }]}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => { setMenuOpen(false); setShareOpen(true); }}
+                activeOpacity={0.7}
+              >
+                <Share2 size={18} color={tk.text} />
+                <Text style={[styles.menuItemText, { color: tk.text }]}>{t("sendToFriend")}</Text>
               </TouchableOpacity>
-            ) : null}
-          </View>
+
+              {circle.isAdmin ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => { setMenuOpen(false); router.push({ pathname: "/edit-circle", params: { id: circle.id } }); }}
+                    activeOpacity={0.7}
+                  >
+                    <Edit2 size={18} color={tk.text} />
+                    <Text style={[styles.menuItemText, { color: tk.text }]}>{t("editCircle")}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.menuItem} onPress={handleDelete} activeOpacity={0.7}>
+                    <Trash2 size={18} color={colors.coral} />
+                    <Text style={[styles.menuItemText, { color: colors.coral }]}>{t("deleteCircle")}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : circle.isJoined ? (
+                <TouchableOpacity style={styles.menuItem} onPress={handleLeave} activeOpacity={0.7}>
+                  <LogOut size={18} color={colors.coral} />
+                  <Text style={[styles.menuItemText, { color: colors.coral }]}>{t("leaveCircle")}</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </Pressable>
         </Pressable>
       </Modal>
+
+      
     </PageContainer>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  cover: { width: "100%", aspectRatio: 16 / 9, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  cover: { 
+    width: "100%", 
+    aspectRatio: 16 / 9, 
+    alignItems: "center", 
+    justifyContent: "center", 
+    overflow: "hidden",
+    ...Platform.select({
+      web: { borderRadius: 10 },
+      default: {},
+    }),
+  },
   info: { borderRadius: 24, margin: 16, padding: 20 },
   circleName: { fontFamily: "Poppins_700Bold", fontSize: 22 },
   categoryBadge: { alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3, marginTop: 6 },
@@ -406,6 +423,21 @@ const styles = StyleSheet.create({
   joinBtnInner: { flexDirection: "row", alignItems: "center", gap: 8 },
   joinBtnText: { fontFamily: "Poppins_700Bold", fontSize: 15, color: colors.white },
   menuOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.15)", paddingTop: 96, paddingRight: 16, alignItems: "flex-end" },
+  menuOverlayTablet: {
+    alignItems: "center",
+    paddingRight: 0,
+  },
+  menuContainerTablet: {
+    width: "100%",
+    maxWidth: 680,
+    alignItems: "flex-end",
+    paddingRight: 16,
+  },
+  menuContainerMobile: {
+    width: "100%",
+    alignItems: "flex-end",
+    paddingRight: 16,
+  },
   menuCard: { borderRadius: 14, borderWidth: 1, paddingVertical: 6, minWidth: 200, shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
   menuItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
   menuItemText: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },

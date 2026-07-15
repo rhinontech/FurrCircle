@@ -5,11 +5,13 @@ import { ScreenHeader } from "../src/components/ScreenHeader";
 import { PageContainer } from "../src/components/PageContainer";
 import { colors } from "../src/lib/theme";
 import { useTokens } from "../src/lib/theme-store";
+import { useLanguage } from "../src/lib/language-context";
 import { circleApi } from "../services/community/circleApi";
 import { questionApi } from "../services/community/questionApi";
 import { useState, useEffect } from "react";
 
 export default function AskScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const tk = useTokens();
   const params = useLocalSearchParams<{ circleId?: string; circleName?: string }>();
@@ -31,7 +33,7 @@ export default function AskScreen() {
 
   const handlePost = async () => {
     if (!title.trim()) {
-      Alert.alert("Required", "Please write your question first.");
+      Alert.alert(t("requiredTitle"), t("pleaseWriteQuestionFirst"));
       return;
     }
     if (submitting) return;
@@ -48,19 +50,19 @@ export default function AskScreen() {
       router.back();
     } catch (err: any) {
       setSubmitting(false);
-      Alert.alert("Error", err?.response?.data?.message || "Failed to post question.");
+      Alert.alert(t("errorTitle"), err?.response?.data?.message || t("failedToPostQuestionMsg"));
     }
   };
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
         <ScreenHeader
-          title="Ask the Community"
+          title={t("askCommunityHeaderTitle")}
           right={
             <TouchableOpacity onPress={() => router.back()} style={[styles.closeBtn, { backgroundColor: tk.card }]}>
               <X size={20} color={tk.text} />
@@ -68,9 +70,9 @@ export default function AskScreen() {
           }
           showBack={false}
         />
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
           {/* Circle selector */}
-          <Text style={[styles.label, { color: tk.textMuted }]}>Circle (optional)</Text>
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("circleOptionalLabel")}</Text>
           {loadingCircles ? (
             <ActivityIndicator color={colors.primary} style={{ marginBottom: 8 }} />
           ) : (
@@ -79,7 +81,7 @@ export default function AskScreen() {
                 onPress={() => setSelectedCircleId(null)}
                 style={[styles.circleBtn, { backgroundColor: !selectedCircleId ? tk.text : tk.card }]}
               >
-                <Text style={[styles.circleBtnText, { color: !selectedCircleId ? tk.bg : tk.textMuted }]}>Global</Text>
+                <Text style={[styles.circleBtnText, { color: !selectedCircleId ? tk.bg : tk.textMuted }]}>{t("globalCircleOption")}</Text>
               </TouchableOpacity>
               {circles.map((c: any) => {
                 const isActive = selectedCircleId === c.id;
@@ -97,35 +99,35 @@ export default function AskScreen() {
           )}
 
           {/* Question title */}
-          <Text style={[styles.label, { color: tk.textMuted }]}>Question</Text>
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("questionLabel")}</Text>
           <TextInput
             value={title}
             onChangeText={setTitle}
-            placeholder="What's your question?"
+            placeholder={t("questionPlaceholder")}
             placeholderTextColor={tk.textMuted}
             style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, borderWidth: 1 }]}
           />
 
           {/* Details */}
-          <Text style={[styles.label, { color: tk.textMuted }]}>Details (optional)</Text>
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("detailsOptionalLabel")}</Text>
           <TextInput
             value={body}
             onChangeText={setBody}
             multiline
             numberOfLines={6}
-            placeholder="Share more context…"
+            placeholder={t("shareMoreContextPlaceholder")}
             placeholderTextColor={tk.textMuted}
             style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderColor: tk.border, borderWidth: 1 }]}
           />
 
           {/* Tags */}
-          <Text style={[styles.label, { color: tk.textMuted }]}>Tags (optional, comma-separated)</Text>
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("tagsOptionalLabel")}</Text>
           <View style={[styles.tagRow, { backgroundColor: tk.inputBg, borderColor: tk.border }]}>
             <Hash size={16} color={tk.textMuted} />
             <TextInput
               value={tags}
               onChangeText={setTags}
-              placeholder="health, nutrition, training"
+              placeholder={t("tagsPlaceholder")}
               placeholderTextColor={tk.textMuted}
               style={{ flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: tk.text, paddingVertical: 8 }}
               autoCapitalize="none"
@@ -135,7 +137,7 @@ export default function AskScreen() {
           <TouchableOpacity onPress={handlePost} disabled={submitting} style={[styles.postBtn, submitting && { opacity: 0.6 }]} activeOpacity={0.85}>
             {submitting
               ? <ActivityIndicator color={colors.white} />
-              : <Text style={styles.postBtnText}>Post question</Text>
+              : <Text style={styles.postBtnText}>{t("postQuestionBtn")}</Text>
             }
           </TouchableOpacity>
         </ScrollView>

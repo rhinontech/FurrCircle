@@ -14,6 +14,7 @@ import { userApi } from "../../services/user/userApi";
 import { feedApi } from "../../services/community/feedApi";
 import { useAuthStore } from "../lib/auth-store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBreakpoint } from "../lib/breakpoints";
 
 interface ShareSheetProps {
   open: boolean;
@@ -29,6 +30,7 @@ interface ShareSheetProps {
 export function ShareSheet({ open, onClose, postId, petId, username, threadId, circleId, onShared }: ShareSheetProps) {
   const tk = useTokens();
   const insets = useSafeAreaInsets();
+  const { isTablet } = useBreakpoint();
   const { user } = useAuthStore();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -132,13 +134,26 @@ export function ShareSheet({ open, onClose, postId, petId, username, threadId, c
   };
 
   return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={open} transparent animationType={isTablet ? "fade" : "slide"} onRequestClose={onClose}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : (keyboardVisible ? "height" : undefined)}
         style={{ flex: 1 }}
       >
-        <Pressable style={styles.overlay} onPress={() => { Keyboard.dismiss(); onClose(); }}>
-          <Pressable style={[styles.sheet, {paddingBottom: keyboardVisible ? 10 : 10 + insets.bottom, backgroundColor: tk.glassStrong, borderWidth: 1, borderBottomWidth: 0, borderColor: tk.glassBorder }]} onPress={Keyboard.dismiss}>
+        <Pressable style={[styles.overlay, isTablet && styles.overlayTablet]} onPress={() => { Keyboard.dismiss(); onClose(); }}>
+          <Pressable 
+            style={[
+              styles.sheet, 
+              {
+                paddingBottom: keyboardVisible ? 10 : 10 + insets.bottom, 
+                backgroundColor: tk.glassStrong, 
+                borderWidth: 1, 
+                borderColor: tk.glassBorder 
+              },
+              !isTablet && { borderBottomWidth: 0 },
+              isTablet && styles.sheetTablet
+            ]} 
+            onPress={Keyboard.dismiss}
+          >
             <View style={[styles.sheetHandle, { backgroundColor: tk.textMuted }]} />
             <Text style={[styles.sheetTitle, { color: tk.text }]}>Share to</Text>
 
@@ -215,11 +230,28 @@ export function ShareSheet({ open, onClose, postId, petId, username, threadId, c
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  overlayTablet: { justifyContent: "center", alignItems: "center" },
   sheet: { borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 20, paddingBottom: 40 },
+  sheetTablet: {
+    width: 500,
+    borderRadius: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 24,
+  },
   sheetHandle: { width: 48, height: 6, borderRadius: 3, alignSelf: "center", marginBottom: 16, opacity: 0.2 },
   sheetTitle: { fontFamily: "Poppins_700Bold", fontSize: 20, paddingHorizontal: 4, marginBottom: 12 },
   searchBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, height: 44, borderRadius: 12, borderWidth: 1, gap: 8, marginBottom: 16 },
-  searchInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular" },
+  searchInput: { 
+    flex: 1, 
+    fontSize: 14, 
+    fontFamily: "Inter_400Regular",
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      } as any,
+    }),
+  },
   membersList: { maxHeight: 260, marginBottom: 16 },
   memberRow: { flexDirection: "row", alignItems: "center", paddingVertical: 8, marginVertical: 2 },
   memberName: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },

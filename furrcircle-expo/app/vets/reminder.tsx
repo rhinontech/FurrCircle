@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, Platform, ActivityIndicator, KeyboardAvoidingView } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { PageContainer } from "../../src/components/PageContainer";
 import { petApi } from "../../services/pet/petApi";
@@ -8,10 +8,12 @@ import { placesApi } from "../../services/places/placesApi";
 import { reminderApi } from "../../services/reminder/reminderApi";
 import { colors } from "../../src/lib/theme";
 import { useTokens, useThemeStore } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ChevronDown, Calendar, Clock } from "../../src/components/ui/icons";
 
 export default function SetReminderScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const { id, vetId } = useLocalSearchParams<{ id?: string; vetId?: string }>();
   const tk = useTokens();
@@ -23,12 +25,12 @@ export default function SetReminderScreen() {
   const [title, setTitle] = useState("");
   const [type, setType] = useState<string>("appointment");
   const [notes, setNotes] = useState("");
-  
+
   const [date, setDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [time, setTime] = useState<Date>(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
-  
+
   const [loadingVet, setLoadingVet] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showPetDropdown, setShowPetDropdown] = useState(false);
@@ -56,7 +58,7 @@ export default function SetReminderScreen() {
             const dParts = rem.date.split('-'); // [YYYY, MM, DD]
             const parsedDate = new Date(Number(dParts[0]), Number(dParts[1]) - 1, Number(dParts[2]));
             setDate(parsedDate);
-            
+
             if (rem.time) {
               const tParts = rem.time.split(':'); // [HH, MM]
               const parsedTime = new Date(
@@ -80,28 +82,28 @@ export default function SetReminderScreen() {
       placesApi.getPlaceDetails(vetId).then(vet => {
         if (vet?.name) {
           setVetName(vet.name);
-          setTitle(`Vet Appointment - ${vet.name}`);
+          setTitle(t("vetAppointmentTitleWithClinic").replace("{name}", vet.name));
         } else {
-          setTitle("Vet Appointment");
+          setTitle(t("vetAppointmentReminderTitle"));
         }
         setLoadingVet(false);
       }).catch(err => {
         console.error(err);
-        setTitle("Vet Appointment");
+        setTitle(t("vetAppointmentReminderTitle"));
         setLoadingVet(false);
       });
     } else {
-      setTitle("Vet Appointment");
+      setTitle(t("vetAppointmentReminderTitle"));
     }
-  }, [id, vetId]);
+  }, [id, vetId, t]);
 
   const save = async () => {
     if (!selectedPet) {
-      Alert.alert("Error", "Please select a pet");
+      Alert.alert(t("errorTitle"), t("pleaseSelectPet"));
       return;
     }
     if (!title.trim()) {
-      Alert.alert("Error", "Please enter a reminder title");
+      Alert.alert(t("errorTitle"), t("pleaseEnterReminderTitle"));
       return;
     }
 
@@ -116,7 +118,7 @@ export default function SetReminderScreen() {
     );
 
     if (combinedDateTime <= new Date()) {
-      Alert.alert("Invalid Date/Time", "You cannot set a reminder for a date and time that has already passed. Please select a future time.");
+      Alert.alert(t("invalidDateTimeTitle"), t("invalidDateTimeMsg"));
       return;
     }
 
@@ -136,53 +138,53 @@ export default function SetReminderScreen() {
 
       if (id) {
         await reminderApi.updateReminder(id, payload);
-        Alert.alert("Success", "Reminder updated successfully!");
+        Alert.alert(t("successTitle"), t("reminderUpdatedSuccess"));
       } else {
         await reminderApi.createReminder(payload);
-        Alert.alert("Success", "Reminder set successfully!");
+        Alert.alert(t("successTitle"), t("reminderSetSuccess"));
       }
-      
+
       router.back();
     } catch (err: any) {
-      Alert.alert("Error saving reminder", err?.response?.data?.message || err.message);
+      Alert.alert(t("errorSavingReminder"), err?.response?.data?.message || err.message);
       setSaving(false);
     }
   };
 
-  const reminderTypes = [
-    { label: "Vet Appointment", value: "appointment" },
-    { label: "Vaccination", value: "vaccination" },
-    { label: "Medication", value: "medication" },
-    { label: "Grooming", value: "grooming" },
-    { label: "Other", value: "other" }
-  ];
+  const reminderTypes = useMemo(() => [
+    { label: t("vetAppointmentReminderTitle"), value: "appointment" },
+    { label: t("reminderTypeVaccination"), value: "vaccination" },
+    { label: t("reminderTypeMedication"), value: "medication" },
+    { label: t("reminderTypeGrooming"), value: "grooming" },
+    { label: t("reminderTypeOther"), value: "other" }
+  ], [t]);
 
   return (
-    <PageContainer>
+    <PageContainer noAmbient={true}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={[styles.container, { backgroundColor: tk.bg }]}>
-          <ScreenHeader title={id ? "Edit Reminder" : "Set Reminder"} />
-          
+          <ScreenHeader title={id ? t("editReminderHeaderTitle") : t("setReminderHeaderTitle")} />
+
           {loadingVet ? (
             <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
           ) : (
             <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 20 }} keyboardShouldPersistTaps="handled">
-              
+
               {/* Select Pet */}
-              <Text style={[styles.label, { color: tk.textMuted }]}>Select Pet</Text>
-              <TouchableOpacity 
+              <Text style={[styles.label, { color: tk.textMuted }]}>{t("selectPet")}</Text>
+              <TouchableOpacity
                 onPress={() => {
                   setShowPetDropdown(!showPetDropdown);
                   setShowTypeDropdown(false);
-                }} 
-                style={[styles.dropdownHeader, { backgroundColor: tk.inputBg, borderColor: tk.border }]} 
+                }}
+                style={[styles.dropdownHeader, { backgroundColor: tk.inputBg, borderColor: tk.border }]}
                 activeOpacity={0.8}
               >
                 <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.text }}>
-                  {selectedPet ? pets.find(p => p.id === selectedPet)?.name || "Select a pet" : "Select a pet"}
+                  {selectedPet ? pets.find(p => p.id === selectedPet)?.name || t("selectPet") : t("selectPet")}
                 </Text>
                 <ChevronDown size={20} color={tk.textMuted} />
               </TouchableOpacity>
@@ -190,9 +192,9 @@ export default function SetReminderScreen() {
               {showPetDropdown && (
                 <View style={[styles.dropdownMenu, { backgroundColor: tk.card, borderColor: tk.border }]}>
                   {pets.map((p) => (
-                    <TouchableOpacity 
-                      key={p.id} 
-                      style={[styles.dropdownItem, { borderBottomColor: tk.border }]} 
+                    <TouchableOpacity
+                      key={p.id}
+                      style={[styles.dropdownItem, { borderBottomColor: tk.border }]}
                       onPress={() => { setSelectedPet(p.id); setShowPetDropdown(false); }}
                     >
                       <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: selectedPet === p.id ? colors.primary : tk.text }}>
@@ -202,34 +204,34 @@ export default function SetReminderScreen() {
                   ))}
                   {pets.length === 0 && (
                     <View style={styles.dropdownItem}>
-                      <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.textMuted }}>No pets found</Text>
+                      <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.textMuted }}>{t("noPetsFound")}</Text>
                     </View>
                   )}
                 </View>
               )}
 
               {/* Reminder Title */}
-              <Text style={[styles.label, { color: tk.textMuted }]}>Reminder Title</Text>
-              <TextInput 
-                value={title} 
-                onChangeText={setTitle} 
-                placeholder="e.g. Vet checkup appointment" 
-                placeholderTextColor={tk.textMuted} 
-                style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} 
+              <Text style={[styles.label, { color: tk.textMuted }]}>{t("reminderTitleLabel")}</Text>
+              <TextInput
+                value={title}
+                onChangeText={setTitle}
+                placeholder={t("reminderTitlePlaceholder")}
+                placeholderTextColor={tk.textMuted}
+                style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]}
               />
 
               {/* Reminder Type */}
-              <Text style={[styles.label, { color: tk.textMuted }]}>Reminder Type</Text>
-              <TouchableOpacity 
+              <Text style={[styles.label, { color: tk.textMuted }]}>{t("reminderTypeLabel")}</Text>
+              <TouchableOpacity
                 onPress={() => {
                   setShowTypeDropdown(!showTypeDropdown);
                   setShowPetDropdown(false);
-                }} 
-                style={[styles.dropdownHeader, { backgroundColor: tk.inputBg, borderColor: tk.border }]} 
+                }}
+                style={[styles.dropdownHeader, { backgroundColor: tk.inputBg, borderColor: tk.border }]}
                 activeOpacity={0.8}
               >
                 <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: tk.text }}>
-                  {reminderTypes.find(t => t.value === type)?.label || "Select Type"}
+                  {reminderTypes.find(t => t.value === type)?.label || t("selectTypePlaceholder")}
                 </Text>
                 <ChevronDown size={20} color={tk.textMuted} />
               </TouchableOpacity>
@@ -237,9 +239,9 @@ export default function SetReminderScreen() {
               {showTypeDropdown && (
                 <View style={[styles.dropdownMenu, { backgroundColor: tk.card, borderColor: tk.border }]}>
                   {reminderTypes.map((t) => (
-                    <TouchableOpacity 
-                      key={t.value} 
-                      style={[styles.dropdownItem, { borderBottomColor: tk.border }]} 
+                    <TouchableOpacity
+                      key={t.value}
+                      style={[styles.dropdownItem, { borderBottomColor: tk.border }]}
                       onPress={() => { setType(t.value); setShowTypeDropdown(false); }}
                     >
                       <Text style={{ fontSize: 15, fontFamily: "Inter_400Regular", color: type === t.value ? colors.primary : tk.text }}>
@@ -251,7 +253,7 @@ export default function SetReminderScreen() {
               )}
 
               {/* Date */}
-              <Text style={[styles.label, { color: tk.textMuted }]}>Date</Text>
+              <Text style={[styles.label, { color: tk.textMuted }]}>{t("dateLabel")}</Text>
               {Platform.OS === 'ios' ? (
                 <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
                   <DateTimePicker
@@ -282,7 +284,7 @@ export default function SetReminderScreen() {
               )}
 
               {/* Time */}
-              <Text style={[styles.label, { color: tk.textMuted }]}>Time</Text>
+              <Text style={[styles.label, { color: tk.textMuted }]}>{t("timeLabel")}</Text>
               {Platform.OS === 'ios' ? (
                 <View style={{ alignItems: 'flex-start', marginBottom: 8 }}>
                   <DateTimePicker
@@ -313,24 +315,24 @@ export default function SetReminderScreen() {
               )}
 
               {/* Notes */}
-              <Text style={[styles.label, { color: tk.textMuted }]}>Notes / Reason</Text>
-              <TextInput 
-                value={notes} 
-                onChangeText={setNotes} 
-                placeholder="Add details, prep instructions, etc." 
-                placeholderTextColor={tk.textMuted} 
-                style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border, minHeight: 80 }]} 
+              <Text style={[styles.label, { color: tk.textMuted }]}>{t("notesReasonLabel")}</Text>
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                placeholder={t("notesReasonPlaceholder")}
+                placeholderTextColor={tk.textMuted}
+                style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border, minHeight: 80 }]}
                 multiline
               />
 
               {/* Save Button */}
-              <TouchableOpacity 
-                onPress={save} 
-                disabled={saving || !selectedPet} 
-                style={[styles.saveBtn, (!selectedPet || saving) && { opacity: 0.6 }]} 
+              <TouchableOpacity
+                onPress={save}
+                disabled={saving || !selectedPet}
+                style={[styles.saveBtn, (!selectedPet || saving) && { opacity: 0.6 }]}
                 activeOpacity={0.85}
               >
-                <Text style={styles.saveBtnText}>{saving ? "Saving Changes…" : (id ? "Save Changes" : "Set Reminder")}</Text>
+                <Text style={styles.saveBtnText}>{saving ? t("savingChangesProgress") : (id ? t("saveChangesBtn") : t("setReminderHeaderTitle"))}</Text>
               </TouchableOpacity>
             </ScrollView>
           )}

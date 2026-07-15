@@ -7,17 +7,26 @@ import * as ImagePicker from "expo-image-picker";
 import { uploadImage } from "../../services/user/userApi";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
+import { useLanguage } from "../../src/lib/language-context";
 import { useState } from "react";
 import { healthApi } from "../../services/health/healthApi";
 
 export default function LogMedsScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
-  const { petId } = useLocalSearchParams<{ petId: string }>();
+  const { petId, editId, name: initName, dosage: initDosage, notes: initNotes, photo: initPhoto } = useLocalSearchParams<{
+    petId: string;
+    editId?: string;
+    name?: string;
+    dosage?: string;
+    notes?: string;
+    photo?: string;
+  }>();
   const tk = useTokens();
-  const [med, setMed] = useState("");
-  const [dose, setDose] = useState("");
-  const [notes, setNotes] = useState("");
-  const [photo, setPhoto] = useState<string | undefined>();
+  const [med, setMed] = useState(initName || "");
+  const [dose, setDose] = useState(initDosage || "");
+  const [notes, setNotes] = useState(initNotes || "");
+  const [photo, setPhoto] = useState<string | undefined>(initPhoto || undefined);
   const [loading, setLoading] = useState(false);
 
   const pickPhoto = async () => {
@@ -27,73 +36,83 @@ export default function LogMedsScreen() {
 
   const handleSave = async () => {
     if (!med.trim()) {
-        Alert.alert("Error", "Please enter medication name.");
-        return;
+      Alert.alert(t("error"), t("pleaseEnterMedicationName"));
+      return;
     }
     if (!petId) {
-        Alert.alert("Error", "No pet selected.");
-        return;
+      Alert.alert(t("error"), t("noPetSelected"));
+      return;
     }
     setLoading(true);
     try {
-        let uploadedImageUrl = undefined;
-        if (photo?.startsWith('file://') || (photo && !photo.startsWith('http'))) {
-          const result = await uploadImage(photo, 'medications');
-          uploadedImageUrl = result?.url ?? result;
-        }
+      let uploadedImageUrl = photo;
+      if (photo?.startsWith('file://')) {
+        const result = await uploadImage(photo, 'medications');
+        uploadedImageUrl = result?.url ?? result;
+      }
 
-        await healthApi.addMedication(petId, {
-            name: med.trim(),
-            dosage: dose.trim() || undefined,
-            notes: notes.trim() || undefined,
-            imageUrl: uploadedImageUrl,
-            startDate: new Date().toISOString().slice(0, 10),
+      if (editId) {
+        await healthApi.updateMedication(petId, editId, {
+          name: med.trim(),
+          dosage: dose.trim() || null,
+          notes: notes.trim() || null,
+          imageUrl: uploadedImageUrl || null,
         });
-        Alert.alert("Success", "Medication logged successfully.");
-        router.back();
+        Alert.alert(t("success"), t("medicationUpdatedSuccessfully"));
+      } else {
+        await healthApi.addMedication(petId, {
+          name: med.trim(),
+          dosage: dose.trim() || undefined,
+          notes: notes.trim() || undefined,
+          imageUrl: uploadedImageUrl,
+          startDate: new Date().toISOString().slice(0, 10),
+        });
+        Alert.alert(t("success"), t("medicationLoggedSuccessfully"));
+      }
+      router.back();
     } catch (err) {
-        console.error("Failed to log medication:", err);
-        Alert.alert("Error", "Failed to log medication.");
+      console.error("Failed to save medication:", err);
+      Alert.alert(t("error"), t("failedToSaveMedication"));
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <PageContainer>
-    <View style={[styles.container, { backgroundColor: tk.bg }]}>
-      <ScreenHeader title="Log Medication" />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
-        <Text style={[styles.label, { color: tk.textMuted }]}>Medication name</Text>
-        <TextInput value={med} onChangeText={setMed} placeholder="e.g. Nexgard" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        <Text style={[styles.label, { color: tk.textMuted }]}>Dose</Text>
-        <TextInput value={dose} onChangeText={setDose} placeholder="e.g. 1 tablet" placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
-        <Text style={[styles.label, { color: tk.textMuted }]}>Notes</Text>
-        <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={4} placeholder="Any observations…" placeholderTextColor={tk.textMuted} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+    <PageContainer noAmbient={true}>
+      <View style={[styles.container, { backgroundColor: tk.bg }]}>
+        <ScreenHeader title={editId ? t("editMedicationHeaderTitle") : t("logMedicationHeaderTitle")} />
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationNameLabel")}</Text>
+          <TextInput value={med} onChangeText={setMed} placeholder={t("medicationNamePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationDoseLabel")}</Text>
+          <TextInput value={dose} onChangeText={setDose} placeholder={t("medicationDosePlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationNotesLabel")}</Text>
+          <TextInput value={notes} onChangeText={setNotes} multiline numberOfLines={4} placeholder={t("medicationNotesPlaceholder")} placeholderTextColor={tk.textMuted} style={[styles.input, styles.textarea, { backgroundColor: tk.inputBg, color: tk.text, borderWidth: 1, borderColor: tk.border }]} />
 
-        <Text style={[styles.label, { color: tk.textMuted }]}>Medication Photo</Text>
-        <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { borderColor: tk.border, backgroundColor: tk.card }]} activeOpacity={0.8}>
-          {photo ? (
-            <>
-              <Image source={{ uri: photo }} style={styles.photoPreview} />
-              <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", gap: 8 }]}>
-                <Camera size={32} color="#FFFFFF" />
-                <Text style={[styles.photoBtnText, { color: "#FFFFFF" }]}>Change photo</Text>
-              </View>
-            </>
-          ) : (
-            <>
-              <Camera size={32} color={tk.textMuted} />
-              <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>Add photo</Text>
-            </>
-          )}
-        </TouchableOpacity>
+          <Text style={[styles.label, { color: tk.textMuted }]}>{t("medicationPhotoLabel")}</Text>
+          <TouchableOpacity onPress={pickPhoto} style={[styles.photoBtn, { borderColor: tk.border, backgroundColor: tk.card }]} activeOpacity={0.8}>
+            {photo ? (
+              <>
+                <Image source={{ uri: photo }} style={styles.photoPreview} />
+                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center", gap: 8 }]}>
+                  <Camera size={32} color="#FFFFFF" />
+                  <Text style={[styles.photoBtnText, { color: "#FFFFFF" }]}>{t("changePhoto")}</Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <Camera size={32} color={tk.textMuted} />
+                <Text style={[styles.photoBtnText, { color: tk.textMuted }]}>{t("addPhoto")}</Text>
+              </>
+            )}
+          </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save</Text>}
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+          <TouchableOpacity onPress={handleSave} style={styles.saveBtn} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>{t("save")}</Text>}
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
     </PageContainer>
   );
 }

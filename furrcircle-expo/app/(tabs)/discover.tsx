@@ -17,6 +17,7 @@ import { PageContainer } from "../../src/components/PageContainer";
 import { colors } from "../../src/lib/theme";
 import { useTokens } from "../../src/lib/theme-store";
 import { glassSurface } from "../../src/components/ui/Glass";
+import { useLanguage } from "../../src/lib/language-context";
 import { placesApi } from "../../services/places/placesApi";
 import { petApi } from "../../services/pet/petApi";
 import { useAuthStore } from "../../src/lib/auth-store";
@@ -25,6 +26,7 @@ import { useLocationStore } from "../../src/lib/location-store";
 type Mode = "all" | "adoption" | "foster"/* | "breed"*/;
 
 export default function DiscoverScreen() {
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const tk = useTokens();
@@ -111,8 +113,8 @@ export default function DiscoverScreen() {
         >
           <View style={styles.headerSection}>
             <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={[styles.title, { color: tk.text }]}>Discover</Text>
-              <Text style={[styles.subtitle, { color: tk.textMuted }]}>Vets, pets & places near you</Text>
+              <Text style={[styles.title, { color: tk.text }]}>{t("discoverTitle")}</Text>
+              <Text style={[styles.subtitle, { color: tk.textMuted }]}>{t("discoverSubtitle")}</Text>
             </View>
             <TouchableOpacity onPress={() => router.push("/events")} style={[styles.eventBtn, glassSurface(tk)]} activeOpacity={0.85}>
               <Calendar size={20} color={tk.text} />
@@ -125,9 +127,9 @@ export default function DiscoverScreen() {
           </View> */}
 
           <View style={styles.sectionRow}>
-            <Text style={[styles.sectionTitle, { color: tk.text }]}>Nearby vets</Text>
+            <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("nearbyVets")}</Text>
             <TouchableOpacity onPress={() => router.push("/vets")}>
-              <Text style={styles.seeAll}>See all</Text>
+              <Text style={styles.seeAll}>{t("seeAll")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -139,10 +141,10 @@ export default function DiscoverScreen() {
                 </View>
                 <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                   <View style={styles.vetNameRow}>
-                    <Text style={[styles.vetName, { color: tk.text }]}>Add Location</Text>
+                    <Text style={[styles.vetName, { color: tk.text }]}>{t("addLocation")}</Text>
                   </View>
                   <View style={styles.vetSpecRow}>
-                    <Text style={[styles.vetSpec, { color: tk.textMuted }]}>Set your city to find nearby vets</Text>
+                    <Text style={[styles.vetSpec, { color: tk.textMuted }]}>{t("setLocationDesc")}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -150,12 +152,12 @@ export default function DiscoverScreen() {
               vetsLoading && nearbyVets.length === 0 ? (
                 <View style={[styles.emptyVetsContainer, glassSurface(tk)]}>
                   <ActivityIndicator color={colors.primary} />
-                  <Text style={[styles.emptyVetsText, { color: tk.textMuted }]}>Finding vets near {effectiveCity}…</Text>
+                  <Text style={[styles.emptyVetsText, { color: tk.textMuted }]}>{t("findingVetsNear")} {effectiveCity}…</Text>
                 </View>
               ) : nearbyVets.length === 0 ? (
                 <View style={[styles.emptyVetsContainer, glassSurface(tk)]}>
                   <Stethoscope size={24} color={tk.textMuted} />
-                  <Text style={[styles.emptyVetsText, { color: tk.textMuted }]}>No veterinarians found nearby in {effectiveCity}</Text>
+                  <Text style={[styles.emptyVetsText, { color: tk.textMuted }]}>{t("noVetsFoundNear")} {effectiveCity}</Text>
                 </View>
               ) : (
                 nearbyVets.slice(0, 4).map((v) => (
@@ -192,21 +194,20 @@ export default function DiscoverScreen() {
           </View>
 
           <View style={styles.sectionRow}>
-            <Text style={[styles.sectionTitle, { color: tk.text }]}>Pets nearby</Text>
-            <Text style={[styles.petCount, { color: tk.textMuted }]}>{pets.length} found</Text>
+            <Text style={[styles.sectionTitle, { color: tk.text }]}>{t("petsNearby")}</Text>
+            <Text style={[styles.petCount, { color: tk.textMuted }]}>{pets.length} {t("petsFound")}</Text>
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
             {([
-              { k: "all" as Mode, label: "All" },
-              { k: "adoption" as Mode, label: "Adoption" },
-              { k: "foster" as Mode, label: "Foster" },
-              // { k: "breed" as Mode, label: "Breed" },
-            ]).map(({ k, label }) => {
+              { k: "all" as Mode, labelKey: "modeAll" as const },
+              { k: "adoption" as Mode, labelKey: "modeAdoption" as const },
+              { k: "foster" as Mode, labelKey: "modeFoster" as const },
+            ]).map(({ k, labelKey }) => {
               const isActive = mode === k;
               return (
                 <TouchableOpacity key={k} onPress={() => setMode(k)} style={[styles.filterBtn, isActive ? { backgroundColor: tk.text } : glassSurface(tk)]}>
-                  <Text style={[styles.filterBtnText, { color: isActive ? tk.bg : tk.textMuted }]}>{label}</Text>
+                  <Text style={[styles.filterBtnText, { color: isActive ? tk.bg : tk.textMuted }]}>{t(labelKey)}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -222,20 +223,18 @@ export default function DiscoverScreen() {
                     <Image source={require("../../src/assets/doodle-puppy.png")} style={styles.petImage} resizeMode="contain" />
                   )}
                   <View style={styles.petBadges}>
-                    {p.isAdoptionOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.success }]}><Text style={styles.adoptBadgeText}>Adopt</Text></View>}
-                    {p.isFosterOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.coral }]}><Text style={styles.adoptBadgeText}>Foster</Text></View>}
-                    {/* {p.isBreedingOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.sunshine }]}><Text style={[styles.adoptBadgeText, { color: colors.foreground }]}>Breed</Text></View>} */}
+                    {p.isAdoptionOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.success }]}><Text style={styles.adoptBadgeText}>{t("adoptBadge")}</Text></View>}
+                    {p.isFosterOpen && <View style={[styles.adoptBadge, { backgroundColor: colors.coral }]}><Text style={styles.adoptBadgeText}>{t("fosterBadge")}</Text></View>}
                   </View>
                 </View>
                 <View style={styles.petInfo}>
                   <View style={styles.petNameRow}>
                     <Text style={[styles.petName, { color: tk.text }]}>{p.name}</Text>
-                    {/* <Heart size={16} color={colors.pinky} /> */}
                   </View>
                   <Text style={[styles.petBreed, { color: tk.textMuted }]}>{p.breed || p.species}</Text>
                   <View style={styles.petDistRow}>
                     <MapPin size={12} color={tk.textMuted} />
-                    <Text style={[styles.petDist, { color: tk.textMuted }]}>{p.distanceLabel || p.city || p.owner?.city || "Nearby"}</Text>
+                    <Text style={[styles.petDist, { color: tk.textMuted }]}>{p.distanceLabel || p.city || p.owner?.city || t("nearby")}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -243,7 +242,7 @@ export default function DiscoverScreen() {
             {pets.length === 0 && (
               <View style={[styles.emptyPetsContainer, glassSurface(tk)]}>
                 <Heart size={24} color={tk.textMuted} />
-                <Text style={[styles.emptyPetsText, { color: tk.textMuted }]}>No pets match this filter near you yet.</Text>
+                <Text style={[styles.emptyPetsText, { color: tk.textMuted }]}>{t("noPetsMatchFilter")}</Text>
               </View>
             )}
           </View>

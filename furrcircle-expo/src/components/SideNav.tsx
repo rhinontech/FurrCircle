@@ -1,12 +1,13 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
 import { useRouter, usePathname } from "expo-router";
-import { Home, Users, Bone, Compass, LayoutGrid, PawPrint, Plus, Bell } from "./ui/icons";
+import { Home, Users, Bone, Compass, LayoutGrid, Plus, Bell } from "./ui/icons";
 import { colors } from "../lib/theme";
 import { useTokens } from "../lib/theme-store";
 import { useBreakpoint } from "../lib/breakpoints";
 import { Avatar } from "./Avatar";
 import { useNotificationStore } from "../lib/notification-store";
 import { useAuthStore } from "../lib/auth-store";
+import { useLanguage } from "../lib/language-context";
 
 const NAV_ITEMS = [
   { key: "feed",          icon: Home,       label: "Feed",          path: "/(tabs)/" },
@@ -23,10 +24,30 @@ export function SideNav() {
   const tk       = useTokens();
   const { isDesktop } = useBreakpoint();
   const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const { t } = useLanguage();
 
   const user = useAuthStore((s) => s.user);
   const wide = isDesktop;               // show labels + user card
-  const navW = wide ? 240 : 84;
+  const navW = wide ? 300 : 84;
+
+  function getNavItemLabel(key: string, fallback: string) {
+    switch (key) {
+      case "feed":
+        return t("feed");
+      case "community":
+        return t("communityTitle");
+      case "match":
+        return t("match");
+      case "discover":
+        return t("discoverTitle");
+      case "profile":
+        return t("profile");
+      case "notifications":
+        return t("notifications");
+      default:
+        return fallback;
+    }
+  }
 
   function isActive(path: string) {
     if (path === "/(tabs)/") return pathname === "/" || pathname === "/(tabs)/";
@@ -37,9 +58,11 @@ export function SideNav() {
     <View style={[styles.aside, { width: navW, backgroundColor: tk.card, borderRightColor: tk.border }]}>
       {/* Logo */}
       <TouchableOpacity onPress={() => router.push("/")} style={styles.logo} activeOpacity={0.8}>
-        <View style={styles.logoIcon}>
-          <PawPrint size={20} color="#fff" strokeWidth={2} />
-        </View>
+        <Image
+          source={require("../assets/furrcircle_icon.png")}
+          style={styles.logoImg}
+          resizeMode="contain"
+        />
         {wide && <Text style={[styles.logoText, { color: tk.text }]}>Furr Circle</Text>}
       </TouchableOpacity>
 
@@ -49,6 +72,7 @@ export function SideNav() {
           const active = isActive(path);
           const isNotifItem = key === "notifications";
           const badgeLabel = unreadCount > 99 ? "99+" : String(unreadCount);
+          const translatedLabel = getNavItemLabel(key, label);
           return (
             <TouchableOpacity
               key={key}
@@ -74,7 +98,7 @@ export function SideNav() {
               </View>
               {wide && (
                 <Text style={[styles.navLabel, { color: active ? colors.primary : tk.textMuted }]}>
-                  {label}
+                  {translatedLabel}
                 </Text>
               )}
               {/* Badge in wide mode: show count next to label */}
@@ -95,7 +119,7 @@ export function SideNav() {
         activeOpacity={0.85}
       >
         <Plus size={20} color="#fff" strokeWidth={2.5} />
-        {wide && <Text style={styles.newPostText}>New post</Text>}
+        {wide && <Text style={styles.newPostText}>{t("newPost")}</Text>}
       </TouchableOpacity>
 
       {/* User card — only on wide */}
@@ -137,13 +161,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     marginBottom: 12,
   },
-  logoIcon: {
+  logoImg: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.coral,
-    alignItems: "center",
-    justifyContent: "center",
   },
   logoText: {
     fontFamily: "Poppins_700Bold",
@@ -215,7 +235,7 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colors.coral,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 3,
@@ -226,7 +246,7 @@ const styles = StyleSheet.create({
     minWidth: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: colors.coral,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 5,
