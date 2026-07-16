@@ -29,7 +29,11 @@ export function ScreenHeader({ title, right, showBack, onBack }: Props) {
     if (onBack) {
       onBack();
     } else {
-      router.back();
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/");
+      }
     }
   };
 

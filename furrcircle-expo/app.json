@@ -67,8 +67,38 @@
             },
             {
               "scheme": "https",
-              "host": "*.furrcircle.com",
+              "host": "www.furrcircle.com",
               "pathPrefix": "/circle"
+            },
+            {
+              "scheme": "https",
+              "host": "furrcircle.com",
+              "pathPrefix": "/post"
+            },
+            {
+              "scheme": "https",
+              "host": "www.furrcircle.com",
+              "pathPrefix": "/post"
+            },
+            {
+              "scheme": "https",
+              "host": "furrcircle.com",
+              "pathPrefix": "/u"
+            },
+            {
+              "scheme": "https",
+              "host": "www.furrcircle.com",
+              "pathPrefix": "/u"
+            },
+            {
+              "scheme": "https",
+              "host": "furrcircle.com",
+              "pathPrefix": "/p"
+            },
+            {
+              "scheme": "https",
+              "host": "www.furrcircle.com",
+              "pathPrefix": "/p"
             }
           ]
         }
