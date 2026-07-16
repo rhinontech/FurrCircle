@@ -119,16 +119,9 @@ export default function CommunityDetail() {
     }
   };
 
-  // Open the OS share sheet (WhatsApp, copy link, Instagram, etc.) with an invite link.
-  const handleInvite = async () => {
-    if (!circle) return;
-    try {
-      await Share.share({
-        message: `${t("joinInviteMsg")} "${circle.name}" ${t("joinInviteMsg2")} https://furrcircle.com/circle/${circle.id}`,
-        url: `https://furrcircle.com/circle/${circle.id}`,
-        title: `${t("joinInviteMsg")} "${circle.name}" ${t("joinInviteMsg2")}`,
-      });
-    } catch { /* user dismissed the share sheet */ }
+  // Open the beautiful ShareSheet (WhatsApp, copy link, Instagram, etc.) with an invite link.
+  const handleInvite = () => {
+    setShareOpen(true);
   };
 
   const handleLeave = () => {

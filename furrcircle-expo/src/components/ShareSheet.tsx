@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
   StyleSheet, Modal, Pressable, TextInput, Alert,
-  KeyboardAvoidingView, Platform, Keyboard,
+  KeyboardAvoidingView, Platform, Keyboard, Share, Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Search, Check } from "./ui/icons";
+import * as Clipboard from "expo-clipboard";
+import { Search, Check, LinkIcon, LogoWhatsapp, LogoInstagram, Share2, Send } from "./ui/icons";
 import { Avatar } from "./Avatar";
 import { colors } from "../lib/theme";
 import { useTokens } from "../lib/theme-store";
@@ -88,6 +89,96 @@ export function ShareSheet({ open, onClose, postId, petId, username, threadId, c
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
+  };
+
+  // Construct Web URLs and texts for external sharing
+  let webUrl = "https://furrcircle.com";
+  let shareText = "Check out FurrCircle!";
+  if (postId) {
+    webUrl = `https://furrcircle.com/post/${postId}`;
+    shareText = "Check out this post on FurrCircle!";
+  } else if (petId) {
+    webUrl = `https://furrcircle.com/p/${petId}`;
+    shareText = "Check out this pet profile on FurrCircle!";
+  } else if (username) {
+    webUrl = `https://furrcircle.com/u/${username}`;
+    shareText = "Check out this profile on FurrCircle!";
+  } else if (circleId) {
+    webUrl = `https://furrcircle.com/circle/${circleId}`;
+    shareText = "Check out this circle on FurrCircle!";
+  } else if (threadId) {
+    webUrl = `https://furrcircle.com/thread/${threadId}`;
+    shareText = "Check out this discussion on FurrCircle!";
+  }
+  const fullShareText = `${shareText} ${webUrl}`;
+
+  const handleCopyLink = async () => {
+    try {
+      await Clipboard.setStringAsync(webUrl);
+      Alert.alert("Success", "Link copied to clipboard!");
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Failed to copy link.");
+    }
+  };
+
+  const handleWhatsApp = async () => {
+    const url = `whatsapp://send?text=${encodeURIComponent(fullShareText)}`;
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        await Linking.openURL(`https://wa.me/?text=${encodeURIComponent(fullShareText)}`);
+      }
+    } catch (err) {
+      console.error(err);
+      await Linking.openURL(`https://wa.me/?text=${encodeURIComponent(fullShareText)}`);
+    }
+  };
+
+  const handleTelegram = async () => {
+    const url = `https://t.me/share/url?url=${encodeURIComponent(webUrl)}&text=${encodeURIComponent(shareText)}`;
+    try {
+      await Linking.openURL(url);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Could not open Telegram.");
+    }
+  };
+
+  const handleInstagram = async () => {
+    const url = `instagram://camera`;
+    try {
+      await Clipboard.setStringAsync(webUrl);
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        Alert.alert(
+          "Link Copied",
+          "Link copied! We will open Instagram so you can paste it in your story or messages.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Instagram", onPress: () => Linking.openURL(url) }
+          ]
+        );
+      } else {
+        Alert.alert("Link Copied", "Link copied to clipboard! You can paste it on Instagram.");
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Link Copied", "Link copied to clipboard! You can paste it on Instagram.");
+    }
+  };
+
+  const handleSystemShare = async () => {
+    try {
+      await Share.share({
+        message: fullShareText,
+        url: webUrl,
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleSend = async () => {
@@ -221,6 +312,55 @@ export function ShareSheet({ open, onClose, postId, petId, username, threadId, c
               {selected.length > 0 ? `Send to ${selected.length} friend${selected.length > 1 ? "s" : ""}` : "Select friends"}
             </Text>
           </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={[styles.shareDivider, { backgroundColor: tk.border }]} />
+
+          {/* Quick share title */}
+          <Text style={[styles.quickShareTitle, { color: tk.textMuted }]}>Quick Share</Text>
+
+          {/* Quick share options */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickShareRow}>
+            {/* Copy Link */}
+            <TouchableOpacity onPress={handleCopyLink} style={styles.quickShareBtn} activeOpacity={0.7}>
+              <View style={[styles.iconCircle, { backgroundColor: tk.glassChip }]}>
+                <LinkIcon size={20} color={tk.text} />
+              </View>
+              <Text style={[styles.quickShareLabel, { color: tk.text }]} numberOfLines={1}>Copy Link</Text>
+            </TouchableOpacity>
+
+            {/* WhatsApp */}
+            <TouchableOpacity onPress={handleWhatsApp} style={styles.quickShareBtn} activeOpacity={0.7}>
+              <View style={[styles.iconCircle, { backgroundColor: "#25D366" }]}>
+                <LogoWhatsapp size={20} color="#fff" />
+              </View>
+              <Text style={[styles.quickShareLabel, { color: tk.text }]} numberOfLines={1}>WhatsApp</Text>
+            </TouchableOpacity>
+
+            {/* Instagram */}
+            <TouchableOpacity onPress={handleInstagram} style={styles.quickShareBtn} activeOpacity={0.7}>
+              <View style={[styles.iconCircle, { backgroundColor: "#E1306C" }]}>
+                <LogoInstagram size={20} color="#fff" />
+              </View>
+              <Text style={[styles.quickShareLabel, { color: tk.text }]} numberOfLines={1}>Instagram</Text>
+            </TouchableOpacity>
+
+            {/* Telegram */}
+            <TouchableOpacity onPress={handleTelegram} style={styles.quickShareBtn} activeOpacity={0.7}>
+              <View style={[styles.iconCircle, { backgroundColor: "#0088cc" }]}>
+                <Send size={18} color="#fff" style={{ marginRight: 2 }} />
+              </View>
+              <Text style={[styles.quickShareLabel, { color: tk.text }]} numberOfLines={1}>Telegram</Text>
+            </TouchableOpacity>
+
+            {/* More / System Share */}
+            <TouchableOpacity onPress={handleSystemShare} style={styles.quickShareBtn} activeOpacity={0.7}>
+              <View style={[styles.iconCircle, { backgroundColor: tk.glassChip }]}>
+                <Share2 size={20} color={tk.text} />
+              </View>
+              <Text style={[styles.quickShareLabel, { color: tk.text }]} numberOfLines={1}>More</Text>
+            </TouchableOpacity>
+          </ScrollView>
           </Pressable>
         </Pressable>
       </KeyboardAvoidingView>
@@ -260,4 +400,10 @@ const styles = StyleSheet.create({
   emptyText: { textAlign: "center", marginVertical: 20, fontFamily: "Inter_400Regular" },
   sendActionBtn: { height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center", marginTop: 8 },
   sendActionText: { fontFamily: "Poppins_700Bold", fontSize: 15 },
+  shareDivider: { height: 1, marginVertical: 16, opacity: 0.2 },
+  quickShareTitle: { fontSize: 11, fontFamily: "Poppins_700Bold", marginBottom: 12, paddingHorizontal: 4, textTransform: "uppercase", letterSpacing: 1 },
+  quickShareRow: { flexDirection: "row", gap: 14, paddingHorizontal: 4, paddingBottom: 8 },
+  quickShareBtn: { alignItems: "center", width: 72 },
+  iconCircle: { width: 50, height: 50, borderRadius: 25, justifyContent: "center", alignItems: "center", marginBottom: 6 },
+  quickShareLabel: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center" },
 });

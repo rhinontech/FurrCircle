@@ -114,3 +114,7 @@ export const Users = make("people-outline", "people");
 export const Volume2 = make("volume-high");
 export const VolumeX = make("volume-mute");
 export const X = make("close");
+export const LinkIcon = make("link-outline", "link");
+export const LogoWhatsapp = make("logo-whatsapp");
+export const LogoInstagram = make("logo-instagram");
+

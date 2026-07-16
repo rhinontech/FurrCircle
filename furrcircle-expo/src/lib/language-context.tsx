@@ -6,7 +6,7 @@ export type Language = "en" | "hi" | "te";
 export const translations = {
   en: {
     feed: "Feed",
-    match: "Match",
+    match: "Matchesese",
     profile: "Profile",
     myPets: "My pets",
     upcomingReminders: "Upcoming Reminders",
