@@ -7,17 +7,17 @@ import Image from "next/image";
 
 const testimonials = [
   {
-    quote: "FurrCircle completely changed how I manage my dog's health. I can see all his records, upcoming vaccines, and vet appointments in one app. It's a game changer!",
+    quote: "The pet matching feature is amazing! I found a playdate buddy for my dog within a day. It's literally Tinder for pets and I'm obsessed.",
     name: "ANJALI P.",
     image: '/testimonials/testimonial1.jpeg',
   },
   {
-    quote: "Booking a vet through FurrCircle was so easy. I found a great clinic nearby, picked a time, and got a reminder the day before. My cat's care has never been this stress-free.",
+    quote: "I found my cat's new best friend through FurrCircle's matching feature, booked a vet in the same app, and even joined a local cat lovers circle. One app does everything.",
     name: "ISHRA F.",
     image: '/testimonials/testimonial2.jpeg',
   },
   {
-    quote: "I love the community on FurrCircle. I've met so many pet parents nearby, discovered local pet events, and even got great advice on my rabbit's diet. Highly recommend!",
+    quote: "The stories and feed feel just like Instagram but only for pet parents. I've connected with so many people in my city and found two adoption events nearby. Highly recommend!",
     name: "RITIKA S.",
     image: '/testimonials/testimonial3.png',
   },

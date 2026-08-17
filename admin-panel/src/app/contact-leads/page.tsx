@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Mail, Phone, Search, X } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 type ContactLead = {
   id: string;
@@ -32,6 +33,7 @@ const formatDate = (value: string) =>
   });
 
 export default function ContactLeadsPage() {
+  const { dangerMode } = useAdminAuth();
   const [leads, setLeads] = useState<ContactLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -194,9 +196,9 @@ export default function ContactLeadsPage() {
                         </span>
                         <select
                           value={lead.status}
-                          disabled={updatingId === lead.id}
+                          disabled={updatingId === lead.id || !dangerMode}
                           onChange={(event) => updateLeadStatus(lead.id, event.target.value as ContactLead["status"])}
-                          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-primary-900/20"
+                          className={`w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-primary-900/20 ${!dangerMode ? "opacity-60 cursor-not-allowed" : ""}`}
                         >
                           <option value="new">New</option>
                           <option value="contacted">Contacted</option>

@@ -8,6 +8,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 const StarRating = ({ rating }: { rating: number }) => (
   <div className="flex items-center gap-0.5">
@@ -31,6 +32,7 @@ const formatDate = (iso: string) => {
 };
 
 export default function VetReviewsPage() {
+  const { dangerMode } = useAdminAuth();
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -204,9 +206,13 @@ export default function VetReviewsPage() {
                     <td className="px-6 py-4">
                       <button
                         onClick={() => handleDelete(review.id)}
-                        disabled={deletingId === review.id}
-                        className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors disabled:opacity-40"
-                        title="Remove review"
+                        disabled={deletingId === review.id || !dangerMode}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          dangerMode 
+                            ? "text-rose-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40" 
+                            : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                        }`}
+                        title={!dangerMode ? "Enable Danger Mode to delete review" : "Remove review"}
                       >
                         <Trash2 size={15} />
                       </button>

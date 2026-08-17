@@ -8,6 +8,10 @@ import {
   getAdoptionPets, adminReviewApplication,
   getAllAppointments,
   getAllVetReviews, adminDeleteVetReview,
+  getAllCircles, adminCreateCircle, adminUpdateCircle, adminDeleteCircle,
+  getAllLostPets, adminUpdateLostPetStatus, adminDeleteLostPet,
+  getAllQuestions, adminCreateQuestion, adminDeleteQuestion, adminGetAnswers, adminDeleteAnswer,
+  getAllReports, updateReportStatus, deleteReport,
 } from "../controllers/adminController.ts";
 import {
   getAdminCampaigns,
@@ -77,5 +81,28 @@ router.post("/campaigns/:id/publish", protect, adminOnly, publishAdminCampaign);
 router.post("/campaigns/:id/cancel", protect, adminOnly, cancelAdminCampaign);
 router.post("/campaigns/:id/resend", protect, adminOnly, resendAdminCampaign);
 router.delete("/campaigns/:id", protect, adminOnly, deleteAdminCampaign);
+
+// Q&A
+router.get("/questions", protect, adminOnly, getAllQuestions);
+router.post("/questions", protect, adminOnly, adminCreateQuestion);
+router.delete("/questions/:id", protect, adminOnly, adminDeleteQuestion);
+router.get("/questions/:id/answers", protect, adminOnly, adminGetAnswers);
+router.delete("/questions/:id/answers/:answerId", protect, adminOnly, adminDeleteAnswer);
+
+// Circles
+router.get("/circles", protect, adminOnly, getAllCircles);
+router.post("/circles", protect, adminOnly, adminCreateCircle);
+router.put("/circles/:id", protect, adminOnly, adminUpdateCircle);
+router.delete("/circles/:id", protect, adminOnly, adminDeleteCircle);
+
+// Lost Pets
+router.get("/lost-pets", protect, adminOnly, getAllLostPets);
+router.patch("/lost-pets/:id/status", protect, adminOnly, adminUpdateLostPetStatus);
+router.delete("/lost-pets/:id", protect, adminOnly, adminDeleteLostPet);
+
+// Reports / Moderation
+router.get("/reports", protect, adminOnly, getAllReports);
+router.patch("/reports/:id/status", protect, adminOnly, updateReportStatus);
+router.delete("/reports/:id", protect, adminOnly, deleteReport);
 
 export default router;

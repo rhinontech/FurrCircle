@@ -82,6 +82,32 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
+      twoFactorEnabled: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
+      username: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
+      },
+      otpCode: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      otpExpiry: {
+        type: Sequelize.DATE,
+        allowNull: true
+      },
+      latitude: {
+        type: Sequelize.FLOAT,
+        allowNull: true
+      },
+      longitude: {
+        type: Sequelize.FLOAT,
+        allowNull: true
+      },
       resetToken: {
         type: Sequelize.STRING,
         allowNull: true

@@ -9,11 +9,12 @@
     "start": "node --experimental-strip-types app.ts",
     "bootstrap-admin": "node --experimental-strip-types scripts/bootstrapAdmin.ts",
     "seed-demo": "node --experimental-strip-types scripts/seedDemoAccounts.ts",
-    "signup-owner": "node --experimental-strip-types scripts/signupOwner.ts",
+    "seed-circles": "node --experimental-strip-types scripts/seedCircles.ts",
     "seed-beta-demo": "node --experimental-strip-types scripts/seedBetaDemoAccounts.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1028.0",
+    "@aws-sdk/client-sns": "^3.1053.0",
     "@types/nodemailer": "^8.0.0",
     "@types/pdfkit": "^0.17.5",
     "axios": "^1.15.0",

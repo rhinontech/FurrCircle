@@ -1,0 +1,10 @@
+import express from "express";
+import { getOwnerCards, swipeOwner } from "../controllers/ownerMatchController.ts";
+import { protect, userAccountOnly } from "../middleware/authMiddleware.ts";
+
+const router = express.Router();
+
+router.get("/cards", protect, userAccountOnly, getOwnerCards);
+router.post("/swipe", protect, userAccountOnly, swipeOwner);
+
+export default router;

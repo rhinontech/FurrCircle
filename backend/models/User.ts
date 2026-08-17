@@ -75,6 +75,41 @@ export default (sequelize: Sequelize) => {
                 allowNull: false,
                 defaultValue: false,
             },
+            isPrivate: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            twoFactorEnabled: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
+            petTypeInterests: {
+                type: DataTypes.ARRAY(DataTypes.STRING),
+                allowNull: true,
+                defaultValue: [],
+                // Values: 'Dog' | 'Cat' | 'Bird' | 'Rabbit' | 'Fish' | 'Other'
+            },
+            topicInterests: {
+                type: DataTypes.ARRAY(DataTypes.STRING),
+                allowNull: true,
+                defaultValue: [],
+                // Values: 'Health' | 'Adoption' | 'Training' | 'Nutrition' | 'Lost & Found'
+            },
+            username: {
+                type: DataTypes.STRING,
+                allowNull: true, // Make nullable to avoid breaking if existing users lack username initially, but we enforce it in DB / API checks
+                unique: true,
+            },
+            otpCode: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            otpExpiry: {
+                type: DataTypes.DATE,
+                allowNull: true,
+            },
             resetToken: {
                 type: DataTypes.STRING,
                 allowNull: true,
@@ -82,19 +117,6 @@ export default (sequelize: Sequelize) => {
             resetTokenExpiry: {
                 type: DataTypes.DATE,
                 allowNull: true,
-            },
-            instagramAccessToken: {
-                type: DataTypes.TEXT,
-                allowNull: true,
-            },
-            instagramUserId: {
-                type: DataTypes.STRING,
-                allowNull: true,
-            },
-            instagramSyncEnabled: {
-                type: DataTypes.BOOLEAN,
-                allowNull: false,
-                defaultValue: false,
             },
         },
         {
@@ -107,6 +129,10 @@ export default (sequelize: Sequelize) => {
         if (models.pets) User.hasMany(models.pets, { foreignKey: 'ownerId', as: 'pets' });
         if (models.vet_reviews) User.hasMany(models.vet_reviews, { foreignKey: 'userId', as: 'vetReviews' });
         if (models.appointments) User.hasMany(models.appointments, { foreignKey: 'ownerId', as: 'ownerAppointments' });
+        if (models.follows) {
+            User.hasMany(models.follows, { foreignKey: 'followerId', as: 'following' });
+            User.hasMany(models.follows, { foreignKey: 'followingId', as: 'followers' });
+        }
     };
 
     return User;

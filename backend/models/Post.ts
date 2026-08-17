@@ -42,6 +42,15 @@ export default (sequelize: Sequelize) => {
                 allowNull: false,
                 defaultValue: 'pending', // pending | approved | rejected
             },
+            city: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            engagementScore: {
+                type: DataTypes.FLOAT,
+                allowNull: false,
+                defaultValue: 0,
+            },
         },
         {
             tableName: "posts",

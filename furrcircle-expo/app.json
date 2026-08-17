@@ -1,0 +1,189 @@
+{
+  "expo": {
+    "name": "FurrCircle",
+    "slug": "furrcircle-expo",
+    "scheme": "furrcircle",
+    "version": "1.2.1",
+    "orientation": "portrait",
+    "icon": "./assets/furrCircle_IOS_icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/furrCircle_splash_screen1.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#ffffff"
+    },
+    "androidStatusBar": {
+      "translucent": true,
+      "backgroundColor": "#00000000"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.furrcircle.app",
+      "buildNumber": "22",
+      "associatedDomains": [
+        "applinks:furrcircle.com",
+        "applinks:*.furrcircle.com"
+      ],
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.1086302921042-dummy"
+            ]
+          }
+        ]
+      }
+    },
+    "android": {
+      "splash": {
+        "image": "./assets/adaptive-icon.png",
+        "resizeMode": "cover",
+        "backgroundColor": "#ffffff"
+      },
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/furrCircle_android_icon2.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.furrcircle.app",
+      "versionCode": 22,
+      "googleServicesFile": "./google-services.json",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "categories": [
+            "DEFAULT",
+            "BROWSABLE"
+          ],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "furrcircle.com",
+              "pathPrefix": "/circle"
+            },
+            {
+              "scheme": "https",
+              "host": "www.furrcircle.com",
+              "pathPrefix": "/circle"
+            },
+            {
+              "scheme": "https",
+              "host": "furrcircle.com",
+              "pathPrefix": "/post"
+            },
+            {
+              "scheme": "https",
+              "host": "www.furrcircle.com",
+              "pathPrefix": "/post"
+            },
+            {
+              "scheme": "https",
+              "host": "furrcircle.com",
+              "pathPrefix": "/u"
+            },
+            {
+              "scheme": "https",
+              "host": "www.furrcircle.com",
+              "pathPrefix": "/u"
+            },
+            {
+              "scheme": "https",
+              "host": "furrcircle.com",
+              "pathPrefix": "/p"
+            },
+            {
+              "scheme": "https",
+              "host": "www.furrcircle.com",
+              "pathPrefix": "/p"
+            }
+          ]
+        }
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": ""
+        }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./src/assets/furrcircle_icon.png",
+      "bundler": "metro"
+    },
+    "extra": {
+      "apiUrl": "https://api.furrcircle.com",
+      "router": {},
+      "eas": {
+        "projectId": "1af6e06b-38e1-453f-bd8a-52fddbf93df4"
+      }
+    },
+    "plugins": [
+      "expo-font",
+      "expo-router",
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow FurrCircle to access your camera to capture pictures and video of your pets.",
+          "microphonePermission": "Allow FurrCircle to access your microphone to record audio for pet videos."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.4",
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "./plugins/withFirebaseAppDelegate",
+      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/auth",
+        {
+          "ios": {
+            "captchaOpenUrlFix": true
+          }
+        }
+      ],
+      "@react-native-firebase/messaging",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#2563EB",
+          "defaultChannel": "default"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow FurrCircle to access your photos so you can upload a profile picture of your pet.",
+          "cameraPermission": "Allow FurrCircle to access your camera so you can take a profile picture of your pet or scan medical documents."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow FurrCircle to use your location to find nearby matches and vets.",
+          "locationWhenInUsePermission": "Allow FurrCircle to access your location to auto-fill your city and help you find nearby vets."
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-secure-store"
+    ],
+    "owner": "furrcircle",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

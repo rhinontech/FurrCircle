@@ -2,7 +2,7 @@ import db from "../models/index.ts";
 import { emitToActor } from "./realtimeService.ts";
 
 type ActorType = "user" | "vet";
-type NotificationCategory = "activity" | "campaign";
+type NotificationCategory = "activity" | "campaign" | "social";
 type PushStatus = "sent" | "failed" | "skipped";
 
 type NotificationActionPayload = Record<string, unknown> | null;
@@ -49,8 +49,11 @@ const defaultActionFromRelated = (relatedType?: string, relatedId?: string) => {
       return { actionType: "appointment_detail", actionPayload: relatedId ? { appointmentId: relatedId } : null };
     case "event":
       return { actionType: relatedId ? "event_detail" : "events_list", actionPayload: relatedId ? { eventId: relatedId } : null };
+    case "question":
+    case "thread":
+      return { actionType: "question_detail", actionPayload: relatedId ? { questionId: relatedId } : null };
     case "adoption_application":
-      return { actionType: "notifications", actionPayload: null };
+      return { actionType: "match_requests", actionPayload: null };
     case "vaccine":
       return { actionType: "notifications", actionPayload: null };
     default:
@@ -129,7 +132,8 @@ const sendPushToActor = async (
   actionType: string | null,
   actionPayload: NotificationActionPayload,
   category: NotificationCategory,
-  respectMarketingPreference: boolean
+  respectMarketingPreference: boolean,
+  notificationId?: string
 ): Promise<PushSendResult> => {
   const { notification_devices: NotificationDevice } = db as any;
 
@@ -165,38 +169,56 @@ const sendPushToActor = async (
   const messages = devices
     .map((device: any) => String(device.expoPushToken || "").trim())
     .filter(Boolean)
-    .map((token: string) => ({
-      notification: { title, body: message },
-      data: {
+    .map((token: string) => {
+      const rId = actionPayload?.relatedId || actionPayload?.id || actionPayload?.conversationId;
+      
+      const rawData: Record<string, any> = {
         category,
         actionType: actionType || "",
         actionPayload: JSON.stringify(actionPayload || {}),
         title,
         body: message,
-      },
-      token: token,
-      android: {
-        priority: 'high' as const,
-        notification: {
+      };
+      if (rId) rawData.relatedId = rId;
+      if (notificationId) rawData.notificationId = notificationId;
+
+      // Firebase Admin STRICTLY requires all data values to be strings.
+      // We strip out undefined/null and cast everything else to a string.
+      const dataPayload: Record<string, string> = {};
+      for (const [key, val] of Object.entries(rawData)) {
+        if (val !== undefined && val !== null) {
+          dataPayload[key] = String(val);
+        }
+      }
+
+      const apnsPayload: any = {
+        aps: {
+          alert: { title, body: message },
           sound: 'default',
+          badge: 1,
+          'mutable-content': 1,
         },
-      },
-      apns: {
-        payload: {
-          aps: {
-            sound: 'default',
-            badge: 1,
-            'mutable-content': 1,
-          },
-          // Explicitly include data in APNs payload root for iOS reliability
-          category,
-          actionType: actionType || "",
-          actionPayload: JSON.stringify(actionPayload || {}),
+        category,
+        actionType: actionType || "",
+        actionPayload: JSON.stringify(actionPayload || {}),
+      };
+      if (rId) apnsPayload.relatedId = String(rId);
+      if (notificationId) apnsPayload.notificationId = String(notificationId);
+
+      return {
+        notification: { title, body: message },
+        data: dataPayload,
+        token: token,
+        android: {
+          priority: 'high' as const,
+          notification: { sound: 'default', channelId: 'default' },
         },
-      },
-    }));
+        apns: { payload: apnsPayload },
+      };
+    });
 
   if (messages.length === 0) {
+    console.warn(`[NotificationService] No valid FCM tokens for actor ${actorId}`);
     return {
       status: "failed",
       deliveredCount: 0,
@@ -205,7 +227,9 @@ const sendPushToActor = async (
     };
   }
 
-  return sendFCMPush(messages);
+  const result = await sendFCMPush(messages);
+  console.log(`[NotificationService] Push delivery result for actor ${actorId}: status=${result.status}, delivered=${result.deliveredCount}, failed=${result.failedCount}${result.error ? `, error=${result.error}` : ""}`);
+  return result;
 };
 
 export const dispatchChatAlert = async (
@@ -310,7 +334,8 @@ export const createRichNotification = async ({
           (actionType ?? fallbackAction.actionType) || null,
           actionPayload ?? fallbackAction.actionPayload,
           category,
-        respectMarketingPreference
+          respectMarketingPreference,
+          notification.id
         );
     }
 

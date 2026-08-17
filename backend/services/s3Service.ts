@@ -12,14 +12,15 @@ const s3 = new S3Client({
 const BUCKET = process.env.AWS_S3_BUCKET_NAME!;
 const FOLDER = process.env.AWS_S3_FOLDER_NAME || 'furrcircle-dev';
 
-export type UploadFolder = 'profiles' | 'pets' | 'posts' | 'events' | 'stamps' | 'reports' | 'certificates';
+export type UploadFolder = 'profiles' | 'pets' | 'posts' | 'events' | 'stamps' | 'reports' | 'certificates' | 'stories' | 'memories' | 'circles' | 'chats' | 'medications';
 
 export const uploadFileToS3 = async (
   buffer: Buffer,
   mimeType: string,
   folder: UploadFolder
 ): Promise<string> => {
-  const ext = (mimeType.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+  let ext = (mimeType.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+  if (ext === 'quicktime') ext = 'mov';
   const key = `${FOLDER}/${folder}/${uuidv4()}.${ext}`;
 
   await s3.send(

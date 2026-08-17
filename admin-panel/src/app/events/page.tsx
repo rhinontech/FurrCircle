@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Plus, MapPin, Calendar as CalendarIcon, Clock, Trash2, X, Loader2, ImagePlus, Eye, Pencil, Users } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 const CATEGORIES = ["Social", "Health", "Training", "Adoption", "Other"];
 const STATUSES = ["Upcoming", "Draft", "Completed"];
@@ -9,7 +10,55 @@ const emptyForm = { title: "", description: "", date: "", time: "", location: ""
 
 type DrawerMode = "create" | "edit" | "view" | null;
 
+const compressImage = (file: File, maxWidth = 1080, quality = 0.75): Promise<File> => {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith("image/") || file.type === "image/gif") {
+      return resolve(file);
+    }
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return resolve(file);
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return resolve(file);
+            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+    };
+    reader.onerror = () => resolve(file);
+  });
+};
+
 export default function EventsPage() {
+  const { dangerMode } = useAdminAuth();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
@@ -80,9 +129,10 @@ export default function EventsPage() {
     setUploadingImage(true);
     setError("");
     try {
-      const preview = URL.createObjectURL(file);
+      const compressedFile = await compressImage(file);
+      const preview = URL.createObjectURL(compressedFile);
       setImagePreview(preview);
-      const { url } = await adminApi.upload('events', file);
+      const { url } = await adminApi.upload('events', compressedFile);
       setForm(f => ({ ...f, imageUrl: url }));
     } catch (err: any) {
       setError("Image upload failed: " + (err.message || "Try again"));
@@ -159,7 +209,13 @@ export default function EventsPage() {
         </div>
         <button
           onClick={openCreate}
-          className="px-4 py-2.5 bg-primary-900 text-white rounded-input flex items-center gap-2 font-bold text-sm hover:bg-primary-800 transition-colors shadow-sm"
+          disabled={!dangerMode}
+          className={`px-4 py-2.5 rounded-input flex items-center gap-2 font-bold text-sm transition-colors shadow-sm ${
+            dangerMode
+              ? "bg-primary-900 text-white hover:bg-primary-800"
+              : "bg-slate-100 text-slate-400 cursor-not-allowed"
+          }`}
+          title={!dangerMode ? "Enable Danger Mode to create events" : "Create Event"}
         >
           <Plus size={18} />
           Create Event
@@ -255,16 +311,25 @@ export default function EventsPage() {
                         </button>
                         <button
                           onClick={() => openEdit(event)}
-                          className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          title="Edit event"
+                          disabled={!dangerMode}
+                          className={`p-2 rounded-lg transition-colors ${
+                            dangerMode
+                              ? "text-slate-400 hover:text-amber-600 hover:bg-amber-50"
+                              : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                          }`}
+                          title={!dangerMode ? "Enable Danger Mode to edit event" : "Edit event"}
                         >
                           <Pencil size={15} />
                         </button>
                         <button
                           onClick={() => handleDelete(event.id, event.title)}
-                          disabled={deletingId === event.id}
-                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-40"
-                          title="Delete event"
+                          disabled={deletingId === event.id || !dangerMode}
+                          className={`p-2 rounded-lg transition-colors disabled:opacity-40 ${
+                            dangerMode
+                              ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                              : "text-slate-300 cursor-not-allowed bg-slate-50/50"
+                          }`}
+                          title={!dangerMode ? "Enable Danger Mode to delete event" : "Delete event"}
                         >
                           {deletingId === event.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                         </button>
@@ -310,7 +375,13 @@ export default function EventsPage() {
             {drawerMode === "view" && (
               <button
                 onClick={() => openEdit(selectedEvent)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
+                disabled={!dangerMode}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-bold rounded-lg transition-colors ${
+                  dangerMode
+                    ? "text-amber-600 bg-amber-50 hover:bg-amber-100"
+                    : "text-slate-400 bg-slate-100 cursor-not-allowed"
+                }`}
+                title={!dangerMode ? "Enable Danger Mode to edit event" : "Edit"}
               >
                 <Pencil size={14} />
                 Edit
@@ -420,7 +491,7 @@ export default function EventsPage() {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Event Image</label>
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImagePick} className="hidden" />
                 {imagePreview ? (
-                  <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-slate-200">
+                  <div className="relative w-full aspect-4/3 rounded-2xl overflow-hidden border border-slate-200">
                     <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
                     {uploadingImage && (
                       <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
@@ -458,7 +529,7 @@ export default function EventsPage() {
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-semibold text-slate-600 group-hover:text-primary-900">Click to upload image</p>
-                      <p className="text-xs text-slate-400 mt-0.5">PNG, JPG up to 5MB</p>
+                      <p className="text-xs text-slate-400 mt-0.5">PNG, JPG up to 10MB</p>
                     </div>
                   </button>
                 )}

@@ -63,6 +63,11 @@ export default (sequelize: Sequelize) => {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
+            conversationId: {
+                type: DataTypes.UUID,
+                allowNull: true,
+                comment: "Set when owner approves — points to the chat created",
+            },
         },
         {
             tableName: "adoption_applications",

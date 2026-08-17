@@ -7,6 +7,8 @@ import http from 'http';
 import { Server } from 'socket.io';
 import { setupRealtimeServer } from './services/realtimeService.ts';
 import { startCampaignWorker } from './services/campaignService.ts';
+import { startReminderScheduler } from './services/reminderScheduler.ts';
+import { seedSuperAdmin } from './services/seedSuperAdmin.ts';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -82,6 +84,17 @@ import vetReviewRoutes from './routes/vetReviewRoutes.ts';
 import contactLeadRoutes from './routes/contactLeadRoutes.ts';
 import placesRoutes from './routes/placesRoutes.ts';
 import placesVetsRoutes from './routes/placesVetsRoutes.ts';
+import userRoutes from './routes/userRoutes.ts';
+import followRoutes from './routes/followRoutes.ts';
+import circleRoutes from './routes/circleRoutes.ts';
+import questionRoutes from './routes/questionRoutes.ts';
+import playdateRoutes from './routes/playdateRoutes.ts';
+import ownerMatchRoutes from './routes/ownerMatchRoutes.ts';
+import breedRoutes from './routes/breedRoutes.ts';
+import lostPetRoutes from './routes/lostPetRoutes.ts';
+import reportRoutes from './routes/reportRoutes.ts';
+import blockRoutes from './routes/blockRoutes.ts';
+
 
 // Routes
 app.get('/', (req: Request, res: Response) => {
@@ -104,6 +117,17 @@ app.use('/api/vets/:vetId/reviews', vetReviewRoutes);
 app.use('/api/contact-leads', contactLeadRoutes);
 app.use('/api/places', placesRoutes);
 app.use('/api/places-vets', placesVetsRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/follows', followRoutes);
+app.use('/api/circles', circleRoutes);
+app.use('/api/questions', questionRoutes);
+app.use('/api/playdate', playdateRoutes);
+app.use('/api/owner-match', ownerMatchRoutes);
+app.use('/api/breed', breedRoutes);
+app.use('/api/lost-pets', lostPetRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/blocks', blockRoutes);
+
 
 // Test DB Connection and Start Server
 const startServer = async (attempt = 1) => {
@@ -112,13 +136,16 @@ const startServer = async (attempt = 1) => {
         console.log('Database connected successfully.');
 
         // Auto-create/sync tables based on models - Safe mode (Persistence enabled)
-        // await sequelize.sync(); 
-        // console.log('Database schema synchronized.');
+           await sequelize.sync({ alter: true });
+        console.log('Database schema synchronized.');
+
+        await seedSuperAdmin();
 
         httpServer.listen(Number(PORT), "0.0.0.0", () => {
             console.log(`🚀 FurrCircle API Live on Network -> http://0.0.0.0:${PORT}`);
         });
         startCampaignWorker();
+        startReminderScheduler();
     } catch (error) {
         console.error('Unable to connect to the database:', error);
         const retryDelayMs = Math.min(30000, 5000 * attempt);

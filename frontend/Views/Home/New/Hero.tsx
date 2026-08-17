@@ -120,10 +120,10 @@ export function Hero() {
             </motion.div>
 
             <AnimatedHeading
-              text="Your Pet's Health, \n All in One Place"
+              text="India's Social Network \n For Pet Lovers"
               tag="h1"
               stagger={0.1}
-              className="text-5xl md:text-8xl font-black font-heading leading-[1.15] text-[#1A1A1A] uppercase tracking-tighter pt-5 relative z-10"
+              className="text-4xl sm:text-6xl md:text-8xl font-black font-heading leading-[1.1] text-[#1A1A1A] uppercase tracking-tighter pt-5 relative z-10"
             />
           </motion.div>
 
@@ -133,7 +133,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-lg md:text-2xl text-[#1A1A1A] max-w-3xl font-medium"
           >
-            Track health records, book vet appointments, and stay connected with a community that loves pets as much as you do.
+            Share moments, find playdates, track health records, and connect with pet parents near you — all in one place.
           </motion.p>
 
           <motion.div
@@ -143,7 +143,9 @@ export function Hero() {
             className="flex flex-wrap items-center justify-center gap-4"
           >
             <a
-              href="#"
+              href="https://apps.apple.com/in/app/furrcircle/id6762140389"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="Download on the App Store"
               className="transition-transform hover:scale-105 active:scale-95"
             >
@@ -157,7 +159,9 @@ export function Hero() {
               />
             </a>
             <a
-              href="#"
+              href="https://play.google.com/store/apps/details?id=com.furrcircle.app"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="Get it on Google Play"
               className="transition-transform hover:scale-105 active:scale-95"
             >
@@ -218,7 +222,7 @@ export function Hero() {
           ))}
 
           <div className="absolute max-md:hidden top-10 left-20 w-44 h-44 pointer-events-none opacity-100">
-            <Image src='/pawprint1.png' alt="Paw Print" fill sizes="176px" className="object-contain" />
+            <Image src='/pawprint1.png' alt="Paw Print" fill sizes="176px" className="object-contain" priority />
           </div>
 
           <div className="absolute max-md:hidden  bottom-0 right-30 w-44 h-44 pointer-events-none opacity-100">

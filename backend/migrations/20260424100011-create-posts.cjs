@@ -32,6 +32,15 @@ module.exports = {
         allowNull: false,
         defaultValue: 'pending'
       },
+      engagementScore: {
+        type: Sequelize.FLOAT,
+        allowNull: false,
+        defaultValue: 0
+      },
+      city: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

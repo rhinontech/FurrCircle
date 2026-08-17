@@ -2,32 +2,62 @@
 
 import { AnimatedHeading } from "@/components/AnimationProvider";
 import { motion } from "framer-motion";
-import { ClipboardList, CalendarCheck, Bell, Users } from "lucide-react";
+import { ClipboardList, CalendarCheck, Heart, Users, MessageCircle, MapPin, AlertTriangle, MessagesSquare, Images } from "lucide-react";
 
 const services = [
   {
-    title: "HEALTH RECORDS",
-    description: "Store and access your pet's full medical history, vaccinations, and vitals anytime, anywhere.",
+    title: "PET MATCHING",
+    description: "Swipe to find playdates, adoption partners, or breeding matches for your pet — like Tinder, but for pets.",
+    icon: <Heart className="w-8 h-8" />,
+    color: "bg-[#EA5222]",
+  },
+  {
+    title: "SOCIAL FEED & STORIES",
+    description: "Share photos and videos, follow pet parents near you, and post 24-hour stories with your community.",
+    icon: <Users className="w-8 h-8" />,
+    color: "bg-[#9D8FE4]",
+  },
+  {
+    title: "CIRCLES & Q&A",
+    description: "Join local pet circles — Dogs, Cats, Rescue, Health, Training — to ask questions, share advice, and meet nearby pet parents.",
+    icon: <MessagesSquare className="w-8 h-8" />,
+    color: "bg-[#E84393]",
+  },
+  {
+    title: "HEALTH PASSPORT",
+    description: "Store your pet's full medical history — vaccines, vitals, medications, allergies, and insurance — in one place.",
     icon: <ClipboardList className="w-8 h-8" />,
     color: "bg-[#53AF54]",
   },
   {
-    title: "BOOK A VET",
+    title: "VET BOOKING",
     description: "Find verified veterinarians near you and book appointments in just a few taps.",
     icon: <CalendarCheck className="w-8 h-8" />,
-    color: "bg-[#EA5222]",
-  },
-  {
-    title: "SMART REMINDERS",
-    description: "Never miss a vaccine, medication dose, or vet visit with automated reminders.",
-    icon: <Bell className="w-8 h-8" />,
     color: "bg-[#0CA2D0]",
   },
   {
-    title: "PET COMMUNITY",
-    description: "Connect with fellow pet parents, share moments, and discover local pet events.",
-    icon: <Users className="w-8 h-8" />,
+    title: "LOCAL EVENTS",
+    description: "Discover adoption drives, playdates, training sessions, and pet meetups happening near you.",
+    icon: <MapPin className="w-8 h-8" />,
     color: "bg-[#FABC3F]",
+  },
+  {
+    title: "LOST & FOUND",
+    description: "Report lost pets, browse spotted animals, and reunite families with photo-based alerts in your city.",
+    icon: <AlertTriangle className="w-8 h-8" />,
+    color: "bg-[#1A1A1A]",
+  },
+  {
+    title: "MEMORY VAULT",
+    description: "Keep a beautiful, year-by-year photo vault of every pet — preserving a lifetime of moments and milestones.",
+    icon: <Images className="w-8 h-8" />,
+    color: "bg-[#6C5CE7]",
+  },
+  {
+    title: "CHAT & MESSAGING",
+    description: "Message other pet parents directly, share posts and profiles, and keep matched conversations all in one inbox.",
+    icon: <MessageCircle className="w-8 h-8" />,
+    color: "bg-[#00B894]",
   },
 ];
 
@@ -48,12 +78,12 @@ export function Services() {
             transition={{ delay: 0.1 }}
             className="text-xl md:text-2xl text-[#1A1A1A]/80 font-medium"
           >
-            Everything you need to keep your pet healthy and happy.
+            A complete pet social platform — not just health, but community, matching, and more.
           </motion.p>
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-24 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-16 gap-y-24 max-w-7xl mx-auto">
           {services.map((service, index) => (
             <motion.div
               key={index}

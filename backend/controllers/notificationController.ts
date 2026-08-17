@@ -146,7 +146,10 @@ export const registerNotificationDevice = async (req: Request, res: Response): P
     const platform = normalizePlatform(req.body?.platform);
     const pushEnabled = req.body?.pushEnabled !== false;
 
+    console.log(`[NotificationController] Registering device: actorId=${actorId}, platform=${platform}, hasToken=${!!expoPushToken}, pushEnabled=${pushEnabled}`);
+
     if (!installationId || !platform) {
+      console.warn(`[NotificationController] Missing required fields: installationId=${!!installationId}, platform=${!!platform}`);
       res.status(400).json({ message: "installationId and valid platform are required" });
       return;
     }
@@ -174,6 +177,7 @@ export const registerNotificationDevice = async (req: Request, res: Response): P
 
     res.status(201).json(device);
   } catch (error: any) {
+    console.error(`[NotificationController] Registration failed:`, error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -195,6 +199,31 @@ export const deleteNotificationDevice = async (req: Request, res: Response): Pro
     });
 
     res.json({ message: "Device removed" });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Toggle push notifications for all devices of the authenticated user
+// @route   PATCH /api/notifications/devices/push-enabled
+export const togglePushEnabled = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { notification_devices: NotificationDevice } = db as any;
+    const actorId = (req as any).user?.id;
+    const actorType = (req as any).userType || "user";
+    const { pushEnabled } = req.body;
+
+    if (pushEnabled === undefined) {
+      res.status(400).json({ message: "pushEnabled field is required" });
+      return;
+    }
+
+    await NotificationDevice.update(
+      { pushEnabled: Boolean(pushEnabled) },
+      { where: { actorId, actorType } }
+    );
+
+    res.json({ success: true, pushEnabled: Boolean(pushEnabled) });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

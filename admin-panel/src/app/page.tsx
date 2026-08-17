@@ -53,10 +53,10 @@ export default function DashboardPage() {
     ? [
         { label: "Total Users", value: stats.totalUsers.toLocaleString(), icon: Users, change: "Live" },
         { label: "Active Pets", value: stats.totalPets.toLocaleString(), icon: PawPrint, change: "Live" },
-        { label: "Vets Joined", value: stats.totalVets.toLocaleString(), icon: Stethoscope, change: "Live" },
         { label: "New Leads", value: stats.newContactLeads.toLocaleString(), icon: Mail, change: "Inbox" },
-        { label: "Pending Posts", value: stats.pendingPosts.toLocaleString(), icon: Bell, change: "Queue" },
-        { label: "Pending Vets", value: stats.pendingVets.toLocaleString(), icon: ShieldCheck, change: "Queue" },
+        // ── Phase 2 (vets) ──
+        // { label: "Vets Joined", value: stats.totalVets.toLocaleString(), icon: Stethoscope, change: "Live" },
+        // { label: "Pending Vets", value: stats.pendingVets.toLocaleString(), icon: ShieldCheck, change: "Queue" },
       ]
     : [];
 
@@ -71,7 +71,7 @@ export default function DashboardPage() {
       {loading ? (
         <div className="h-32 flex items-center justify-center text-slate-400 font-medium">Loading stats...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {statCards.map((stat, i) => (
             <div key={i} className="bg-white p-6 rounded-card border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">

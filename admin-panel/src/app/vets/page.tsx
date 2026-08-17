@@ -2,8 +2,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Stethoscope, ShieldCheck, Search, CheckCircle2, Trash2, MoreVertical, X, Mail, Phone, MapPin, Calendar, BadgeCheck } from "lucide-react";
 import { adminApi } from "@/lib/adminApiClient";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
 function VetDrawer({ vet, onClose, onVerify, onDelete, actionId }: { vet: any; onClose: () => void; onVerify: (id: string) => void; onDelete: (id: string, name: string) => void; actionId: string | null }) {
+  const { dangerMode } = useAdminAuth();
   return (
     <>
       <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
@@ -55,16 +57,26 @@ function VetDrawer({ vet, onClose, onVerify, onDelete, actionId }: { vet: any; o
           {!vet.isVerified && (
             <button
               onClick={() => onVerify(vet.id)}
-              disabled={actionId === vet.id}
-              className="w-full py-2.5 bg-primary-900 text-white rounded-xl text-sm font-bold hover:bg-primary-800 transition-colors disabled:opacity-60"
+              disabled={actionId === vet.id || !dangerMode}
+              className={`w-full py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                dangerMode
+                  ? "bg-primary-900 text-white hover:bg-primary-800 disabled:opacity-60"
+                  : "bg-slate-100 text-slate-400 cursor-not-allowed"
+              }`}
+              title={!dangerMode ? "Enable Danger Mode to verify vet" : ""}
             >
               {actionId === vet.id ? "Verifying..." : "Verify Vet"}
             </button>
           )}
           <button
             onClick={() => onDelete(vet.id, vet.name)}
-            disabled={actionId === vet.id}
-            className="w-full py-2.5 bg-rose-50 text-rose-600 rounded-xl text-sm font-bold hover:bg-rose-100 transition-colors disabled:opacity-60"
+            disabled={actionId === vet.id || !dangerMode}
+            className={`w-full py-2.5 rounded-xl text-sm font-bold transition-colors ${
+              dangerMode
+                ? "bg-rose-50 text-rose-600 hover:bg-rose-100 disabled:opacity-60"
+                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+            }`}
+            title={!dangerMode ? "Enable Danger Mode to remove vet" : ""}
           >
             Remove Vet
           </button>
@@ -87,6 +99,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
 }
 
 export default function VetsPage() {
+  const { dangerMode } = useAdminAuth();
   const [vets, setVets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"all" | "pending" | "verified">("all");
@@ -252,8 +265,13 @@ export default function VetsPage() {
                         {!vet.isVerified && (
                           <button
                             onClick={() => handleVerify(vet.id)}
-                            disabled={actionId === vet.id}
-                            className="px-3 py-1.5 bg-primary-900 text-white rounded-lg text-[11px] font-bold hover:bg-primary-800 transition-colors disabled:opacity-60"
+                            disabled={actionId === vet.id || !dangerMode}
+                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+                              dangerMode
+                                ? "bg-primary-900 text-white hover:bg-primary-800 disabled:opacity-60"
+                                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                            }`}
+                            title={!dangerMode ? "Enable Danger Mode to verify vet" : ""}
                           >
                             {actionId === vet.id ? "Verifying..." : "Verify"}
                           </button>
@@ -269,8 +287,13 @@ export default function VetsPage() {
                             <div className="absolute right-0 top-9 w-40 bg-white rounded-xl border border-slate-200 shadow-lg z-10 overflow-hidden">
                               <button
                                 onClick={() => handleDelete(vet.id, vet.name)}
-                                disabled={actionId === vet.id}
-                                className="w-full flex items-center gap-2 px-4 py-3 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
+                                disabled={actionId === vet.id || !dangerMode}
+                                className={`w-full flex items-center gap-2 px-4 py-3 text-sm border-t border-slate-100 transition-colors ${
+                                  dangerMode
+                                    ? "text-rose-600 hover:bg-rose-50"
+                                    : "text-slate-400 cursor-not-allowed bg-slate-50/50"
+                                }`}
+                                title={!dangerMode ? "Enable Danger Mode to remove vet" : ""}
                               >
                                 <Trash2 size={15} />
                                 Remove Vet

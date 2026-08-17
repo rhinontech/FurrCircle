@@ -81,6 +81,11 @@ export default (sequelize: Sequelize) => {
                 allowNull: false,
                 defaultValue: false,
             },
+            twoFactorEnabled: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            },
             bio: {
                 type: DataTypes.TEXT,
                 allowNull: true,
@@ -96,6 +101,19 @@ export default (sequelize: Sequelize) => {
             },
             licenseNumber: {
                 type: DataTypes.STRING,
+                allowNull: true,
+            },
+            username: {
+                type: DataTypes.STRING,
+                allowNull: true, // Make nullable to avoid breaking if existing vets lack username initially
+                unique: true,
+            },
+            otpCode: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            otpExpiry: {
+                type: DataTypes.DATE,
                 allowNull: true,
             },
             resetToken: {

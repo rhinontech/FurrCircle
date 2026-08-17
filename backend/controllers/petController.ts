@@ -38,6 +38,53 @@ const serializeAppointment = (appointment: any) => {
   };
 };
 
+const calculateExactAge = (birthDateString: string | null | undefined, ageFallback: string | null | undefined): string | null | undefined => {
+  if (!birthDateString) {
+    if (ageFallback) {
+      const clean = String(ageFallback).trim().toLowerCase();
+      if (clean.endsWith("y") || clean.endsWith("m") || clean.endsWith("d") || clean.includes("year") || clean.includes("month")) {
+        return ageFallback;
+      }
+      return `${ageFallback}y`;
+    }
+    return ageFallback;
+  }
+  const birthDate = new Date(birthDateString);
+  if (isNaN(birthDate.getTime())) {
+    if (ageFallback) {
+      const clean = String(ageFallback).trim().toLowerCase();
+      if (clean.endsWith("y") || clean.endsWith("m") || clean.endsWith("d") || clean.includes("year") || clean.includes("month")) {
+        return ageFallback;
+      }
+      return `${ageFallback}y`;
+    }
+    return ageFallback;
+  }
+  
+  const today = new Date();
+  let years = today.getFullYear() - birthDate.getFullYear();
+  let months = today.getMonth() - birthDate.getMonth();
+  if (today.getDate() < birthDate.getDate()) {
+    months--;
+  }
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+  
+  if (years > 0 && months > 0) {
+    return `${years}y ${months}m`;
+  } else if (years > 0) {
+    return `${years}y`;
+  } else if (months > 0) {
+    return `${months}m`;
+  } else {
+    const diffTime = Math.abs(today.getTime() - birthDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return `${diffDays}d`;
+  }
+};
+
 const normalizePetPayload = (pet: any) => {
   const payload = toPlain(pet);
   const appointments = Array.isArray(payload?.Appointments)
@@ -46,11 +93,13 @@ const normalizePetPayload = (pet: any) => {
 
   return {
     ...payload,
-    age: payload?.age != null ? String(payload.age) : payload?.age,
+    age: calculateExactAge(payload?.birth_date, payload?.age),
     Vaccines: Array.isArray(payload?.Vaccines) ? payload.Vaccines.slice().sort(sortByDateDesc("dateAdministered")) : [],
     Medications: Array.isArray(payload?.Medications) ? payload.Medications.slice().sort(sortByDateDesc("startDate")) : [],
     Allergies: Array.isArray(payload?.Allergies) ? payload.Allergies.slice().sort(sortByDateDesc("diagnosedAt")) : [],
+    vitals: Array.isArray(payload?.vitals) ? payload.vitals.slice().sort(sortByDateDesc("timestamp")) : [],
     Appointments: appointments,
+    personality: Array.isArray(payload?.personality) ? payload.personality : [],
   };
 };
 
@@ -79,12 +128,15 @@ const toPublicPetPayload = (pet: any, viewerId?: string) => {
     breed: payload.breed,
     gender: payload.gender,
     age: payload.age,
+    weight: payload.weight,
     city: payload.city,
     description: payload.description,
     history: payload.history,
     healthStatus: payload.healthStatus,
+    personality: payload.personality,
     isAdoptionOpen: payload.isAdoptionOpen,
     isFosterOpen: payload.isFosterOpen,
+    isBreedingOpen: payload.isBreedingOpen,
     fosterProvides: payload.fosterProvides ?? [],
     owner: payload.owner,
     isViewerOwner: !!viewerOwnsPet,
@@ -96,6 +148,7 @@ const toPublicPetPayload = (pet: any, viewerId?: string) => {
     Medications: [],
     Allergies: [],
     Appointments: [],
+    vitals: [],
   };
 };
 
@@ -183,7 +236,7 @@ export const getMyPets = async (req: any, res: Response): Promise<void> => {
 export const createPet = async (req: any, res: Response): Promise<void> => {
   try {
     const { pets: Pet } = db as any;
-    const { name, species, breed, age, weight, city, birth_date, gender, microchip_id, avatar_url, healthStatus } = req.body;
+    const { name, species, breed, age, weight, city, birth_date, gender, microchip_id, avatar_url, healthStatus, description, personality } = req.body;
 
     const pet = await Pet.create({
       ownerId: req.user.id,
@@ -197,6 +250,8 @@ export const createPet = async (req: any, res: Response): Promise<void> => {
       gender,
       microchip_id,
       avatar_url,
+      description,
+      personality: Array.isArray(personality) ? personality : [],
       healthStatus: healthStatus || "Healthy",
     });
 
@@ -211,7 +266,7 @@ export const createPet = async (req: any, res: Response): Promise<void> => {
 export const updateListingStatus = async (req: any, res: Response): Promise<void> => {
   try {
     const { pets: Pet } = db as any;
-    const { isAdoptionOpen, isFosterOpen, fosterProvides } = req.body;
+    const { isAdoptionOpen, isFosterOpen, fosterProvides, isBreedingOpen } = req.body;
 
     const pet = await Pet.findOne({ where: { id: req.params.id, ownerId: req.user.id } });
     if (!pet) {
@@ -222,6 +277,7 @@ export const updateListingStatus = async (req: any, res: Response): Promise<void
     const wasPublic = Boolean(pet.isAdoptionOpen || pet.isFosterOpen);
     if (isAdoptionOpen !== undefined) pet.isAdoptionOpen = isAdoptionOpen;
     if (isFosterOpen !== undefined) pet.isFosterOpen = isFosterOpen;
+    if (isBreedingOpen !== undefined) pet.isBreedingOpen = isBreedingOpen;
     if (fosterProvides !== undefined) pet.fosterProvides = Array.isArray(fosterProvides) ? fosterProvides : [];
 
     await pet.save();
@@ -250,14 +306,16 @@ export const getPetById = async (req: any, res: Response): Promise<void> => {
       appointments: Appointment,
       vets: Vet,
       reminders: Reminder,
+      vitals: Vital,
     } = db as any;
 
     const pet = await Pet.findByPk(req.params.id, {
       include: [
-        { model: User, as: "owner", attributes: ["id", "name", "avatar_url", "role", "isVerified", "city", "phone"] },
+        { model: User, as: "owner", attributes: ["id", "name", "avatar_url", "role", "isVerified", "city", "phone", 'username'] },
         { model: Vaccine, as: "Vaccines" },
         { model: Medication, as: "Medications" },
         { model: Allergy, as: "Allergies" },
+        { model: Vital, as: "vitals" },
         {
           model: Appointment,
           as: "Appointments",
@@ -280,8 +338,29 @@ export const getPetById = async (req: any, res: Response): Promise<void> => {
     const hasPrivateAccess = isOwner || await canViewPrivatePet(req.params.id, req);
 
     if (!hasPrivateAccess) {
-      if (isPublicListing) {
-        res.json(toPublicPetPayload(pet, req.user?.id));
+      const { follows: Follow, users: User } = db as any;
+
+      // Check if the pet owner has a public profile
+      const owner = await User.findByPk(payload.ownerId, { attributes: ['isPrivate'] });
+      const ownerIsPublic = !owner?.isPrivate;
+
+      // Check if viewer follows the pet owner (accepted) — followers get extra health info
+      const followRecord = await Follow.findOne({
+        where: { followerId: req.user.id, followingId: payload.ownerId, status: 'accepted' },
+      });
+      const isFollower = !!followRecord;
+
+      if (isPublicListing || ownerIsPublic || isFollower) {
+        // Return public-safe profile
+        const publicPayload = toPublicPetPayload(pet, req.user?.id);
+        if (isFollower) {
+          // Followers see a bit more detail
+          publicPayload.Vaccines = payload.Vaccines;
+          publicPayload.Allergies = payload.Allergies;
+          publicPayload.personality = payload.personality;
+          publicPayload.vitals = payload.vitals;
+        }
+        res.json(publicPayload);
       } else {
         res.status(403).json({ message: "Not authorized to view this pet" });
       }
@@ -316,7 +395,7 @@ export const updatePet = async (req: any, res: Response): Promise<void> => {
       return;
     }
 
-    const updatableFields = ["name", "species", "breed", "age", "weight", "city", "birth_date", "gender", "microchip_id", "avatar_url", "healthStatus"];
+    const updatableFields = ["name", "species", "breed", "age", "weight", "city", "birth_date", "gender", "microchip_id", "avatar_url", "healthStatus", "description", "personality"];
 
     updatableFields.forEach((field) => {
       if (req.body[field] !== undefined) {
@@ -334,39 +413,133 @@ export const updatePet = async (req: any, res: Response): Promise<void> => {
 // @desc    Remove pet
 // @route   DELETE /api/pets/:id
 export const deletePet = async (req: any, res: Response): Promise<void> => {
+  const transaction = await db.sequelize.transaction();
   try {
-    const { pets: Pet } = db as any;
-    const pet = await Pet.findOne({ where: { id: req.params.id, ownerId: req.user.id } });
+    const {
+      pets: Pet,
+      vaccines: Vaccine,
+      medical_records: MedicalRecord,
+      medications: Medication,
+      allergies: Allergy,
+      appointments: Appointment,
+      reminders: Reminder,
+      vitals: Vital,
+      adoption_applications: AdoptionApplication,
+      conversations: Conversation,
+      messages: Message,
+      playdate_likes: PlaydateLike,
+    } = db as any;
+
+    const pet = await Pet.findOne({
+      where: { id: req.params.id, ownerId: req.user.id },
+      transaction,
+    });
 
     if (!pet) {
+      await transaction.rollback();
       res.status(404).json({ message: "Pet not found" });
       return;
     }
 
-    await pet.destroy();
-    res.json({ success: true, message: "Pet removed successfully" });
+    const petId = pet.id;
+
+    // Delete all related records
+    await Vaccine.destroy({ where: { petId }, transaction });
+    await MedicalRecord.destroy({ where: { petId }, transaction });
+    await Medication.destroy({ where: { petId }, transaction });
+    await Allergy.destroy({ where: { petId }, transaction });
+    await Appointment.destroy({ where: { petId }, transaction });
+    await Reminder.destroy({ where: { petId }, transaction });
+    await Vital.destroy({ where: { petId }, transaction });
+    await AdoptionApplication.destroy({ where: { petId }, transaction });
+    await Message.destroy({ where: { petId }, transaction });
+    await Conversation.destroy({ where: { petId }, transaction });
+    await PlaydateLike.destroy({
+      where: {
+        [Op.or]: [
+          { swiperPetId: petId },
+          { targetPetId: petId }
+        ]
+      },
+      transaction
+    });
+
+    // Finally delete the pet
+    await pet.destroy({ transaction });
+
+    await transaction.commit();
+    res.json({ success: true, message: "Pet and all related records removed successfully" });
   } catch (error: any) {
+    if (transaction) await transaction.rollback();
     res.status(500).json({ message: error.message });
   }
 };
 
 // @desc    Get pets for adoption/foster (discover screen)
 // @route   GET /api/pets/discover
-export const discoverPets = async (_req: Request, res: Response): Promise<void> => {
+export const discoverPets = async (req: any, res: Response): Promise<void> => {
   try {
     const { pets: Pet, users: User, vaccines: Vaccine, appointments: Appointment } = db as any;
+    const { sequelize } = db as any;
+
+    const lat = req.query.lat ? parseFloat(req.query.lat as string) : null;
+    const lng = req.query.lng ? parseFloat(req.query.lng as string) : null;
+
+    const where: any = {
+      [Op.or]: [{ isAdoptionOpen: true }, { isFosterOpen: true }, { isBreedingOpen: true }],
+      ownerId: { [Op.ne]: req.user.id }
+    };
+
+    let attributes: any = { exclude: [] };
+    let order: any[] = [["updatedAt", "DESC"]];
+
+    if (lat && lng) {
+      where[Op.and] = [
+        sequelize.literal(`(
+          SELECT 6371 * acos(
+            cos(radians(${lat})) *
+            cos(radians(latitude)) *
+            cos(radians(longitude) - radians(${lng})) +
+            sin(radians(${lat})) *
+            sin(radians(latitude))
+          )
+          FROM users
+          WHERE users.id = pets.owner_id
+        ) <= 150`)
+      ];
+      attributes = {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT 6371 * acos(
+                cos(radians(${lat})) *
+                cos(radians(latitude)) *
+                cos(radians(longitude) - radians(${lng})) +
+                sin(radians(${lat})) *
+                sin(radians(latitude))
+              )
+              FROM users
+              WHERE users.id = pets.owner_id
+              AND users.latitude IS NOT NULL AND users.longitude IS NOT NULL
+            )`),
+            'distance',
+          ],
+        ],
+      };
+      order = [[sequelize.literal('distance'), 'ASC']];
+    }
+
     const pets = await Pet.findAll({
-      where: {
-        [Op.or]: [{ isAdoptionOpen: true }, { isFosterOpen: true }],
-      },
+      where,
+      attributes,
       include: [
         {
           model: User,
           as: "owner",
-          attributes: ["id", "name", "avatar_url", "role", "isVerified", "city", "phone"],
+          attributes: ["id", "name", "avatar_url", "role", "isVerified", "city", "phone", "latitude", "longitude"],
         },
       ],
-      order: [["updatedAt", "DESC"]],
+      order,
     });
 
     const enrichedPets = await Promise.all(
@@ -377,16 +550,133 @@ export const discoverPets = async (_req: Request, res: Response): Promise<void> 
           Appointment.findAll({ where: { petId: payload.id }, attributes: ["id", "date", "time", "status", "reason"] }),
         ]);
 
-        return {
+        const data: any = {
           ...payload,
           Vaccines: vaccines.map((item: any) => toPlain(item)),
           Appointments: appointments.map((item: any) => serializeAppointment(item)),
           healthScore: calculateHealthScore(payload),
         };
+
+        if (pet.getDataValue('distance') !== undefined && pet.getDataValue('distance') !== null) {
+          data.distance = parseFloat(pet.getDataValue('distance'));
+          data.distanceLabel = `${data.distance.toFixed(1)} km away`;
+        } else if (payload.owner?.city) {
+          data.distanceLabel = payload.owner.city;
+        }
+
+        return data;
       })
     );
 
     res.json(enrichedPets);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Add a pet memory
+// @route   POST /api/pets/:id/memories
+export const addPetMemory = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { pets: Pet, memories: Memory } = db as any;
+    const petId = req.params.id;
+    const { media_url, date, title } = req.body;
+
+    const pet = await Pet.findOne({ where: { id: petId, ownerId: req.user.id } });
+    if (!pet) {
+      res.status(404).json({ message: "Pet not found or unauthorized" });
+      return;
+    }
+
+    const memory = await Memory.create({
+      petId,
+      media_url,
+      date: date || today(),
+      title,
+    });
+
+    res.status(201).json(memory);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get pet memories & aura
+// @route   GET /api/pets/:id/memories
+export const getPetMemories = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { pets: Pet, memories: Memory } = db as any;
+    const petId = req.params.id;
+
+    // Allow owner always; allow others if the pet owner has a public profile
+    const pet = await Pet.findByPk(petId);
+    if (!pet) { res.status(404).json({ message: "Pet not found" }); return; }
+
+    if (pet.ownerId !== req.user.id) {
+      const { users: User, follows: Follow } = db as any;
+      const owner = await User.findByPk(pet.ownerId, { attributes: ['isPrivate'] });
+      const isListedPublicly = pet.isAdoptionOpen || pet.isFosterOpen;
+      const ownerIsPublic = !owner?.isPrivate;
+
+      if (!isListedPublicly && !ownerIsPublic) {
+        // Private profile — only followers can view memories
+        const followRecord = await Follow.findOne({
+          where: { followerId: req.user.id, followingId: pet.ownerId, status: 'accepted' },
+        });
+        if (!followRecord) {
+          res.status(403).json({ message: "Not authorized to view memories" });
+          return;
+        }
+      }
+    }
+
+    const memories = await Memory.findAll({
+      where: { petId },
+      order: [["date", "DESC"], ["createdAt", "DESC"]],
+    });
+
+    // Compute Aura
+    const traits = Array.isArray(pet.personality) && pet.personality.length > 0 
+        ? pet.personality 
+        : ["Loving", "Playful"];
+        
+    const mood = traits[0] || "Happy";
+
+    let zodiac = "Unknown";
+    if (pet.birth_date) {
+        const d = new Date(pet.birth_date);
+        const month = d.getUTCMonth() + 1; // 1-12
+        const day = d.getUTCDate();
+        if ((month == 1 && day <= 19) || (month == 12 && day >= 22)) zodiac = "Capricorn ♑";
+        else if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) zodiac = "Aquarius ♒";
+        else if ((month == 2 && day >= 19) || (month == 3 && day <= 20)) zodiac = "Pisces ♓";
+        else if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) zodiac = "Aries ♈";
+        else if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) zodiac = "Taurus ♉";
+        else if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) zodiac = "Gemini ♊";
+        else if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) zodiac = "Cancer ♋";
+        else if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) zodiac = "Leo ♌";
+        else if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) zodiac = "Virgo ♍";
+        else if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) zodiac = "Libra ♎";
+        else if ((month == 10 && day >= 23) || (month == 11 && day <= 21)) zodiac = "Scorpio ♏";
+        else if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) zodiac = "Sagittarius ♐";
+    }
+
+    // Static random score based on pet id string length or char codes so it stays consistent
+    let score = 92;
+    if (pet.id) {
+       const sum = pet.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+       score = 80 + (sum % 21); // 80 to 100
+    }
+
+    res.json({
+      aura: {
+        zodiac,
+        mood,
+        traits,
+        score,
+      },
+      memories,
+    });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
