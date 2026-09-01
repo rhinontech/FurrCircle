@@ -1,5 +1,0 @@
-services:
-  backend:
-    environment:
-      DB_NAME: furrcircle_beta
-      AWS_S3_FOLDER_NAME: furrcircle-beta
