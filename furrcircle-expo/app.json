@@ -3,14 +3,42 @@
     "name": "FurrCircle",
     "slug": "furrcircle-expo",
     "version": "1.0.0",
+    "scheme": "furrcircle",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F2F6FC",
+      "dark": {
+        "image": "./assets/splash-icon.png",
+        "backgroundColor": "#070C18"
+      }
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "tech.rhinon.furrcircle"
     },
     "android": {
-      "edgeToEdgeEnabled": true
+      "package": "tech.rhinon.furrcircle",
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F2F6FC"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
     }
   }
 }
